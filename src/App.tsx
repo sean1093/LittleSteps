@@ -1,30 +1,17 @@
-import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MonthRange, Category, MilestoneProgress } from './types';
-import { milestones, monthRanges, categories } from './data/milestones';
+import { useState } from 'react';
+import { Menu } from 'lucide-react';
+import { MilestoneProgress } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import MonthPicker from './components/MonthPicker';
-import CategoryFilter from './components/CategoryFilter';
-import MilestoneCard from './components/MilestoneCard';
-import MilestoneModal from './components/MilestoneModal';
+import Sidebar from './components/Sidebar';
+import MilestonesPage from './pages/MilestonesPage';
+import CareGuidePage from './pages/CareGuidePage';
+
+type Page = 'milestones' | 'care-guide';
 
 function App() {
-  const [selectedMonth, setSelectedMonth] = useState<MonthRange>("0-2");
-  const [selectedCategory, setSelectedCategory] = useState<Category>("all");
+  const [currentPage, setCurrentPage] = useState<Page>('milestones');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [progress, setProgress] = useLocalStorage<MilestoneProgress>("milestones-progress", {});
-  const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
-
-  const filteredMilestones = useMemo(() => {
-    return milestones.filter(m => {
-      const monthMatch = m.monthRange === selectedMonth;
-      const categoryMatch = selectedCategory === "all" || m.category === selectedCategory;
-      return monthMatch && categoryMatch;
-    });
-  }, [selectedMonth, selectedCategory]);
-
-  const selectedMilestone = useMemo(() => {
-    return milestones.find(m => m.id === selectedMilestoneId) || null;
-  }, [selectedMilestoneId]);
 
   const toggleMilestone = (id: string) => {
     setProgress(prev => ({
@@ -33,77 +20,54 @@ function App() {
     }));
   };
 
+  const getPageTitle = () => {
+    switch (currentPage) {
+      case 'milestones':
+        return '里程碑追蹤';
+      case 'care-guide':
+        return '照顧重點';
+      default:
+        return 'LittleSteps';
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-warm-white pb-20">
+    <div className="min-h-screen bg-warm-white">
+      {/* Sidebar */}
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        currentPage={currentPage}
+        onNavigate={setCurrentPage}
+      />
+
       {/* Header */}
       <header className="bg-white shadow-soft sticky top-0 z-10">
-        <div className="px-4 py-4">
-          <h1 className="text-2xl font-bold text-primary text-center mb-4">
-            LittleSteps
+        <div className="px-4 py-4 flex items-center gap-4">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center"
+          >
+            <Menu className="w-5 h-5 text-gray-700" />
+          </button>
+          <h1 className="text-2xl font-bold text-primary flex-1">
+            {getPageTitle()}
           </h1>
-          <MonthPicker
-            ranges={monthRanges}
-            selected={selectedMonth}
-            onChange={setSelectedMonth}
-          />
         </div>
       </header>
 
-      {/* Category Filter */}
-      <div className="px-4 py-4">
-        <CategoryFilter
-          categories={categories}
-          selected={selectedCategory}
-          onChange={setSelectedCategory}
-        />
-      </div>
-
-      {/* Milestones List */}
-      <div className="px-4 space-y-3 pb-4">
-        <AnimatePresence mode="popLayout">
-          {filteredMilestones.length > 0 ? (
-            filteredMilestones.map((milestone, index) => (
-              <motion.div
-                key={milestone.id}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.2, delay: index * 0.05 }}
-              >
-                <MilestoneCard
-                  milestone={milestone}
-                  isCompleted={!!progress[milestone.id]}
-                  onToggle={() => toggleMilestone(milestone.id)}
-                  onClick={() => setSelectedMilestoneId(milestone.id)}
-                />
-              </motion.div>
-            ))
-          ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-12"
-            >
-              <div className="text-6xl mb-4">👶</div>
-              <p className="text-gray-500">
-                {selectedCategory === "all"
-                  ? "這個月齡階段沒有里程碑資料"
-                  : "這個分類沒有里程碑資料"}
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Modal */}
-      <MilestoneModal
-        milestone={selectedMilestone}
-        isOpen={!!selectedMilestone}
-        onClose={() => setSelectedMilestoneId(null)}
-        isCompleted={selectedMilestone ? !!progress[selectedMilestone.id] : false}
-        onToggle={() => selectedMilestone && toggleMilestone(selectedMilestone.id)}
-      />
+      {/* Main Content */}
+      <main className="pb-6">
+        {currentPage === 'milestones' && (
+          <MilestonesPage
+            progress={progress}
+            onToggleMilestone={toggleMilestone}
+          />
+        )}
+        {currentPage === 'care-guide' && (
+          <CareGuidePage />
+        )}
+      </main>
     </div>
   );
 }
