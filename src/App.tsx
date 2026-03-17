@@ -5,8 +5,9 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import Sidebar from './components/Sidebar';
 import MilestonesPage from './pages/MilestonesPage';
 import CareGuidePage from './pages/CareGuidePage';
+import VaccineTrackingPage from './pages/VaccineTrackingPage';
 
-type Page = 'milestones' | 'care-guide';
+type Page = 'milestones' | 'care-guide' | 'vaccine-tracking';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('milestones');
@@ -26,6 +27,8 @@ function App() {
         return '里程碑追蹤';
       case 'care-guide':
         return '照顧重點';
+      case 'vaccine-tracking':
+        return '疫苗追蹤';
       default:
         return 'LittleSteps';
     }
@@ -66,6 +69,9 @@ function App() {
         )}
         {currentPage === 'care-guide' && (
           <CareGuidePage />
+        )}
+        {currentPage === 'vaccine-tracking' && (
+          <VaccineTrackingPage />
         )}
       </main>
     </div>

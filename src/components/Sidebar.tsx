@@ -1,11 +1,11 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Baby, AlertCircle, Home } from 'lucide-react';
+import { X, Baby, AlertCircle, Home, Syringe } from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  currentPage: 'milestones' | 'care-guide';
-  onNavigate: (page: 'milestones' | 'care-guide') => void;
+  currentPage: 'milestones' | 'care-guide' | 'vaccine-tracking';
+  onNavigate: (page: 'milestones' | 'care-guide' | 'vaccine-tracking') => void;
 }
 
 export default function Sidebar({ isOpen, onClose, currentPage, onNavigate }: SidebarProps) {
@@ -21,10 +21,16 @@ export default function Sidebar({ isOpen, onClose, currentPage, onNavigate }: Si
       label: '照顧重點',
       icon: AlertCircle,
       description: '各階段注意事項'
+    },
+    {
+      id: 'vaccine-tracking' as const,
+      label: '疫苗追蹤',
+      icon: Syringe,
+      description: '疫苗接種時程與副作用'
     }
   ];
 
-  const handleNavigate = (page: 'milestones' | 'care-guide') => {
+  const handleNavigate = (page: 'milestones' | 'care-guide' | 'vaccine-tracking') => {
     onNavigate(page);
     onClose();
   };
