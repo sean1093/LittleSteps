@@ -1,47 +1,55 @@
-# SPEC: LittleSteps - 新手父母育兒里程碑追蹤站
+# SPEC: LittleSteps - Baby Milestone Tracker for New Parents
 
-## 1. 專案概述 (Project Overview)
-* **目標**：建立一個行動裝置優先 (Mobile-First) 的靜態 Web App，協助新手父母輕鬆掌握小孩各階段的發展重點。
-* **核心價值**：溫馨、明亮、專業、無壓力。
-* **設計原則**：
-    * **視覺風格**：暖色系、粉嫩感 (Pastel Colors)、大量的圓角 (Rounded-2xl) 與柔軟陰影。
-    * **互動邏輯**：單手操作優化，導航列置於底部，內容區域支持橫滑。
+## 1. Project Overview
 
-## 2. 技術棧 (Tech Stack)
-* **框架**：React 18 + TypeScript (使用 Vite 構建)
-* **樣式**：Tailwind CSS (自定義主題以符合溫馨感)
-* **圖示**：Lucide React (線條簡潔、具備現代感)
-* **狀態管理**：React Hooks (useState, useEffect) + LocalStorage (紀錄勾選進度)
-* **部署**：GitHub Pages (搭配 GitHub Actions 自動化部署)
-* **PWA**：vite-plugin-pwa (支援「新增至主畫面」功能)
+* **Goal**: Build a mobile-first static web app to help new parents easily track their baby's developmental milestones at each stage.
+* **Core Values**: Warm, bright, professional, stress-free.
+* **Design Principles**:
+    * **Visual Style**: Warm color palette, pastel colors, rounded corners (rounded-2xl), and soft shadows.
+    * **Interaction Logic**: Optimized for one-handed operation, navigation at the bottom, swipeable content areas.
 
-## 3. 功能規格 (Functional Requirements)
+## 2. Tech Stack
 
-### A. 雙軸導航系統 (Dual-Axis Navigation)
-1.  **頂部時光軸 (Horizontal Month Picker)**：
-    * 顯示月齡區段：0-2m, 3-4m, 5-6m, 7-9m, 10-12m, 1y+。
-    * 點擊時平滑切換當前顯示的里程碑資料。
-2.  **分類過濾 (Category Filter)**：
-    * 提供「大動作」、「精細動作」、「語言認知」、「飲食營養」等分類標籤。
+* **Framework**: React 18 + TypeScript (built with Vite)
+* **Styling**: Tailwind CSS (custom theme for warm aesthetics)
+* **Icons**: Lucide React (clean lines, modern feel)
+* **State Management**: React Hooks (useState, useEffect) + LocalStorage (for tracking progress)
+* **Deployment**: GitHub Pages (with GitHub Actions for automated deployment)
+* **PWA**: vite-plugin-pwa (supports "Add to Home Screen" functionality)
 
-### B. 里程碑管理 (Milestone Management)
-1.  **卡片式清單**：
-    * 展示里程碑標題、簡短描述。
-    * 點擊卡片彈出（Modal 或 Expand）詳細衛教資訊與練習建議。
-2.  **進度儲存**：
-    * 使用者勾選完成後，狀態需永久儲存於瀏覽器 LocalStorage。
+## 3. Functional Requirements
 
-### C. 分享與互動 (Sharing)
-1.  **里程碑分享**：
-    * 利用 Web Share API 分享特定里程碑標題 + 網站連結。
-    * 預設分享文字範例：「我的寶貝達成了【會翻身】里程碑了！推薦給新手父母的育兒神器：[URL]」。
+### A. Dual-Axis Navigation System
 
-### D. PWA 支援
-1.  **Manifest 配置**：設定正確的 App Icon 與主題色，確保在 iOS/Android 上能像 App 一樣安裝。
+1. **Horizontal Month Picker (Top Timeline)**:
+   * Display month ranges: 0-2m, 3-4m, 5-6m, 7-9m, 10-12m, 1y+
+   * Smooth transition when clicking to switch displayed milestone data
 
-## 4. 資料結構定義 (Data Schema)
+2. **Category Filter**:
+   * Provide category tags: Physical Development, Fine Motor Skills, Cognitive & Language, Feeding & Nutrition
 
-資料建議存放於 `src/data/milestones.json` 或 `ts` 檔案中：
+### B. Milestone Management
+
+1. **Card-Based List**:
+   * Display milestone title and brief description
+   * Clicking a card opens a Modal/Expand view with detailed information and practice tips
+
+2. **Progress Saving**:
+   * User's completion status must be permanently saved in browser LocalStorage
+
+### C. Sharing & Interaction
+
+1. **Milestone Sharing**:
+   * Use Web Share API to share milestone title + website link
+   * Default share text example: "My baby achieved the [Rolling Over] milestone! Recommended parenting tool for new parents: [URL]"
+
+### D. PWA Support
+
+1. **Manifest Configuration**: Set proper App Icon and theme color to ensure installable experience on iOS/Android
+
+## 4. Data Schema Definition
+
+Data should be stored in `src/data/milestones.ts`:
 
 ```ts
 export interface Milestone {
@@ -51,35 +59,38 @@ export interface Milestone {
   title: string;
   summary: string;
   details: string;
-  tips: string[]; // 給父母的練習小撇步
+  tips: string[]; // Practice tips for parents
 }
 ```
 
-## 5. UI 規範細節 (UI Specification)
-色彩計畫：
+## 5. UI Specification Details
 
-Background: #FAFAF9 (暖白)
+**Color Scheme:**
 
-Primary: #F472B6 (粉嫩紅) 或 #60A5FA (天空藍)
+- Background: #FAFAF9 (warm white)
+- Primary: #F472B6 (pink) or #60A5FA (sky blue)
+- Card: #FFFFFF (pure white with subtle shadow)
 
-Card: #FFFFFF (純白，帶微弱陰影)
+**Component Spacing:** Use Tailwind's p-4 to p-6 consistently to avoid clutter.
 
-組件間距：統一使用 Tailwind 的 p-4 到 p-6，確保畫面不擁擠。
+**Typography:** Prioritize system fonts for readability on mobile devices.
 
-字體：優先使用系統預設黑體，確保在手機上的易讀性。
+## 6. Implementation Roadmap
 
-## 6. 實作路徑 (Implementation Roadmap)
-Phase 1：初始化 Vite + Tailwind 並設定 PWA 環境。
-Phase 2：實作靜態資料層 (依據衛教手冊內容填充)。
-Phase 3：開發主頁面 UI（時光軸與卡片清單）。
-Phase 4：加入 LocalStorage 儲存邏輯與 Web Share 功能。
-Phase 5：配置 GitHub Actions 並部署上線。
+- **Phase 1**: Initialize Vite + Tailwind and configure PWA environment
+- **Phase 2**: Implement static data layer (fill with developmental milestone content)
+- **Phase 3**: Develop main page UI (timeline and card list)
+- **Phase 4**: Add LocalStorage logic and Web Share functionality
+- **Phase 5**: Configure GitHub Actions and deploy
 
-## 7. 加分項需求 (Optional Enhancements)
-* **動畫與微交互**：
-  - 使用 `framer-motion` 處理卡片進出場動畫。
-  - 列表過濾時使用 Layout Animation 確保視覺流暢。
-* **SEO 優化**：
-  - 確保 Open Graph (OG) 標籤完整，分享至 LINE/FB 時能顯示正確的標題與暖色調預覽圖。
-* **Empty State 設計**：
-  - 若該月齡尚未有勾選項目，顯示一張溫馨的小插圖引導父母開始觀察紀錄。
+## 7. Optional Enhancements
+
+* **Animations & Micro-interactions**:
+  - Use `framer-motion` for card enter/exit animations
+  - Apply Layout Animation when filtering lists for smooth visuals
+
+* **SEO Optimization**:
+  - Ensure complete Open Graph (OG) tags for proper preview when sharing on LINE/FB with warm color scheme
+
+* **Empty State Design**:
+  - Display a warm illustration to guide parents to start tracking if no items are checked for a given month range
