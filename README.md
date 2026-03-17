@@ -1,111 +1,113 @@
-# 🍼 LittleSteps - 育兒里程碑追蹤
+# 🍼 LittleSteps - Baby Milestone Tracker
 
-> 協助新手父母輕鬆掌握小孩各階段的發展重點
+> A mobile-first Progressive Web App to help new parents track their baby's developmental milestones
 
 <div align="center">
 
 [![Deploy to GitHub Pages](https://github.com/sean1093/LittleSteps/actions/workflows/deploy.yml/badge.svg)](https://github.com/sean1093/LittleSteps/actions/workflows/deploy.yml)
 
-[線上體驗](https://sean1093.github.io/LittleSteps/) | [問題回報](https://github.com/sean1093/LittleSteps/issues)
+[Live Demo](https://sean1093.github.io/LittleSteps/) | [Report Issues](https://github.com/sean1093/LittleSteps/issues)
+
+**Website URL**: https://sean1093.github.io/LittleSteps/
 
 </div>
 
-## ✨ 核心特色
+## ✨ Features
 
-- 📱 **行動裝置優先** - 針對手機單手操作優化
-- 🎨 **溫馨視覺設計** - 粉嫩色系搭配圓潤介面
-- ⏱️ **雙軸導航系統** - 月齡時光軸 + 分類過濾
-- ✅ **進度追蹤** - LocalStorage 永久儲存勾選記錄
-- 🔗 **一鍵分享** - Web Share API 分享寶貝成就
-- 💫 **流暢動畫** - Framer Motion 打造絲滑體驗
-- 📲 **PWA 支援** - 可安裝至手機主畫面
-- 🚀 **零後端** - 純前端靜態網站，極速載入
+- 📱 **Mobile-First Design** - Optimized for one-handed thumb operation
+- 🎨 **Warm & Friendly UI** - Pastel color scheme with rounded corners
+- ⏱️ **Dual-Axis Navigation** - Month range timeline + category filters
+- ✅ **Progress Tracking** - Persistent milestone completion state via LocalStorage
+- 🔗 **One-Tap Sharing** - Web Share API integration for sharing achievements
+- 💫 **Smooth Animations** - Powered by Framer Motion
+- 📲 **PWA Support** - Installable on home screen, works offline
+- 🚀 **Zero Backend** - Pure static frontend, lightning fast
 
-## 🛠️ 技術棧
+## 🛠️ Tech Stack
 
-- **框架**: React 18 + TypeScript
-- **建置工具**: Vite
-- **樣式**: Tailwind CSS
-- **動畫**: Framer Motion
-- **圖示**: Lucide React
+- **Framework**: React 18 + TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS
+- **Animations**: Framer Motion
+- **Icons**: Lucide React
 - **PWA**: vite-plugin-pwa
-- **部署**: GitHub Pages + GitHub Actions
+- **Deployment**: GitHub Pages + GitHub Actions
 
-## 📦 本地開發
+## 📦 Local Development
 
 ```bash
-# 安裝依賴
+# Install dependencies
 npm install
 
-# 啟動開發伺服器
+# Start development server
 npm run dev
 
-# 建置生產版本
+# Build for production
 npm run build
 
-# 預覽建置結果
+# Preview production build
 npm run preview
 ```
 
-## 📂 專案結構
+## 📂 Project Structure
 
 ```
 LittleSteps/
 ├── src/
-│   ├── components/        # React 組件
+│   ├── components/        # React components
 │   │   ├── MonthPicker.tsx
 │   │   ├── CategoryFilter.tsx
 │   │   ├── MilestoneCard.tsx
 │   │   └── MilestoneModal.tsx
-│   ├── data/             # 里程碑資料
+│   ├── data/             # Milestone data
 │   │   └── milestones.ts
-│   ├── hooks/            # 自定義 Hooks
+│   ├── hooks/            # Custom React hooks
 │   │   └── useLocalStorage.ts
-│   ├── types/            # TypeScript 類型定義
+│   ├── types/            # TypeScript definitions
 │   │   └── index.ts
-│   ├── utils/            # 工具函數
+│   ├── utils/            # Utility functions
 │   │   └── share.ts
-│   ├── App.tsx           # 主應用組件
-│   ├── main.tsx          # 應用進入點
-│   └── index.css         # 全域樣式
-├── public/               # 靜態資源
-└── index.html            # HTML 模板
+│   ├── App.tsx           # Main app component
+│   ├── main.tsx          # App entry point
+│   └── index.css         # Global styles
+├── public/               # Static assets
+└── index.html            # HTML template
 ```
 
-## 🎯 里程碑分類
+## 🎯 Milestone Categories
 
-- 🏃 **大動作** - 翻身、坐、爬、走等大肌肉發展
-- ✋ **精細動作** - 抓握、傳遞等手部精細動作
-- 🧠 **語言認知** - 發聲、理解、說話等認知發展
-- 🍼 **飲食營養** - 吸吮、副食品、自主進食
+- 🏃 **Physical Development** - Rolling, sitting, crawling, walking
+- ✋ **Fine Motor Skills** - Grasping, transferring objects
+- 🧠 **Cognitive & Language** - Vocalizing, understanding, speaking
+- 🍼 **Feeding & Nutrition** - Sucking, solid foods, self-feeding
 
-## 🎨 設計理念
+## 🎨 Design Philosophy
 
-- **暖色系配色** - 粉嫩紅 #F472B6、天空藍 #60A5FA
-- **圓角設計** - 大量使用 rounded-2xl 營造柔和感
-- **柔軟陰影** - 微妙的 shadow-soft 增加立體感
-- **觸控友善** - 按鈕大小適合拇指點擊
+- **Warm Color Palette** - Pink #F472B6, Sky Blue #60A5FA
+- **Rounded Design** - Extensive use of rounded-2xl for softness
+- **Subtle Shadows** - Gentle shadow-soft for depth
+- **Touch-Friendly** - Button sizes optimized for thumb reach
 
-## 📱 PWA 功能
+## 📱 PWA Features
 
-LittleSteps 支援 PWA（Progressive Web App），可以：
+LittleSteps is a Progressive Web App with:
 
-1. 添加到手機主畫面
-2. 離線瀏覽
-3. 類似原生 App 的體驗
-4. 自動更新
+1. Add to home screen capability
+2. Offline browsing
+3. Native app-like experience
+4. Automatic updates
 
-### 安裝方式
+### Installation
 
 **iOS (Safari)**:
-1. 點擊分享按鈕
-2. 選擇「加入主畫面」
+1. Tap the share button
+2. Select "Add to Home Screen"
 
 **Android (Chrome)**:
-1. 點擊選單
-2. 選擇「安裝應用程式」
+1. Tap the menu
+2. Select "Install app"
 
-## 📄 授權
+## 📄 License
 
 MIT License
 
