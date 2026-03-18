@@ -5,7 +5,9 @@ import {
   vaccineSchedules,
   vaccineSideEffects,
   vaccineEmergencies,
-  vaccineContraindications
+  vaccineContraindications,
+  vaccineTypes,
+  vaccineGuidelines
 } from '../data/vaccines';
 
 type FundingFilter = 'all' | 'public' | 'private';
@@ -17,6 +19,8 @@ export default function VaccineTrackingPage() {
   const [expandedVaccine, setExpandedVaccine] = useState<string | null>(null);
   const [showEmergencies, setShowEmergencies] = useState(false);
   const [showContraindications, setShowContraindications] = useState(false);
+  const [showVaccineTypes, setShowVaccineTypes] = useState(false);
+  const [showGuidelines, setShowGuidelines] = useState(false);
 
   // Get unique months for filter
   const availableMonths = useMemo(() => {
@@ -97,6 +101,20 @@ export default function VaccineTrackingPage() {
           >
             <Icons.ShieldAlert className="w-4 h-4" />
             <span>接種注意事項</span>
+          </button>
+          <button
+            onClick={() => setShowVaccineTypes(true)}
+            className="flex items-center gap-2 bg-purple-50 hover:bg-purple-100 text-purple-700 px-3 py-2 rounded-xl transition-colors text-sm font-medium"
+          >
+            <Icons.Pill className="w-4 h-4" />
+            <span>疫苗種類說明</span>
+          </button>
+          <button
+            onClick={() => setShowGuidelines(true)}
+            className="flex items-center gap-2 bg-green-50 hover:bg-green-100 text-green-700 px-3 py-2 rounded-xl transition-colors text-sm font-medium"
+          >
+            <Icons.BookOpen className="w-4 h-4" />
+            <span>接種指南</span>
           </button>
         </div>
       </div>
@@ -455,6 +473,119 @@ export default function VaccineTrackingPage() {
                       {section.items.map((item, itemIdx) => (
                         <li key={itemIdx} className="flex gap-2 text-sm text-gray-700">
                           <Icons.CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Vaccine Types Modal */}
+      <AnimatePresence>
+        {showVaccineTypes && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowVaccineTypes(false)}
+              className="fixed inset-0 bg-black/50 z-40"
+            />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl z-50 max-h-[85vh] overflow-y-auto"
+            >
+              <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Icons.Pill className="w-6 h-6 text-purple-600" />
+                  <h3 className="text-lg font-bold text-gray-800">疫苗種類說明</h3>
+                </div>
+                <button
+                  onClick={() => setShowVaccineTypes(false)}
+                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                >
+                  <Icons.X className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+
+              <div className="p-4 space-y-4">
+                {vaccineTypes.map((type, idx) => (
+                  <div key={idx} className="card">
+                    <h4 className="font-semibold text-gray-800 mb-2">{type.type}</h4>
+                    <p className="text-sm text-gray-600 mb-3">{type.description}</p>
+                    <div className="bg-gray-50 rounded-xl p-3">
+                      <p className="text-xs text-gray-500 mb-2 font-medium">包含疫苗：</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {type.examples.map((example, exIdx) => (
+                          <span
+                            key={exIdx}
+                            className="px-2 py-1 bg-white rounded-lg text-xs text-gray-700 border border-gray-200"
+                          >
+                            {example}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    {type.notes && (
+                      <p className="text-xs text-orange-600 mt-2 font-medium">
+                        ⚠️ {type.notes}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Guidelines Modal */}
+      <AnimatePresence>
+        {showGuidelines && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowGuidelines(false)}
+              className="fixed inset-0 bg-black/50 z-40"
+            />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl z-50 max-h-[85vh] overflow-y-auto"
+            >
+              <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Icons.BookOpen className="w-6 h-6 text-green-600" />
+                  <h3 className="text-lg font-bold text-gray-800">疫苗接種指南</h3>
+                </div>
+                <button
+                  onClick={() => setShowGuidelines(false)}
+                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                >
+                  <Icons.X className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+
+              <div className="p-4 space-y-4">
+                {vaccineGuidelines.map((section, idx) => (
+                  <div key={idx} className="card">
+                    <h4 className="font-semibold text-gray-800 mb-3">{section.title}</h4>
+                    <ul className="space-y-2">
+                      {section.items.map((item, itemIdx) => (
+                        <li key={itemIdx} className="flex gap-2 text-sm text-gray-700">
+                          <Icons.CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                           <span>{item}</span>
                         </li>
                       ))}

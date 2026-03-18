@@ -12,8 +12,8 @@ export const vaccineSchedules: VaccineSchedule[] = [
     ageLabel: "出生",
     doses: 3,
     currentDose: 1,
-    sideEffects: ["注射部位紅腫", "輕微發燒"],
-    notes: "出生後儘速接種"
+    sideEffects: ["注射部位紅腫", "輕微發燒", "嘔吐"],
+    notes: "出生後儘速接種。孕婦若為高傳染性帶原者（表面抗原RPHA效價≧1:2560），嬰兒需另注射B型肝炎免疫球蛋白"
   },
   {
     id: "hepb-1m",
@@ -109,14 +109,14 @@ export const vaccineSchedules: VaccineSchedule[] = [
   {
     id: "bcg-5m",
     name: "卡介苗",
-    timing: "出生滿5個月",
+    timing: "出生滿5-8個月",
     fundingType: "public",
     ageInMonths: 5,
     ageLabel: "5個月",
     doses: 1,
     currentDose: 1,
-    sideEffects: ["注射部位紅腫結痂", "可能形成疤痕"],
-    notes: "預防結核病"
+    sideEffects: ["接種後7-14天紅色小結節", "4-6週膿泡或潰瘍", "2-3個月自然癒合", "可能形成疤痕"],
+    notes: "預防結核病，建議接種時間為出生滿5-8個月，寶寶體重需達2500公克以上"
   },
   {
     id: "pentavalent-6m",
@@ -149,8 +149,8 @@ export const vaccineSchedules: VaccineSchedule[] = [
     ageLabel: "12個月",
     doses: 2,
     currentDose: 1,
-    sideEffects: ["發燒", "出疹", "注射部位腫痛"],
-    notes: "可能在接種後5-12天出現發燒"
+    sideEffects: ["接種後5-12天可能發燒", "出疹", "咳嗽", "鼻炎", "注射部位腫痛"],
+    notes: "可能在接種後5-12天出現發燒或出疹"
   },
   {
     id: "varicella-12m",
@@ -183,8 +183,8 @@ export const vaccineSchedules: VaccineSchedule[] = [
     ageInMonths: 6,
     ageLabel: "6個月起",
     doses: 1,
-    sideEffects: ["注射部位痠痛", "輕微發燒", "疲倦"],
-    notes: "每年10月開始接種"
+    sideEffects: ["注射部位痠痛", "輕微發燒", "疲倦", "頭痛", "肌肉痠痛"],
+    notes: "每年10月開始接種。8歲以下初次接種需接種2劑，間隔4週以上"
   },
   {
     id: "pentavalent-18m",
@@ -200,13 +200,14 @@ export const vaccineSchedules: VaccineSchedule[] = [
   {
     id: "hepa-18m",
     name: "A型肝炎疫苗 第2劑",
-    timing: "出生滿18個月",
+    timing: "出生滿18-21個月",
     fundingType: "public",
     ageInMonths: 18,
     ageLabel: "18個月",
     doses: 2,
     currentDose: 2,
-    sideEffects: ["注射部位疼痛", "疲倦", "輕微發燒"]
+    sideEffects: ["注射部位疼痛", "疲倦", "輕微發燒"],
+    notes: "與第一劑至少間隔6個月"
   },
   {
     id: "je-15m",
@@ -229,18 +230,20 @@ export const vaccineSchedules: VaccineSchedule[] = [
     ageLabel: "15個月後2週",
     doses: 3,
     currentDose: 2,
-    sideEffects: ["發燒", "注射部位紅腫", "頭痛"]
+    sideEffects: ["發燒", "注射部位紅腫", "頭痛"],
+    notes: "間隔2週接種"
   },
   {
     id: "je-27m",
     name: "日本腦炎疫苗 第3劑",
-    timing: "第1劑後12個月",
+    timing: "出生滿27個月",
     fundingType: "public",
     ageInMonths: 27,
     ageLabel: "27個月",
     doses: 3,
     currentDose: 3,
-    sideEffects: ["發燒", "注射部位紅腫", "頭痛"]
+    sideEffects: ["發燒", "注射部位紅腫", "頭痛"],
+    notes: "與第一劑至少間隔12個月"
   },
   {
     id: "pneumococcal-2y",
@@ -420,7 +423,8 @@ export const vaccineContraindications = [
       "正在發燒（體溫≥38°C）",
       "中重度急性疾病",
       "正在使用免疫抑制劑",
-      "近期接受過輸血或免疫球蛋白"
+      "近期接受過輸血或免疫球蛋白",
+      "孕婦（針對活性減毒疫苗）"
     ]
   },
   {
@@ -428,16 +432,95 @@ export const vaccineContraindications = [
     items: [
       "曾對該疫苗成分產生嚴重過敏",
       "接種後曾發生過敏性休克",
-      "免疫不全者不可接種活性減毒疫苗（麻疹、水痘、卡介苗）"
+      "免疫不全者不可接種活性減毒疫苗（麻疹、水痘、卡介苗、日本腦炎嵌合疫苗、口服輪狀病毒）",
+      "嚴重營養不良者不應接種活性減毒疫苗"
     ]
   },
   {
     title: "接種後注意",
     items: [
-      "留院觀察30分鐘，確認無立即過敏反應",
+      "留院觀察至少30分鐘，確認無立即過敏反應",
       "24小時內避免劇烈運動",
-      "注射部位保持清潔乾燥",
-      "記錄接種日期與疫苗批號"
+      "注射部位保持清潔乾燥，可正常洗澡",
+      "記錄接種日期與疫苗批號",
+      "接種後應坐著接種，不可平躺"
+    ]
+  },
+  {
+    title: "可以接種的情況",
+    items: [
+      "有咳嗽、流鼻水等呼吸道症狀已有一段時間",
+      "正接受抗生素治療",
+      "感染症的恢復期",
+      "一般感冒症狀（但發高燒除外）"
+    ]
+  }
+];
+
+// 疫苗種類
+export const vaccineTypes = [
+  {
+    type: "非活性疫苗",
+    description: "只含病原的部分抗原或已經被去除活性的病原",
+    examples: [
+      "A型肝炎疫苗",
+      "B型肝炎疫苗",
+      "白喉類毒素",
+      "破傷風類毒素",
+      "百日咳疫苗",
+      "b型嗜血桿菌疫苗",
+      "注射小兒麻痺疫苗",
+      "流感疫苗",
+      "肺炎鏈球菌疫苗",
+      "人類乳突病毒疫苗",
+      "腦膜炎球菌疫苗"
+    ]
+  },
+  {
+    type: "活性減毒疫苗",
+    description: "含有毒性減弱的病原",
+    examples: [
+      "卡介苗",
+      "麻疹疫苗",
+      "腮腺炎疫苗",
+      "德國麻疹疫苗",
+      "水痘疫苗",
+      "日本腦炎嵌合疫苗",
+      "口服輪狀病毒疫苗"
+    ],
+    notes: "活性減毒疫苗如不能同時接種，至少需間隔28天"
+  }
+];
+
+// 疫苗接種重要須知
+export const vaccineGuidelines = [
+  {
+    title: "接種前準備",
+    items: [
+      "接種應坐著進行，不可平躺",
+      "可同時接種多種疫苗於不同部位，數目無上限",
+      "活性減毒疫苗若不同時接種，需間隔至少28天"
+    ]
+  },
+  {
+    title: "接種後處理",
+    items: [
+      "注射後在接種單位觀察至少30分鐘",
+      "不必特意揉注射部位",
+      "可以正常作息，包括洗澡",
+      "局部紅腫不可熱敷，冰敷可稍微止痛",
+      "注射部位紅腫直徑偶爾可超過10公分，是正常強烈免疫反應"
+    ]
+  },
+  {
+    title: "副作用處理",
+    items: [
+      "發燒反應通常在接種後24小時內發生，不會持續超過24小時",
+      "有必要時可給予退燒藥（但預防性退燒藥可能稍微降低免疫效果）",
+      "注意補充水分以免脫水",
+      "3-5歲以下兒童發燒可能引起熱痙攣，通常不超過15-20分鐘",
+      "局部紅腫超過2-3天還擴大，應就醫檢查是否感染",
+      "如出現咳嗽、流鼻水、腹瀉等症狀，宜由兒科醫師診治"
     ]
   }
 ];
