@@ -6,8 +6,9 @@ import Sidebar from './components/Sidebar';
 import MilestonesPage from './pages/MilestonesPage';
 import CareGuidePage from './pages/CareGuidePage';
 import VaccineTrackingPage from './pages/VaccineTrackingPage';
+import ComplementaryFoodPage from './pages/ComplementaryFoodPage';
 
-type Page = 'milestones' | 'care-guide' | 'vaccine-tracking';
+type Page = 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('milestones');
@@ -29,6 +30,8 @@ function App() {
         return '照顧重點';
       case 'vaccine-tracking':
         return '疫苗追蹤';
+      case 'complementary-food':
+        return '副食品指南';
       default:
         return 'LittleSteps';
     }
@@ -72,6 +75,9 @@ function App() {
         )}
         {currentPage === 'vaccine-tracking' && (
           <VaccineTrackingPage />
+        )}
+        {currentPage === 'complementary-food' && (
+          <ComplementaryFoodPage />
         )}
       </main>
     </div>
