@@ -4,11 +4,12 @@ import { Check, ChevronRight } from 'lucide-react';
 interface MilestoneCardProps {
   milestone: Milestone;
   isCompleted: boolean;
+  achievedDate?: string;
   onToggle: () => void;
   onClick: () => void;
 }
 
-export default function MilestoneCard({ milestone, isCompleted, onToggle, onClick }: MilestoneCardProps) {
+export default function MilestoneCard({ milestone, isCompleted, achievedDate, onToggle, onClick }: MilestoneCardProps) {
   return (
     <div className="card flex gap-3 items-start">
       {/* Checkbox */}
@@ -36,6 +37,11 @@ export default function MilestoneCard({ milestone, isCompleted, onToggle, onClic
         <h3 className={`font-semibold text-gray-800 mb-1 ${isCompleted ? 'line-through opacity-60' : ''}`}>
           {milestone.title}
         </h3>
+        {isCompleted && achievedDate && ( // Conditionally render achieved date
+          <p className="text-xs text-gray-500 mt-0.5">
+            完成日期: {achievedDate}
+          </p>
+        )}
         <p className="text-sm text-gray-600 line-clamp-2">
           {milestone.summary}
         </p>

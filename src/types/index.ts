@@ -9,7 +9,10 @@ export interface Milestone {
 }
 
 export interface MilestoneProgress {
-  [milestoneId: string]: boolean;
+  [milestoneId: string]: {
+    achieved: boolean;
+    achievedDate?: string; // Optional: date in 'YYYY-MM-DD' format
+  };
 }
 
 export type MonthRange = "0-2" | "3-4" | "5-6" | "7-9" | "10-12" | "12+";
@@ -112,3 +115,12 @@ export interface FoodWarning {
   icon: string;
   severity: "danger" | "warning" | "info";
 }
+
+export interface ChildProfile {
+  id: string;
+  name: string;
+  birthday: string; // YYYY-MM-DD
+  milestoneProgress: MilestoneProgress;
+  createdAt: string; // ISO string
+}
+

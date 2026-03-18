@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Menu, Home } from 'lucide-react';
-import { MilestoneProgress } from './types';
+import { MilestoneProgress, ChildProfile } from './types'; // Import ChildProfile
 import { useLocalStorage } from './hooks/useLocalStorage';
 import Sidebar from './components/Sidebar';
 import LandingPage from './pages/LandingPage';
@@ -14,37 +14,30 @@ type Page = 'home' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complem
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [progress, setProgress] = useLocalStorage<MilestoneProgress>("milestones-progress", {});
 
-  // Handle URL hash routing
+  // Manage multiple child profiles
+  const [childProfiles, setChildProfiles] = useLocalStorage<ChildProfile[]>("child-profiles", []);
+  const [currentChildId, setCurrentChildId] = useLocalStorage<string | null>("current-child-id", null);
+
+  // Derive current child based on currentChildId
+  const currentChild = useMemo(() => {
+    return childProfiles.find(child => child.id === currentChildId);
+  }, [childProfiles, currentChildId]);
+
+  // Derive current child's milestone progress
+  const currentChildMilestoneProgress: MilestoneProgress = useMemo(() => {
+    return currentChild ? currentChild.milestoneProgress : {};
+  }, [currentChild]);
+
+  // If no current child is selected, or the selected child was deleted, set the first child as current
   useEffect(() => {
-    const getPageFromHash = (): Page => {
-      const hash = window.location.hash.slice(1); // Remove the '#'
-      switch (hash) {
-        case '/milestones':
-          return 'milestones';
-        case '/care-guide':
-          return 'care-guide';
-        case '/vaccine-tracking':
-          return 'vaccine-tracking';
-        case '/complementary-food':
-          return 'complementary-food';
-        default:
-          return 'home';
-      }
-    };
+    if (childProfiles.length > 0 && !currentChild) {
+      setCurrentChildId(childProfiles[0].id);
+    } else if (childProfiles.length === 0 && currentChildId !== null) {
+      setCurrentChildId(null);
+    }
+  }, [childProfiles, currentChild, currentChildId, setCurrentChildId]);
 
-    // Set initial page from URL
-    setCurrentPage(getPageFromHash());
-
-    // Listen for hash changes
-    const handleHashChange = () => {
-      setCurrentPage(getPageFromHash());
-    };
-
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
 
   // Update URL when page changes
   const navigateToPage = (page: Page) => {
@@ -60,30 +53,88 @@ function App() {
   };
 
   const toggleMilestone = (id: string) => {
-    setProgress(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
+    if (!currentChild) return; // Cannot toggle if no child is selected
+
+    setChildProfiles(prevProfiles => {
+      return prevProfiles.map(profile => {
+        if (profile.id === currentChild.id) {
+          const isAchieved = !profile.milestoneProgress[id]?.achieved;
+          const newProgressEntry = isAchieved
+            ? { achieved: true, achievedDate: new Date().toISOString().split('T')[0] }
+            : { achieved: false, achievedDate: undefined };
+
+          return {
+            ...profile,
+            milestoneProgress: {
+              ...profile.milestoneProgress,
+              [id]: newProgressEntry,
+            },
+          };
+        }
+        return profile;
+      });
+    });
   };
 
   const getPageTitle = () => {
+    let title = 'LittleSteps';
+    if (currentChild && currentPage !== 'home') {
+      title = `${currentChild.name} 的 `;
+    }
+
     switch (currentPage) {
       case 'home':
-        return 'LittleSteps';
+        break; // Handled above
       case 'milestones':
-        return '里程碑追蹤';
+        title += '里程碑追蹤';
+        break;
       case 'care-guide':
-        return '照顧重點';
+        title += '照顧重點';
+        break;
       case 'vaccine-tracking':
-        return '疫苗追蹤';
+        title += '疫苗追蹤';
+        break;
       case 'complementary-food':
-        return '副食品指南';
+        title += '副食品指南';
+        break;
       default:
-        return 'LittleSteps';
+        break;
     }
+    return title;
   };
 
   const showHeader = currentPage !== 'home';
+
+  // Child Management Functions
+  const addChild = (name: string, birthday: string) => {
+    const newChild: ChildProfile = {
+      id: Date.now().toString(), // Simple unique ID
+      name,
+      birthday,
+      milestoneProgress: {},
+      createdAt: new Date().toISOString(),
+    };
+    setChildProfiles(prev => [...prev, newChild]);
+    setCurrentChildId(newChild.id); // Automatically select the new child
+  };
+
+  const updateChild = (id: string, name: string, birthday: string) => {
+    setChildProfiles(prev =>
+      prev.map(child => (child.id === id ? { ...child, name, birthday } : child))
+    );
+  };
+
+  const deleteChild = (id: string) => {
+    setChildProfiles(prev => prev.filter(child => child.id !== id));
+    // If the deleted child was the current one, reset currentChildId
+    if (currentChildId === id) {
+      setCurrentChildId(childProfiles[0]?.id || null);
+    }
+  };
+
+  const handleSetCurrentChild = (id: string) => {
+    setCurrentChildId(id);
+  };
 
   return (
     <div className="min-h-screen bg-warm-white">
@@ -93,6 +144,12 @@ function App() {
         onClose={() => setSidebarOpen(false)}
         currentPage={currentPage}
         onNavigate={navigateToPage}
+        childProfiles={childProfiles}
+        currentChildId={currentChildId}
+        setCurrentChildId={handleSetCurrentChild}
+        addChild={addChild}
+        updateChild={updateChild}
+        deleteChild={deleteChild}
       />
 
       {/* Header */}
@@ -126,7 +183,7 @@ function App() {
         )}
         {currentPage === 'milestones' && (
           <MilestonesPage
-            progress={progress}
+            progress={currentChildMilestoneProgress}
             onToggleMilestone={toggleMilestone}
           />
         )}

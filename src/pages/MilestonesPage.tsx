@@ -64,7 +64,8 @@ export default function MilestonesPage({ progress, onToggleMilestone }: Mileston
               >
                 <MilestoneCard
                   milestone={milestone}
-                  isCompleted={!!progress[milestone.id]}
+                  isCompleted={progress[milestone.id]?.achieved || false}
+                  achievedDate={progress[milestone.id]?.achievedDate}
                   onToggle={() => onToggleMilestone(milestone.id)}
                   onClick={() => setSelectedMilestoneId(milestone.id)}
                 />
@@ -92,7 +93,8 @@ export default function MilestonesPage({ progress, onToggleMilestone }: Mileston
         milestone={selectedMilestone}
         isOpen={!!selectedMilestone}
         onClose={() => setSelectedMilestoneId(null)}
-        isCompleted={selectedMilestone ? !!progress[selectedMilestone.id] : false}
+        isCompleted={selectedMilestone ? progress[selectedMilestone.id]?.achieved || false : false}
+        achievedDate={selectedMilestone ? progress[selectedMilestone.id]?.achievedDate : undefined}
         onToggle={() => selectedMilestone && onToggleMilestone(selectedMilestone.id)}
       />
     </div>

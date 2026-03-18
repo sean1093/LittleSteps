@@ -9,10 +9,11 @@ interface MilestoneModalProps {
   isOpen: boolean;
   onClose: () => void;
   isCompleted: boolean;
+  achievedDate?: string;
   onToggle: () => void;
 }
 
-export default function MilestoneModal({ milestone, isOpen, onClose, isCompleted, onToggle }: MilestoneModalProps) {
+export default function MilestoneModal({ milestone, isOpen, onClose, isCompleted, achievedDate, onToggle }: MilestoneModalProps) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -53,9 +54,16 @@ export default function MilestoneModal({ milestone, isOpen, onClose, isCompleted
           >
             {/* Header */}
             <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-800 flex-1 pr-4">
-                {milestone.title}
-              </h2>
+              <div className="flex-1 pr-4">
+                <h2 className="text-xl font-bold text-gray-800">
+                  {milestone.title}
+                </h2>
+                {isCompleted && achievedDate && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    完成日期: {achievedDate}
+                  </p>
+                )}
+              </div>
               <button
                 onClick={onClose}
                 className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
