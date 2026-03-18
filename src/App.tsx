@@ -50,6 +50,8 @@ function App() {
     };
     window.location.hash = hashMap[page];
     setCurrentPage(page);
+    // Scroll to top when navigating
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const toggleMilestone = (id: string) => {

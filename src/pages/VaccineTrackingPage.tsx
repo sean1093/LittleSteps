@@ -9,19 +9,49 @@ import {
 } from '../data/vaccines';
 
 type FundingFilter = 'all' | 'public' | 'private';
+type MonthFilter = 'all' | number;
 
 export default function VaccineTrackingPage() {
   const [fundingFilter, setFundingFilter] = useState<FundingFilter>('all');
+  const [monthFilter, setMonthFilter] = useState<MonthFilter>('all');
   const [expandedVaccine, setExpandedVaccine] = useState<string | null>(null);
   const [showEmergencies, setShowEmergencies] = useState(false);
   const [showContraindications, setShowContraindications] = useState(false);
 
+  // Get unique months for filter
+  const availableMonths = useMemo(() => {
+    const months = Array.from(new Set(vaccineSchedules.map(v => v.ageInMonths || 0))).sort((a, b) => a - b);
+    return months;
+  }, []);
+
   const filteredVaccines = useMemo(() => {
-    if (fundingFilter === 'all') {
-      return vaccineSchedules;
+    let filtered = vaccineSchedules;
+
+    if (fundingFilter !== 'all') {
+      filtered = filtered.filter(v => v.fundingType === fundingFilter);
     }
-    return vaccineSchedules.filter(v => v.fundingType === fundingFilter);
-  }, [fundingFilter]);
+
+    if (monthFilter !== 'all') {
+      filtered = filtered.filter(v => v.ageInMonths === monthFilter);
+    }
+
+    return filtered;
+  }, [fundingFilter, monthFilter]);
+
+  // Group vaccines by month
+  const vaccinesByMonth = useMemo(() => {
+    const grouped: { [key: number]: typeof vaccineSchedules } = {};
+
+    filteredVaccines.forEach(vaccine => {
+      const month = vaccine.ageInMonths || 0;
+      if (!grouped[month]) {
+        grouped[month] = [];
+      }
+      grouped[month].push(vaccine);
+    });
+
+    return grouped;
+  }, [filteredVaccines]);
 
   const toggleVaccine = (id: string) => {
     setExpandedVaccine(expandedVaccine === id ? null : id);
@@ -81,7 +111,7 @@ export default function VaccineTrackingPage() {
           <button
             onClick={() => setFundingFilter('all')}
             className={`
-              flex-1 px-4 py-2 rounded-2xl font-medium transition-all
+              flex-1 px-4 py-2 rounded-2xl font-medium transition-all text-sm
               ${fundingFilter === 'all'
                 ? 'bg-secondary text-white shadow-soft'
                 : 'bg-white text-gray-600 hover:bg-gray-50'
@@ -93,7 +123,7 @@ export default function VaccineTrackingPage() {
           <button
             onClick={() => setFundingFilter('public')}
             className={`
-              flex-1 px-4 py-2 rounded-2xl font-medium transition-all
+              flex-1 px-4 py-2 rounded-2xl font-medium transition-all text-sm
               ${fundingFilter === 'public'
                 ? 'bg-green-500 text-white shadow-soft'
                 : 'bg-white text-gray-600 hover:bg-gray-50'
@@ -105,7 +135,7 @@ export default function VaccineTrackingPage() {
           <button
             onClick={() => setFundingFilter('private')}
             className={`
-              flex-1 px-4 py-2 rounded-2xl font-medium transition-all
+              flex-1 px-4 py-2 rounded-2xl font-medium transition-all text-sm
               ${fundingFilter === 'private'
                 ? 'bg-orange-500 text-white shadow-soft'
                 : 'bg-white text-gray-600 hover:bg-gray-50'
@@ -117,30 +147,87 @@ export default function VaccineTrackingPage() {
         </div>
       </div>
 
-      {/* Vaccine Timeline */}
+      {/* Month Filter */}
+      <div className="px-4 mb-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Icons.Calendar className="w-5 h-5 text-gray-600" />
+          <h3 className="font-semibold text-gray-800">月齡篩選</h3>
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          <button
+            onClick={() => setMonthFilter('all')}
+            className={`
+              flex-shrink-0 px-4 py-2 rounded-2xl font-medium transition-all text-sm
+              ${monthFilter === 'all'
+                ? 'bg-primary text-white shadow-soft'
+                : 'bg-white text-gray-600 hover:bg-gray-50'
+              }
+            `}
+          >
+            全部
+          </button>
+          {availableMonths.map(month => (
+            <button
+              key={month}
+              onClick={() => setMonthFilter(month)}
+              className={`
+                flex-shrink-0 px-4 py-2 rounded-2xl font-medium transition-all text-sm
+                ${monthFilter === month
+                  ? 'bg-primary text-white shadow-soft'
+                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                }
+              `}
+            >
+              {month}個月
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Vaccine Timeline - Grouped by Month */}
       <div className="px-4">
         <div className="flex items-center gap-2 mb-4">
-          <Icons.Calendar className="w-5 h-5 text-gray-600" />
+          <Icons.Syringe className="w-5 h-5 text-gray-600" />
           <h3 className="font-semibold text-gray-800">接種時程</h3>
           <span className="text-sm text-gray-500">（共 {filteredVaccines.length} 項）</span>
         </div>
 
-        <div className="space-y-3">
-          <AnimatePresence mode="popLayout">
-            {filteredVaccines.map((vaccine, index) => {
-              const isExpanded = expandedVaccine === vaccine.id;
+        <div className="space-y-6">
+          {Object.keys(vaccinesByMonth)
+            .sort((a, b) => Number(a) - Number(b))
+            .map(monthKey => {
+              const month = Number(monthKey);
+              const vaccines = vaccinesByMonth[month];
 
               return (
-                <motion.div
-                  key={vaccine.id}
-                  layout
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.2, delay: index * 0.02 }}
-                  className="card cursor-pointer"
-                  onClick={() => toggleVaccine(vaccine.id)}
-                >
+                <div key={monthKey}>
+                  {/* Month Header */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex items-center gap-2 bg-gradient-to-r from-primary/10 to-transparent px-4 py-2 rounded-xl">
+                      <Icons.Calendar className="w-4 h-4 text-primary" />
+                      <span className="font-bold text-primary">{month} 個月</span>
+                      <span className="text-sm text-gray-500">({vaccines.length} 項)</span>
+                    </div>
+                    <div className="flex-1 h-px bg-gray-200" />
+                  </div>
+
+                  {/* Vaccines in this month */}
+                  <div className="space-y-3">
+                    <AnimatePresence mode="popLayout">
+                      {vaccines.map((vaccine, index) => {
+                        const isExpanded = expandedVaccine === vaccine.id;
+
+                        return (
+                          <motion.div
+                            key={vaccine.id}
+                            layout
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.2, delay: index * 0.02 }}
+                            className="card cursor-pointer"
+                            onClick={() => toggleVaccine(vaccine.id)}
+                          >
                   <div className="flex items-start gap-3">
                     {/* Age Badge */}
                     <div className={`
@@ -224,10 +311,14 @@ export default function VaccineTrackingPage() {
                       </AnimatePresence>
                     </div>
                   </div>
-                </motion.div>
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </div>
+                </div>
               );
             })}
-          </AnimatePresence>
         </div>
       </div>
 

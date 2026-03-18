@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Baby } from 'lucide-react';
 import { MonthRange, Category, MilestoneProgress } from '../types';
 import { milestones, monthRanges, categories } from '../data/milestones';
 import MonthPicker from '../components/MonthPicker';
@@ -31,6 +32,17 @@ export default function MilestonesPage({ progress, onToggleMilestone }: Mileston
 
   return (
     <div className="min-h-screen bg-warm-white pb-6">
+      {/* Header Info */}
+      <div className="bg-gradient-to-br from-primary/10 to-secondary/10 px-4 py-6 mb-6">
+        <div className="flex items-center gap-2 mb-3">
+          <Baby className="w-6 h-6 text-primary" />
+          <h2 className="text-xl font-bold text-gray-800">寶寶成長里程碑</h2>
+        </div>
+        <p className="text-sm text-gray-600">
+          記錄寶寶每個珍貴的成長時刻，從第一個微笑到第一步
+        </p>
+      </div>
+
       {/* Month Picker */}
       <div className="px-4 mb-4">
         <MonthPicker
