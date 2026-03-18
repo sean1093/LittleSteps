@@ -4,12 +4,18 @@ import { X, Baby, AlertCircle, Home, Syringe, UtensilsCrossed } from 'lucide-rea
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  currentPage: 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food';
-  onNavigate: (page: 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food') => void;
+  currentPage: 'home' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food';
+  onNavigate: (page: 'home' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food') => void;
 }
 
 export default function Sidebar({ isOpen, onClose, currentPage, onNavigate }: SidebarProps) {
   const menuItems = [
+    {
+      id: 'home' as const,
+      label: '首頁',
+      icon: Home,
+      description: '返回主頁'
+    },
     {
       id: 'milestones' as const,
       label: '里程碑追蹤',
@@ -36,7 +42,7 @@ export default function Sidebar({ isOpen, onClose, currentPage, onNavigate }: Si
     }
   ];
 
-  const handleNavigate = (page: 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food') => {
+  const handleNavigate = (page: 'home' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food') => {
     onNavigate(page);
     onClose();
   };
