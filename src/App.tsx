@@ -12,7 +12,20 @@ import ComplementaryFoodPage from './pages/ComplementaryFoodPage';
 type Page = 'home' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('home');
+  // Parse initial page from URL hash
+  const getPageFromHash = (): Page => {
+    const hash = window.location.hash;
+    const pageMap: Record<string, Page> = {
+      '#/': 'home',
+      '#/milestones': 'milestones',
+      '#/care-guide': 'care-guide',
+      '#/vaccine-tracking': 'vaccine-tracking',
+      '#/complementary-food': 'complementary-food'
+    };
+    return pageMap[hash] || 'home';
+  };
+
+  const [currentPage, setCurrentPage] = useState<Page>(getPageFromHash());
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Manage multiple child profiles
@@ -37,6 +50,18 @@ function App() {
       setCurrentChildId(null);
     }
   }, [childProfiles, currentChild, currentChildId, setCurrentChildId]);
+
+  // Handle hash changes (browser back/forward buttons)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const newPage = getPageFromHash();
+      setCurrentPage(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
 
   // Update URL when page changes
