@@ -4,7 +4,8 @@ import * as Icons from 'lucide-react';
 import {
   foodStages,
   foodProgression,
-  foodAllergyLevels,
+  vegetableAllergyLevels,
+  fruitAllergyLevels,
   monthlyFoodMenus,
   fingerFoodGuidelines,
   foodPrinciples,
@@ -12,7 +13,12 @@ import {
   allergyTestingMethod,
   fingerFoodPrinciples,
   feedingMethods,
-  startingSignals
+  startingSignals,
+  feedingPrinciples,
+  cookingTips,
+  foodHandlingTips,
+  infantFoodRestrictions,
+  foodQA
 } from '../data/complementaryFood';
 
 type ViewMode = 'overview' | 'stages' | 'menu' | 'safety';
@@ -230,6 +236,41 @@ export default function ComplementaryFoodPage() {
               ))}
             </div>
           </div>
+
+          {/* Feeding Principles */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Icons.CheckCircle2 className="w-5 h-5 text-green-600" />
+              <h3 className="font-semibold text-gray-800">副食品添加基本原則</h3>
+            </div>
+            <div className="space-y-2">
+              {feedingPrinciples.map((principle, idx) => (
+                <div key={idx} className="card">
+                  <h4 className="font-semibold text-gray-800 mb-1">{principle.title}</h4>
+                  <p className="text-sm text-gray-600">{principle.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Food QA */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Icons.HelpCircle className="w-5 h-5 text-blue-600" />
+              <h3 className="font-semibold text-gray-800">副食品常見問答</h3>
+            </div>
+            <div className="space-y-3">
+              {foodQA.map((qa, idx) => (
+                <div key={idx} className="card bg-blue-50/50">
+                  <h4 className="font-semibold text-gray-800 mb-2 flex items-start gap-2">
+                    <Icons.MessageCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <span>{qa.question}</span>
+                  </h4>
+                  <p className="text-sm text-gray-700 ml-6">{qa.answer}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
@@ -375,14 +416,14 @@ export default function ComplementaryFoodPage() {
             </div>
           </div>
 
-          {/* Allergy Levels */}
+          {/* Vegetable Allergy Levels */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <Icons.ShieldAlert className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold text-gray-800">食物過敏程度分類</h3>
+              <Icons.Carrot className="w-5 h-5 text-green-600" />
+              <h3 className="font-semibold text-gray-800">蔬菜類過敏等級</h3>
             </div>
             <div className="space-y-3">
-              {foodAllergyLevels.map((level) => (
+              {vegetableAllergyLevels.map((level) => (
                 <div key={level.level} className="card">
                   <div className="flex items-center gap-2 mb-3">
                     <span className={`px-3 py-1 rounded-full text-xs font-bold ${getAllergyLevelColor(level.level)}`}>
@@ -391,7 +432,34 @@ export default function ComplementaryFoodPage() {
                     <span className="text-sm text-gray-600">{level.ageRange}</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {level.foods.map((food, idx) => (
+                    {level.foods.map((food: string, idx: number) => (
+                      <span key={idx} className="text-sm text-gray-700 bg-gray-50 px-2 py-1 rounded">
+                        {food}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Fruit Allergy Levels */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Icons.Apple className="w-5 h-5 text-red-600" />
+              <h3 className="font-semibold text-gray-800">水果類過敏等級</h3>
+            </div>
+            <div className="space-y-3">
+              {fruitAllergyLevels.map((level) => (
+                <div key={level.level} className="card">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${getAllergyLevelColor(level.level)}`}>
+                      {level.level === 'low' ? '低敏' : level.level === 'medium' ? '中敏' : '高敏'}
+                    </span>
+                    <span className="text-sm text-gray-600">{level.ageRange}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {level.foods.map((food: string, idx: number) => (
                       <span key={idx} className="text-sm text-gray-700 bg-gray-50 px-2 py-1 rounded">
                         {food}
                       </span>
@@ -457,6 +525,91 @@ export default function ComplementaryFoodPage() {
                 </motion.div>
               );
             })}
+          </div>
+
+          {/* Infant Food Restrictions */}
+          <div className="mt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Icons.Ban className="w-5 h-5 text-red-600" />
+              <h3 className="font-semibold text-gray-800">嬰幼兒飲食禁忌</h3>
+            </div>
+            <div className="space-y-4">
+              {infantFoodRestrictions.map((category, idx) => (
+                <div key={idx}>
+                  <h4 className="font-semibold text-gray-800 mb-2">{category.category}</h4>
+                  <div className="space-y-2">
+                    {category.items.map((item, itemIdx) => (
+                      <div key={itemIdx} className="card bg-red-50 border border-red-200">
+                        <div className="flex items-start gap-2">
+                          <Icons.AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <div className="font-medium text-red-900">{item.food}</div>
+                            <div className="text-sm text-red-700 mt-1">
+                              <span className="font-medium">{item.ageLimit}</span> - {item.reason}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Cooking Tips */}
+          <div className="mt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Icons.ChefHat className="w-5 h-5 text-orange-600" />
+              <h3 className="font-semibold text-gray-800">烹調與保存技巧</h3>
+            </div>
+            <div className="space-y-4">
+              {cookingTips.map((category, idx) => (
+                <div key={idx}>
+                  <h4 className="font-semibold text-gray-800 mb-2">{category.category}</h4>
+                  <div className="space-y-2">
+                    {category.tips.map((tip, tipIdx) => (
+                      <div key={tipIdx} className="card bg-orange-50">
+                        <h5 className="font-medium text-gray-800 mb-1">{tip.title}</h5>
+                        <p className="text-sm text-gray-700">{tip.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Food Handling Tips */}
+          <div className="mt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Icons.Lightbulb className="w-5 h-5 text-yellow-600" />
+              <h3 className="font-semibold text-gray-800">食材特殊處理</h3>
+            </div>
+            <div className="space-y-4">
+              {foodHandlingTips.map((category, idx) => (
+                <div key={idx}>
+                  <h4 className="font-semibold text-gray-800 mb-2">{category.category}</h4>
+                  <div className="space-y-2">
+                    {category.items.map((item, itemIdx) => (
+                      <div key={itemIdx} className={`card ${item.canEat ? 'bg-green-50' : 'bg-red-50'}`}>
+                        <div className="flex items-start gap-2">
+                          {item.canEat ? (
+                            <Icons.CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                          ) : (
+                            <Icons.XCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                          )}
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-800">{item.food}</div>
+                            <p className="text-sm text-gray-700 mt-1">{item.note}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
