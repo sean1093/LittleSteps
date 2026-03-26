@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as Icons from 'lucide-react';
+import { VaccineProgress } from '../types';
 import {
   vaccineSchedules,
   vaccineSideEffects,
@@ -13,7 +14,12 @@ import {
 type FundingFilter = 'all' | 'public' | 'private';
 type MonthFilter = 'all' | number;
 
-export default function VaccineTrackingPage() {
+interface VaccineTrackingPageProps {
+  vaccineProgress: VaccineProgress;
+  onToggleVaccineDose: (vaccineId: string, doseNumber: number) => void;
+}
+
+export default function VaccineTrackingPage({ vaccineProgress, onToggleVaccineDose }: VaccineTrackingPageProps) {
   const [fundingFilter, setFundingFilter] = useState<FundingFilter>('all');
   const [monthFilter, setMonthFilter] = useState<MonthFilter>('all');
   const [expandedVaccine, setExpandedVaccine] = useState<string | null>(null);
@@ -72,6 +78,47 @@ export default function VaccineTrackingPage() {
       default:
         return 'bg-gray-100 text-gray-700';
     }
+  };
+
+  // Helper: Check if a specific dose is administered
+  const isDoseAdministered = (vaccineId: string, doseNumber: number): boolean => {
+    return vaccineProgress[vaccineId]?.doses[doseNumber]?.administered || false;
+  };
+
+  // Helper: Get administered date for a dose
+  const getDoseDate = (vaccineId: string, doseNumber: number): string | undefined => {
+    return vaccineProgress[vaccineId]?.doses[doseNumber]?.administeredDate;
+  };
+
+  // Helper: Get completion status for a vaccine
+  const getVaccineCompletionStatus = (vaccineId: string, totalDoses: number): { completed: number; total: number } => {
+    let completed = 0;
+    for (let i = 1; i <= totalDoses; i++) {
+      if (isDoseAdministered(vaccineId, i)) {
+        completed++;
+      }
+    }
+    return { completed, total: totalDoses };
+  };
+
+  // Helper: Render dose progress indicators (dots)
+  const renderDoseIndicators = (vaccineId: string, totalDoses: number) => {
+    if (totalDoses === 1) return null;
+
+    return (
+      <div className="flex items-center gap-1">
+        {Array.from({ length: totalDoses }, (_, i) => i + 1).map((doseNum) => (
+          <div
+            key={doseNum}
+            className={`w-2 h-2 rounded-full ${
+              isDoseAdministered(vaccineId, doseNum)
+                ? 'bg-primary'
+                : 'bg-gray-300'
+            }`}
+          />
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -243,10 +290,28 @@ export default function VaccineTrackingPage() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
                             transition={{ duration: 0.2, delay: index * 0.02 }}
-                            className="card cursor-pointer"
-                            onClick={() => toggleVaccine(vaccine.id)}
+                            className="card"
                           >
                   <div className="flex items-start gap-3">
+                    {/* Checkbox for single-dose vaccines */}
+                    {vaccine.doses === 1 && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleVaccineDose(vaccine.id, 1);
+                        }}
+                        className={`
+                          flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
+                          ${isDoseAdministered(vaccine.id, 1)
+                            ? 'bg-primary border-primary'
+                            : 'border-gray-300 hover:border-primary'
+                          }
+                        `}
+                      >
+                        {isDoseAdministered(vaccine.id, 1) && <Icons.Check className="w-4 h-4 text-white" />}
+                      </button>
+                    )}
+
                     {/* Age Badge */}
                     <div className={`
                       w-16 h-16 rounded-xl flex-shrink-0 flex flex-col items-center justify-center text-white font-bold text-xs
@@ -260,7 +325,7 @@ export default function VaccineTrackingPage() {
                     </div>
 
                     {/* Vaccine Info */}
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => toggleVaccine(vaccine.id)}>
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <h4 className="font-semibold text-gray-800 leading-tight">
                           {vaccine.name}
@@ -288,11 +353,21 @@ export default function VaccineTrackingPage() {
                           {vaccine.fundingType === 'public' ? '公費' : '自費'}
                         </span>
                         {vaccine.doses > 1 && (
-                          <span className="text-gray-500">
-                            第 {vaccine.currentDose}/{vaccine.doses} 劑
-                          </span>
+                          <>
+                            {renderDoseIndicators(vaccine.id, vaccine.doses)}
+                            <span className="text-gray-500">
+                              {getVaccineCompletionStatus(vaccine.id, vaccine.doses).completed}/{vaccine.doses} 劑已完成
+                            </span>
+                          </>
                         )}
                       </div>
+
+                      {/* Show administered date for single-dose vaccines */}
+                      {vaccine.doses === 1 && isDoseAdministered(vaccine.id, 1) && getDoseDate(vaccine.id, 1) && (
+                        <p className="text-xs text-green-600 mb-2">
+                          ✓ 已接種 {getDoseDate(vaccine.id, 1)}
+                        </p>
+                      )}
 
                       {vaccine.notes && (
                         <p className="text-xs text-gray-500 italic">
@@ -310,6 +385,59 @@ export default function VaccineTrackingPage() {
                             transition={{ duration: 0.2 }}
                             className="mt-3 pt-3 border-t border-gray-100"
                           >
+                            {/* Dose tracking for multi-dose vaccines */}
+                            {vaccine.doses > 1 && (
+                              <div className="mb-4 space-y-2">
+                                <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                                  <Icons.Syringe className="w-4 h-4 text-primary" />
+                                  <span>接種記錄</span>
+                                </div>
+                                {Array.from({ length: vaccine.doses }, (_, i) => i + 1).map((doseNum) => {
+                                  const isAdministered = isDoseAdministered(vaccine.id, doseNum);
+                                  const doseDate = getDoseDate(vaccine.id, doseNum);
+
+                                  return (
+                                    <div
+                                      key={doseNum}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="flex items-center gap-3 p-2 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                                    >
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onToggleVaccineDose(vaccine.id, doseNum);
+                                        }}
+                                        className={`
+                                          flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all
+                                          ${isAdministered
+                                            ? 'bg-primary border-primary'
+                                            : 'border-gray-300 hover:border-primary'
+                                          }
+                                        `}
+                                      >
+                                        {isAdministered && <Icons.Check className="w-3 h-3 text-white" />}
+                                      </button>
+                                      <div className="flex-1">
+                                        <span className={`text-sm font-medium ${isAdministered ? 'text-gray-800' : 'text-gray-600'}`}>
+                                          第 {doseNum} 劑
+                                        </span>
+                                        {isAdministered && doseDate && (
+                                          <span className="text-xs text-green-600 ml-2">
+                                            ✓ {doseDate}
+                                          </span>
+                                        )}
+                                        {!isAdministered && (
+                                          <span className="text-xs text-gray-400 ml-2">
+                                            點擊記錄接種
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+
                             <div className="space-y-2">
                               <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                                 <Icons.AlertCircle className="w-4 h-4 text-primary" />

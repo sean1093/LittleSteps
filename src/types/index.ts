@@ -116,11 +116,23 @@ export interface FoodWarning {
   severity: "danger" | "warning" | "info";
 }
 
+export interface VaccineProgress {
+  [vaccineId: string]: {
+    doses: {
+      [doseNumber: number]: {
+        administered: boolean;
+        administeredDate?: string; // YYYY-MM-DD
+      };
+    };
+  };
+}
+
 export interface ChildProfile {
   id: string;
   name: string;
   birthday: string; // YYYY-MM-DD
   milestoneProgress: MilestoneProgress;
+  vaccineProgress: VaccineProgress;
   createdAt: string; // ISO string
 }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Menu, Home } from 'lucide-react';
-import { MilestoneProgress, ChildProfile } from './types'; // Import ChildProfile
+import { MilestoneProgress, VaccineProgress, ChildProfile } from './types'; // Import types
 import { useLocalStorage } from './hooks/useLocalStorage';
 import Sidebar from './components/Sidebar';
 import LandingPage from './pages/LandingPage';
@@ -42,6 +42,11 @@ function App() {
     return currentChild ? currentChild.milestoneProgress : {};
   }, [currentChild]);
 
+  // Derive current child's vaccine progress
+  const currentChildVaccineProgress: VaccineProgress = useMemo(() => {
+    return currentChild ? (currentChild.vaccineProgress || {}) : {};
+  }, [currentChild]);
+
   // If no current child is selected, or the selected child was deleted, set the first child as current
   useEffect(() => {
     if (childProfiles.length > 0 && !currentChild) {
@@ -50,6 +55,19 @@ function App() {
       setCurrentChildId(null);
     }
   }, [childProfiles, currentChild, currentChildId, setCurrentChildId]);
+
+  // Migrate existing profiles to include vaccineProgress if missing
+  useEffect(() => {
+    const needsMigration = childProfiles.some(profile => !profile.vaccineProgress);
+    if (needsMigration) {
+      setChildProfiles(prevProfiles =>
+        prevProfiles.map(profile => ({
+          ...profile,
+          vaccineProgress: profile.vaccineProgress || {}
+        }))
+      );
+    }
+  }, [childProfiles, setChildProfiles]);
 
   // Handle hash changes (browser back/forward buttons)
   useEffect(() => {
@@ -103,6 +121,39 @@ function App() {
     });
   };
 
+  const toggleVaccineDose = (vaccineId: string, doseNumber: number) => {
+    if (!currentChild) return; // Cannot toggle if no child is selected
+
+    setChildProfiles(prevProfiles => {
+      return prevProfiles.map(profile => {
+        if (profile.id === currentChild.id) {
+          const currentVaccineProgress = profile.vaccineProgress || {};
+          const currentVaccine = currentVaccineProgress[vaccineId] || { doses: {} };
+          const currentDose = currentVaccine.doses[doseNumber];
+
+          const isAdministered = !currentDose?.administered;
+          const newDoseEntry = isAdministered
+            ? { administered: true, administeredDate: new Date().toISOString().split('T')[0] }
+            : { administered: false, administeredDate: undefined };
+
+          return {
+            ...profile,
+            vaccineProgress: {
+              ...currentVaccineProgress,
+              [vaccineId]: {
+                doses: {
+                  ...currentVaccine.doses,
+                  [doseNumber]: newDoseEntry,
+                },
+              },
+            },
+          };
+        }
+        return profile;
+      });
+    });
+  };
+
   const getPageTitle = () => {
     let title = 'LittleSteps';
     if (currentChild && currentPage !== 'home') {
@@ -139,6 +190,7 @@ function App() {
       name,
       birthday,
       milestoneProgress: {},
+      vaccineProgress: {},
       createdAt: new Date().toISOString(),
     };
     setChildProfiles(prev => [...prev, newChild]);
@@ -218,7 +270,10 @@ function App() {
           <CareGuidePage />
         )}
         {currentPage === 'vaccine-tracking' && (
-          <VaccineTrackingPage />
+          <VaccineTrackingPage
+            vaccineProgress={currentChildVaccineProgress}
+            onToggleVaccineDose={toggleVaccineDose}
+          />
         )}
         {currentPage === 'complementary-food' && (
           <ComplementaryFoodPage />
