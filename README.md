@@ -4,11 +4,11 @@
 
 <div align="center">
 
-[![Deploy to GitHub Pages](https://github.com/sean1093/LittleSteps/actions/workflows/deploy.yml/badge.svg)](https://github.com/sean1093/LittleSteps/actions/workflows/deploy.yml)
+[![Deploy to Firebase Hosting](https://github.com/sean1093/LittleSteps/actions/workflows/firebase-hosting-merge.yml/badge.svg)](https://github.com/sean1093/LittleSteps/actions/workflows/firebase-hosting-merge.yml)
 
-[🌐 Live Demo](https://sean1093.github.io/LittleSteps/) | [📝 Report Issues](https://github.com/sean1093/LittleSteps/issues)
+[🌐 Live Demo](https://littlesteps-c6ab6.web.app) | [📝 Report Issues](https://github.com/sean1093/LittleSteps/issues)
 
-**Website**: https://sean1093.github.io/LittleSteps/
+**Website**: https://littlesteps-c6ab6.web.app
 
 </div>
 
@@ -79,9 +79,10 @@ LittleSteps is a comprehensive digital parenting companion designed to support n
 - **GitHub Actions**: Automated deployment
 
 ### Deployment
-- **Hosting**: GitHub Pages
-- **CI/CD**: Automated builds and deployment
-- **Base Path**: Configured for subdirectory deployment
+- **Hosting**: Firebase Hosting
+- **CI/CD**: GitHub Actions with automated deployment
+- **Production**: Auto-deploy on push to master
+- **Preview**: Auto-generated preview URLs for pull requests
 
 ## 🎨 Design System
 
@@ -156,6 +157,30 @@ npm run preview
 npm run lint
 ```
 
+### Deployment to Firebase Hosting
+
+The project is configured for automatic deployment to Firebase Hosting via GitHub Actions:
+
+**Automatic Deployment**:
+- Push to `master` branch → Automatically deploys to production
+- Create Pull Request → Automatically generates preview URL
+
+**Manual Deployment** (optional):
+```bash
+# Install Firebase CLI (if not already installed)
+npm install -g firebase-tools
+
+# Login to Firebase
+firebase login
+
+# Deploy to Firebase Hosting
+firebase deploy --only hosting
+```
+
+**Production URLs**:
+- Primary: https://littlesteps-c6ab6.web.app
+- Alternative: https://littlesteps-c6ab6.firebaseapp.com
+
 ## 📂 Project Structure
 
 ```
@@ -191,7 +216,10 @@ LittleSteps/
 ├── public/                   # Static assets
 │   └── manifest.webmanifest  # PWA manifest
 ├── .github/workflows/        # CI/CD configuration
-│   └── deploy.yml            # GitHub Pages deployment
+│   ├── firebase-hosting-merge.yml        # Production deployment
+│   └── firebase-hosting-pull-request.yml # PR preview deployment
+├── firebase.json             # Firebase Hosting config
+├── .firebaserc               # Firebase project config
 └── vite.config.ts            # Vite configuration
 ```
 
