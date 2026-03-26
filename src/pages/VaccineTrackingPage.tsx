@@ -296,17 +296,20 @@ export default function VaccineTrackingPage({ vaccineProgress, onToggleVaccineDo
                     {/* Checkbox for single-dose vaccines */}
                     {vaccine.doses === 1 && (
                       <button
+                        type="button"
                         onClick={(e) => {
+                          e.preventDefault();
                           e.stopPropagation();
                           onToggleVaccineDose(vaccine.id, 1);
                         }}
                         className={`
-                          flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
+                          flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer
                           ${isDoseAdministered(vaccine.id, 1)
                             ? 'bg-primary border-primary'
                             : 'border-gray-300 hover:border-primary'
                           }
                         `}
+                        aria-label={`標記${vaccine.name}為已接種`}
                       >
                         {isDoseAdministered(vaccine.id, 1) && <Icons.Check className="w-4 h-4 text-white" />}
                       </button>
@@ -403,17 +406,20 @@ export default function VaccineTrackingPage({ vaccineProgress, onToggleVaccineDo
                                       className="flex items-center gap-3 p-2 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
                                     >
                                       <button
+                                        type="button"
                                         onClick={(e) => {
+                                          e.preventDefault();
                                           e.stopPropagation();
                                           onToggleVaccineDose(vaccine.id, doseNum);
                                         }}
                                         className={`
-                                          flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all
+                                          flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer
                                           ${isAdministered
                                             ? 'bg-primary border-primary'
                                             : 'border-gray-300 hover:border-primary'
                                           }
                                         `}
+                                        aria-label={`標記第${doseNum}劑為${isAdministered ? '未接種' : '已接種'}`}
                                       >
                                         {isAdministered && <Icons.Check className="w-3 h-3 text-white" />}
                                       </button>
