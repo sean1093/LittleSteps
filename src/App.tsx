@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Menu, Home } from 'lucide-react';
 import { MilestoneProgress, VaccineProgress, ChildProfile } from './types'; // Import types
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { logPageView, logMilestoneToggle, logVaccineToggle, logChildProfileAction } from './lib/firebase';
 import Sidebar from './components/Sidebar';
 import LandingPage from './pages/LandingPage';
 import MilestonesPage from './pages/MilestonesPage';
@@ -95,15 +96,18 @@ function App() {
     setCurrentPage(page);
     // Scroll to top when navigating
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Log page view
+    logPageView(page);
   };
 
   const toggleMilestone = (id: string) => {
     if (!currentChild) return; // Cannot toggle if no child is selected
 
+    const isAchieved = !currentChild.milestoneProgress[id]?.achieved;
+
     setChildProfiles(prevProfiles => {
       return prevProfiles.map(profile => {
         if (profile.id === currentChild.id) {
-          const isAchieved = !profile.milestoneProgress[id]?.achieved;
           const newProgressEntry = isAchieved
             ? { achieved: true, achievedDate: new Date().toISOString().split('T')[0] }
             : { achieved: false, achievedDate: undefined };
@@ -119,19 +123,22 @@ function App() {
         return profile;
       });
     });
+
+    // Log milestone toggle event
+    logMilestoneToggle(id, isAchieved);
   };
 
   const toggleVaccineDose = (vaccineId: string, doseNumber: number) => {
     if (!currentChild) return; // Cannot toggle if no child is selected
 
+    const currentVaccineProgress = currentChild.vaccineProgress || {};
+    const currentVaccine = currentVaccineProgress[vaccineId] || { doses: {} };
+    const currentDose = currentVaccine.doses[doseNumber];
+    const isAdministered = !currentDose?.administered;
+
     setChildProfiles(prevProfiles => {
       return prevProfiles.map(profile => {
         if (profile.id === currentChild.id) {
-          const currentVaccineProgress = profile.vaccineProgress || {};
-          const currentVaccine = currentVaccineProgress[vaccineId] || { doses: {} };
-          const currentDose = currentVaccine.doses[doseNumber];
-
-          const isAdministered = !currentDose?.administered;
           const newDoseEntry = isAdministered
             ? { administered: true, administeredDate: new Date().toISOString().split('T')[0] }
             : { administered: false, administeredDate: undefined };
@@ -152,6 +159,9 @@ function App() {
         return profile;
       });
     });
+
+    // Log vaccine toggle event
+    logVaccineToggle(vaccineId, doseNumber, isAdministered);
   };
 
   const getPageTitle = () => {
@@ -195,12 +205,14 @@ function App() {
     };
     setChildProfiles(prev => [...prev, newChild]);
     setCurrentChildId(newChild.id); // Automatically select the new child
+    logChildProfileAction('create');
   };
 
   const updateChild = (id: string, name: string, birthday: string) => {
     setChildProfiles(prev =>
       prev.map(child => (child.id === id ? { ...child, name, birthday } : child))
     );
+    logChildProfileAction('update');
   };
 
   const deleteChild = (id: string) => {
@@ -209,10 +221,12 @@ function App() {
     if (currentChildId === id) {
       setCurrentChildId(childProfiles[0]?.id || null);
     }
+    logChildProfileAction('delete');
   };
 
   const handleSetCurrentChild = (id: string) => {
     setCurrentChildId(id);
+    logChildProfileAction('switch');
   };
 
   return (
