@@ -1,15 +1,15 @@
 import { initializeApp } from 'firebase/app';
 import { getAnalytics, Analytics, logEvent as firebaseLogEvent } from 'firebase/analytics';
 
-// Firebase configuration
+// Firebase configuration from environment variables
 const firebaseConfig = {
-  apiKey: "REMOVED_EXPOSED_KEY",
-  authDomain: "littlesteps-c6ab6.firebaseapp.com",
-  projectId: "littlesteps-c6ab6",
-  storageBucket: "littlesteps-c6ab6.firebasestorage.app",
-  messagingSenderId: "452108618411",
-  appId: "1:452108618411:web:d418089cc6bd02fc7005ee",
-  measurementId: "G-KKNCMS67JD"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
