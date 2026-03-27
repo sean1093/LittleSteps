@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Baby, AlertCircle, Home, Syringe, UtensilsCrossed, PlusCircle, Edit, Trash2 } from 'lucide-react'; // Added PlusCircle, Edit, Trash2
+import { X, Baby, AlertCircle, Home, Syringe, UtensilsCrossed, PlusCircle, Edit, Trash2, LogIn, LogOut } from 'lucide-react';
+import { User } from 'firebase/auth';
 import { ChildProfile } from '../types'; // Import ChildProfile
 import AddChildModal from './AddChildModal'; // Import AddChildModal
 import { useState } from 'react'; // Import useState
@@ -15,6 +16,9 @@ interface SidebarProps {
   addChild: (name: string, birthday: string) => void;
   updateChild: (id: string, name: string, birthday: string) => void;
   deleteChild: (id: string) => void;
+  user: User | null;
+  onSignIn: () => Promise<void>;
+  onSignOut: () => Promise<void>;
 }
 
 export default function Sidebar({
@@ -28,6 +32,9 @@ export default function Sidebar({
   addChild,
   updateChild,
   deleteChild,
+  user,
+  onSignIn,
+  onSignOut,
 }: SidebarProps) {
   const [showAddChildModal, setShowAddChildModal] = useState(false);
   const [editingChild, setEditingChild] = useState<ChildProfile | null>(null);
@@ -121,6 +128,53 @@ export default function Sidebar({
                 </button>
               </div>
               <p className="text-sm text-white/80">育兒里程碑追蹤</p>
+            </div>
+
+            {/* Auth Section */}
+            <div className="p-4 border-b border-gray-100">
+              {!user ? (
+                <>
+                  <div className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 mb-3">
+                    <LogIn className="w-5 h-5 text-blue-600" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-700">登入以保存資料</p>
+                      <p className="text-xs text-gray-500">使用 Google 帳號登入</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={onSignIn}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all shadow-sm"
+                  >
+                    <img
+                      src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                      alt="Google"
+                      className="w-5 h-5"
+                    />
+                    <span className="font-medium text-gray-700">使用 Google 登入</span>
+                  </button>
+                </>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <img
+                    src={user.photoURL || '/default-avatar.png'}
+                    alt={user.displayName || '用戶'}
+                    className="w-12 h-12 rounded-full border-2 border-primary"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-800 truncate">
+                      {user.displayName || '用戶'}
+                    </p>
+                    <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                  </div>
+                  <button
+                    onClick={onSignOut}
+                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+                    title="登出"
+                  >
+                    <LogOut className="w-4 h-4 text-gray-600" />
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Child Profiles Section */}

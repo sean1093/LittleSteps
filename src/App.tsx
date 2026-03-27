@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Menu, Home } from 'lucide-react';
+import { Menu, Home, Baby } from 'lucide-react';
 import { MilestoneProgress, VaccineProgress, ChildProfile } from './types'; // Import types
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { logPageView, logMilestoneToggle, logVaccineToggle, logChildProfileAction } from './lib/firebase';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Sidebar from './components/Sidebar';
 import LandingPage from './pages/LandingPage';
 import MilestonesPage from './pages/MilestonesPage';
@@ -12,7 +13,8 @@ import ComplementaryFoodPage from './pages/ComplementaryFoodPage';
 
 type Page = 'home' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food';
 
-function App() {
+function AppContent() {
+  const { user, loading, signInWithGoogle, signOut } = useAuth();
   // Parse initial page from URL hash
   const getPageFromHash = (): Page => {
     const hash = window.location.hash;
@@ -229,6 +231,18 @@ function App() {
     logChildProfileAction('switch');
   };
 
+  // Show loading state while auth is initializing
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-warm-white">
+        <div className="text-center">
+          <Baby className="w-16 h-16 text-primary mx-auto mb-4 animate-pulse" />
+          <p className="text-gray-600">載入中...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-warm-white">
       {/* Sidebar */}
@@ -243,6 +257,9 @@ function App() {
         addChild={addChild}
         updateChild={updateChild}
         deleteChild={deleteChild}
+        user={user}
+        onSignIn={signInWithGoogle}
+        onSignOut={signOut}
       />
 
       {/* Header */}
@@ -294,6 +311,14 @@ function App() {
         )}
       </main>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

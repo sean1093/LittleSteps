@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAnalytics, Analytics, logEvent as firebaseLogEvent } from 'firebase/analytics';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 
 // Firebase configuration from environment variables
 const firebaseConfig = {
@@ -20,6 +21,10 @@ let analytics: Analytics | null = null;
 if (typeof window !== 'undefined') {
   analytics = getAnalytics(app);
 }
+
+// Initialize Authentication
+export const auth = getAuth(app);
+export const googleProvider = new GoogleAuthProvider();
 
 // Export analytics instance
 export { analytics };
@@ -53,6 +58,10 @@ export const logVaccineToggle = (vaccineId: string, doseNumber: number, administ
 
 export const logChildProfileAction = (action: 'create' | 'update' | 'delete' | 'switch') => {
   logEvent('child_profile_action', { action });
+};
+
+export const logAuthEvent = (action: 'login' | 'logout' | 'login_failed') => {
+  logEvent('auth_action', { action });
 };
 
 export default app;
