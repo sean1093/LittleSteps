@@ -299,7 +299,7 @@ export default function Sidebar({
             {/* Footer */}
             <div className="sticky bottom-0 left-0 right-0 p-6 bg-gray-50 border-t border-gray-100">
               <p className="text-xs text-gray-500 text-center">
-                © 2024 LittleSteps
+                © {new Date().getFullYear()} LittleSteps
                 <br />
                 陪伴寶貝每一步成長
               </p>

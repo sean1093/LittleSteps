@@ -241,7 +241,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             <span className="font-semibold text-gray-800">LittleSteps</span>
           </div>
           <p className="text-sm text-gray-500">
-            © 2024 LittleSteps • 陪伴寶貝每一步成長
+            © {new Date().getFullYear()} LittleSteps • 陪伴寶貝每一步成長
           </p>
         </div>
       </div>
