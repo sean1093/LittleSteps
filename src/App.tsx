@@ -4,6 +4,8 @@ import { MilestoneProgress, VaccineProgress, ChildProfile } from './types'; // I
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { logPageView, logMilestoneToggle, logVaccineToggle, logChildProfileAction } from './lib/firebase';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { useFirebaseFamily } from './hooks/useFirebaseFamily';
+import { useFirebaseChildren } from './hooks/useFirebaseChildren';
 import Sidebar from './components/Sidebar';
 import LandingPage from './pages/LandingPage';
 import MilestonesPage from './pages/MilestonesPage';
@@ -15,6 +17,11 @@ type Page = 'home' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complem
 
 function AppContent() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
+
+  // Firebase hooks (for logged in users)
+  const { familyId, familyData, loading: familyLoading } = useFirebaseFamily(user);
+  const firebaseChildren = useFirebaseChildren(familyId);
+
   // Parse initial page from URL hash
   const getPageFromHash = (): Page => {
     const hash = window.location.hash;
@@ -31,9 +38,18 @@ function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>(getPageFromHash());
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Manage multiple child profiles
-  const [childProfiles, setChildProfiles] = useLocalStorage<ChildProfile[]>("child-profiles", []);
-  const [currentChildId, setCurrentChildId] = useLocalStorage<string | null>("current-child-id", null);
+  // Manage multiple child profiles (dual mode: Firebase vs LocalStorage)
+  const [localChildProfiles, setLocalChildProfiles] = useLocalStorage<ChildProfile[]>("child-profiles", []);
+  const [localCurrentChildId, setLocalCurrentChildId] = useLocalStorage<string | null>("current-child-id", null);
+
+  // 根據登入狀態決定使用哪個資料源
+  const childProfiles = user && familyData
+    ? Object.values(familyData.children || {})
+    : localChildProfiles;
+
+  const currentChildId = user && familyData
+    ? familyData.currentChildId
+    : localCurrentChildId;
 
   // Derive current child based on currentChildId
   const currentChild = useMemo(() => {
@@ -42,7 +58,7 @@ function AppContent() {
 
   // Derive current child's milestone progress
   const currentChildMilestoneProgress: MilestoneProgress = useMemo(() => {
-    return currentChild ? currentChild.milestoneProgress : {};
+    return currentChild ? (currentChild.milestoneProgress || {}) : {};
   }, [currentChild]);
 
   // Derive current child's vaccine progress
@@ -50,27 +66,31 @@ function AppContent() {
     return currentChild ? (currentChild.vaccineProgress || {}) : {};
   }, [currentChild]);
 
-  // If no current child is selected, or the selected child was deleted, set the first child as current
+  // LocalStorage mode: Auto-select first child if none is selected
   useEffect(() => {
-    if (childProfiles.length > 0 && !currentChild) {
-      setCurrentChildId(childProfiles[0].id);
-    } else if (childProfiles.length === 0 && currentChildId !== null) {
-      setCurrentChildId(null);
+    if (!user) {
+      if (localChildProfiles.length > 0 && !currentChild) {
+        setLocalCurrentChildId(localChildProfiles[0].id);
+      } else if (localChildProfiles.length === 0 && localCurrentChildId !== null) {
+        setLocalCurrentChildId(null);
+      }
     }
-  }, [childProfiles, currentChild, currentChildId, setCurrentChildId]);
+  }, [user, localChildProfiles, currentChild, localCurrentChildId]);
 
-  // Migrate existing profiles to include vaccineProgress if missing
+  // LocalStorage mode: Migrate existing profiles to include vaccineProgress if missing
   useEffect(() => {
-    const needsMigration = childProfiles.some(profile => !profile.vaccineProgress);
-    if (needsMigration) {
-      setChildProfiles(prevProfiles =>
-        prevProfiles.map(profile => ({
-          ...profile,
-          vaccineProgress: profile.vaccineProgress || {}
-        }))
-      );
+    if (!user) {
+      const needsMigration = localChildProfiles.some(profile => !profile.vaccineProgress);
+      if (needsMigration) {
+        setLocalChildProfiles(prevProfiles =>
+          prevProfiles.map(profile => ({
+            ...profile,
+            vaccineProgress: profile.vaccineProgress || {}
+          }))
+        );
+      }
     }
-  }, [childProfiles, setChildProfiles]);
+  }, [user, localChildProfiles]);
 
   // Handle hash changes (browser back/forward buttons)
   useEffect(() => {
@@ -102,68 +122,85 @@ function AppContent() {
     logPageView(page);
   };
 
-  const toggleMilestone = (id: string) => {
+  const toggleMilestone = async (id: string) => {
     if (!currentChild) return; // Cannot toggle if no child is selected
 
-    const isAchieved = !currentChild.milestoneProgress[id]?.achieved;
+    const isAchieved = !currentChildMilestoneProgress[id]?.achieved;
 
-    setChildProfiles(prevProfiles => {
-      return prevProfiles.map(profile => {
-        if (profile.id === currentChild.id) {
-          const newProgressEntry = isAchieved
-            ? { achieved: true, achievedDate: new Date().toISOString().split('T')[0] }
-            : { achieved: false, achievedDate: undefined };
+    if (user) {
+      // Firebase 模式
+      try {
+        await firebaseChildren.updateMilestoneProgress(currentChild.id, id, isAchieved);
+        logMilestoneToggle(id, isAchieved);
+      } catch (error: any) {
+        console.error('更新里程碑失敗:', error);
+      }
+    } else {
+      // LocalStorage 模式
+      setLocalChildProfiles(prevProfiles => {
+        return prevProfiles.map(profile => {
+          if (profile.id === currentChild.id) {
+            const newProgressEntry = isAchieved
+              ? { achieved: true, achievedDate: new Date().toISOString().split('T')[0] }
+              : { achieved: false, achievedDate: undefined };
 
-          return {
-            ...profile,
-            milestoneProgress: {
-              ...profile.milestoneProgress,
-              [id]: newProgressEntry,
-            },
-          };
-        }
-        return profile;
+            return {
+              ...profile,
+              milestoneProgress: {
+                ...profile.milestoneProgress,
+                [id]: newProgressEntry,
+              },
+            };
+          }
+          return profile;
+        });
       });
-    });
-
-    // Log milestone toggle event
-    logMilestoneToggle(id, isAchieved);
+      logMilestoneToggle(id, isAchieved);
+    }
   };
 
-  const toggleVaccineDose = (vaccineId: string, doseNumber: number) => {
+  const toggleVaccineDose = async (vaccineId: string, doseNumber: number) => {
     if (!currentChild) return; // Cannot toggle if no child is selected
 
-    const currentVaccineProgress = currentChild.vaccineProgress || {};
-    const currentVaccine = currentVaccineProgress[vaccineId] || { doses: {} };
+    const currentVaccine = currentChildVaccineProgress[vaccineId] || { doses: {} };
     const currentDose = currentVaccine.doses[doseNumber];
     const isAdministered = !currentDose?.administered;
 
-    setChildProfiles(prevProfiles => {
-      return prevProfiles.map(profile => {
-        if (profile.id === currentChild.id) {
-          const newDoseEntry = isAdministered
-            ? { administered: true, administeredDate: new Date().toISOString().split('T')[0] }
-            : { administered: false, administeredDate: undefined };
+    if (user) {
+      // Firebase 模式
+      try {
+        await firebaseChildren.updateVaccineProgress(currentChild.id, vaccineId, doseNumber, isAdministered);
+        logVaccineToggle(vaccineId, doseNumber, isAdministered);
+      } catch (error: any) {
+        console.error('更新疫苗記錄失敗:', error);
+      }
+    } else {
+      // LocalStorage 模式
+      setLocalChildProfiles(prevProfiles => {
+        return prevProfiles.map(profile => {
+          if (profile.id === currentChild.id) {
+            const newDoseEntry = isAdministered
+              ? { administered: true, administeredDate: new Date().toISOString().split('T')[0] }
+              : { administered: false, administeredDate: undefined };
 
-          return {
-            ...profile,
-            vaccineProgress: {
-              ...currentVaccineProgress,
-              [vaccineId]: {
-                doses: {
-                  ...currentVaccine.doses,
-                  [doseNumber]: newDoseEntry,
+            return {
+              ...profile,
+              vaccineProgress: {
+                ...currentChildVaccineProgress,
+                [vaccineId]: {
+                  doses: {
+                    ...currentVaccine.doses,
+                    [doseNumber]: newDoseEntry,
+                  },
                 },
               },
-            },
-          };
-        }
-        return profile;
+            };
+          }
+          return profile;
+        });
       });
-    });
-
-    // Log vaccine toggle event
-    logVaccineToggle(vaccineId, doseNumber, isAdministered);
+      logVaccineToggle(vaccineId, doseNumber, isAdministered);
+    }
   };
 
   const getPageTitle = () => {
@@ -196,43 +233,95 @@ function AppContent() {
   const showHeader = currentPage !== 'home';
 
   // Child Management Functions
-  const addChild = (name: string, birthday: string) => {
-    const newChild: ChildProfile = {
-      id: Date.now().toString(), // Simple unique ID
-      name,
-      birthday,
-      milestoneProgress: {},
-      vaccineProgress: {},
-      createdAt: new Date().toISOString(),
-    };
-    setChildProfiles(prev => [...prev, newChild]);
-    setCurrentChildId(newChild.id); // Automatically select the new child
-    logChildProfileAction('create');
-  };
-
-  const updateChild = (id: string, name: string, birthday: string) => {
-    setChildProfiles(prev =>
-      prev.map(child => (child.id === id ? { ...child, name, birthday } : child))
-    );
-    logChildProfileAction('update');
-  };
-
-  const deleteChild = (id: string) => {
-    setChildProfiles(prev => prev.filter(child => child.id !== id));
-    // If the deleted child was the current one, reset currentChildId
-    if (currentChildId === id) {
-      setCurrentChildId(childProfiles[0]?.id || null);
+  const addChild = async (name: string, birthday: string) => {
+    // 檢查子女數量限制（免費版最多 2 個）
+    if (childProfiles.length >= 2) {
+      alert('免費版最多只能新增 2 個寶寶，請升級付費會員');
+      return;
     }
-    logChildProfileAction('delete');
+
+    if (user) {
+      // Firebase 模式
+      try {
+        await firebaseChildren.addChild(name, birthday, user.uid, childProfiles.length);
+        logChildProfileAction('create');
+      } catch (error: any) {
+        console.error('新增寶寶失敗:', error);
+        alert(error.message || '新增寶寶失敗，請稍後再試');
+      }
+    } else {
+      // LocalStorage 模式
+      const newChild: ChildProfile = {
+        id: Date.now().toString(),
+        name,
+        birthday,
+        milestoneProgress: {},
+        vaccineProgress: {},
+        createdAt: new Date().toISOString(),
+      };
+      setLocalChildProfiles(prev => [...prev, newChild]);
+      setLocalCurrentChildId(newChild.id);
+      logChildProfileAction('create');
+    }
   };
 
-  const handleSetCurrentChild = (id: string) => {
-    setCurrentChildId(id);
-    logChildProfileAction('switch');
+  const updateChild = async (id: string, name: string, birthday: string) => {
+    if (user) {
+      // Firebase 模式
+      try {
+        await firebaseChildren.updateChild(id, name, birthday);
+        logChildProfileAction('update');
+      } catch (error: any) {
+        console.error('更新寶寶資料失敗:', error);
+        alert(error.message || '更新失敗，請稍後再試');
+      }
+    } else {
+      // LocalStorage 模式
+      setLocalChildProfiles(prev =>
+        prev.map(child => (child.id === id ? { ...child, name, birthday } : child))
+      );
+      logChildProfileAction('update');
+    }
   };
 
-  // Show loading state while auth is initializing
-  if (loading) {
+  const deleteChild = async (id: string) => {
+    if (user) {
+      // Firebase 模式
+      try {
+        await firebaseChildren.deleteChild(id);
+        logChildProfileAction('delete');
+      } catch (error: any) {
+        console.error('刪除寶寶失敗:', error);
+        alert(error.message || '刪除失敗，請稍後再試');
+      }
+    } else {
+      // LocalStorage 模式
+      setLocalChildProfiles(prev => prev.filter(child => child.id !== id));
+      if (localCurrentChildId === id) {
+        setLocalCurrentChildId(localChildProfiles[0]?.id || null);
+      }
+      logChildProfileAction('delete');
+    }
+  };
+
+  const handleSetCurrentChild = async (id: string) => {
+    if (user) {
+      // Firebase 模式
+      try {
+        await firebaseChildren.setCurrentChild(id);
+        logChildProfileAction('switch');
+      } catch (error: any) {
+        console.error('切換寶寶失敗:', error);
+      }
+    } else {
+      // LocalStorage 模式
+      setLocalCurrentChildId(id);
+      logChildProfileAction('switch');
+    }
+  };
+
+  // Show loading state while auth or family data is loading
+  if (loading || (user && familyLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-warm-white">
         <div className="text-center">

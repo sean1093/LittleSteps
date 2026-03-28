@@ -1,0 +1,16 @@
+{
+  "rules": {
+    "users": {
+      "$userId": {
+        ".read": "$userId === auth.uid",
+        ".write": "$userId === auth.uid"
+      }
+    },
+    "families": {
+      "$familyId": {
+        ".read": "root.child('users').child(auth.uid).child('families').child($familyId).exists()",
+        ".write": "(!data.exists() && newData.child('createdBy').val() === auth.uid) || root.child('users').child(auth.uid).child('families').child($familyId).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('families').child($familyId).child('role').val() === 'member'"
+      }
+    }
+  }
+}

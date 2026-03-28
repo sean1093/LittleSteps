@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAnalytics, Analytics, logEvent as firebaseLogEvent } from 'firebase/analytics';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getDatabase } from 'firebase/database';
 
 // Firebase configuration from environment variables
 const firebaseConfig = {
@@ -25,6 +26,9 @@ if (typeof window !== 'undefined') {
 // Initialize Authentication
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+
+// Initialize Realtime Database
+export const database = getDatabase(app, import.meta.env.VITE_FIREBASE_DATABASE_URL);
 
 // Export analytics instance
 export { analytics };

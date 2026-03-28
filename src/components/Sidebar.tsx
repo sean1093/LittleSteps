@@ -39,6 +39,10 @@ export default function Sidebar({
   const [showAddChildModal, setShowAddChildModal] = useState(false);
   const [editingChild, setEditingChild] = useState<ChildProfile | null>(null);
 
+  // 計算子女數量與免費版限制
+  const childCount = childProfiles.length;
+  const canAddChild = childCount < 2;
+
   const menuItems = [
     {
       id: 'home' as const,
@@ -241,10 +245,18 @@ export default function Sidebar({
                 ))}
                 <button
                   onClick={() => {
-                    setEditingChild(null); // Ensure we're adding, not editing
-                    setShowAddChildModal(true);
+                    if (canAddChild) {
+                      setEditingChild(null); // Ensure we're adding, not editing
+                      setShowAddChildModal(true);
+                    }
                   }}
-                  className="w-full flex items-center justify-center gap-2 p-3 mt-3 rounded-xl bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+                  disabled={!canAddChild}
+                  className={`w-full flex items-center justify-center gap-2 p-3 mt-3 rounded-xl transition-colors ${
+                    canAddChild
+                      ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 cursor-pointer'
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  }`}
+                  title={!canAddChild ? '免費版最多只能新增 2 個寶寶，升級付費會員可新增更多' : '新增寶寶'}
                 >
                   <PlusCircle className="w-5 h-5" />
                   新增寶寶
