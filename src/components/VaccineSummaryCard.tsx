@@ -5,16 +5,14 @@ import { calculateVaccineSummary } from '../utils/summaryCalculator';
 
 interface VaccineSummaryCardProps {
   vaccineProgress: VaccineProgress;
-  childBirthday: string;
   onNavigate: () => void;
 }
 
 export default function VaccineSummaryCard({
   vaccineProgress,
-  childBirthday,
   onNavigate,
 }: VaccineSummaryCardProps) {
-  const summary = calculateVaccineSummary(vaccineProgress, childBirthday);
+  const summary = calculateVaccineSummary(vaccineProgress);
 
   return (
     <DashboardCard

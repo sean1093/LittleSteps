@@ -15,7 +15,7 @@ import CareGuidePage from './pages/CareGuidePage';
 import VaccineTrackingPage from './pages/VaccineTrackingPage';
 import ComplementaryFoodPage from './pages/ComplementaryFoodPage';
 
-type Page = 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food';
+type Page = 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log';
 
 function AppContent() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
@@ -126,7 +126,8 @@ function AppContent() {
       'milestones': '#/milestones',
       'care-guide': '#/care-guide',
       'vaccine-tracking': '#/vaccine-tracking',
-      'complementary-food': '#/complementary-food'
+      'complementary-food': '#/complementary-food',
+      'daily-log': '#/daily-log'
     };
     window.location.hash = hashMap[page];
     setCurrentPage(page);

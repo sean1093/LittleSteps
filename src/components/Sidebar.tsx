@@ -8,8 +8,8 @@ import { useState } from 'react'; // Import useState
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  currentPage: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food';
-  onNavigate: (page: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food') => void;
+  currentPage: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log';
+  onNavigate: (page: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log') => void;
   childProfiles: ChildProfile[];
   currentChildId: string | null;
   setCurrentChildId: (id: string) => void;
@@ -76,7 +76,7 @@ export default function Sidebar({
     }
   ];
 
-  const handleNavigate = (page: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food') => {
+  const handleNavigate = (page: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log') => {
     onNavigate(page);
     onClose();
   };

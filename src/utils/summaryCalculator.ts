@@ -1,4 +1,4 @@
-import { ChildProfile, MilestoneProgress, VaccineProgress } from '../types';
+import { MilestoneProgress, VaccineProgress } from '../types';
 import { milestones } from '../data/milestones';
 import { vaccineSchedules } from '../data/vaccines';
 
@@ -70,8 +70,7 @@ export interface VaccineSummary {
 }
 
 export function calculateVaccineSummary(
-  vaccineProgress: VaccineProgress,
-  childBirthday: string
+  vaccineProgress: VaccineProgress
 ): VaccineSummary {
   // 計算總劑次和已接種劑次
   let totalDoses = 0;
@@ -93,8 +92,8 @@ export function calculateVaccineSummary(
     ? Math.round((administeredCount / totalDoses) * 100)
     : 0;
 
-  // 找出下一個待接種的疫苗
-  const nextVaccine = findNextVaccine(vaccineProgress, childBirthday);
+  // Find the next vaccine to be administered
+  const nextVaccine = findNextVaccine(vaccineProgress);
 
   return {
     totalDoses,
@@ -105,17 +104,12 @@ export function calculateVaccineSummary(
 }
 
 /**
- * 找出下一個待接種的疫苗
+ * Find the next vaccine to be administered
  */
 function findNextVaccine(
-  vaccineProgress: VaccineProgress,
-  childBirthday: string
+  vaccineProgress: VaccineProgress
 ): VaccineSummary['nextVaccine'] {
-  const birthDate = new Date(childBirthday);
-  const today = new Date();
-  const ageInMonths = calculateAgeInMonths(birthDate, today);
-
-  // 按接種時間排序疫苗
+  // Sort vaccines by age for sequential recommendation
   const sortedVaccines = [...vaccineSchedules].sort((a, b) => {
     const ageA = a.ageInMonths ?? 999;
     const ageB = b.ageInMonths ?? 999;
@@ -139,20 +133,11 @@ function findNextVaccine(
     }
   }
 
-  return undefined; // 所有疫苗都已接種
+  return undefined; // All vaccines have been administered
 }
 
 /**
- * 計算年齡（月數）
- */
-function calculateAgeInMonths(birthDate: Date, currentDate: Date): number {
-  const yearDiff = currentDate.getFullYear() - birthDate.getFullYear();
-  const monthDiff = currentDate.getMonth() - birthDate.getMonth();
-  return yearDiff * 12 + monthDiff;
-}
-
-/**
- * 計算寶寶的年齡顯示文字
+ * Calculate baby's age display text
  */
 export function calculateAgeDisplay(birthday: string): string {
   const birthDate = new Date(birthday);
