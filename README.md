@@ -23,13 +23,28 @@ LittleSteps is a comprehensive digital parenting companion designed to support n
 ### 🏠 Landing Page
 - **Welcoming Introduction** - Warm, supportive messaging for new parents
 - **Feature Highlights** - Visual overview of all available tools
+- **Google Sign-In** - Prominent login button for cloud sync
 - **Modern Design** - Gradient backgrounds, smooth animations, and intuitive navigation
 
+### 🔐 Authentication & Sync
+- **Google Sign-In** - Secure authentication via Firebase
+- **Multi-Device Sync** - Access your data across all devices in real-time
+- **Dual-Mode Support** - Works offline (guest mode) or with cloud sync (logged in)
+- **Automatic Migration** - LocalStorage data automatically syncs when you sign in
+
+### 📊 Dashboard
+- **Growth Overview** - Visual summary of baby's development progress
+- **Milestone Summary** - Achievement rate with recent milestones
+- **Vaccine Summary** - Vaccination progress and next dose due
+- **Daily Log Summary** - Today's feeding, sleep, and diaper statistics (coming soon)
+- **Quick Navigation** - Fast access to all features from one place
+
 ### 👶 Multi-Child Profile Management
-- **Multiple Profiles** - Track progress for multiple children simultaneously
+- **Multiple Profiles** - Track up to 2 babies (free tier)
 - **Individual Records** - Each child has their own milestone progress and data
 - **Easy Switching** - Quick toggle between different children's profiles
 - **CRUD Operations** - Add, edit, and delete child profiles with ease
+- **Cloud Backup** - All data automatically backed up to Firebase when logged in
 
 ### 📊 Milestone Tracking
 - **Comprehensive Database** - 30+ developmental milestones from 0-12 months
@@ -70,10 +85,16 @@ LittleSteps is a comprehensive digital parenting companion designed to support n
 - **Styling**: Tailwind CSS with custom theme
 - **Animations**: Framer Motion
 - **Icons**: Lucide React
-- **State Management**: React Hooks + LocalStorage
+- **State Management**: React Hooks + Context API
+
+### Backend & Services
+- **Authentication**: Firebase Authentication (Google Sign-In)
+- **Database**: Firebase Realtime Database (asia-southeast1)
+- **Analytics**: Firebase Analytics
+- **Storage**: Dual-mode (LocalStorage for guests, Firebase for authenticated users)
 
 ### Development
-- **TypeScript**: Full type safety
+- **TypeScript**: Full type safety with strict mode
 - **ESLint**: Code quality enforcement
 - **Vite PWA**: Progressive Web App capabilities
 - **GitHub Actions**: Automated deployment
@@ -83,6 +104,7 @@ LittleSteps is a comprehensive digital parenting companion designed to support n
 - **CI/CD**: GitHub Actions with automated deployment
 - **Production**: Auto-deploy on push to master
 - **Preview**: Auto-generated preview URLs for pull requests
+- **Environment Variables**: Managed via GitHub Secrets
 
 ## 🎨 Design System
 
@@ -141,6 +163,23 @@ cd LittleSteps
 npm install
 ```
 
+### Environment Variables
+
+Create a `.env` file in the project root with your Firebase configuration:
+
+```bash
+VITE_FIREBASE_API_KEY=your-api-key
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+VITE_FIREBASE_APP_ID=your-app-id
+VITE_FIREBASE_MEASUREMENT_ID=G-XXXXXXXXXX
+VITE_FIREBASE_DATABASE_URL=https://your-project-asia-southeast1.firebasedatabase.app
+```
+
+**Note**: Never commit `.env` to version control. See `.env.example` for template.
+
 ### Development
 
 ```bash
@@ -185,31 +224,55 @@ firebase deploy --only hosting
 
 ```
 LittleSteps/
+├── .claude/                  # AI assistant configuration
+│   ├── CLAUDE.md                   # Project overview and skill usage guide
+│   └── skills/                     # Development guidelines and patterns
+│       ├── component-patterns.md   # React component structure
+│       ├── firebase-integration.md # Firebase & dual-mode patterns
+│       ├── styling-guide.md        # Tailwind & design system
+│       ├── typescript-conventions.md # TypeScript best practices
+│       └── ux-design.md            # UI/UX patterns & animations
 ├── src/
 │   ├── components/           # React components
 │   │   ├── AddChildModal.tsx       # Child profile modal
 │   │   ├── CategoryFilter.tsx      # Milestone category filter
+│   │   ├── DailyLogSummaryCard.tsx # Daily log summary card
+│   │   ├── DashboardCard.tsx       # Reusable dashboard card
 │   │   ├── MilestoneCard.tsx       # Milestone card component
 │   │   ├── MilestoneModal.tsx      # Milestone detail modal
+│   │   ├── MilestoneSummaryCard.tsx # Milestone summary card
 │   │   ├── MonthPicker.tsx         # Month range selector
-│   │   └── Sidebar.tsx             # Navigation sidebar
+│   │   ├── Sidebar.tsx             # Navigation sidebar
+│   │   └── VaccineSummaryCard.tsx  # Vaccine summary card
+│   ├── contexts/             # React contexts
+│   │   └── AuthContext.tsx         # Authentication context
 │   ├── data/                 # Application data
 │   │   ├── careGuides.ts           # Care guide data
 │   │   ├── complementaryFood.ts    # Food guide data
 │   │   ├── milestones.ts           # Milestone data
 │   │   └── vaccines.ts             # Vaccine schedule data
 │   ├── hooks/                # Custom React hooks
+│   │   ├── useChildSummary.ts      # Dashboard statistics hook
+│   │   ├── useDailyLogs.ts         # Daily logs management hook
+│   │   ├── useFirebaseChildren.ts  # Firebase children CRUD hook
+│   │   ├── useFirebaseFamily.ts    # Firebase family management hook
 │   │   └── useLocalStorage.ts      # LocalStorage hook
+│   ├── lib/                  # Third-party configurations
+│   │   └── firebase.ts             # Firebase initialization & config
 │   ├── pages/                # Page components
 │   │   ├── CareGuidePage.tsx       # Care guide page
 │   │   ├── ComplementaryFoodPage.tsx # Food guide page
+│   │   ├── DashboardPage.tsx       # Dashboard page
 │   │   ├── LandingPage.tsx         # Home/landing page
 │   │   ├── MilestonesPage.tsx      # Milestone tracking page
 │   │   └── VaccineTrackingPage.tsx # Vaccine schedule page
 │   ├── types/                # TypeScript definitions
 │   │   └── index.ts                # Type definitions
 │   ├── utils/                # Utility functions
-│   │   └── share.ts                # Web Share API utils
+│   │   ├── logHelpers.ts           # Daily log utility functions
+│   │   ├── migration.ts            # LocalStorage to Firebase migration
+│   │   ├── share.ts                # Web Share API utils
+│   │   └── summaryCalculator.ts    # Statistics calculation utils
 │   ├── App.tsx               # Main app component
 │   ├── main.tsx              # Application entry
 │   └── index.css             # Global styles
@@ -218,6 +281,7 @@ LittleSteps/
 ├── .github/workflows/        # CI/CD configuration
 │   ├── firebase-hosting-merge.yml        # Production deployment
 │   └── firebase-hosting-pull-request.yml # PR preview deployment
+├── .env.example              # Environment variables template
 ├── firebase.json             # Firebase Hosting config
 ├── .firebaserc               # Firebase project config
 └── vite.config.ts            # Vite configuration
@@ -227,20 +291,35 @@ LittleSteps/
 
 The application uses hash-based routing for shareable URLs:
 
-- **Home**: `/#/`
-- **Milestones**: `/#/milestones`
-- **Care Guide**: `/#/care-guide`
-- **Vaccines**: `/#/vaccine-tracking`
-- **Food Guide**: `/#/complementary-food`
+- **Home**: `/#/` (Landing Page for guests, Dashboard for logged-in users)
+- **Dashboard**: `/#/dashboard` (Growth overview)
+- **Milestones**: `/#/milestones` (Milestone tracking)
+- **Care Guide**: `/#/care-guide` (Care guidelines)
+- **Vaccines**: `/#/vaccine-tracking` (Vaccine schedule)
+- **Food Guide**: `/#/complementary-food` (Complementary food guide)
+- **Daily Log**: `/#/daily-log` (Coming soon)
 
 ## 💾 Data Persistence
 
-All user data is stored locally using the browser's LocalStorage:
-- Child profiles and information
-- Milestone achievement records and dates
-- User preferences
+LittleSteps uses a **dual-mode architecture** for maximum flexibility:
 
-**Privacy**: No data is sent to any server - everything stays on your device.
+### Guest Mode (Not Logged In)
+- Data stored locally in browser's LocalStorage
+- Works completely offline
+- No account required
+- Data stays on your device only
+
+### Authenticated Mode (Logged In)
+- Data stored in Firebase Realtime Database
+- Automatic multi-device synchronization
+- Real-time updates across devices
+- Secure cloud backup
+- LocalStorage data automatically migrates on first sign-in
+
+**Privacy**:
+- Guest mode: No data sent to servers
+- Logged-in mode: Data encrypted and secured by Firebase
+- You control your data - sign out anytime to return to guest mode
 
 ## 🌐 Browser Support
 
