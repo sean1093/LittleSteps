@@ -6,14 +6,16 @@ import { logPageView, logMilestoneToggle, logVaccineToggle, logChildProfileActio
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useFirebaseFamily } from './hooks/useFirebaseFamily';
 import { useFirebaseChildren } from './hooks/useFirebaseChildren';
+import { useDailyLogs } from './hooks/useDailyLogs';
 import Sidebar from './components/Sidebar';
 import LandingPage from './pages/LandingPage';
+import DashboardPage from './pages/DashboardPage';
 import MilestonesPage from './pages/MilestonesPage';
 import CareGuidePage from './pages/CareGuidePage';
 import VaccineTrackingPage from './pages/VaccineTrackingPage';
 import ComplementaryFoodPage from './pages/ComplementaryFoodPage';
 
-type Page = 'home' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food';
+type Page = 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food';
 
 function AppContent() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
@@ -27,6 +29,7 @@ function AppContent() {
     const hash = window.location.hash;
     const pageMap: Record<string, Page> = {
       '#/': 'home',
+      '#/dashboard': 'dashboard',
       '#/milestones': 'milestones',
       '#/care-guide': 'care-guide',
       '#/vaccine-tracking': 'vaccine-tracking',
@@ -55,6 +58,9 @@ function AppContent() {
   const currentChild = useMemo(() => {
     return childProfiles.find(child => child.id === currentChildId);
   }, [childProfiles, currentChildId]);
+
+  // Get daily logs for current child
+  const { logs: dailyLogs } = useDailyLogs(currentChildId, user, familyId);
 
   // Derive current child's milestone progress
   const currentChildMilestoneProgress: MilestoneProgress = useMemo(() => {
@@ -92,6 +98,13 @@ function AppContent() {
     }
   }, [user, localChildProfiles]);
 
+  // Auto-redirect to dashboard when user logs in or adds first baby
+  useEffect(() => {
+    if (user && childProfiles.length > 0 && currentPage === 'home') {
+      navigateToPage('dashboard');
+    }
+  }, [user, childProfiles.length]);
+
   // Handle hash changes (browser back/forward buttons)
   useEffect(() => {
     const handleHashChange = () => {
@@ -109,6 +122,7 @@ function AppContent() {
   const navigateToPage = (page: Page) => {
     const hashMap: Record<Page, string> = {
       'home': '#/',
+      'dashboard': '#/dashboard',
       'milestones': '#/milestones',
       'care-guide': '#/care-guide',
       'vaccine-tracking': '#/vaccine-tracking',
@@ -230,7 +244,8 @@ function AppContent() {
     return title;
   };
 
-  const showHeader = currentPage !== 'home';
+  // Show header for all pages except home (unless user is logged in with babies, then show Dashboard with header)
+  const showHeader = currentPage !== 'home' || (user && childProfiles.length > 0);
 
   // Child Management Functions
   const addChild = async (name: string, birthday: string) => {
@@ -378,7 +393,28 @@ function AppContent() {
       {/* Main Content */}
       <main className={showHeader ? "pb-6" : ""}>
         {currentPage === 'home' && (
-          <LandingPage onNavigate={navigateToPage} />
+          <>
+            {user && childProfiles.length > 0 ? (
+              <DashboardPage
+                currentChild={currentChild}
+                dailyLogs={dailyLogs}
+                onNavigate={navigateToPage}
+              />
+            ) : (
+              <LandingPage
+                onNavigate={navigateToPage}
+                user={user}
+                onSignIn={signInWithGoogle}
+              />
+            )}
+          </>
+        )}
+        {currentPage === 'dashboard' && (
+          <DashboardPage
+            currentChild={currentChild}
+            dailyLogs={dailyLogs}
+            onNavigate={navigateToPage}
+          />
         )}
         {currentPage === 'milestones' && (
           <MilestonesPage

@@ -8,8 +8,8 @@ import { useState } from 'react'; // Import useState
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  currentPage: 'home' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food';
-  onNavigate: (page: 'home' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food') => void;
+  currentPage: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food';
+  onNavigate: (page: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food') => void;
   childProfiles: ChildProfile[];
   currentChildId: string | null;
   setCurrentChildId: (id: string) => void;
@@ -45,10 +45,10 @@ export default function Sidebar({
 
   const menuItems = [
     {
-      id: 'home' as const,
-      label: '首頁',
+      id: 'dashboard' as const,
+      label: '儀表板',
       icon: Home,
-      description: '返回主頁'
+      description: '寶寶成長總覽'
     },
     {
       id: 'milestones' as const,
@@ -76,7 +76,7 @@ export default function Sidebar({
     }
   ];
 
-  const handleNavigate = (page: 'home' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food') => {
+  const handleNavigate = (page: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food') => {
     onNavigate(page);
     onClose();
   };

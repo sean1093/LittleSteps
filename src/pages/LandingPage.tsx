@@ -1,11 +1,14 @@
 import { motion } from 'framer-motion';
 import { Baby, Heart, Sparkles, ArrowRight, Calendar, Shield, UtensilsCrossed, Syringe } from 'lucide-react';
+import { User } from 'firebase/auth';
 
 interface LandingPageProps {
   onNavigate: (page: 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food') => void;
+  user: User | null;
+  onSignIn: () => Promise<void>;
 }
 
-export default function LandingPage({ onNavigate }: LandingPageProps) {
+export default function LandingPage({ onNavigate, user, onSignIn }: LandingPageProps) {
   const features = [
     {
       id: 'milestones',
@@ -134,6 +137,43 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
               <span className="text-sm font-medium text-gray-700">即時追蹤記錄</span>
             </div>
           </motion.div>
+
+          {/* Sign In Button */}
+          {!user && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.9, duration: 0.5 }}
+              className="flex flex-col items-center gap-4 mb-8"
+            >
+              <p className="text-sm text-gray-600 font-medium">
+                登入以保存您的寶寶成長記錄
+              </p>
+              <motion.button
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={onSignIn}
+                className="group relative flex items-center justify-center gap-3 px-10 py-5 rounded-2xl bg-gradient-to-r from-primary to-secondary text-white shadow-soft-lg hover:shadow-xl transition-all overflow-hidden"
+              >
+                {/* Shimmer Effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+
+                <div className="relative flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                    <img
+                      src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                      alt="Google"
+                      className="w-6 h-6"
+                    />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="font-bold text-lg leading-tight">使用 Google 登入</span>
+                    <span className="text-xs text-white/90 leading-tight">跨裝置同步，永久保存</span>
+                  </div>
+                </div>
+              </motion.button>
+            </motion.div>
+          )}
 
           {/* Scroll Indicator */}
           <motion.div

@@ -1,6 +1,6 @@
 import { ref, set, update, remove } from 'firebase/database';
 import { database } from '../lib/firebase';
-import { ChildProfile } from '../types';
+import { ChildProfile, DailyLog } from '../types';
 
 export function useFirebaseChildren(familyId: string | null) {
   const addChild = async (name: string, birthday: string, userId: string, currentChildCount: number) => {
@@ -84,6 +84,51 @@ export function useFirebaseChildren(familyId: string | null) {
     });
   };
 
+  // Daily Log methods
+  const addDailyLog = async (childId: string, log: Omit<DailyLog, 'id'>) => {
+    if (!familyId) throw new Error('No family selected');
+
+    const logId = `log_${Date.now()}`;
+    const newLog: DailyLog = {
+      ...log,
+      id: logId,
+    };
+
+    const logRef = ref(database, `families/${familyId}/children/${childId}/dailyLogs/${logId}`);
+    await set(logRef, newLog);
+
+    // Update family updatedAt
+    const familyRef = ref(database, `families/${familyId}`);
+    await update(familyRef, { updatedAt: new Date().toISOString() });
+
+    return logId;
+  };
+
+  const updateDailyLog = async (childId: string, logId: string, updates: Partial<DailyLog>) => {
+    if (!familyId) throw new Error('No family selected');
+
+    const logRef = ref(database, `families/${familyId}/children/${childId}/dailyLogs/${logId}`);
+    await update(logRef, {
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    });
+
+    // Update family updatedAt
+    const familyRef = ref(database, `families/${familyId}`);
+    await update(familyRef, { updatedAt: new Date().toISOString() });
+  };
+
+  const deleteDailyLog = async (childId: string, logId: string) => {
+    if (!familyId) throw new Error('No family selected');
+
+    const logRef = ref(database, `families/${familyId}/children/${childId}/dailyLogs/${logId}`);
+    await remove(logRef);
+
+    // Update family updatedAt
+    const familyRef = ref(database, `families/${familyId}`);
+    await update(familyRef, { updatedAt: new Date().toISOString() });
+  };
+
   return {
     addChild,
     updateChild,
@@ -91,5 +136,8 @@ export function useFirebaseChildren(familyId: string | null) {
     setCurrentChild,
     updateMilestoneProgress,
     updateVaccineProgress,
+    addDailyLog,
+    updateDailyLog,
+    deleteDailyLog,
   };
 }

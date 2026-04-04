@@ -179,3 +179,46 @@ export interface FoodQAItem {
   answer: string;
 }
 
+// Daily Log Types (快速日誌)
+export interface DailyLog {
+  id: string;
+  childId: string;
+  type: 'feeding' | 'sleep' | 'diaper';
+  timestamp: string; // ISO 8601 format
+  data: FeedingData | SleepData | DiaperData;
+  createdAt: string; // ISO 8601 format
+  updatedAt?: string; // ISO 8601 format
+}
+
+export interface FeedingData {
+  feedingType: 'breast_left' | 'breast_right' | 'breast_both' | 'formula' | 'solid';
+  amount?: number; // ml
+  duration?: number; // minutes
+  notes?: string;
+}
+
+export interface SleepData {
+  startTime: string; // ISO 8601 format
+  endTime?: string; // ISO 8601 format, undefined means still sleeping
+  duration?: number; // minutes, auto-calculated
+  notes?: string;
+}
+
+export interface DiaperData {
+  type: 'pee' | 'poop' | 'both';
+  consistency?: 'normal' | 'soft' | 'hard'; // only for poop
+  notes?: string;
+}
+
+// Dashboard Summary Types
+export interface DailySummary {
+  date: string; // YYYY-MM-DD
+  feedingCount: number;
+  totalFeedingAmount: number; // ml
+  sleepCount: number;
+  totalSleepDuration: number; // minutes
+  diaperCount: number;
+  poopCount: number;
+  peeCount: number;
+}
+
