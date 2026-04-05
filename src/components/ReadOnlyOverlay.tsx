@@ -56,7 +56,19 @@ export default function ReadOnlyOverlay({
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={onSignIn}
+              onClick={async (e) => {
+                e.stopPropagation();
+                try {
+                  await onSignIn();
+                } catch (error: any) {
+                  // User cancelled the login popup - ignore the error
+                  if (error?.code === 'auth/popup-closed-by-user') {
+                    return;
+                  }
+                  // Log other errors
+                  console.error('登入失敗:', error);
+                }
+              }}
               className="px-6 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-sm font-semibold shadow-soft hover:shadow-soft-lg transition-all"
             >
               立即登入
