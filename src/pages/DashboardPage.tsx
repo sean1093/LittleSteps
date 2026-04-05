@@ -2,10 +2,12 @@ import { motion } from 'framer-motion';
 import { Baby, TrendingUp, Calendar, ArrowRight } from 'lucide-react';
 import { ChildProfile, DailyLog } from '../types';
 import { useChildSummary } from '../hooks/useChildSummary';
+import { useSleepAnalytics } from '../hooks/useSleepAnalytics';
 import { calculateAgeDisplay } from '../utils/summaryCalculator';
 import MilestoneSummaryCard from '../components/MilestoneSummaryCard';
 import VaccineSummaryCard from '../components/VaccineSummaryCard';
 import DailyLogSummaryCard from '../components/DailyLogSummaryCard';
+import SleepAnalyticsCard from '../components/SleepAnalyticsCard';
 
 interface DashboardPageProps {
   currentChild?: ChildProfile;
@@ -38,6 +40,7 @@ export default function DashboardPage({
   onNavigate,
 }: DashboardPageProps) {
   const { milestoneSummary, vaccineSummary, todaySummary } = useChildSummary(currentChild, dailyLogs);
+  const { analytics: sleepAnalytics } = useSleepAnalytics(dailyLogs);
 
   if (!currentChild) {
     return (
@@ -108,10 +111,17 @@ export default function DashboardPage({
           )}
         </motion.div>
 
-        {/* Daily Log Summary */}
-        <motion.div variants={itemVariants} className="mb-6">
+        {/* Daily Log & Sleep Analytics */}
+        <motion.div variants={itemVariants} className="grid md:grid-cols-2 gap-6 mb-6">
+          {/* Daily Log Summary */}
           <DailyLogSummaryCard
             summary={todaySummary}
+            onNavigate={() => onNavigate('daily-log')}
+          />
+
+          {/* Sleep Analytics */}
+          <SleepAnalyticsCard
+            analytics={sleepAnalytics}
             onNavigate={() => onNavigate('daily-log')}
           />
         </motion.div>

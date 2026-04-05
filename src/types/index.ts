@@ -202,6 +202,8 @@ export interface SleepData {
   startTime: string; // ISO 8601 format
   endTime?: string; // ISO 8601 format, undefined means still sleeping
   duration?: number; // minutes, auto-calculated
+  quality?: 'good' | 'fair' | 'poor'; // sleep quality assessment
+  nightWakings?: number; // number of times woke up during sleep
   notes?: string;
 }
 
@@ -221,6 +223,53 @@ export interface DailySummary {
   diaperCount: number;
   poopCount: number;
   peeCount: number;
+}
+
+// Sleep Analytics Types (睡眠深度分析)
+export interface SleepAnalytics {
+  // Basic metrics
+  totalSleepDuration: number; // minutes, last 24h
+  longestSleepDuration: number; // minutes, last 24h
+  averageSleepDuration: number; // minutes, per sleep session
+  sleepCount: number; // number of sleep sessions
+
+  // Sleep quality
+  sleepQualityScore: number; // 0-100
+  nightWakingsTotal: number; // total night wakings in last 24h
+
+  // Sleeping through the night detection
+  isSleepingThroughNight: boolean; // >= 6 hours continuous
+  longestContinuousSleep: number; // minutes
+
+  // Routine analysis
+  routineScore: number; // 0-100, consistency of sleep times
+  averageBedtime?: string; // HH:mm format
+  averageWakeTime?: string; // HH:mm format
+
+  // Recommendations
+  recommendations: SleepRecommendation[];
+}
+
+export interface SleepRecommendation {
+  id: string;
+  type: 'positive' | 'suggestion' | 'warning';
+  title: string;
+  message: string;
+  icon: string; // lucide-react icon name
+}
+
+export interface SleepPattern {
+  date: string; // YYYY-MM-DD
+  sleepSessions: {
+    startTime: string; // ISO 8601
+    endTime?: string; // ISO 8601
+    duration: number; // minutes
+    quality?: 'good' | 'fair' | 'poor';
+    nightWakings?: number;
+  }[];
+  totalDuration: number; // minutes
+  longestSession: number; // minutes
+  qualityScore: number; // 0-100
 }
 
 // Growth Charts Types (生長曲線)
