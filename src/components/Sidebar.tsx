@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Baby, AlertCircle, Home, Syringe, UtensilsCrossed, PlusCircle, Edit, Trash2, LogIn, LogOut } from 'lucide-react';
+import { X, Baby, AlertCircle, Home, Syringe, UtensilsCrossed, PlusCircle, Edit, Trash2, LogIn, LogOut, TrendingUp } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { ChildProfile } from '../types'; // Import ChildProfile
 import AddChildModal from './AddChildModal'; // Import AddChildModal
@@ -8,8 +8,8 @@ import { useState } from 'react'; // Import useState
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  currentPage: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log';
-  onNavigate: (page: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log') => void;
+  currentPage: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts';
+  onNavigate: (page: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts') => void;
   childProfiles: ChildProfile[];
   currentChildId: string | null;
   setCurrentChildId: (id: string) => void;
@@ -51,6 +51,12 @@ export default function Sidebar({
       description: '寶寶成長總覽'
     },
     {
+      id: 'growth-charts' as const,
+      label: '成長曲線圖',
+      icon: TrendingUp,
+      description: '追蹤身高體重發展'
+    },
+    {
       id: 'milestones' as const,
       label: '里程碑追蹤',
       icon: Baby,
@@ -76,7 +82,7 @@ export default function Sidebar({
     }
   ];
 
-  const handleNavigate = (page: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log') => {
+  const handleNavigate = (page: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts') => {
     onNavigate(page);
     onClose();
   };

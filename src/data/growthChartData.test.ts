@@ -1,10 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import {
-  getWHOStandard,
-  getPercentileValue,
-  type WHOStandard,
-  type MeasurementType,
-} from './growthChartData';
+import { getWHOStandard, getPercentileValue } from './growthChartData';
+import type { MeasurementType } from '../types';
 
 describe('growthChartData', () => {
   describe('getWHOStandard', () => {

@@ -131,6 +131,7 @@ export interface ChildProfile {
   id: string;
   name: string;
   birthday: string; // YYYY-MM-DD
+  gender?: Gender; // Optional: for growth chart percentiles
   milestoneProgress: MilestoneProgress;
   vaccineProgress: VaccineProgress;
   createdAt: string; // ISO string
@@ -220,5 +221,34 @@ export interface DailySummary {
   diaperCount: number;
   poopCount: number;
   peeCount: number;
+}
+
+// Growth Charts Types (生長曲線)
+export interface GrowthRecord {
+  id: string;
+  childId: string;
+  date: string; // YYYY-MM-DD
+  weight?: number; // kg
+  height?: number; // cm
+  headCircumference?: number; // cm
+  percentile: {
+    weight?: number; // 0-100
+    height?: number;
+    headCircumference?: number;
+  };
+  notes?: string;
+}
+
+export type MeasurementType = 'weight' | 'height' | 'headCircumference';
+export type Gender = 'male' | 'female';
+export type PercentileCategory = 'low' | 'normal' | 'high';
+export type GrowthTrend = 'increasing' | 'decreasing' | 'stable' | 'insufficient-data';
+
+// WHO Growth Chart Standards (LMS method)
+export interface WHOStandard {
+  ageMonths: number;
+  L: number; // Box-Cox transformation
+  M: number; // Median
+  S: number; // Coefficient of variation
 }
 

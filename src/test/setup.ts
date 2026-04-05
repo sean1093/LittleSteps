@@ -10,16 +10,32 @@ afterEach(() => {
   cleanup();
 });
 
-// Mock Firebase
+// Mock Firebase functions
+const mockRef = vi.fn();
+const mockSet = vi.fn().mockResolvedValue(undefined);
+const mockOnValue = vi.fn((_ref, callback) => {
+  // Call callback with empty data
+  callback({ val: () => null });
+  // Return unsubscribe function
+  return vi.fn();
+});
+const mockRemove = vi.fn().mockResolvedValue(undefined);
+
 vi.mock('../lib/firebase', () => ({
-  auth: {
-    currentUser: null,
-  },
-  database: {},
+  database: { _checkNotDeleted: vi.fn() },
+  auth: { currentUser: null },
   analytics: {},
   signInWithPopup: vi.fn(),
   signOut: vi.fn(),
   GoogleAuthProvider: vi.fn(),
+}));
+
+// Mock Firebase database functions
+vi.mock('firebase/database', () => ({
+  ref: mockRef,
+  set: mockSet,
+  onValue: mockOnValue,
+  remove: mockRemove,
 }));
 
 // Mock window.matchMedia

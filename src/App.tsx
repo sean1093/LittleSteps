@@ -14,8 +14,9 @@ import MilestonesPage from './pages/MilestonesPage';
 import CareGuidePage from './pages/CareGuidePage';
 import VaccineTrackingPage from './pages/VaccineTrackingPage';
 import ComplementaryFoodPage from './pages/ComplementaryFoodPage';
+import GrowthChartsPage from './pages/GrowthChartsPage';
 
-type Page = 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log';
+type Page = 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts';
 
 function AppContent() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
@@ -33,7 +34,9 @@ function AppContent() {
       '#/milestones': 'milestones',
       '#/care-guide': 'care-guide',
       '#/vaccine-tracking': 'vaccine-tracking',
-      '#/complementary-food': 'complementary-food'
+      '#/complementary-food': 'complementary-food',
+      '#/daily-log': 'daily-log',
+      '#/growth-charts': 'growth-charts'
     };
     return pageMap[hash] || 'home';
   };
@@ -127,7 +130,8 @@ function AppContent() {
       'care-guide': '#/care-guide',
       'vaccine-tracking': '#/vaccine-tracking',
       'complementary-food': '#/complementary-food',
-      'daily-log': '#/daily-log'
+      'daily-log': '#/daily-log',
+      'growth-charts': '#/growth-charts'
     };
     window.location.hash = hashMap[page];
     setCurrentPage(page);
@@ -227,6 +231,9 @@ function AppContent() {
     switch (currentPage) {
       case 'home':
         break; // Handled above
+      case 'dashboard':
+        title += '成長總覽';
+        break;
       case 'milestones':
         title += '里程碑追蹤';
         break;
@@ -238,6 +245,12 @@ function AppContent() {
         break;
       case 'complementary-food':
         title += '副食品指南';
+        break;
+      case 'daily-log':
+        title += '快速日誌';
+        break;
+      case 'growth-charts':
+        title += '成長曲線圖';
         break;
       default:
         break;
@@ -434,6 +447,13 @@ function AppContent() {
         )}
         {currentPage === 'complementary-food' && (
           <ComplementaryFoodPage />
+        )}
+        {currentPage === 'growth-charts' && (
+          <GrowthChartsPage
+            currentChild={currentChild}
+            user={user}
+            familyId={familyId}
+          />
         )}
       </main>
     </div>
