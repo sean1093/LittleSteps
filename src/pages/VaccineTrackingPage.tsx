@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as Icons from 'lucide-react';
+import { User } from 'firebase/auth';
 import { VaccineProgress } from '../types';
 import {
   vaccineSchedules,
@@ -10,6 +11,7 @@ import {
   vaccineTypes,
   vaccineGuidelines
 } from '../data/vaccines';
+import ReadOnlyOverlay from '../components/ReadOnlyOverlay';
 
 type FundingFilter = 'all' | 'public' | 'private';
 type MonthFilter = 'all' | number;
@@ -17,9 +19,16 @@ type MonthFilter = 'all' | number;
 interface VaccineTrackingPageProps {
   vaccineProgress: VaccineProgress;
   onToggleVaccineDose: (vaccineId: string, doseNumber: number) => void;
+  user?: User | null;
+  onSignIn?: () => Promise<void>;
 }
 
-export default function VaccineTrackingPage({ vaccineProgress, onToggleVaccineDose }: VaccineTrackingPageProps) {
+export default function VaccineTrackingPage({
+  vaccineProgress,
+  onToggleVaccineDose,
+  user,
+  onSignIn = async () => {}
+}: VaccineTrackingPageProps) {
   const [fundingFilter, setFundingFilter] = useState<FundingFilter>('all');
   const [monthFilter, setMonthFilter] = useState<MonthFilter>('all');
   const [expandedVaccine, setExpandedVaccine] = useState<string | null>(null);
@@ -295,24 +304,31 @@ export default function VaccineTrackingPage({ vaccineProgress, onToggleVaccineDo
                   <div className="flex items-start gap-3">
                     {/* Checkbox for single-dose vaccines */}
                     {vaccine.doses === 1 && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          onToggleVaccineDose(vaccine.id, 1);
-                        }}
-                        className={`
-                          flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer
-                          ${isDoseAdministered(vaccine.id, 1)
-                            ? 'bg-primary border-primary'
-                            : 'border-gray-300 hover:border-primary'
-                          }
-                        `}
-                        aria-label={`標記${vaccine.name}為已接種`}
+                      <ReadOnlyOverlay
+                        isReadOnly={!user}
+                        message="登入後即可記錄疫苗接種"
+                        onSignIn={onSignIn}
+                        showPrompt={false}
                       >
-                        {isDoseAdministered(vaccine.id, 1) && <Icons.Check className="w-4 h-4 text-white" />}
-                      </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onToggleVaccineDose(vaccine.id, 1);
+                          }}
+                          className={`
+                            flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer
+                            ${isDoseAdministered(vaccine.id, 1)
+                              ? 'bg-primary border-primary'
+                              : 'border-gray-300 hover:border-primary'
+                            }
+                          `}
+                          aria-label={`標記${vaccine.name}為已接種`}
+                        >
+                          {isDoseAdministered(vaccine.id, 1) && <Icons.Check className="w-4 h-4 text-white" />}
+                        </button>
+                      </ReadOnlyOverlay>
                     )}
 
                     {/* Age Badge */}
@@ -405,24 +421,31 @@ export default function VaccineTrackingPage({ vaccineProgress, onToggleVaccineDo
                                       onClick={(e) => e.stopPropagation()}
                                       className="flex items-center gap-3 p-2 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
                                     >
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          onToggleVaccineDose(vaccine.id, doseNum);
-                                        }}
-                                        className={`
-                                          flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer
-                                          ${isAdministered
-                                            ? 'bg-primary border-primary'
-                                            : 'border-gray-300 hover:border-primary'
-                                          }
-                                        `}
-                                        aria-label={`標記第${doseNum}劑為${isAdministered ? '未接種' : '已接種'}`}
+                                      <ReadOnlyOverlay
+                                        isReadOnly={!user}
+                                        message="登入後即可記錄疫苗接種"
+                                        onSignIn={onSignIn}
+                                        showPrompt={false}
                                       >
-                                        {isAdministered && <Icons.Check className="w-3 h-3 text-white" />}
-                                      </button>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            onToggleVaccineDose(vaccine.id, doseNum);
+                                          }}
+                                          className={`
+                                            flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer
+                                            ${isAdministered
+                                              ? 'bg-primary border-primary'
+                                              : 'border-gray-300 hover:border-primary'
+                                            }
+                                          `}
+                                          aria-label={`標記第${doseNum}劑為${isAdministered ? '未接種' : '已接種'}`}
+                                        >
+                                          {isAdministered && <Icons.Check className="w-3 h-3 text-white" />}
+                                        </button>
+                                      </ReadOnlyOverlay>
                                       <div className="flex-1">
                                         <span className={`text-sm font-medium ${isAdministered ? 'text-gray-800' : 'text-gray-600'}`}>
                                           第 {doseNum} 劑

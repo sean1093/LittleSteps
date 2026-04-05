@@ -43,44 +43,53 @@ export default function Sidebar({
   const childCount = childProfiles.length;
   const canAddChild = childCount < 2;
 
-  const menuItems = [
+  const allMenuItems = [
     {
       id: 'dashboard' as const,
       label: '儀表板',
       icon: Home,
-      description: '寶寶成長總覽'
+      description: '寶寶成長總覽',
+      requiresAuth: true // Dashboard requires login
     },
     {
       id: 'growth-charts' as const,
       label: '成長曲線圖',
       icon: TrendingUp,
-      description: '追蹤身高體重發展'
+      description: '追蹤身高體重發展',
+      requiresAuth: true // Growth charts require login
     },
     {
       id: 'milestones' as const,
       label: '里程碑追蹤',
       icon: Baby,
-      description: '記錄寶寶發展進度'
+      description: '記錄寶寶發展進度',
+      requiresAuth: false // Can view without login (read-only)
     },
     {
       id: 'care-guide' as const,
       label: '照顧重點',
       icon: AlertCircle,
-      description: '各階段注意事項'
+      description: '各階段注意事項',
+      requiresAuth: false // Open to all users
     },
     {
       id: 'vaccine-tracking' as const,
       label: '疫苗追蹤',
       icon: Syringe,
-      description: '疫苗接種時程與副作用'
+      description: '疫苗接種時程與副作用',
+      requiresAuth: false // Can view without login (read-only)
     },
     {
       id: 'complementary-food' as const,
       label: '副食品指南',
       icon: UtensilsCrossed,
-      description: '副食品添加完整攻略'
+      description: '副食品添加完整攻略',
+      requiresAuth: false // Open to all users
     }
   ];
+
+  // Filter menu items based on auth status
+  const menuItems = allMenuItems.filter(item => !item.requiresAuth || user);
 
   const handleNavigate = (page: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts') => {
     onNavigate(page);

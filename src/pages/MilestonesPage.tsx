@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Baby } from 'lucide-react';
+import { User } from 'firebase/auth';
 import { MonthRange, Category, MilestoneProgress } from '../types';
 import { milestones, monthRanges, categories } from '../data/milestones';
 import MonthPicker from '../components/MonthPicker';
@@ -11,9 +12,11 @@ import MilestoneModal from '../components/MilestoneModal';
 interface MilestonesPageProps {
   progress: MilestoneProgress;
   onToggleMilestone: (id: string) => void;
+  user?: User | null;
+  onSignIn?: () => Promise<void>;
 }
 
-export default function MilestonesPage({ progress, onToggleMilestone }: MilestonesPageProps) {
+export default function MilestonesPage({ progress, onToggleMilestone, user, onSignIn }: MilestonesPageProps) {
   const [selectedMonth, setSelectedMonth] = useState<MonthRange>("0-2");
   const [selectedCategory, setSelectedCategory] = useState<Category>("all");
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
@@ -80,6 +83,8 @@ export default function MilestonesPage({ progress, onToggleMilestone }: Mileston
                   achievedDate={progress[milestone.id]?.achievedDate}
                   onToggle={() => onToggleMilestone(milestone.id)}
                   onClick={() => setSelectedMilestoneId(milestone.id)}
+                  isReadOnly={!user}
+                  onSignIn={onSignIn}
                 />
               </motion.div>
             ))
@@ -108,6 +113,8 @@ export default function MilestonesPage({ progress, onToggleMilestone }: Mileston
         isCompleted={selectedMilestone ? progress[selectedMilestone.id]?.achieved || false : false}
         achievedDate={selectedMilestone ? progress[selectedMilestone.id]?.achievedDate : undefined}
         onToggle={() => selectedMilestone && onToggleMilestone(selectedMilestone.id)}
+        isReadOnly={!user}
+        onSignIn={onSignIn}
       />
     </div>
   );

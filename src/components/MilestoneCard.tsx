@@ -1,5 +1,6 @@
 import { Milestone } from '../types';
 import { Check, ChevronRight } from 'lucide-react';
+import ReadOnlyOverlay from './ReadOnlyOverlay';
 
 interface MilestoneCardProps {
   milestone: Milestone;
@@ -7,27 +8,44 @@ interface MilestoneCardProps {
   achievedDate?: string;
   onToggle: () => void;
   onClick: () => void;
+  isReadOnly?: boolean;
+  onSignIn?: () => Promise<void>;
 }
 
-export default function MilestoneCard({ milestone, isCompleted, achievedDate, onToggle, onClick }: MilestoneCardProps) {
+export default function MilestoneCard({
+  milestone,
+  isCompleted,
+  achievedDate,
+  onToggle,
+  onClick,
+  isReadOnly = false,
+  onSignIn = async () => {}
+}: MilestoneCardProps) {
   return (
     <div className="card flex gap-3 items-start">
       {/* Checkbox */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggle();
-        }}
-        className={`
-          flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
-          ${isCompleted
-            ? 'bg-primary border-primary'
-            : 'border-gray-300 hover:border-primary'
-          }
-        `}
+      <ReadOnlyOverlay
+        isReadOnly={isReadOnly}
+        message="登入後即可記錄里程碑"
+        onSignIn={onSignIn}
+        showPrompt={false}
       >
-        {isCompleted && <Check className="w-4 h-4 text-white" />}
-      </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle();
+          }}
+          className={`
+            flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
+            ${isCompleted
+              ? 'bg-primary border-primary'
+              : 'border-gray-300 hover:border-primary'
+            }
+          `}
+        >
+          {isCompleted && <Check className="w-4 h-4 text-white" />}
+        </button>
+      </ReadOnlyOverlay>
 
       {/* Content */}
       <div

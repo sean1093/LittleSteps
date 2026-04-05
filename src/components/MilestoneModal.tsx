@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Milestone } from '../types';
 import { X, Check, Share2, Lightbulb } from 'lucide-react';
 import { shareMilestone } from '../utils/share';
+import ReadOnlyOverlay from './ReadOnlyOverlay';
 
 interface MilestoneModalProps {
   milestone: Milestone | null;
@@ -11,9 +12,20 @@ interface MilestoneModalProps {
   isCompleted: boolean;
   achievedDate?: string;
   onToggle: () => void;
+  isReadOnly?: boolean;
+  onSignIn?: () => Promise<void>;
 }
 
-export default function MilestoneModal({ milestone, isOpen, onClose, isCompleted, achievedDate, onToggle }: MilestoneModalProps) {
+export default function MilestoneModal({
+  milestone,
+  isOpen,
+  onClose,
+  isCompleted,
+  achievedDate,
+  onToggle,
+  isReadOnly = false,
+  onSignIn = async () => {}
+}: MilestoneModalProps) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -110,19 +122,26 @@ export default function MilestoneModal({ milestone, isOpen, onClose, isCompleted
 
             {/* Actions */}
             <div className="sticky bottom-0 bg-white border-t border-gray-100 px-4 py-4 flex gap-3">
-              <button
-                onClick={onToggle}
-                className={`
-                  flex-1 py-3 px-6 rounded-2xl font-medium transition-all flex items-center justify-center gap-2
-                  ${isCompleted
-                    ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    : 'bg-primary text-white shadow-soft hover:bg-primary-dark'
-                  }
-                `}
+              <ReadOnlyOverlay
+                isReadOnly={isReadOnly}
+                message="登入後即可記錄里程碑"
+                onSignIn={onSignIn}
+                showPrompt={true}
               >
-                <Check className="w-5 h-5" />
-                {isCompleted ? '已完成' : '標記完成'}
-              </button>
+                <button
+                  onClick={onToggle}
+                  className={`
+                    flex-1 py-3 px-6 rounded-2xl font-medium transition-all flex items-center justify-center gap-2
+                    ${isCompleted
+                      ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      : 'bg-primary text-white shadow-soft hover:bg-primary-dark'
+                    }
+                  `}
+                >
+                  <Check className="w-5 h-5" />
+                  {isCompleted ? '已完成' : '標記完成'}
+                </button>
+              </ReadOnlyOverlay>
               <button
                 onClick={handleShare}
                 className="px-6 py-3 rounded-2xl bg-secondary text-white shadow-soft hover:bg-secondary-dark transition-all flex items-center gap-2"

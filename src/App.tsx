@@ -108,6 +108,14 @@ function AppContent() {
     }
   }, [user, childProfiles.length]);
 
+  // Redirect to home if accessing protected pages without login
+  useEffect(() => {
+    const protectedPages: Page[] = ['dashboard', 'daily-log', 'growth-charts'];
+    if (!user && protectedPages.includes(currentPage)) {
+      navigateToPage('home');
+    }
+  }, [user, currentPage]);
+
   // Handle hash changes (browser back/forward buttons)
   useEffect(() => {
     const handleHashChange = () => {
@@ -434,6 +442,8 @@ function AppContent() {
           <MilestonesPage
             progress={currentChildMilestoneProgress}
             onToggleMilestone={toggleMilestone}
+            user={user}
+            onSignIn={signInWithGoogle}
           />
         )}
         {currentPage === 'care-guide' && (
@@ -443,6 +453,8 @@ function AppContent() {
           <VaccineTrackingPage
             vaccineProgress={currentChildVaccineProgress}
             onToggleVaccineDose={toggleVaccineDose}
+            user={user}
+            onSignIn={signInWithGoogle}
           />
         )}
         {currentPage === 'complementary-food' && (
