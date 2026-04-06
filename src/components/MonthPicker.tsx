@@ -8,7 +8,7 @@ interface MonthPickerProps {
 
 export default function MonthPicker({ ranges, selected, onChange }: MonthPickerProps) {
   return (
-    <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide -mx-4 px-4">
+    <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide -mx-4 pl-4 pr-8">
       {ranges.map((range) => (
         <button
           key={range.value}
