@@ -275,7 +275,7 @@ export default function VaccineTrackingPage({
           <Icons.Calendar className="w-5 h-5 text-gray-600" />
           <h3 className="font-semibold text-gray-800">月齡篩選</h3>
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 pl-4 pr-8">
           <button
             onClick={() => setMonthFilter('all')}
             className={`

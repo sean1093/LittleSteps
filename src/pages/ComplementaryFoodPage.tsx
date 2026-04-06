@@ -211,7 +211,7 @@ export default function ComplementaryFoodPage({
 
       {/* View Mode Tabs */}
       <div className="px-4 mb-4">
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 pl-4 pr-8">
           <button
             onClick={() => setViewMode('overview')}
             className={`

@@ -103,7 +103,7 @@ export default function FoodTrackingTab({
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
+      <div className="flex gap-2 overflow-x-auto pb-2 pr-4">
         <button
           onClick={() => setFilter('all')}
           className={`
