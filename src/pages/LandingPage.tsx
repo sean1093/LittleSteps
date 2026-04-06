@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useEffect, useRef } from 'react';
 import { Baby, Heart, Sparkles, ArrowRight, Moon, TrendingUp, Shield, Lock, BookOpen, Camera } from 'lucide-react';
 import { User } from 'firebase/auth';
 
@@ -9,6 +10,20 @@ interface LandingPageProps {
 }
 
 export default function LandingPage({ onNavigate, user, onSignIn }: LandingPageProps) {
+  // Track previous user state to detect login
+  const prevUserRef = useRef<User | null>(null);
+
+  // Auto-navigate to dashboard after successful login
+  useEffect(() => {
+    // Only navigate if user just logged in (was null, now has value)
+    if (prevUserRef.current === null && user !== null) {
+      // Small delay for smooth transition
+      setTimeout(() => {
+        window.location.hash = '#/dashboard';
+      }, 300);
+    }
+    prevUserRef.current = user;
+  }, [user]);
   const fadeInUp = {
     hidden: { opacity: 0, y: 30 },
     visible: {

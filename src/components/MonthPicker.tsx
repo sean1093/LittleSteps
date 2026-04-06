@@ -8,16 +8,16 @@ interface MonthPickerProps {
 
 export default function MonthPicker({ ranges, selected, onChange }: MonthPickerProps) {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide">
+    <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide -mx-4 px-4">
       {ranges.map((range) => (
         <button
           key={range.value}
           onClick={() => onChange(range.value)}
           className={`
-            px-4 py-2 rounded-2xl font-medium whitespace-nowrap transition-all snap-center
+            flex-shrink-0 px-5 py-3 min-h-[48px] rounded-full font-medium whitespace-nowrap transition-all snap-center
             ${selected === range.value
-              ? 'bg-primary text-white shadow-soft'
-              : 'bg-white text-gray-600 hover:bg-gray-50'
+              ? 'bg-[#FF9B9B] text-white shadow-soft'
+              : 'bg-white text-gray-600 hover:bg-gray-50 border-2 border-gray-200'
             }
           `}
         >
