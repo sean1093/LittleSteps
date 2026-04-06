@@ -15,8 +15,9 @@ import CareGuidePage from './pages/CareGuidePage';
 import VaccineTrackingPage from './pages/VaccineTrackingPage';
 import ComplementaryFoodPage from './pages/ComplementaryFoodPage';
 import GrowthChartsPage from './pages/GrowthChartsPage';
+import TimerDemoPage from './pages/TimerDemoPage';
 
-type Page = 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts';
+type Page = 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts' | 'timer-demo';
 
 function AppContent() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
@@ -36,7 +37,8 @@ function AppContent() {
       '#/vaccine-tracking': 'vaccine-tracking',
       '#/complementary-food': 'complementary-food',
       '#/daily-log': 'daily-log',
-      '#/growth-charts': 'growth-charts'
+      '#/growth-charts': 'growth-charts',
+      '#/timer-demo': 'timer-demo'
     };
     return pageMap[hash] || 'home';
   };
@@ -139,7 +141,8 @@ function AppContent() {
       'vaccine-tracking': '#/vaccine-tracking',
       'complementary-food': '#/complementary-food',
       'daily-log': '#/daily-log',
-      'growth-charts': '#/growth-charts'
+      'growth-charts': '#/growth-charts',
+      'timer-demo': '#/timer-demo'
     };
     window.location.hash = hashMap[page];
     setCurrentPage(page);
@@ -466,6 +469,9 @@ function AppContent() {
             user={user}
             familyId={familyId}
           />
+        )}
+        {currentPage === 'timer-demo' && (
+          <TimerDemoPage />
         )}
       </main>
     </div>

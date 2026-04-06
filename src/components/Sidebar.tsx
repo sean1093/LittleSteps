@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Baby, AlertCircle, Home, Syringe, UtensilsCrossed, PlusCircle, Edit, Trash2, LogIn, LogOut, TrendingUp } from 'lucide-react';
+import { X, Baby, AlertCircle, Home, Syringe, UtensilsCrossed, PlusCircle, Edit, Trash2, LogIn, LogOut, TrendingUp, Timer } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { ChildProfile } from '../types'; // Import ChildProfile
 import AddChildModal from './AddChildModal'; // Import AddChildModal
@@ -8,8 +8,8 @@ import { useState } from 'react'; // Import useState
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  currentPage: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts';
-  onNavigate: (page: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts') => void;
+  currentPage: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts' | 'timer-demo';
+  onNavigate: (page: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts' | 'timer-demo') => void;
   childProfiles: ChildProfile[];
   currentChildId: string | null;
   setCurrentChildId: (id: string) => void;
@@ -85,13 +85,20 @@ export default function Sidebar({
       icon: UtensilsCrossed,
       description: '副食品添加完整攻略',
       requiresAuth: false // Open to all users
+    },
+    {
+      id: 'timer-demo' as const,
+      label: '計時器展示',
+      icon: Timer,
+      description: '測試背景計時功能',
+      requiresAuth: false // Demo page open to all users
     }
   ];
 
   // Filter menu items based on auth status
   const menuItems = allMenuItems.filter(item => !item.requiresAuth || user);
 
-  const handleNavigate = (page: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts') => {
+  const handleNavigate = (page: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts' | 'timer-demo') => {
     onNavigate(page);
     onClose();
   };
