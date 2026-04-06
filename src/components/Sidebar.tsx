@@ -140,28 +140,30 @@ export default function Sidebar({
             className="fixed left-0 top-0 bottom-0 w-80 bg-white z-50 shadow-2xl overflow-y-auto"
           >
             {/* Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-primary to-secondary p-6 text-white">
+            <div className="sticky top-0 bg-[#E8F4F8] p-6">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <Home className="w-6 h-6" />
-                  <h2 className="text-xl font-bold">LittleSteps</h2>
+                  <div className="w-8 h-8 rounded-full bg-[#FFE5E5] flex items-center justify-center">
+                    <Home className="w-5 h-5 text-[#FF9B9B]" />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-800">LittleSteps</h2>
                 </div>
                 <button
                   onClick={onClose}
-                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#7EC8E3]/20 transition-colors"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-5 h-5 text-gray-600" />
                 </button>
               </div>
-              <p className="text-sm text-white/80">育兒里程碑追蹤</p>
+              <p className="text-sm text-gray-600">育兒里程碑追蹤</p>
             </div>
 
             {/* Auth Section */}
             <div className="p-4 border-b border-gray-100">
               {!user ? (
                 <>
-                  <div className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 mb-3">
-                    <LogIn className="w-5 h-5 text-blue-600" />
+                  <div className="flex items-center gap-3 p-4 rounded-3xl bg-[#E8F4F8]/50 mb-3">
+                    <LogIn className="w-5 h-5 text-[#7EC8E3]" />
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-700">登入以保存資料</p>
                       <p className="text-xs text-gray-500">使用 Google 帳號登入</p>
@@ -180,7 +182,7 @@ export default function Sidebar({
                         console.error('登入失敗:', error);
                       }
                     }}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all shadow-sm"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full bg-white border-2 border-gray-200 hover:border-[#7EC8E3] hover:bg-[#E8F4F8]/30 transition-all shadow-sm"
                   >
                     <img
                       src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
@@ -225,9 +227,9 @@ export default function Sidebar({
                   <div
                     key={child.id}
                     className={`
-                      flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all
+                      flex items-center justify-between p-3 rounded-3xl cursor-pointer transition-all
                       ${child.id === currentChildId
-                        ? 'bg-primary text-white shadow-soft'
+                        ? 'bg-[#FFE5E5] text-gray-800 shadow-soft'
                         : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                       }
                     `}
@@ -236,7 +238,7 @@ export default function Sidebar({
                       className="flex-1 flex items-center gap-2"
                       onClick={() => setCurrentChildId(child.id)}
                     >
-                      <Baby className={`w-5 h-5 ${child.id === currentChildId ? 'text-white' : 'text-primary'}`} />
+                      <Baby className={`w-5 h-5 ${child.id === currentChildId ? 'text-[#FF9B9B]' : 'text-[#7EC8E3]'}`} />
                       <span className="font-medium">{child.name}</span>
                     </div>
                     <div className="flex gap-2">
@@ -255,7 +257,7 @@ export default function Sidebar({
                         `}
                         title="編輯寶寶資料"
                       >
-                        <Edit className={`w-4 h-4 ${child.id === currentChildId ? 'text-white' : 'text-gray-600'}`} />
+                        <Edit className="w-4 h-4 text-gray-600" />
                       </button>
                       <button
                         onClick={(e) => {
@@ -271,7 +273,7 @@ export default function Sidebar({
                         `}
                         title="刪除寶寶資料"
                       >
-                        <Trash2 className={`w-4 h-4 ${child.id === currentChildId ? 'text-white' : 'text-red-500'}`} />
+                        <Trash2 className="w-4 h-4 text-red-500" />
                       </button>
                     </div>
                   </div>
@@ -284,9 +286,9 @@ export default function Sidebar({
                     }
                   }}
                   disabled={!canAddChild}
-                  className={`w-full flex items-center justify-center gap-2 p-3 mt-3 rounded-xl transition-colors ${
+                  className={`w-full flex items-center justify-center gap-2 p-3 mt-3 rounded-3xl transition-colors ${
                     canAddChild
-                      ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 cursor-pointer'
+                      ? 'bg-[#E8F4F8] text-[#7EC8E3] hover:bg-[#E8F4F8]/70 cursor-pointer'
                       : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   }`}
                   title={!canAddChild ? '免費版最多只能新增 2 個寶寶，升級付費會員可新增更多' : '新增寶寶'}
@@ -308,15 +310,15 @@ export default function Sidebar({
                     key={item.id}
                     onClick={() => handleNavigate(item.id)}
                     className={`
-                      w-full p-4 rounded-2xl transition-all text-left
+                      w-full p-4 rounded-3xl transition-all text-left
                       ${isActive
-                        ? 'bg-primary text-white shadow-soft'
+                        ? 'bg-[#7EC8E3] text-white shadow-soft'
                         : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                       }
                     `}
                   >
                     <div className="flex items-start gap-3">
-                      <Icon className={`w-6 h-6 flex-shrink-0 mt-0.5 ${isActive ? 'text-white' : 'text-primary'}`} />
+                      <Icon className={`w-6 h-6 flex-shrink-0 mt-0.5 ${isActive ? 'text-white' : 'text-[#7EC8E3]'}`} />
                       <div className="flex-1">
                         <div className="font-semibold mb-1">{item.label}</div>
                         <div className={`text-sm ${isActive ? 'text-white/80' : 'text-gray-500'}`}>
