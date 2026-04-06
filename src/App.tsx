@@ -408,7 +408,7 @@ function AppContent() {
 
       {/* Header */}
       {showHeader && (
-        <header className="bg-white shadow-soft sticky top-0 z-10">
+        <header className="bg-white shadow-soft sticky top-0 z-30">
           <div className="px-4 py-4 flex items-center gap-4">
             <button
               onClick={() => setSidebarOpen(true)}
