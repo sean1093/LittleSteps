@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as Icons from 'lucide-react';
+import { User } from 'firebase/auth';
 import {
   foodStages,
   foodProgression,
@@ -20,14 +21,46 @@ import {
   infantFoodRestrictions,
   foodQA
 } from '../data/complementaryFood';
+import { ChildProfile, FoodTrialRecord } from '../types';
+import { useFoodTracking } from '../hooks/useFoodTracking';
+import { useFirebaseChildren } from '../hooks/useFirebaseChildren';
+import FoodTrackingTab from '../components/FoodTrackingTab';
+import FoodTrialModal from '../components/FoodTrialModal';
+import FourByThreeTracker from '../components/FourByThreeTracker';
 
-type ViewMode = 'overview' | 'stages' | 'menu' | 'safety';
+type ViewMode = 'overview' | 'stages' | 'menu' | 'safety' | 'tracking' | 'my-foods';
 
-export default function ComplementaryFoodPage() {
+interface ComplementaryFoodPageProps {
+  currentChild?: ChildProfile | null;
+  user: User | null;
+  familyId: string | null;
+}
+
+export default function ComplementaryFoodPage({
+  currentChild,
+  user,
+  familyId,
+}: ComplementaryFoodPageProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('overview');
   const [showAllergyTest, setShowAllergyTest] = useState(false);
   const [showFingerFood, setShowFingerFood] = useState(false);
   const [expandedStage, setExpandedStage] = useState<number | null>(null);
+  const [showFoodModal, setShowFoodModal] = useState(false);
+  const [editingFood, setEditingFood] = useState<FoodTrialRecord | null>(null);
+
+  // Food tracking hook
+  const childId = currentChild?.id || null;
+  const {
+    foodProgress,
+    foodTrials,
+    stats,
+    addFoodTrial,
+    updateFoodTrial,
+    deleteFoodTrial,
+  } = useFoodTracking(childId, user, familyId);
+
+  // Firebase methods (for logged-in users)
+  const firebaseChildren = useFirebaseChildren(familyId);
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -52,6 +85,92 @@ export default function ComplementaryFoodPage() {
         return 'bg-orange-100 text-orange-700';
       default:
         return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  // Food Tracking Handlers
+  const handleAddFood = () => {
+    setEditingFood(null);
+    setShowFoodModal(true);
+  };
+
+  const handleEditFood = (food: FoodTrialRecord) => {
+    setEditingFood(food);
+    setShowFoodModal(true);
+  };
+
+  const handleSaveFood = async (foodData: Omit<FoodTrialRecord, 'id' | 'createdAt'>) => {
+    if (!childId) {
+      alert('請先選擇寶寶');
+      return;
+    }
+
+    try {
+      if (user && familyId) {
+        // Firebase mode
+        if (editingFood) {
+          await firebaseChildren.updateFoodTrial(childId, editingFood.id, foodData);
+        } else {
+          await firebaseChildren.addFoodTrial(childId, foodData);
+        }
+      } else {
+        // LocalStorage mode
+        if (editingFood) {
+          await updateFoodTrial(editingFood.id, foodData);
+        } else {
+          await addFoodTrial(foodData);
+        }
+      }
+      setShowFoodModal(false);
+      setEditingFood(null);
+    } catch (error: any) {
+      console.error('保存食物記錄失敗:', error);
+      alert(error.message || '保存失敗，請稍後再試');
+    }
+  };
+
+  const handleDeleteFood = async (foodId: string) => {
+    if (!childId) return;
+
+    try {
+      if (user && familyId) {
+        // Firebase mode
+        await firebaseChildren.deleteFoodTrial(childId, foodId);
+      } else {
+        // LocalStorage mode
+        await deleteFoodTrial(foodId);
+      }
+    } catch (error: any) {
+      console.error('刪除食物記錄失敗:', error);
+      alert(error.message || '刪除失敗，請稍後再試');
+    }
+  };
+
+  const handleAddTrialDate = async (foodId: string) => {
+    if (!childId) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    const food = foodProgress[foodId];
+    if (!food) return;
+
+    try {
+      // Update trialDates array
+      const updatedTrialDates = [...(food.trialDates || []), today].sort();
+
+      if (user && familyId) {
+        // Firebase mode
+        await firebaseChildren.updateFoodTrial(childId, foodId, {
+          trialDates: updatedTrialDates,
+        });
+      } else {
+        // LocalStorage mode
+        await updateFoodTrial(foodId, {
+          trialDates: updatedTrialDates,
+        });
+      }
+    } catch (error: any) {
+      console.error('新增嘗試日期失敗:', error);
+      alert(error.message || '新增失敗，請稍後再試');
     }
   };
 
@@ -136,6 +255,39 @@ export default function ComplementaryFoodPage() {
             `}
           >
             安全須知
+          </button>
+          <button
+            onClick={() => setViewMode('my-foods')}
+            className={`
+              flex-shrink-0 px-4 py-2 rounded-2xl font-medium transition-all text-sm
+              ${viewMode === 'my-foods'
+                ? 'bg-green-600 text-white shadow-soft'
+                : 'bg-white text-gray-600 hover:bg-gray-50'
+              }
+            `}
+          >
+            <Icons.Apple className="w-4 h-4 inline mr-1" />
+            我的食物
+            {stats.total > 0 && (
+              <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-xs font-bold ${
+                viewMode === 'my-foods' ? 'bg-white text-green-600' : 'bg-green-100 text-green-700'
+              }`}>
+                {stats.total}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setViewMode('tracking')}
+            className={`
+              flex-shrink-0 px-4 py-2 rounded-2xl font-medium transition-all text-sm
+              ${viewMode === 'tracking'
+                ? 'bg-purple-600 text-white shadow-soft'
+                : 'bg-white text-gray-600 hover:bg-gray-50'
+              }
+            `}
+          >
+            <Icons.Calendar className="w-4 h-4 inline mr-1" />
+            4×3 追蹤
           </button>
         </div>
       </div>
@@ -613,6 +765,38 @@ export default function ComplementaryFoodPage() {
           </div>
         </div>
       )}
+
+      {/* My Foods Mode */}
+      {viewMode === 'my-foods' && (
+        <FoodTrackingTab
+          foodTrials={foodTrials}
+          stats={stats}
+          onAddFood={handleAddFood}
+          onEditFood={handleEditFood}
+          onDeleteFood={handleDeleteFood}
+          user={user}
+        />
+      )}
+
+      {/* 4x3 Tracking Mode */}
+      {viewMode === 'tracking' && (
+        <FourByThreeTracker
+          foodTrials={foodTrials}
+          onAddTrialDate={handleAddTrialDate}
+          onViewFood={handleEditFood}
+        />
+      )}
+
+      {/* Food Trial Modal */}
+      <FoodTrialModal
+        isOpen={showFoodModal}
+        onClose={() => {
+          setShowFoodModal(false);
+          setEditingFood(null);
+        }}
+        onSave={handleSaveFood}
+        editingFood={editingFood}
+      />
 
       {/* 4x3 Allergy Testing Modal */}
       <AnimatePresence>

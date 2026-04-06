@@ -134,6 +134,7 @@ export interface ChildProfile {
   gender?: Gender; // Optional: for growth chart percentiles
   milestoneProgress: MilestoneProgress;
   vaccineProgress: VaccineProgress;
+  foodTrackingProgress?: FoodTrackingProgress; // Optional: complementary food tracking
   createdAt: string; // ISO string
 }
 
@@ -299,5 +300,57 @@ export interface WHOStandard {
   L: number; // Box-Cox transformation
   M: number; // Median
   S: number; // Coefficient of variation
+}
+
+// Complementary Food Tracking Types (副食品追蹤)
+export type AllergyReactionType = 'rash' | 'diarrhea' | 'vomiting' | 'constipation' | 'runny_nose' | 'cough' | 'eczema' | 'other';
+export type FoodPreference = 'love' | 'like' | 'neutral' | 'dislike' | 'refuse';
+export type AllergySeverity = 'mild' | 'moderate' | 'severe';
+
+export interface AllergyReaction {
+  type: AllergyReactionType;
+  severity: AllergySeverity;
+  description?: string; // Additional notes about the reaction
+  date: string; // YYYY-MM-DD
+}
+
+export interface FoodTrialRecord {
+  id: string;
+  foodName: string;
+  category?: string; // 蔬菜、水果、穀類、蛋白質等
+  firstTriedDate: string; // YYYY-MM-DD, first time trying this food
+  trialDates: string[]; // Array of YYYY-MM-DD, for 4x3 rule tracking
+  hasAllergy: boolean;
+  allergyReactions?: AllergyReaction[]; // Details if hasAllergy is true
+  preference?: FoodPreference; // Baby's preference for this food
+  notes?: string;
+  createdAt: string; // ISO 8601
+  updatedAt?: string; // ISO 8601
+}
+
+export interface FoodTrackingProgress {
+  [foodId: string]: FoodTrialRecord;
+}
+
+// Meal Plan Types (菜單計劃)
+export interface MealPlanDay {
+  date: string; // YYYY-MM-DD
+  meals: {
+    breakfast?: string[];
+    lunch?: string[];
+    dinner?: string[];
+    snacks?: string[];
+  };
+}
+
+export interface WeeklyMealPlan {
+  id: string;
+  childId: string;
+  weekStartDate: string; // YYYY-MM-DD (Monday)
+  childAgeMonths: number; // For age-appropriate menu generation
+  days: MealPlanDay[];
+  shoppingList?: string[]; // Generated shopping list
+  createdAt: string;
+  updatedAt?: string;
 }
 

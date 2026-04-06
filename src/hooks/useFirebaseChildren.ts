@@ -1,6 +1,6 @@
 import { ref, set, update, remove } from 'firebase/database';
 import { database } from '../lib/firebase';
-import { ChildProfile, DailyLog } from '../types';
+import { ChildProfile, DailyLog, FoodTrialRecord } from '../types';
 
 export function useFirebaseChildren(familyId: string | null) {
   const addChild = async (name: string, birthday: string, userId: string, currentChildCount: number) => {
@@ -129,6 +129,55 @@ export function useFirebaseChildren(familyId: string | null) {
     await update(familyRef, { updatedAt: new Date().toISOString() });
   };
 
+  // Food Tracking methods
+  const addFoodTrial = async (childId: string, foodTrial: Omit<FoodTrialRecord, 'id' | 'createdAt'>) => {
+    if (!familyId) throw new Error('No family selected');
+
+    const foodId = `food_${Date.now()}`;
+    const newFoodTrial: FoodTrialRecord = {
+      ...foodTrial,
+      id: foodId,
+      createdAt: new Date().toISOString(),
+    };
+
+    const foodRef = ref(database, `families/${familyId}/children/${childId}/foodTrackingProgress/${foodId}`);
+    await set(foodRef, newFoodTrial);
+
+    // Update family updatedAt
+    const familyRef = ref(database, `families/${familyId}`);
+    await update(familyRef, { updatedAt: new Date().toISOString() });
+
+    return foodId;
+  };
+
+  const updateFoodTrial = async (childId: string, foodId: string, updates: Partial<FoodTrialRecord>) => {
+    if (!familyId) throw new Error('No family selected');
+
+    const foodRef = ref(database, `families/${familyId}/children/${childId}/foodTrackingProgress/${foodId}`);
+    await update(foodRef, {
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    });
+
+    // Update family updatedAt
+    const familyRef = ref(database, `families/${familyId}`);
+    await update(familyRef, { updatedAt: new Date().toISOString() });
+  };
+
+  const deleteFoodTrial = async (childId: string, foodId: string) => {
+    if (!familyId) throw new Error('No family selected');
+
+    const foodRef = ref(database, `families/${familyId}/children/${childId}/foodTrackingProgress/${foodId}`);
+    await remove(foodRef);
+
+    // Update family updatedAt
+    const familyRef = ref(database, `families/${familyId}`);
+    await update(familyRef, { updatedAt: new Date().toISOString() });
+  };
+
+  // Note: addTrialDate is handled through updateFoodTrial
+  // The calling code should read current data and append the new date to trialDates array
+
   return {
     addChild,
     updateChild,
@@ -139,5 +188,8 @@ export function useFirebaseChildren(familyId: string | null) {
     addDailyLog,
     updateDailyLog,
     deleteDailyLog,
+    addFoodTrial,
+    updateFoodTrial,
+    deleteFoodTrial,
   };
 }

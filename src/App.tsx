@@ -461,7 +461,11 @@ function AppContent() {
           />
         )}
         {currentPage === 'complementary-food' && (
-          <ComplementaryFoodPage />
+          <ComplementaryFoodPage
+            currentChild={currentChild}
+            user={user}
+            familyId={familyId}
+          />
         )}
         {currentPage === 'growth-charts' && (
           <GrowthChartsPage
