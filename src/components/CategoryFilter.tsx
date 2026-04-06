@@ -9,7 +9,7 @@ interface CategoryFilterProps {
 
 export default function CategoryFilter({ categories, selected, onChange }: CategoryFilterProps) {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide pr-4">
+    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide pr-4">
       {categories.map((category) => {
         const IconComponent = Icons[category.icon as keyof typeof Icons] as React.ComponentType<{ className?: string }>;
 
@@ -18,7 +18,7 @@ export default function CategoryFilter({ categories, selected, onChange }: Categ
             key={category.value}
             onClick={() => onChange(category.value)}
             className={`
-              flex items-center gap-2 px-4 py-2 rounded-2xl font-medium whitespace-nowrap transition-all snap-center
+              flex items-center gap-2 px-4 py-2 rounded-2xl font-medium whitespace-nowrap transition-all
               ${selected === category.value
                 ? 'bg-secondary text-white shadow-soft'
                 : 'bg-white text-gray-600 hover:bg-gray-50'
