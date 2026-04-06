@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Milestone } from '../types';
 import { X, Check, Share2, Lightbulb } from 'lucide-react';
 import { shareMilestone } from '../utils/share';
-import ReadOnlyOverlay from './ReadOnlyOverlay';
 
 interface MilestoneModalProps {
   milestone: Milestone | null;
@@ -13,7 +12,6 @@ interface MilestoneModalProps {
   achievedDate?: string;
   onToggle: () => void;
   isReadOnly?: boolean;
-  onSignIn?: () => Promise<void>;
 }
 
 export default function MilestoneModal({
@@ -23,8 +21,7 @@ export default function MilestoneModal({
   isCompleted,
   achievedDate,
   onToggle,
-  isReadOnly = false,
-  onSignIn = async () => {}
+  isReadOnly = false
 }: MilestoneModalProps) {
   useEffect(() => {
     if (isOpen) {
@@ -122,12 +119,8 @@ export default function MilestoneModal({
 
             {/* Actions */}
             <div className="sticky bottom-0 bg-white border-t border-gray-100 px-4 py-4 flex gap-3">
-              <ReadOnlyOverlay
-                isReadOnly={isReadOnly}
-                message="登入後即可記錄里程碑"
-                onSignIn={onSignIn}
-                showPrompt={true}
-              >
+              {/* Toggle button - only show when logged in */}
+              {!isReadOnly && (
                 <button
                   onClick={onToggle}
                   className={`
@@ -141,10 +134,10 @@ export default function MilestoneModal({
                   <Check className="w-5 h-5" />
                   {isCompleted ? '已完成' : '標記完成'}
                 </button>
-              </ReadOnlyOverlay>
+              )}
               <button
                 onClick={handleShare}
-                className="px-6 py-3 rounded-2xl bg-secondary text-white shadow-soft hover:bg-secondary-dark transition-all flex items-center gap-2"
+                className={`${!isReadOnly ? '' : 'flex-1'} px-6 py-3 rounded-2xl bg-secondary text-white shadow-soft hover:bg-secondary-dark transition-all flex items-center gap-2`}
               >
                 <Share2 className="w-5 h-5" />
                 分享

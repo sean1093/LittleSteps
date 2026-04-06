@@ -46,6 +46,49 @@ export default function MilestonesPage({ progress, onToggleMilestone, user, onSi
         </p>
       </div>
 
+      {/* Login Prompt - show when not logged in */}
+      {!user && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="px-4 mb-4"
+        >
+          <div className="card bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center flex-shrink-0">
+                <Baby className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-semibold text-gray-800 mb-1">登入以記錄里程碑</h4>
+                <p className="text-sm text-gray-600 mb-3">
+                  登入後即可追蹤並記錄寶寶的成長里程碑，資料會自動同步到所有裝置
+                </p>
+                <button
+                  onClick={async () => {
+                    try {
+                      await onSignIn?.();
+                    } catch (error: any) {
+                      if (error?.code === 'auth/popup-closed-by-user') {
+                        return;
+                      }
+                      console.error('登入失敗:', error);
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-primary to-secondary text-white text-sm font-medium hover:shadow-soft transition-shadow"
+                >
+                  <img
+                    src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                    alt="Google"
+                    className="w-4 h-4"
+                  />
+                  <span>使用 Google 登入</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Month Picker */}
       <div className="px-4 mb-4">
         <MonthPicker
@@ -84,7 +127,6 @@ export default function MilestonesPage({ progress, onToggleMilestone, user, onSi
                   onToggle={() => onToggleMilestone(milestone.id)}
                   onClick={() => setSelectedMilestoneId(milestone.id)}
                   isReadOnly={!user}
-                  onSignIn={onSignIn}
                 />
               </motion.div>
             ))
@@ -114,7 +156,6 @@ export default function MilestonesPage({ progress, onToggleMilestone, user, onSi
         achievedDate={selectedMilestone ? progress[selectedMilestone.id]?.achievedDate : undefined}
         onToggle={() => selectedMilestone && onToggleMilestone(selectedMilestone.id)}
         isReadOnly={!user}
-        onSignIn={onSignIn}
       />
     </div>
   );

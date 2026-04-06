@@ -1,6 +1,5 @@
 import { Milestone } from '../types';
 import { Check, ChevronRight } from 'lucide-react';
-import ReadOnlyOverlay from './ReadOnlyOverlay';
 
 interface MilestoneCardProps {
   milestone: Milestone;
@@ -9,7 +8,6 @@ interface MilestoneCardProps {
   onToggle: () => void;
   onClick: () => void;
   isReadOnly?: boolean;
-  onSignIn?: () => Promise<void>;
 }
 
 export default function MilestoneCard({
@@ -18,18 +16,12 @@ export default function MilestoneCard({
   achievedDate,
   onToggle,
   onClick,
-  isReadOnly = false,
-  onSignIn = async () => {}
+  isReadOnly = false
 }: MilestoneCardProps) {
   return (
     <div className="card flex gap-3 items-start">
-      {/* Checkbox */}
-      <ReadOnlyOverlay
-        isReadOnly={isReadOnly}
-        message="登入後即可記錄里程碑"
-        onSignIn={onSignIn}
-        showPrompt={false}
-      >
+      {/* Checkbox - only show when logged in */}
+      {!isReadOnly && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -45,7 +37,7 @@ export default function MilestoneCard({
         >
           {isCompleted && <Check className="w-4 h-4 text-white" />}
         </button>
-      </ReadOnlyOverlay>
+      )}
 
       {/* Content */}
       <div

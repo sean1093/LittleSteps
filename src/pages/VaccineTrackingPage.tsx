@@ -11,7 +11,6 @@ import {
   vaccineTypes,
   vaccineGuidelines
 } from '../data/vaccines';
-import ReadOnlyOverlay from '../components/ReadOnlyOverlay';
 
 type FundingFilter = 'all' | 'public' | 'private';
 type MonthFilter = 'all' | number;
@@ -141,6 +140,49 @@ export default function VaccineTrackingPage({
         <p className="text-sm text-gray-600 mb-4">
           依照衛福部建議時程，記錄寶寶的疫苗接種狀況
         </p>
+
+        {/* Login Prompt - show when not logged in */}
+        {!user && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4"
+          >
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-2xl p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center flex-shrink-0">
+                  <Icons.Syringe className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-gray-800 mb-1">登入以記錄疫苗接種</h4>
+                  <p className="text-sm text-gray-600 mb-3">
+                    登入後即可追蹤並記錄寶寶的疫苗接種進度，資料會自動同步到所有裝置
+                  </p>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await onSignIn();
+                      } catch (error: any) {
+                        if (error?.code === 'auth/popup-closed-by-user') {
+                          return;
+                        }
+                        console.error('登入失敗:', error);
+                      }
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-primary to-secondary text-white text-sm font-medium hover:shadow-soft transition-shadow"
+                  >
+                    <img
+                      src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                      alt="Google"
+                      className="w-4 h-4"
+                    />
+                    <span>使用 Google 登入</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Quick Action Buttons */}
         <div className="grid grid-cols-2 gap-2">
@@ -302,33 +344,26 @@ export default function VaccineTrackingPage({
                             className="card"
                           >
                   <div className="flex items-start gap-3">
-                    {/* Checkbox for single-dose vaccines */}
-                    {vaccine.doses === 1 && (
-                      <ReadOnlyOverlay
-                        isReadOnly={!user}
-                        message="登入後即可記錄疫苗接種"
-                        onSignIn={onSignIn}
-                        showPrompt={false}
+                    {/* Checkbox for single-dose vaccines - only show when logged in */}
+                    {vaccine.doses === 1 && user && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onToggleVaccineDose(vaccine.id, 1);
+                        }}
+                        className={`
+                          flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer
+                          ${isDoseAdministered(vaccine.id, 1)
+                            ? 'bg-primary border-primary'
+                            : 'border-gray-300 hover:border-primary'
+                          }
+                        `}
+                        aria-label={`標記${vaccine.name}為已接種`}
                       >
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            onToggleVaccineDose(vaccine.id, 1);
-                          }}
-                          className={`
-                            flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer
-                            ${isDoseAdministered(vaccine.id, 1)
-                              ? 'bg-primary border-primary'
-                              : 'border-gray-300 hover:border-primary'
-                            }
-                          `}
-                          aria-label={`標記${vaccine.name}為已接種`}
-                        >
-                          {isDoseAdministered(vaccine.id, 1) && <Icons.Check className="w-4 h-4 text-white" />}
-                        </button>
-                      </ReadOnlyOverlay>
+                        {isDoseAdministered(vaccine.id, 1) && <Icons.Check className="w-4 h-4 text-white" />}
+                      </button>
                     )}
 
                     {/* Age Badge */}
@@ -421,12 +456,8 @@ export default function VaccineTrackingPage({
                                       onClick={(e) => e.stopPropagation()}
                                       className="flex items-center gap-3 p-2 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
                                     >
-                                      <ReadOnlyOverlay
-                                        isReadOnly={!user}
-                                        message="登入後即可記錄疫苗接種"
-                                        onSignIn={onSignIn}
-                                        showPrompt={false}
-                                      >
+                                      {/* Checkbox - only show when logged in */}
+                                      {user && (
                                         <button
                                           type="button"
                                           onClick={(e) => {
@@ -445,7 +476,7 @@ export default function VaccineTrackingPage({
                                         >
                                           {isAdministered && <Icons.Check className="w-3 h-3 text-white" />}
                                         </button>
-                                      </ReadOnlyOverlay>
+                                      )}
                                       <div className="flex-1">
                                         <span className={`text-sm font-medium ${isAdministered ? 'text-gray-800' : 'text-gray-600'}`}>
                                           第 {doseNum} 劑
@@ -455,7 +486,12 @@ export default function VaccineTrackingPage({
                                             ✓ {doseDate}
                                           </span>
                                         )}
-                                        {!isAdministered && (
+                                        {!user && !isAdministered && (
+                                          <span className="text-xs text-gray-400 ml-2">
+                                            登入後可記錄
+                                          </span>
+                                        )}
+                                        {user && !isAdministered && (
                                           <span className="text-xs text-gray-400 ml-2">
                                             點擊記錄接種
                                           </span>

@@ -152,7 +152,18 @@ export default function LandingPage({ onNavigate, user, onSignIn }: LandingPageP
               <motion.button
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={onSignIn}
+                onClick={async () => {
+                  try {
+                    await onSignIn();
+                  } catch (error: any) {
+                    // User cancelled the login popup - ignore the error
+                    if (error?.code === 'auth/popup-closed-by-user') {
+                      return;
+                    }
+                    // Log other errors
+                    console.error('登入失敗:', error);
+                  }
+                }}
                 className="group relative flex items-center justify-center gap-3 px-10 py-5 rounded-2xl bg-gradient-to-r from-primary to-secondary text-white shadow-soft-lg hover:shadow-xl transition-all overflow-hidden"
               >
                 {/* Shimmer Effect */}
