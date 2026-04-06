@@ -18,14 +18,14 @@ export default function MilestoneSummaryCard({
     <DashboardCard
       title="里程碑追蹤"
       icon={Baby}
-      iconColor="text-white"
-      iconBgGradient="from-pink-400 to-pink-600"
+      iconColor="text-[#FF9B9B]"
+      iconBg="bg-[#FFE5E5]"
       onClick={onNavigate}
-      bgColor="bg-pink-50/50"
+      bgColor="bg-[#FFE5E5]/30"
     >
       {/* Progress Stats */}
       <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-bold text-pink-600">
+        <span className="text-3xl font-bold text-[#FF9B9B]">
           {summary.achievedCount}
         </span>
         <span className="text-gray-600">
@@ -36,7 +36,7 @@ export default function MilestoneSummaryCard({
       {/* Progress Bar */}
       <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
         <div
-          className="h-full bg-gradient-to-r from-pink-400 to-pink-600 transition-all duration-500"
+          className="h-full bg-[#FF9B9B] transition-all duration-500"
           style={{ width: `${summary.achievementRate}%` }}
         />
       </div>
@@ -51,7 +51,7 @@ export default function MilestoneSummaryCard({
                 key={achievement.id}
                 className="text-sm text-gray-700 flex items-start gap-2"
               >
-                <span className="text-pink-500">•</span>
+                <span className="text-[#FF9B9B]">•</span>
                 <span className="flex-1">{achievement.title}</span>
               </div>
             ))}

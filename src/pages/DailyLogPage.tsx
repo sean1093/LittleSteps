@@ -17,9 +17,9 @@ export default function DailyLogPage() {
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-100 to-purple-100 mb-6"
+            className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-[#E8F4F8] mb-6"
           >
-            <Icons.Construction className="w-12 h-12 text-blue-600" />
+            <Icons.Construction className="w-12 h-12 text-[#7EC8E3]" />
           </motion.div>
 
           {/* Title */}
@@ -49,7 +49,7 @@ export default function DailyLogPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.5 }}
-            className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-4 mb-6"
+            className="bg-[#E8F4F8]/50 rounded-3xl p-4 mb-6"
           >
             <h3 className="text-sm font-semibold text-gray-800 mb-3">即將推出的功能</h3>
             <div className="space-y-2 text-left">

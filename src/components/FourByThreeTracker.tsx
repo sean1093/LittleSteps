@@ -83,7 +83,7 @@ export default function FourByThreeTracker({
   return (
     <div className="px-4 space-y-4">
       {/* Info Card */}
-      <div className="card bg-gradient-to-br from-purple-50 to-purple-100/50 border border-purple-200">
+      <div className="card bg-purple-50/50 border border-purple-200/30">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center flex-shrink-0">
             <Icons.Info className="w-5 h-5 text-white" />
@@ -129,7 +129,7 @@ export default function FourByThreeTracker({
               className={`
                 card cursor-pointer transition-all
                 ${canTry
-                  ? 'bg-gradient-to-r from-green-50 to-green-100/50 border-2 border-green-300 shadow-soft'
+                  ? 'bg-[#E8F5E9]/50 border-2 border-[#81C784]/30 shadow-soft'
                   : 'bg-white border border-gray-200'
                 }
               `}

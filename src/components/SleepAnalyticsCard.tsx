@@ -58,10 +58,10 @@ export default function SleepAnalyticsCard({
     <DashboardCard
       title="睡眠分析"
       icon={Moon}
-      iconColor="text-white"
-      iconBgGradient="from-indigo-400 to-purple-600"
+      iconColor="text-[#7EC8E3]"
+      iconBg="bg-[#E8F4F8]"
       onClick={onNavigate}
-      bgColor="bg-indigo-50/50"
+      bgColor="bg-[#E8F4F8]/30"
     >
       {hasData ? (
         <>
@@ -128,7 +128,7 @@ export default function SleepAnalyticsCard({
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-gradient-to-r from-green-400 to-emerald-500 text-white rounded-xl p-3 mb-4"
+              className="bg-[#81C784] text-white rounded-3xl p-3 mb-4"
             >
               <div className="flex items-center gap-2">
                 <PartyPopper className="w-5 h-5" />

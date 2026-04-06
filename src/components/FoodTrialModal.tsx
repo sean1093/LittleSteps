@@ -411,7 +411,7 @@ export default function FoodTrialModal({
                 </button>
                 <button
                   onClick={handleSave}
-                  className="flex-1 py-3 px-6 rounded-2xl bg-gradient-to-r from-primary to-secondary text-white font-semibold shadow-soft hover:shadow-soft-lg transition-all"
+                  className="flex-1 py-3 px-6 rounded-full bg-[#7EC8E3] hover:bg-[#6BB8D3] text-white font-semibold shadow-soft hover:shadow-soft-lg transition-all"
                 >
                   {editingFood ? '更新' : '儲存'}
                 </button>

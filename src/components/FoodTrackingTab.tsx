@@ -69,7 +69,7 @@ export default function FoodTrackingTab({
     <div className="px-4 space-y-6">
       {/* Statistics Cards */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="card bg-gradient-to-br from-blue-50 to-blue-100/50 border border-blue-200">
+        <div className="card bg-[#E8F4F8]/50 border border-[#7EC8E3]/30">
           <div className="flex items-center gap-2 mb-1">
             <Icons.Apple className="w-5 h-5 text-blue-600" />
             <span className="text-sm font-medium text-blue-900">已嘗試食物</span>
@@ -77,7 +77,7 @@ export default function FoodTrackingTab({
           <div className="text-3xl font-bold text-blue-700">{stats.total}</div>
         </div>
 
-        <div className="card bg-gradient-to-br from-green-50 to-green-100/50 border border-green-200">
+        <div className="card bg-[#E8F5E9]/50 border border-[#81C784]/30">
           <div className="flex items-center gap-2 mb-1">
             <Icons.CheckCircle2 className="w-5 h-5 text-green-600" />
             <span className="text-sm font-medium text-green-900">無過敏</span>
@@ -85,7 +85,7 @@ export default function FoodTrackingTab({
           <div className="text-3xl font-bold text-green-700">{stats.noAllergy}</div>
         </div>
 
-        <div className="card bg-gradient-to-br from-pink-50 to-pink-100/50 border border-pink-200">
+        <div className="card bg-[#FFE5E5]/50 border border-[#FF9B9B]/30">
           <div className="flex items-center gap-2 mb-1">
             <Icons.Heart className="w-5 h-5 text-pink-600" />
             <span className="text-sm font-medium text-pink-900">喜歡</span>
@@ -93,7 +93,7 @@ export default function FoodTrackingTab({
           <div className="text-3xl font-bold text-pink-700">{stats.loved}</div>
         </div>
 
-        <div className="card bg-gradient-to-br from-red-50 to-red-100/50 border border-red-200">
+        <div className="card bg-red-50/50 border border-red-200/30">
           <div className="flex items-center gap-2 mb-1">
             <Icons.AlertCircle className="w-5 h-5 text-red-600" />
             <span className="text-sm font-medium text-red-900">有過敏</span>
@@ -147,7 +147,7 @@ export default function FoodTrackingTab({
       {/* Add Food Button */}
       <button
         onClick={onAddFood}
-        className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-r from-primary to-secondary text-white font-semibold shadow-soft hover:shadow-soft-lg transition-all"
+        className="w-full flex items-center justify-center gap-2 p-4 rounded-full bg-[#7EC8E3] hover:bg-[#6BB8D3] text-white font-semibold shadow-soft hover:shadow-soft-lg transition-all"
       >
         <Icons.Plus className="w-5 h-5" />
         記錄新食物嘗試
@@ -200,7 +200,7 @@ export default function FoodTrackingTab({
             >
               <div className="flex items-start gap-3">
                 {/* Food Icon/Category */}
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center flex-shrink-0 text-2xl">
+                <div className="w-12 h-12 rounded-full bg-[#FFF3E0] flex items-center justify-center flex-shrink-0 text-2xl">
                   {food.category === '蔬菜' ? '🥬' :
                    food.category === '水果' ? '🍎' :
                    food.category === '穀類' ? '🌾' :

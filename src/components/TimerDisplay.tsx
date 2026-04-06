@@ -71,7 +71,7 @@ export default function TimerDisplay({
   };
 
   return (
-    <div className={`bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl ${classes.container}`}>
+    <div className={`bg-[#E8F4F8]/50 rounded-3xl ${classes.container}`}>
       {/* Label */}
       {label && (
         <div className={`text-center text-gray-600 mb-2 font-medium ${classes.label}`}>

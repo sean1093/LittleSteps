@@ -34,12 +34,12 @@ export default function LoginPrompt({
 
   if (compact) {
     return (
-      <div className="inline-flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-lg border border-blue-200">
-        <Lock className="w-4 h-4 text-blue-600" />
-        <span className="text-sm text-blue-700">{message}</span>
+      <div className="inline-flex items-center gap-2 px-3 py-2 bg-[#E8F4F8]/50 rounded-lg border border-[#7EC8E3]/30">
+        <Lock className="w-4 h-4 text-[#7EC8E3]" />
+        <span className="text-sm text-gray-700">{message}</span>
         <button
           onClick={handleSignIn}
-          className="text-sm font-medium text-blue-600 hover:text-blue-700 underline"
+          className="text-sm font-medium text-[#7EC8E3] hover:text-[#6BB8D3] underline"
         >
           立即登入
         </button>
@@ -51,10 +51,10 @@ export default function LoginPrompt({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 shadow-soft border border-blue-100"
+      className="bg-[#E8F4F8]/50 rounded-3xl p-6 shadow-soft border-2 border-[#7EC8E3]/30"
     >
       <div className="flex flex-col items-center text-center">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center mb-4 shadow-soft">
+        <div className="w-16 h-16 rounded-full bg-[#7EC8E3] flex items-center justify-center mb-4 shadow-soft">
           <Lock className="w-8 h-8 text-white" />
         </div>
 
@@ -70,7 +70,7 @@ export default function LoginPrompt({
           whileHover={{ scale: 1.05, y: -2 }}
           whileTap={{ scale: 0.98 }}
           onClick={handleSignIn}
-          className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-soft hover:shadow-soft-lg transition-all"
+          className="flex items-center gap-3 px-6 py-3 rounded-full bg-[#7EC8E3] text-white shadow-soft hover:shadow-soft-lg hover:bg-[#6BB8D3] transition-all"
         >
           <img
             src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
