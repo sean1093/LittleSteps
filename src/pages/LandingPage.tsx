@@ -48,8 +48,8 @@ export default function LandingPage({ onNavigate, user, onSignIn }: LandingPageP
       {/* Hero Section */}
       <section className="relative px-4 py-20 md:py-28 overflow-hidden">
         {/* Soft decorative circles */}
-        <div className="absolute top-20 right-10 w-64 h-64 bg-[#FFE5E5] rounded-full opacity-30 blur-3xl" />
-        <div className="absolute bottom-20 left-10 w-80 h-80 bg-[#E8F4F8] rounded-full opacity-30 blur-3xl" />
+        <div className="absolute top-20 right-10 w-64 h-64 bg-[#FFE5E5] rounded-full opacity-30 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-20 left-10 w-80 h-80 bg-[#E8F4F8] rounded-full opacity-30 blur-3xl pointer-events-none" />
 
         <div className="relative max-w-4xl mx-auto text-center">
           <motion.div

@@ -24,8 +24,8 @@ export default function SleepTrainingPage() {
   return (
     <div className="min-h-screen bg-[#FDFBF7] pb-6 relative overflow-hidden">
       {/* Soft decorative circles */}
-      <div className="absolute top-10 right-5 w-48 h-48 bg-[#E8F4F8] rounded-full opacity-30 blur-3xl" />
-      <div className="absolute bottom-40 left-5 w-64 h-64 bg-[#FFE5E5] rounded-full opacity-30 blur-3xl" />
+      <div className="absolute top-10 right-5 w-48 h-48 bg-[#E8F4F8] rounded-full opacity-30 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-40 left-5 w-64 h-64 bg-[#FFE5E5] rounded-full opacity-30 blur-3xl pointer-events-none" />
 
       {/* Header */}
       <div className="relative z-10 bg-[#E8F4F8]/30 px-4 py-6 mb-6">

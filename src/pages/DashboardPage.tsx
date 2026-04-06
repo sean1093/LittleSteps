@@ -46,8 +46,8 @@ export default function DashboardPage({
     return (
       <div className="min-h-screen bg-[#FDFBF7] px-4 py-8 relative overflow-hidden">
         {/* Decorative circles */}
-        <div className="absolute top-20 right-10 w-64 h-64 bg-[#E8F4F8] rounded-full opacity-30 blur-3xl" />
-        <div className="absolute bottom-20 left-10 w-80 h-80 bg-[#FFE5E5] rounded-full opacity-30 blur-3xl" />
+        <div className="absolute top-20 right-10 w-64 h-64 bg-[#E8F4F8] rounded-full opacity-30 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-20 left-10 w-80 h-80 bg-[#FFE5E5] rounded-full opacity-30 blur-3xl pointer-events-none" />
 
         <div className="max-w-4xl mx-auto relative z-10">
           {/* Header */}
