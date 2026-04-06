@@ -17,6 +17,7 @@ import ComplementaryFoodPage from './pages/ComplementaryFoodPage';
 import GrowthChartsPage from './pages/GrowthChartsPage';
 import TimerDemoPage from './pages/TimerDemoPage';
 import SleepTrainingPage from './pages/SleepTrainingPage';
+import DailyLogPage from './pages/DailyLogPage';
 
 type Page = 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts' | 'sleep-training' | 'timer-demo';
 
@@ -472,6 +473,9 @@ function AppContent() {
             user={user}
             familyId={familyId}
           />
+        )}
+        {currentPage === 'daily-log' && (
+          <DailyLogPage />
         )}
         {currentPage === 'growth-charts' && (
           <GrowthChartsPage
