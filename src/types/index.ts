@@ -45,6 +45,12 @@ export interface VaccineSchedule {
   currentDose?: number;
   sideEffects: string[];
   notes?: string;
+  // 自費疫苗專屬欄位
+  priceRange?: string;           // 價格範圍，如 "$1,900~$2,700"
+  recommendation?: string;        // 醫師建議等級，如 "必打等級"、"建議施打"
+  features?: string;              // 特色說明
+  ageLimit?: string;              // 施打年齡上限提醒，如 "須在6個月前完成"
+  diseasesPrevented?: string[];   // 預防的疾病
 }
 
 export interface VaccineSideEffect {

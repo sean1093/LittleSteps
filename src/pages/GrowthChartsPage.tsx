@@ -11,7 +11,6 @@ import GrowthChartDisplay from '../components/GrowthChartDisplay';
 interface GrowthChartsPageProps {
   currentChild?: ChildProfile;
   user: User | null;
-  familyId: string | null;
 }
 
 const containerVariants = {
@@ -36,7 +35,6 @@ const itemVariants = {
 export default function GrowthChartsPage({
   currentChild,
   user,
-  familyId,
 }: GrowthChartsPageProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedChart, setSelectedChart] = useState<'weight' | 'height' | 'headCircumference'>('weight');
@@ -44,7 +42,6 @@ export default function GrowthChartsPage({
   const { records, loading, addRecord, updateRecord, deleteRecord } = useGrowthTracking(
     currentChild?.id || null,
     user,
-    familyId,
     currentChild?.gender,
     currentChild?.birthday
   );

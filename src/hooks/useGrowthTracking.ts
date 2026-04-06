@@ -22,7 +22,6 @@ interface UseGrowthTrackingResult {
 export function useGrowthTracking(
   childId: string | null,
   user: { uid: string } | null,
-  familyId: string | null,
   childGender?: Gender,
   childBirthday?: string
 ): UseGrowthTrackingResult {
@@ -39,11 +38,11 @@ export function useGrowthTracking(
       return;
     }
 
-    if (user && familyId) {
+    if (user) {
       // Firebase mode: Real-time listener
       const recordsRef = ref(
         database,
-        `families/${familyId}/children/${childId}/growthRecords`
+        `users/${user.uid}/children/${childId}/growthRecords`
       );
 
       const unsubscribe = onValue(recordsRef, (snapshot) => {
@@ -71,7 +70,7 @@ export function useGrowthTracking(
       }
       setLoading(false);
     }
-  }, [childId, user, familyId, storageKey]);
+  }, [childId, user, storageKey]);
 
   /**
    * Add a new growth record
@@ -98,11 +97,11 @@ export function useGrowthTracking(
       id: `growth_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     };
 
-    if (user && familyId) {
+    if (user) {
       // Firebase mode
       const recordRef = ref(
         database,
-        `families/${familyId}/children/${childId}/growthRecords/${newRecord.id}`
+        `users/${user.uid}/children/${childId}/growthRecords/${newRecord.id}`
       );
       await set(recordRef, newRecord);
     } else {
@@ -153,11 +152,11 @@ export function useGrowthTracking(
       childBirthday
     );
 
-    if (user && familyId) {
+    if (user) {
       // Firebase mode
       const recordRef = ref(
         database,
-        `families/${familyId}/children/${childId}/growthRecords/${recordId}`
+        `users/${user.uid}/children/${childId}/growthRecords/${recordId}`
       );
       await set(recordRef, { ...updatedWithPercentiles, id: recordId });
     } else {
@@ -178,11 +177,11 @@ export function useGrowthTracking(
       throw new Error('No child selected');
     }
 
-    if (user && familyId) {
+    if (user) {
       // Firebase mode
       const recordRef = ref(
         database,
-        `families/${familyId}/children/${childId}/growthRecords/${recordId}`
+        `users/${user.uid}/children/${childId}/growthRecords/${recordId}`
       );
       await remove(recordRef);
     } else {

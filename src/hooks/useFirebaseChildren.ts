@@ -2,9 +2,9 @@ import { ref, set, update, remove } from 'firebase/database';
 import { database } from '../lib/firebase';
 import { ChildProfile, DailyLog, FoodTrialRecord } from '../types';
 
-export function useFirebaseChildren(familyId: string | null) {
-  const addChild = async (name: string, birthday: string, userId: string, currentChildCount: number) => {
-    if (!familyId) throw new Error('No family selected');
+export function useFirebaseChildren(userId: string | null) {
+  const addChild = async (name: string, birthday: string, currentChildCount: number) => {
+    if (!userId) throw new Error('User not authenticated');
 
     // 免費版限制：最多 2 個寶寶
     if (currentChildCount >= 2) {
@@ -21,53 +21,45 @@ export function useFirebaseChildren(familyId: string | null) {
       createdAt: new Date().toISOString(),
     };
 
-    const childRef = ref(database, `families/${familyId}/children/${childId}`);
-    await set(childRef, { ...newChild, createdBy: userId });
+    const childRef = ref(database, `users/${userId}/children/${childId}`);
+    await set(childRef, newChild);
 
     // 如果是第一個孩子，自動設為 currentChildId
-    const familyRef = ref(database, `families/${familyId}`);
-    await update(familyRef, {
+    const userRef = ref(database, `users/${userId}`);
+    await update(userRef, {
       currentChildId: childId,
-      updatedAt: new Date().toISOString(),
     });
 
     return childId;
   };
 
   const updateChild = async (childId: string, name: string, birthday: string) => {
-    if (!familyId) throw new Error('No family selected');
+    if (!userId) throw new Error('User not authenticated');
 
-    const childRef = ref(database, `families/${familyId}/children/${childId}`);
+    const childRef = ref(database, `users/${userId}/children/${childId}`);
     await update(childRef, { name, birthday });
-
-    const familyRef = ref(database, `families/${familyId}`);
-    await update(familyRef, { updatedAt: new Date().toISOString() });
   };
 
   const deleteChild = async (childId: string) => {
-    if (!familyId) throw new Error('No family selected');
+    if (!userId) throw new Error('User not authenticated');
 
-    const childRef = ref(database, `families/${familyId}/children/${childId}`);
+    const childRef = ref(database, `users/${userId}/children/${childId}`);
     await remove(childRef);
-
-    const familyRef = ref(database, `families/${familyId}`);
-    await update(familyRef, { updatedAt: new Date().toISOString() });
   };
 
   const setCurrentChild = async (childId: string) => {
-    if (!familyId) throw new Error('No family selected');
+    if (!userId) throw new Error('User not authenticated');
 
-    const familyRef = ref(database, `families/${familyId}`);
-    await update(familyRef, {
+    const userRef = ref(database, `users/${userId}`);
+    await update(userRef, {
       currentChildId: childId,
-      updatedAt: new Date().toISOString(),
     });
   };
 
   const updateMilestoneProgress = async (childId: string, milestoneId: string, achieved: boolean) => {
-    if (!familyId) throw new Error('No family selected');
+    if (!userId) throw new Error('User not authenticated');
 
-    const progressRef = ref(database, `families/${familyId}/children/${childId}/milestoneProgress/${milestoneId}`);
+    const progressRef = ref(database, `users/${userId}/children/${childId}/milestoneProgress/${milestoneId}`);
     await set(progressRef, {
       achieved,
       achievedDate: achieved ? new Date().toISOString().split('T')[0] : undefined,
@@ -75,9 +67,9 @@ export function useFirebaseChildren(familyId: string | null) {
   };
 
   const updateVaccineProgress = async (childId: string, vaccineId: string, doseNumber: number, administered: boolean) => {
-    if (!familyId) throw new Error('No family selected');
+    if (!userId) throw new Error('User not authenticated');
 
-    const progressRef = ref(database, `families/${familyId}/children/${childId}/vaccineProgress/${vaccineId}/doses/${doseNumber}`);
+    const progressRef = ref(database, `users/${userId}/children/${childId}/vaccineProgress/${vaccineId}/doses/${doseNumber}`);
     await set(progressRef, {
       administered,
       administeredDate: administered ? new Date().toISOString().split('T')[0] : undefined,
@@ -86,7 +78,7 @@ export function useFirebaseChildren(familyId: string | null) {
 
   // Daily Log methods
   const addDailyLog = async (childId: string, log: Omit<DailyLog, 'id'>) => {
-    if (!familyId) throw new Error('No family selected');
+    if (!userId) throw new Error('User not authenticated');
 
     const logId = `log_${Date.now()}`;
     const newLog: DailyLog = {
@@ -94,44 +86,32 @@ export function useFirebaseChildren(familyId: string | null) {
       id: logId,
     };
 
-    const logRef = ref(database, `families/${familyId}/children/${childId}/dailyLogs/${logId}`);
+    const logRef = ref(database, `users/${userId}/children/${childId}/dailyLogs/${logId}`);
     await set(logRef, newLog);
-
-    // Update family updatedAt
-    const familyRef = ref(database, `families/${familyId}`);
-    await update(familyRef, { updatedAt: new Date().toISOString() });
 
     return logId;
   };
 
   const updateDailyLog = async (childId: string, logId: string, updates: Partial<DailyLog>) => {
-    if (!familyId) throw new Error('No family selected');
+    if (!userId) throw new Error('User not authenticated');
 
-    const logRef = ref(database, `families/${familyId}/children/${childId}/dailyLogs/${logId}`);
+    const logRef = ref(database, `users/${userId}/children/${childId}/dailyLogs/${logId}`);
     await update(logRef, {
       ...updates,
       updatedAt: new Date().toISOString(),
     });
-
-    // Update family updatedAt
-    const familyRef = ref(database, `families/${familyId}`);
-    await update(familyRef, { updatedAt: new Date().toISOString() });
   };
 
   const deleteDailyLog = async (childId: string, logId: string) => {
-    if (!familyId) throw new Error('No family selected');
+    if (!userId) throw new Error('User not authenticated');
 
-    const logRef = ref(database, `families/${familyId}/children/${childId}/dailyLogs/${logId}`);
+    const logRef = ref(database, `users/${userId}/children/${childId}/dailyLogs/${logId}`);
     await remove(logRef);
-
-    // Update family updatedAt
-    const familyRef = ref(database, `families/${familyId}`);
-    await update(familyRef, { updatedAt: new Date().toISOString() });
   };
 
   // Food Tracking methods
   const addFoodTrial = async (childId: string, foodTrial: Omit<FoodTrialRecord, 'id' | 'createdAt'>) => {
-    if (!familyId) throw new Error('No family selected');
+    if (!userId) throw new Error('User not authenticated');
 
     const foodId = `food_${Date.now()}`;
     const newFoodTrial: FoodTrialRecord = {
@@ -140,39 +120,27 @@ export function useFirebaseChildren(familyId: string | null) {
       createdAt: new Date().toISOString(),
     };
 
-    const foodRef = ref(database, `families/${familyId}/children/${childId}/foodTrackingProgress/${foodId}`);
+    const foodRef = ref(database, `users/${userId}/children/${childId}/foodTrackingProgress/${foodId}`);
     await set(foodRef, newFoodTrial);
-
-    // Update family updatedAt
-    const familyRef = ref(database, `families/${familyId}`);
-    await update(familyRef, { updatedAt: new Date().toISOString() });
 
     return foodId;
   };
 
   const updateFoodTrial = async (childId: string, foodId: string, updates: Partial<FoodTrialRecord>) => {
-    if (!familyId) throw new Error('No family selected');
+    if (!userId) throw new Error('User not authenticated');
 
-    const foodRef = ref(database, `families/${familyId}/children/${childId}/foodTrackingProgress/${foodId}`);
+    const foodRef = ref(database, `users/${userId}/children/${childId}/foodTrackingProgress/${foodId}`);
     await update(foodRef, {
       ...updates,
       updatedAt: new Date().toISOString(),
     });
-
-    // Update family updatedAt
-    const familyRef = ref(database, `families/${familyId}`);
-    await update(familyRef, { updatedAt: new Date().toISOString() });
   };
 
   const deleteFoodTrial = async (childId: string, foodId: string) => {
-    if (!familyId) throw new Error('No family selected');
+    if (!userId) throw new Error('User not authenticated');
 
-    const foodRef = ref(database, `families/${familyId}/children/${childId}/foodTrackingProgress/${foodId}`);
+    const foodRef = ref(database, `users/${userId}/children/${childId}/foodTrackingProgress/${foodId}`);
     await remove(foodRef);
-
-    // Update family updatedAt
-    const familyRef = ref(database, `families/${familyId}`);
-    await update(familyRef, { updatedAt: new Date().toISOString() });
   };
 
   // Note: addTrialDate is handled through updateFoodTrial

@@ -16,6 +16,23 @@ export const vaccineSchedules: VaccineSchedule[] = [
     notes: "出生後儘速接種。孕婦若為高傳染性帶原者（表面抗原RPHA效價≧1:2560），嬰兒需另注射B型肝炎免疫球蛋白"
   },
   {
+    id: "rsv-birth",
+    name: "RSV長效單株抗體",
+    timing: "出生穩定後即可施打",
+    fundingType: "private",
+    ageInMonths: 0,
+    ageLabel: "出生",
+    doses: 1,
+    currentDose: 1,
+    sideEffects: ["注射部位紅腫", "輕微發燒"],
+    notes: "自費疫苗。適用於早產兒、先天性心臟病、免疫不全等高風險寶寶",
+    priceRange: "$16,000~$17,000",
+    recommendation: "高風險寶寶建議",
+    features: "長效型抗體，一劑保護整個流行季（約5-6個月），預防RSV引起的嚴重下呼吸道感染",
+    ageLimit: "建議在RSV流行季前施打（通常10月至隔年3月）",
+    diseasesPrevented: ["呼吸道融合病毒感染", "細支氣管炎", "肺炎"]
+  },
+  {
     id: "hepb-1m",
     name: "B型肝炎疫苗 第2劑",
     timing: "出生滿1個月",
@@ -70,7 +87,12 @@ export const vaccineSchedules: VaccineSchedule[] = [
     doses: 2,
     currentDose: 1,
     sideEffects: ["輕微腹瀉", "嘔吐", "煩躁"],
-    notes: "自費疫苗，須在6個月前完成"
+    notes: "自費疫苗，須在6個月前完成。口服後一週內，寶寶糞便中可能帶有病毒，更換尿布後務必徹底洗手。",
+    priceRange: "$1,900~$2,700",
+    recommendation: "必打等級",
+    features: "分2劑與3劑型，保護力相似，能大幅降低因脫水住院的機率",
+    ageLimit: "須在6個月前完成",
+    diseasesPrevented: ["病毒性腸胃炎", "嚴重嘔吐水瀉"]
   },
   {
     id: "pentavalent-4m",
@@ -107,6 +129,35 @@ export const vaccineSchedules: VaccineSchedule[] = [
     notes: "自費疫苗"
   },
   {
+    id: "menb-2m",
+    name: "B型流行性腦脊髓膜炎疫苗 第1劑",
+    timing: "出生滿2個月起",
+    fundingType: "private",
+    ageInMonths: 2,
+    ageLabel: "2個月起",
+    doses: 2,
+    currentDose: 1,
+    sideEffects: ["發燒", "注射部位腫脹疼痛", "煩躁不安", "嗜睡"],
+    notes: "自費疫苗，間隔至少1個月接種第2劑。建議在流行季節前完成接種",
+    priceRange: "$6,000~$6,500",
+    recommendation: "建議施打",
+    features: "預防B型腦膜炎雙球菌，保護力可達90%以上，特別適合免疫力較弱的寶寶",
+    ageLimit: "適用於2個月大以上",
+    diseasesPrevented: ["B型流行性腦脊髓膜炎", "敗血症", "腦膜炎"]
+  },
+  {
+    id: "menb-4m",
+    name: "B型流行性腦脊髓膜炎疫苗 第2劑",
+    timing: "第1劑後至少1個月",
+    fundingType: "private",
+    ageInMonths: 4,
+    ageLabel: "4個月",
+    doses: 2,
+    currentDose: 2,
+    sideEffects: ["發燒", "注射部位腫脹疼痛", "煩躁不安", "嗜睡"],
+    notes: "自費疫苗，與第1劑間隔至少1個月"
+  },
+  {
     id: "bcg-5m",
     name: "卡介苗",
     timing: "出生滿5-8個月",
@@ -128,6 +179,38 @@ export const vaccineSchedules: VaccineSchedule[] = [
     doses: 4,
     currentDose: 3,
     sideEffects: ["發燒", "注射部位腫脹", "煩躁不安", "食慾下降"]
+  },
+  {
+    id: "hexavalent-6m",
+    name: "六合一疫苗 第3劑（升級版）",
+    timing: "出生滿6個月",
+    fundingType: "private",
+    ageInMonths: 6,
+    ageLabel: "6個月",
+    doses: 4,
+    currentDose: 3,
+    sideEffects: ["發燒", "注射部位腫脹", "煩躁不安", "食慾下降"],
+    notes: "自費疫苗，為五合一疫苗的升級版，額外包含B型肝炎疫苗，一針抵兩針",
+    priceRange: "$2,100",
+    recommendation: "建議施打",
+    features: "六合一=五合一+B肝，減少寶寶挨針次數，含白喉、破傷風、百日咳、小兒麻痺、b型嗜血桿菌、B型肝炎",
+    diseasesPrevented: ["白喉", "破傷風", "百日咳", "小兒麻痺", "b型嗜血桿菌", "B型肝炎"]
+  },
+  {
+    id: "pneumococcal-15v-6m",
+    name: "15價肺炎鏈球菌疫苗（加強版）",
+    timing: "出生滿6個月起",
+    fundingType: "private",
+    ageInMonths: 6,
+    ageLabel: "6個月起",
+    doses: 1,
+    currentDose: 1,
+    sideEffects: ["發燒", "注射部位紅腫疼痛", "煩躁", "嗜睡"],
+    notes: "自費疫苗，為13價肺炎鏈球菌的升級版，額外保護2種血清型（22F, 33F），提供更全面的保護力",
+    priceRange: "$3,800~$4,000",
+    recommendation: "建議施打",
+    features: "15價=13價+2種額外血清型（22F, 33F），提供更廣泛的保護力，特別適合高風險族群",
+    diseasesPrevented: ["肺炎鏈球菌感染", "肺炎", "腦膜炎", "敗血症", "中耳炎"]
   },
   {
     id: "pneumococcal-12m",
@@ -196,6 +279,22 @@ export const vaccineSchedules: VaccineSchedule[] = [
     doses: 4,
     currentDose: 4,
     sideEffects: ["發燒", "注射部位腫脹", "煩躁不安", "食慾下降"]
+  },
+  {
+    id: "hexavalent-18m",
+    name: "六合一疫苗 第4劑（升級版）",
+    timing: "出生滿18個月",
+    fundingType: "private",
+    ageInMonths: 18,
+    ageLabel: "18個月",
+    doses: 4,
+    currentDose: 4,
+    sideEffects: ["發燒", "注射部位腫脹", "煩躁不安", "食慾下降"],
+    notes: "自費疫苗，為五合一疫苗的升級版，額外包含B型肝炎疫苗",
+    priceRange: "$2,100",
+    recommendation: "建議施打",
+    features: "六合一=五合一+B肝，減少寶寶挨針次數",
+    diseasesPrevented: ["白喉", "破傷風", "百日咳", "小兒麻痺", "b型嗜血桿菌", "B型肝炎"]
   },
   {
     id: "hepa-18m",
@@ -269,6 +368,23 @@ export const vaccineSchedules: VaccineSchedule[] = [
     sideEffects: ["發燒", "出疹", "注射部位腫痛"]
   },
   {
+    id: "varicella-5y",
+    name: "水痘疫苗 第2劑",
+    timing: "滿4歲至6歲",
+    fundingType: "private",
+    ageInMonths: 48,
+    ageLabel: "4歲",
+    doses: 2,
+    currentDose: 2,
+    sideEffects: ["輕微發燒", "注射部位紅疹", "疲倦"],
+    notes: "自費疫苗。第1劑（12個月）保護力約85%，接種第2劑可將保護力提升至95%以上",
+    priceRange: "$1,400~$2,000",
+    recommendation: "建議施打",
+    features: "第2劑可大幅提升保護力至95%以上，有效預防水痘及帶狀皰疹",
+    ageLimit: "適用於4歲至6歲",
+    diseasesPrevented: ["水痘", "帶狀皰疹"]
+  },
+  {
     id: "tdap-5y",
     name: "減量破傷風白喉非細胞性百日咳及不活化小兒麻痺混合疫苗",
     timing: "滿5歲至入小學前",
@@ -293,14 +409,32 @@ export const vaccineSchedules: VaccineSchedule[] = [
   // 自費疫苗
   {
     id: "enterovirus",
-    name: "腸病毒71型疫苗",
-    timing: "出生滿2個月起",
+    name: "腸病毒71型疫苗 第1劑",
+    timing: "出生滿2個月至6歲",
     fundingType: "private",
     ageInMonths: 2,
     ageLabel: "2個月起",
     doses: 2,
+    currentDose: 1,
     sideEffects: ["注射部位紅腫", "輕微發燒", "煩躁"],
-    notes: "自費疫苗，間隔2個月接種"
+    notes: "自費疫苗，間隔2個月接種第2劑。建議在6歲前完成接種，提早接種提早保護",
+    priceRange: "$4,000~$4,300",
+    recommendation: "建議施打",
+    features: "預防腸病毒71型引起的重症，特別是在流行季節（4-9月）前完成接種",
+    ageLimit: "適用於2個月至6歲",
+    diseasesPrevented: ["腸病毒71型重症", "手足口病嚴重併發症"]
+  },
+  {
+    id: "enterovirus-2",
+    name: "腸病毒71型疫苗 第2劑",
+    timing: "第1劑後2個月",
+    fundingType: "private",
+    ageInMonths: 4,
+    ageLabel: "4個月",
+    doses: 2,
+    currentDose: 2,
+    sideEffects: ["注射部位紅腫", "輕微發燒", "煩躁"],
+    notes: "自費疫苗，與第1劑間隔至少2個月"
   }
 ];
 

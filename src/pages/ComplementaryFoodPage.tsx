@@ -33,13 +33,11 @@ type ViewMode = 'overview' | 'stages' | 'menu' | 'safety' | 'tracking' | 'my-foo
 interface ComplementaryFoodPageProps {
   currentChild?: ChildProfile | null;
   user: User | null;
-  familyId: string | null;
 }
 
 export default function ComplementaryFoodPage({
   currentChild,
   user,
-  familyId,
 }: ComplementaryFoodPageProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('overview');
   const [showAllergyTest, setShowAllergyTest] = useState(false);
@@ -57,10 +55,10 @@ export default function ComplementaryFoodPage({
     addFoodTrial,
     updateFoodTrial,
     deleteFoodTrial,
-  } = useFoodTracking(childId, user, familyId);
+  } = useFoodTracking(childId, user);
 
   // Firebase methods (for logged-in users)
-  const firebaseChildren = useFirebaseChildren(familyId);
+  const firebaseChildren = useFirebaseChildren(user?.uid || null);
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -106,7 +104,7 @@ export default function ComplementaryFoodPage({
     }
 
     try {
-      if (user && familyId) {
+      if (user) {
         // Firebase mode
         if (editingFood) {
           await firebaseChildren.updateFoodTrial(childId, editingFood.id, foodData);
@@ -133,7 +131,7 @@ export default function ComplementaryFoodPage({
     if (!childId) return;
 
     try {
-      if (user && familyId) {
+      if (user) {
         // Firebase mode
         await firebaseChildren.deleteFoodTrial(childId, foodId);
       } else {
@@ -157,7 +155,7 @@ export default function ComplementaryFoodPage({
       // Update trialDates array
       const updatedTrialDates = [...(food.trialDates || []), today].sort();
 
-      if (user && familyId) {
+      if (user) {
         // Firebase mode
         await firebaseChildren.updateFoodTrial(childId, foodId, {
           trialDates: updatedTrialDates,

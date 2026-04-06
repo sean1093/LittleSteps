@@ -4,7 +4,7 @@ import { MilestoneProgress, VaccineProgress, ChildProfile } from './types'; // I
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { logPageView, logMilestoneToggle, logVaccineToggle, logChildProfileAction } from './lib/firebase';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { useFirebaseFamily } from './hooks/useFirebaseFamily';
+import { useUserChildren } from './hooks/useUserChildren';
 import { useFirebaseChildren } from './hooks/useFirebaseChildren';
 import { useDailyLogs } from './hooks/useDailyLogs';
 import Sidebar from './components/Sidebar';
@@ -24,8 +24,8 @@ function AppContent() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
 
   // Firebase hooks (for logged in users)
-  const { familyId, familyData, loading: familyLoading } = useFirebaseFamily(user);
-  const firebaseChildren = useFirebaseChildren(familyId);
+  const { children: firebaseChildProfiles, currentChildId: firebaseCurrentChildId, loading: childrenLoading } = useUserChildren(user);
+  const firebaseChildren = useFirebaseChildren(user?.uid || null);
 
   // Parse initial page from URL hash
   const getPageFromHash = (): Page => {
@@ -52,12 +52,12 @@ function AppContent() {
   const [localCurrentChildId, setLocalCurrentChildId] = useLocalStorage<string | null>("current-child-id", null);
 
   // 根據登入狀態決定使用哪個資料源
-  const childProfiles = user && familyData
-    ? Object.values(familyData.children || {})
+  const childProfiles = user
+    ? firebaseChildProfiles
     : localChildProfiles;
 
-  const currentChildId = user && familyData
-    ? familyData.currentChildId
+  const currentChildId = user
+    ? firebaseCurrentChildId
     : localCurrentChildId;
 
   // Derive current child based on currentChildId
@@ -66,7 +66,7 @@ function AppContent() {
   }, [childProfiles, currentChildId]);
 
   // Get daily logs for current child
-  const { logs: dailyLogs } = useDailyLogs(currentChildId, user, familyId);
+  const { logs: dailyLogs } = useDailyLogs(currentChildId, user);
 
   // Derive current child's milestone progress
   const currentChildMilestoneProgress: MilestoneProgress = useMemo(() => {
@@ -287,7 +287,7 @@ function AppContent() {
     if (user) {
       // Firebase 模式
       try {
-        await firebaseChildren.addChild(name, birthday, user.uid, childProfiles.length);
+        await firebaseChildren.addChild(name, birthday, childProfiles.length);
         logChildProfileAction('create');
       } catch (error: any) {
         console.error('新增寶寶失敗:', error);
@@ -364,8 +364,8 @@ function AppContent() {
     }
   };
 
-  // Show loading state while auth or family data is loading
-  if (loading || (user && familyLoading)) {
+  // Show loading state while auth or children data is loading
+  if (loading || (user && childrenLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-warm-white">
         <div className="text-center">
@@ -468,7 +468,6 @@ function AppContent() {
           <ComplementaryFoodPage
             currentChild={currentChild}
             user={user}
-            familyId={familyId}
           />
         )}
         {currentPage === 'daily-log' && (
@@ -478,7 +477,6 @@ function AppContent() {
           <GrowthChartsPage
             currentChild={currentChild}
             user={user}
-            familyId={familyId}
           />
         )}
         {currentPage === 'sleep-training' && (

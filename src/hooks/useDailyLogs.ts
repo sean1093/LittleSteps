@@ -10,8 +10,7 @@ import { User } from 'firebase/auth';
  */
 export function useDailyLogs(
   childId: string | null,
-  user: User | null,
-  familyId: string | null
+  user: User | null
 ) {
   const [logs, setLogs] = useState<DailyLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,11 +22,11 @@ export function useDailyLogs(
       return;
     }
 
-    if (user && familyId) {
+    if (user) {
       // Firebase 模式: 即時監聽
       setLoading(true);
 
-      const logsRef = ref(database, `families/${familyId}/children/${childId}/dailyLogs`);
+      const logsRef = ref(database, `users/${user.uid}/children/${childId}/dailyLogs`);
       const unsubscribe = onValue(logsRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
@@ -64,7 +63,7 @@ export function useDailyLogs(
 
       setLoading(false);
     }
-  }, [childId, user, familyId]);
+  }, [childId, user]);
 
   /**
    * 新增日誌
@@ -81,7 +80,7 @@ export function useDailyLogs(
       childId,
     };
 
-    if (user && familyId) {
+    if (user) {
       // Firebase 模式 - 由 useFirebaseChildren 處理
       // 這裡只是 placeholder，實際會在組件中使用 firebaseChildren.addDailyLog
       throw new Error('Use firebaseChildren.addDailyLog for Firebase mode');
@@ -104,7 +103,7 @@ export function useDailyLogs(
       throw new Error('No child selected');
     }
 
-    if (user && familyId) {
+    if (user) {
       // Firebase 模式
       throw new Error('Use firebaseChildren.updateDailyLog for Firebase mode');
     } else {
@@ -128,7 +127,7 @@ export function useDailyLogs(
       throw new Error('No child selected');
     }
 
-    if (user && familyId) {
+    if (user) {
       // Firebase 模式
       throw new Error('Use firebaseChildren.deleteDailyLog for Firebase mode');
     } else {

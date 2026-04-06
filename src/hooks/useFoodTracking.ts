@@ -10,8 +10,7 @@ import { User } from 'firebase/auth';
  */
 export function useFoodTracking(
   childId: string | null,
-  user: User | null,
-  familyId: string | null
+  user: User | null
 ) {
   const [foodProgress, setFoodProgress] = useState<FoodTrackingProgress>({});
   const [loading, setLoading] = useState(true);
@@ -23,11 +22,11 @@ export function useFoodTracking(
       return;
     }
 
-    if (user && familyId) {
+    if (user) {
       // Firebase 模式: 即時監聽
       setLoading(true);
 
-      const foodRef = ref(database, `families/${familyId}/children/${childId}/foodTrackingProgress`);
+      const foodRef = ref(database, `users/${user.uid}/children/${childId}/foodTrackingProgress`);
       const unsubscribe = onValue(foodRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
@@ -62,7 +61,7 @@ export function useFoodTracking(
 
       setLoading(false);
     }
-  }, [childId, user, familyId]);
+  }, [childId, user]);
 
   /**
    * 將 FoodTrackingProgress 物件轉換為陣列，方便排序和顯示
@@ -89,7 +88,7 @@ export function useFoodTracking(
       createdAt: new Date().toISOString(),
     };
 
-    if (user && familyId) {
+    if (user) {
       // Firebase 模式 - 由 useFirebaseChildren 處理
       throw new Error('Use firebaseChildren.addFoodTrial for Firebase mode');
     } else {
@@ -114,7 +113,7 @@ export function useFoodTracking(
       throw new Error('No child selected');
     }
 
-    if (user && familyId) {
+    if (user) {
       // Firebase 模式
       throw new Error('Use firebaseChildren.updateFoodTrial for Firebase mode');
     } else {
@@ -149,7 +148,7 @@ export function useFoodTracking(
       throw new Error('No child selected');
     }
 
-    if (user && familyId) {
+    if (user) {
       // Firebase 模式
       throw new Error('Use firebaseChildren.deleteFoodTrial for Firebase mode');
     } else {
