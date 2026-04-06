@@ -55,21 +55,25 @@ export default function DashboardPage({
   const ageDisplay = calculateAgeDisplay(currentChild.birthday);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-warm-white via-pink-50/30 to-blue-50/30 px-4 py-8">
+    <div className="min-h-screen bg-[#FDFBF7] px-4 py-8 relative overflow-hidden">
+      {/* Soft decorative circles */}
+      <div className="absolute top-20 right-10 w-64 h-64 bg-[#E8F4F8] rounded-full opacity-30 blur-3xl" />
+      <div className="absolute bottom-20 left-10 w-80 h-80 bg-[#FFE5E5] rounded-full opacity-30 blur-3xl" />
+
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="max-w-6xl mx-auto"
+        className="max-w-6xl mx-auto relative z-10"
       >
         {/* Baby Info Header */}
         <motion.div
           variants={itemVariants}
-          className="bg-white rounded-2xl p-6 shadow-soft mb-6"
+          className="bg-white rounded-3xl p-6 shadow-soft mb-6"
         >
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-soft">
-              <Baby className="w-8 h-8 text-white" />
+            <div className="w-16 h-16 rounded-full bg-[#FFE5E5] flex items-center justify-center">
+              <Baby className="w-8 h-8 text-[#FF9B9B]" />
             </div>
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-gray-800 mb-1">
@@ -164,12 +168,21 @@ interface NavButtonProps {
 }
 
 function NavButton({ label, onClick, gradient }: NavButtonProps) {
+  // Map gradients to solid colors
+  const colorMap: Record<string, string> = {
+    'from-pink-400 to-pink-600': 'bg-[#FFE5E5] text-[#FF9B9B]',
+    'from-green-400 to-green-600': 'bg-[#E8F5E9] text-[#81C784]',
+    'from-orange-400 to-orange-600': 'bg-[#FFF3E0] text-[#FF9B9B]',
+    'from-blue-400 to-blue-600': 'bg-[#E8F4F8] text-[#7EC8E3]',
+  };
+  const colorClass = colorMap[gradient] || 'bg-[#E8F4F8] text-[#7EC8E3]';
+
   return (
     <motion.button
       whileHover={{ y: -4, scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className={`bg-gradient-to-br ${gradient} text-white rounded-xl p-4 shadow-soft hover:shadow-soft-lg transition-all group`}
+      className={`${colorClass} rounded-3xl p-4 shadow-soft hover:shadow-soft-lg transition-all group`}
     >
       <span className="font-semibold text-lg">{label}</span>
       <ArrowRight className="w-4 h-4 inline-block ml-2 group-hover:translate-x-1 transition-transform" />

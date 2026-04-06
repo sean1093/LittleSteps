@@ -22,11 +22,17 @@ export default function SleepTrainingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-warm-white pb-6">
+    <div className="min-h-screen bg-[#FDFBF7] pb-6 relative overflow-hidden">
+      {/* Soft decorative circles */}
+      <div className="absolute top-10 right-5 w-48 h-48 bg-[#E8F4F8] rounded-full opacity-30 blur-3xl" />
+      <div className="absolute bottom-40 left-5 w-64 h-64 bg-[#FFE5E5] rounded-full opacity-30 blur-3xl" />
+
       {/* Header */}
-      <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 px-4 py-6 mb-6">
+      <div className="relative z-10 bg-[#E8F4F8]/30 px-4 py-6 mb-6">
         <div className="flex items-center gap-2 mb-3">
-          <Icons.Moon className="w-6 h-6 text-indigo-600" />
+          <div className="w-10 h-10 rounded-full bg-[#E8F4F8] flex items-center justify-center">
+            <Icons.Moon className="w-5 h-5 text-[#7EC8E3]" />
+          </div>
           <h2 className="text-xl font-bold text-gray-800">寶寶睡眠全攻略</h2>
         </div>
         <p className="text-sm text-gray-600">

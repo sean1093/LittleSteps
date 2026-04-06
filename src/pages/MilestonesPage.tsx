@@ -34,11 +34,17 @@ export default function MilestonesPage({ progress, onToggleMilestone, user, onSi
   }, [selectedMilestoneId]);
 
   return (
-    <div className="min-h-screen bg-warm-white pb-6">
+    <div className="min-h-screen bg-[#FDFBF7] pb-6 relative overflow-hidden">
+      {/* Soft decorative circles */}
+      <div className="absolute top-10 right-5 w-48 h-48 bg-[#FFE5E5] rounded-full opacity-30 blur-3xl" />
+      <div className="absolute top-40 left-5 w-56 h-56 bg-[#E8F4F8] rounded-full opacity-30 blur-3xl" />
+
       {/* Header Info */}
-      <div className="bg-gradient-to-br from-primary/10 to-secondary/10 px-4 py-6 mb-6">
+      <div className="relative z-10 bg-[#E8F4F8]/30 px-4 py-6 mb-6">
         <div className="flex items-center gap-2 mb-3">
-          <Baby className="w-6 h-6 text-primary" />
+          <div className="w-10 h-10 rounded-full bg-[#FFE5E5] flex items-center justify-center">
+            <Baby className="w-5 h-5 text-[#FF9B9B]" />
+          </div>
           <h2 className="text-xl font-bold text-gray-800">寶寶成長里程碑</h2>
         </div>
         <p className="text-sm text-gray-600">
@@ -51,11 +57,11 @@ export default function MilestonesPage({ progress, onToggleMilestone, user, onSi
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="px-4 mb-4"
+          className="px-4 mb-4 relative z-10"
         >
-          <div className="card bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200">
+          <div className="bg-[#E8F4F8]/50 border-2 border-[#7EC8E3]/30 rounded-3xl p-4">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-[#7EC8E3] flex items-center justify-center flex-shrink-0">
                 <Baby className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
@@ -74,12 +80,12 @@ export default function MilestonesPage({ progress, onToggleMilestone, user, onSi
                       console.error('登入失敗:', error);
                     }
                   }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-primary to-secondary text-white text-sm font-medium hover:shadow-soft transition-shadow"
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#7EC8E3] text-white text-sm font-medium hover:bg-[#6BB8D3] transition-colors"
                 >
                   <img
                     src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                     alt="Google"
-                    className="w-4 h-4"
+                    className="w-4 h-4 bg-white rounded-full p-0.5"
                   />
                   <span>使用 Google 登入</span>
                 </button>

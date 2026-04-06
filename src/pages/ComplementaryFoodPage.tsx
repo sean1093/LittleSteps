@@ -175,11 +175,17 @@ export default function ComplementaryFoodPage({
   };
 
   return (
-    <div className="min-h-screen bg-warm-white pb-6">
+    <div className="min-h-screen bg-[#FDFBF7] pb-6 relative overflow-hidden">
+      {/* Soft decorative circles */}
+      <div className="absolute top-10 right-5 w-48 h-48 bg-[#FFF3E0] rounded-full opacity-30 blur-3xl" />
+      <div className="absolute bottom-40 left-5 w-64 h-64 bg-[#E8F5E9] rounded-full opacity-30 blur-3xl" />
+
       {/* Header */}
-      <div className="bg-gradient-to-br from-primary/10 to-secondary/10 px-4 py-6 mb-6">
+      <div className="relative z-10 bg-[#FFF3E0]/30 px-4 py-6 mb-6">
         <div className="flex items-center gap-2 mb-3">
-          <Icons.UtensilsCrossed className="w-6 h-6 text-primary" />
+          <div className="w-10 h-10 rounded-full bg-[#FFF3E0] flex items-center justify-center">
+            <Icons.UtensilsCrossed className="w-5 h-5 text-[#FF9B9B]" />
+          </div>
           <h2 className="text-xl font-bold text-gray-800">副食品指南</h2>
         </div>
         <p className="text-sm text-gray-600 mb-4">

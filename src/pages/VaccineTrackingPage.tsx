@@ -130,11 +130,17 @@ export default function VaccineTrackingPage({
   };
 
   return (
-    <div className="min-h-screen bg-warm-white pb-6">
+    <div className="min-h-screen bg-[#FDFBF7] pb-6 relative overflow-hidden">
+      {/* Soft decorative circles */}
+      <div className="absolute top-10 right-5 w-48 h-48 bg-[#E8F5E9] rounded-full opacity-30 blur-3xl" />
+      <div className="absolute bottom-40 left-5 w-64 h-64 bg-[#E8F4F8] rounded-full opacity-30 blur-3xl" />
+
       {/* Header Info */}
-      <div className="bg-gradient-to-br from-primary/10 to-secondary/10 px-4 py-6 mb-6">
+      <div className="relative z-10 bg-[#E8F5E9]/30 px-4 py-6 mb-6">
         <div className="flex items-center gap-2 mb-3">
-          <Icons.Syringe className="w-6 h-6 text-primary" />
+          <div className="w-10 h-10 rounded-full bg-[#E8F5E9] flex items-center justify-center">
+            <Icons.Syringe className="w-5 h-5 text-[#81C784]" />
+          </div>
           <h2 className="text-xl font-bold text-gray-800">疫苗接種時程表</h2>
         </div>
         <p className="text-sm text-gray-600 mb-4">
@@ -148,9 +154,9 @@ export default function VaccineTrackingPage({
             animate={{ opacity: 1, y: 0 }}
             className="mb-4"
           >
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-2xl p-4">
+            <div className="bg-[#E8F5E9]/50 border-2 border-[#81C784]/30 rounded-3xl p-4">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-[#81C784] flex items-center justify-center flex-shrink-0">
                   <Icons.Syringe className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
@@ -169,12 +175,12 @@ export default function VaccineTrackingPage({
                         console.error('登入失敗:', error);
                       }
                     }}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-primary to-secondary text-white text-sm font-medium hover:shadow-soft transition-shadow"
+                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#81C784] text-white text-sm font-medium hover:bg-[#6BB870] transition-colors"
                   >
                     <img
                       src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                       alt="Google"
-                      className="w-4 h-4"
+                      className="w-4 h-4 bg-white rounded-full p-0.5"
                     />
                     <span>使用 Google 登入</span>
                   </button>

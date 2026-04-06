@@ -62,12 +62,16 @@ export default function GrowthChartsPage({
   const latestRecord = records[0]; // Already sorted newest first
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-warm-white via-pink-50/30 to-blue-50/30 px-4 py-8">
+    <div className="min-h-screen bg-[#FDFBF7] px-4 py-8 relative overflow-hidden">
+      {/* Soft decorative circles */}
+      <div className="absolute top-20 right-10 w-64 h-64 bg-[#E8F4F8] rounded-full opacity-30 blur-3xl" />
+      <div className="absolute bottom-20 left-10 w-80 h-80 bg-[#FFE5E5] rounded-full opacity-30 blur-3xl" />
+
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="max-w-6xl mx-auto"
+        className="max-w-6xl mx-auto relative z-10"
       >
         {/* Header */}
         <motion.div variants={itemVariants} className="mb-6">
@@ -84,7 +88,7 @@ export default function GrowthChartsPage({
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary to-secondary text-white rounded-2xl shadow-soft hover:shadow-soft-lg transition-all"
+              className="flex items-center gap-2 px-6 py-3 bg-[#7EC8E3] text-white rounded-full shadow-soft hover:shadow-soft-lg transition-all hover:bg-[#6BB8D3]"
             >
               <Plus className="w-5 h-5" />
               <span className="font-semibold">新增記錄</span>
@@ -153,12 +157,12 @@ export default function GrowthChartsPage({
 
         {/* Chart Tabs */}
         <motion.div variants={itemVariants} className="mb-6">
-          <div className="bg-white rounded-2xl p-2 shadow-soft inline-flex gap-2">
+          <div className="bg-white rounded-3xl p-2 shadow-soft inline-flex gap-2">
             <button
               onClick={() => setSelectedChart('weight')}
-              className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+              className={`px-6 py-3 rounded-full font-semibold transition-all ${
                 selectedChart === 'weight'
-                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-soft'
+                  ? 'bg-[#7EC8E3] text-white shadow-soft'
                   : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
@@ -166,9 +170,9 @@ export default function GrowthChartsPage({
             </button>
             <button
               onClick={() => setSelectedChart('height')}
-              className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+              className={`px-6 py-3 rounded-full font-semibold transition-all ${
                 selectedChart === 'height'
-                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-soft'
+                  ? 'bg-[#81C784] text-white shadow-soft'
                   : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
@@ -176,9 +180,9 @@ export default function GrowthChartsPage({
             </button>
             <button
               onClick={() => setSelectedChart('headCircumference')}
-              className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+              className={`px-6 py-3 rounded-full font-semibold transition-all ${
                 selectedChart === 'headCircumference'
-                  ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-soft'
+                  ? 'bg-[#FF9B9B] text-white shadow-soft'
                   : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
