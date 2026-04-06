@@ -156,11 +156,10 @@ function AppContent() {
   const toggleMilestone = async (id: string) => {
     if (!currentChild) return; // Cannot toggle if no child is selected
 
-    const isAchieved = !currentChildMilestoneProgress[id]?.achieved;
-
     if (user) {
       // Firebase 模式
       try {
+        const isAchieved = !currentChildMilestoneProgress[id]?.achieved;
         await firebaseChildren.updateMilestoneProgress(currentChild.id, id, isAchieved);
         logMilestoneToggle(id, isAchieved);
       } catch (error: any) {
@@ -171,6 +170,8 @@ function AppContent() {
       setLocalChildProfiles(prevProfiles => {
         return prevProfiles.map(profile => {
           if (profile.id === currentChild.id) {
+            // 從最新的 profile 資料計算 isAchieved，避免 race condition
+            const isAchieved = !profile.milestoneProgress?.[id]?.achieved;
             const newProgressEntry = isAchieved
               ? { achieved: true, achievedDate: new Date().toISOString().split('T')[0] }
               : { achieved: false, achievedDate: undefined };
@@ -186,6 +187,8 @@ function AppContent() {
           return profile;
         });
       });
+      // 使用最新狀態記錄 log
+      const isAchieved = !currentChildMilestoneProgress[id]?.achieved;
       logMilestoneToggle(id, isAchieved);
     }
   };
@@ -193,13 +196,12 @@ function AppContent() {
   const toggleVaccineDose = async (vaccineId: string, doseNumber: number) => {
     if (!currentChild) return; // Cannot toggle if no child is selected
 
-    const currentVaccine = currentChildVaccineProgress[vaccineId] || { doses: {} };
-    const currentDose = currentVaccine.doses[doseNumber];
-    const isAdministered = !currentDose?.administered;
-
     if (user) {
       // Firebase 模式
       try {
+        const currentVaccine = currentChildVaccineProgress[vaccineId] || { doses: {} };
+        const currentDose = currentVaccine.doses[doseNumber];
+        const isAdministered = !currentDose?.administered;
         await firebaseChildren.updateVaccineProgress(currentChild.id, vaccineId, doseNumber, isAdministered);
         logVaccineToggle(vaccineId, doseNumber, isAdministered);
       } catch (error: any) {
@@ -210,6 +212,11 @@ function AppContent() {
       setLocalChildProfiles(prevProfiles => {
         return prevProfiles.map(profile => {
           if (profile.id === currentChild.id) {
+            // 從最新的 profile 資料計算 isAdministered，避免 race condition
+            const profileVaccine = profile.vaccineProgress?.[vaccineId] || { doses: {} };
+            const profileDose = profileVaccine.doses[doseNumber];
+            const isAdministered = !profileDose?.administered;
+
             const newDoseEntry = isAdministered
               ? { administered: true, administeredDate: new Date().toISOString().split('T')[0] }
               : { administered: false, administeredDate: undefined };
@@ -217,10 +224,10 @@ function AppContent() {
             return {
               ...profile,
               vaccineProgress: {
-                ...currentChildVaccineProgress,
+                ...profile.vaccineProgress,
                 [vaccineId]: {
                   doses: {
-                    ...currentVaccine.doses,
+                    ...profileVaccine.doses,
                     [doseNumber]: newDoseEntry,
                   },
                 },
@@ -230,6 +237,10 @@ function AppContent() {
           return profile;
         });
       });
+      // 使用最新狀態記錄 log
+      const currentVaccine = currentChildVaccineProgress[vaccineId] || { doses: {} };
+      const currentDose = currentVaccine.doses[doseNumber];
+      const isAdministered = !currentDose?.administered;
       logVaccineToggle(vaccineId, doseNumber, isAdministered);
     }
   };
