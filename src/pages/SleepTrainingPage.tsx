@@ -49,7 +49,7 @@ export default function SleepTrainingPage() {
         <div className="card overflow-hidden p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gradient-to-r from-indigo-50 to-purple-50">
+              <thead className="bg-[#E8F4F8]/50">
                 <tr>
                   <th className="px-3 py-3 text-left font-semibold text-gray-800 whitespace-nowrap">年齡階段</th>
                   <th className="px-3 py-3 text-left font-semibold text-gray-800 whitespace-nowrap">總睡眠時數</th>
@@ -93,11 +93,11 @@ export default function SleepTrainingPage() {
                 key={knowledge.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="card bg-gradient-to-br from-blue-50/50 to-purple-50/50"
+                className="card bg-[#E8F4F8]/30"
               >
                 <div className="flex items-start gap-3 mb-3">
                   {IconComponent && (
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-[#7EC8E3] flex items-center justify-center flex-shrink-0">
                       <IconComponent className="w-5 h-5 text-white" />
                     </div>
                   )}
@@ -126,7 +126,7 @@ export default function SleepTrainingPage() {
         </div>
 
         {/* 警告提示 */}
-        <div className="card bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-200 mb-4">
+        <div className="card bg-red-50/50 border-2 border-red-200 mb-4">
           <div className="flex items-start gap-3">
             <div className="w-12 h-12 rounded-xl bg-red-500 flex items-center justify-center flex-shrink-0">
               <Icons.AlertTriangle className="w-6 h-6 text-white" />
@@ -191,7 +191,7 @@ export default function SleepTrainingPage() {
           <Icons.ListChecks className="w-5 h-5 text-purple-600" />
           <h3 className="font-semibold text-gray-800">睡眠儀式清單</h3>
         </div>
-        <div className="card bg-gradient-to-br from-purple-50 to-pink-50">
+        <div className="card bg-purple-50/50">
           <p className="text-sm text-gray-700 mb-4 leading-relaxed">
             在睡前 1 小時固定執行 3-4 個動作，形成生理連結，幫助寶寶知道「該睡覺了」。
           </p>
