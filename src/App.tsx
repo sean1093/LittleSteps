@@ -15,11 +15,10 @@ import CareGuidePage from './pages/CareGuidePage';
 import VaccineTrackingPage from './pages/VaccineTrackingPage';
 import ComplementaryFoodPage from './pages/ComplementaryFoodPage';
 import GrowthChartsPage from './pages/GrowthChartsPage';
-import TimerDemoPage from './pages/TimerDemoPage';
 import SleepTrainingPage from './pages/SleepTrainingPage';
 import DailyLogPage from './pages/DailyLogPage';
 
-type Page = 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts' | 'sleep-training' | 'timer-demo';
+type Page = 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts' | 'sleep-training';
 
 function AppContent() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
@@ -40,8 +39,7 @@ function AppContent() {
       '#/complementary-food': 'complementary-food',
       '#/daily-log': 'daily-log',
       '#/growth-charts': 'growth-charts',
-      '#/sleep-training': 'sleep-training',
-      '#/timer-demo': 'timer-demo'
+      '#/sleep-training': 'sleep-training'
     };
     return pageMap[hash] || 'home';
   };
@@ -145,8 +143,7 @@ function AppContent() {
       'complementary-food': '#/complementary-food',
       'daily-log': '#/daily-log',
       'growth-charts': '#/growth-charts',
-      'sleep-training': '#/sleep-training',
-      'timer-demo': '#/timer-demo'
+      'sleep-training': '#/sleep-training'
     };
     window.location.hash = hashMap[page];
     setCurrentPage(page);
@@ -486,9 +483,6 @@ function AppContent() {
         )}
         {currentPage === 'sleep-training' && (
           <SleepTrainingPage />
-        )}
-        {currentPage === 'timer-demo' && (
-          <TimerDemoPage />
         )}
       </main>
     </div>
