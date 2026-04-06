@@ -210,7 +210,7 @@ export default function SleepTrainingPage() {
                   className={`
                     flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all
                     ${isChecked
-                      ? 'bg-gradient-to-r from-purple-100 to-pink-100 border-2 border-purple-300'
+                      ? 'bg-purple-100/50 border-2 border-purple-300'
                       : 'bg-white border-2 border-gray-200 hover:border-purple-200'
                     }
                   `}
@@ -291,7 +291,7 @@ export default function SleepTrainingPage() {
               >
                 <div className="flex items-start gap-3">
                   {IconComponent && (
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-[#7EC8E3] flex items-center justify-center flex-shrink-0">
                       <IconComponent className="w-6 h-6 text-white" />
                     </div>
                   )}
@@ -347,7 +347,7 @@ export default function SleepTrainingPage() {
           <h3 className="font-semibold text-gray-800">訓練建議與提醒</h3>
         </div>
         <div className="space-y-3">
-          <div className="card bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200">
+          <div className="card bg-[#E8F4F8]/50 border-2 border-[#7EC8E3]/30">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center flex-shrink-0">
                 <Icons.Calendar className="w-5 h-5 text-white" />
@@ -359,7 +359,7 @@ export default function SleepTrainingPage() {
             </div>
           </div>
 
-          <div className="card bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200">
+          <div className="card bg-[#E8F5E9]/50 border-2 border-[#81C784]/30">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-lg bg-green-500 flex items-center justify-center flex-shrink-0">
                 <Icons.Users className="w-5 h-5 text-white" />
@@ -371,7 +371,7 @@ export default function SleepTrainingPage() {
             </div>
           </div>
 
-          <div className="card bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200">
+          <div className="card bg-amber-50/50 border-2 border-amber-200/30">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center flex-shrink-0">
                 <Icons.Heart className="w-5 h-5 text-white" />

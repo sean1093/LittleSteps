@@ -376,7 +376,7 @@ export default function ComplementaryFoodPage({
             </div>
             <div className="space-y-3">
               {foodProgression.map((progression, idx) => (
-                <div key={idx} className="card bg-gradient-to-r from-secondary/5 to-transparent">
+                <div key={idx} className="card bg-[#FFF3E0]/20">
                   <div className="flex items-start gap-3">
                     <div className="w-12 h-12 rounded-xl bg-secondary/20 flex items-center justify-center flex-shrink-0 font-bold text-secondary">
                       {idx + 1}
@@ -450,7 +450,7 @@ export default function ComplementaryFoodPage({
                   onClick={() => setExpandedStage(isExpanded ? null : stage.level)}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary to-secondary flex flex-col items-center justify-center text-white font-bold flex-shrink-0">
+                    <div className="w-16 h-16 rounded-full bg-[#FFF3E0] flex flex-col items-center justify-center text-[#FF9B9B] font-bold flex-shrink-0">
                       <div className="text-xs opacity-90">Level</div>
                       <div className="text-2xl">{stage.level}</div>
                     </div>

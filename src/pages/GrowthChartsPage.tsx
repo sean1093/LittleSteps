@@ -110,7 +110,7 @@ export default function GrowthChartsPage({
             </div>
             <div className="grid grid-cols-3 gap-4">
               {latestRecord.weight !== undefined && (
-                <div className="flex flex-col items-center p-4 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl">
+                <div className="flex flex-col items-center p-4 bg-[#E8F4F8]/50 rounded-3xl">
                   <Weight className="w-6 h-6 text-blue-600 mb-2" />
                   <span className="text-2xl font-bold text-gray-800">
                     {latestRecord.weight} kg
@@ -124,7 +124,7 @@ export default function GrowthChartsPage({
                 </div>
               )}
               {latestRecord.height !== undefined && (
-                <div className="flex flex-col items-center p-4 bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl">
+                <div className="flex flex-col items-center p-4 bg-[#E8F5E9]/50 rounded-3xl">
                   <Ruler className="w-6 h-6 text-green-600 mb-2" />
                   <span className="text-2xl font-bold text-gray-800">
                     {latestRecord.height} cm
@@ -138,7 +138,7 @@ export default function GrowthChartsPage({
                 </div>
               )}
               {latestRecord.headCircumference !== undefined && (
-                <div className="flex flex-col items-center p-4 bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl">
+                <div className="flex flex-col items-center p-4 bg-purple-50/50 rounded-3xl">
                   <CircleDot className="w-6 h-6 text-purple-600 mb-2" />
                   <span className="text-2xl font-bold text-gray-800">
                     {latestRecord.headCircumference} cm

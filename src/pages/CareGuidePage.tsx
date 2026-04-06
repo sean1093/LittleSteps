@@ -126,7 +126,7 @@ export default function CareGuidePage() {
                 className="card"
               >
                 <div className="flex items-start gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center flex-shrink-0 text-white font-bold">
+                  <div className="w-12 h-12 rounded-full bg-[#7EC8E3] flex items-center justify-center flex-shrink-0 text-white font-bold">
                     {guide.month}月
                   </div>
                   <div className="flex-1">

@@ -325,9 +325,9 @@ export default function VaccineTrackingPage({
                 <div key={monthKey}>
                   {/* Month Header */}
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="flex items-center gap-2 bg-gradient-to-r from-primary/10 to-transparent px-4 py-2 rounded-xl">
-                      <Icons.Calendar className="w-4 h-4 text-primary" />
-                      <span className="font-bold text-primary">{month} 個月</span>
+                    <div className="flex items-center gap-2 bg-[#E8F5E9]/30 px-4 py-2 rounded-full">
+                      <Icons.Calendar className="w-4 h-4 text-[#81C784]" />
+                      <span className="font-bold text-[#81C784]">{month} 個月</span>
                       <span className="text-sm text-gray-500">({vaccines.length} 項)</span>
                     </div>
                     <div className="flex-1 h-px bg-gray-200" />
@@ -374,10 +374,10 @@ export default function VaccineTrackingPage({
 
                     {/* Age Badge */}
                     <div className={`
-                      w-16 h-16 rounded-xl flex-shrink-0 flex flex-col items-center justify-center text-white font-bold text-xs
+                      w-16 h-16 rounded-full flex-shrink-0 flex flex-col items-center justify-center text-white font-bold text-xs
                       ${vaccine.fundingType === 'public'
-                        ? 'bg-gradient-to-br from-green-400 to-green-600'
-                        : 'bg-gradient-to-br from-orange-400 to-orange-600'
+                        ? 'bg-[#81C784]'
+                        : 'bg-[#FF9B9B]'
                       }
                     `}>
                       <div className="text-lg">{vaccine.ageInMonths || 0}</div>
