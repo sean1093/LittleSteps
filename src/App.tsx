@@ -16,8 +16,9 @@ import VaccineTrackingPage from './pages/VaccineTrackingPage';
 import ComplementaryFoodPage from './pages/ComplementaryFoodPage';
 import GrowthChartsPage from './pages/GrowthChartsPage';
 import TimerDemoPage from './pages/TimerDemoPage';
+import SleepTrainingPage from './pages/SleepTrainingPage';
 
-type Page = 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts' | 'timer-demo';
+type Page = 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts' | 'sleep-training' | 'timer-demo';
 
 function AppContent() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
@@ -38,6 +39,7 @@ function AppContent() {
       '#/complementary-food': 'complementary-food',
       '#/daily-log': 'daily-log',
       '#/growth-charts': 'growth-charts',
+      '#/sleep-training': 'sleep-training',
       '#/timer-demo': 'timer-demo'
     };
     return pageMap[hash] || 'home';
@@ -142,6 +144,7 @@ function AppContent() {
       'complementary-food': '#/complementary-food',
       'daily-log': '#/daily-log',
       'growth-charts': '#/growth-charts',
+      'sleep-training': '#/sleep-training',
       'timer-demo': '#/timer-demo'
     };
     window.location.hash = hashMap[page];
@@ -262,6 +265,9 @@ function AppContent() {
         break;
       case 'growth-charts':
         title += '成長曲線圖';
+        break;
+      case 'sleep-training':
+        title += '睡眠訓練';
         break;
       default:
         break;
@@ -473,6 +479,9 @@ function AppContent() {
             user={user}
             familyId={familyId}
           />
+        )}
+        {currentPage === 'sleep-training' && (
+          <SleepTrainingPage />
         )}
         {currentPage === 'timer-demo' && (
           <TimerDemoPage />
