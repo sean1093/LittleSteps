@@ -438,6 +438,7 @@ function AppContent() {
               <DashboardPage
                 currentChild={currentChild}
                 dailyLogs={dailyLogs}
+                user={user}
                 onNavigate={navigateToPage}
               />
             ) : (
@@ -453,6 +454,7 @@ function AppContent() {
           <DashboardPage
             currentChild={currentChild}
             dailyLogs={dailyLogs}
+            user={user}
             onNavigate={navigateToPage}
           />
         )}

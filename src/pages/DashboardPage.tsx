@@ -1,17 +1,21 @@
 import { motion } from 'framer-motion';
 import { Baby, TrendingUp, Calendar, ArrowRight, Sparkles, Heart, LineChart, Syringe, BookOpen, UtensilsCrossed } from 'lucide-react';
 import { ChildProfile, DailyLog } from '../types';
+import { User } from 'firebase/auth';
 import { useChildSummary } from '../hooks/useChildSummary';
 import { useSleepAnalytics } from '../hooks/useSleepAnalytics';
+import { useFoodTracking } from '../hooks/useFoodTracking';
 import { calculateAgeDisplay } from '../utils/summaryCalculator';
 import MilestoneSummaryCard from '../components/MilestoneSummaryCard';
 import VaccineSummaryCard from '../components/VaccineSummaryCard';
 import DailyLogSummaryCard from '../components/DailyLogSummaryCard';
 import SleepAnalyticsCard from '../components/SleepAnalyticsCard';
+import FoodTrackingSummaryCard from '../components/FoodTrackingSummaryCard';
 
 interface DashboardPageProps {
   currentChild?: ChildProfile;
   dailyLogs: DailyLog[];
+  user: User | null;
   onNavigate: (page: 'milestones' | 'vaccine-tracking' | 'daily-log' | 'care-guide' | 'complementary-food') => void;
 }
 
@@ -37,10 +41,12 @@ const itemVariants = {
 export default function DashboardPage({
   currentChild,
   dailyLogs,
+  user,
   onNavigate,
 }: DashboardPageProps) {
   const { milestoneSummary, vaccineSummary, todaySummary } = useChildSummary(currentChild, dailyLogs);
   const { analytics: sleepAnalytics } = useSleepAnalytics(dailyLogs);
+  const { stats: foodStats } = useFoodTracking(currentChild?.id || null, user);
 
   if (!currentChild) {
     return (
@@ -268,6 +274,14 @@ export default function DashboardPage({
           <SleepAnalyticsCard
             analytics={sleepAnalytics}
             onNavigate={() => onNavigate('daily-log')}
+          />
+        </motion.div>
+
+        {/* Food Tracking Summary */}
+        <motion.div variants={itemVariants} className="mb-6">
+          <FoodTrackingSummaryCard
+            stats={foodStats}
+            onNavigate={() => onNavigate('complementary-food')}
           />
         </motion.div>
 
