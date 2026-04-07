@@ -94,16 +94,6 @@ export default function VaccineTrackingPage({
     return vaccineProgress[vaccineId]?.doses[doseNumber]?.administeredDate;
   };
 
-  // Helper: Get completion status for a vaccine
-  const getVaccineCompletionStatus = (vaccineId: string, totalDoses: number): { completed: number; total: number } => {
-    let completed = 0;
-    for (let i = 1; i <= totalDoses; i++) {
-      if (isDoseAdministered(vaccineId, i)) {
-        completed++;
-      }
-    }
-    return { completed, total: totalDoses };
-  };
 
 
   return (
@@ -352,11 +342,6 @@ export default function VaccineTrackingPage({
                                   `}>
                                     {vaccine.fundingType === 'public' ? '公費' : '自費'}
                                   </span>
-                                  {vaccine.doses > 1 && (
-                                    <span className="text-gray-500">
-                                      {getVaccineCompletionStatus(vaccine.id, vaccine.doses).completed}/{vaccine.doses} 劑已完成
-                                    </span>
-                                  )}
                                 </div>
 
                                 {vaccine.notes && (
@@ -367,71 +352,64 @@ export default function VaccineTrackingPage({
                               </div>
                             </div>
 
-                            {/* Dose List - Always shown */}
-                            <div className="space-y-2">
-                              {Array.from({ length: vaccine.doses }, (_, i) => i + 1).map((doseNum) => {
-                                const isAdministered = isDoseAdministered(vaccine.id, doseNum);
-                                const doseDate = getDoseDate(vaccine.id, doseNum);
+                            {/* Single Dose Checkbox - Only show the current dose for this vaccine entry */}
+                            {(() => {
+                              const doseNum = vaccine.currentDose || 1;
+                              const isAdministered = isDoseAdministered(vaccine.id, doseNum);
+                              const doseDate = getDoseDate(vaccine.id, doseNum);
 
-                                return (
-                                  <div
-                                    key={doseNum}
-                                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-                                  >
-                                    {/* Checkbox - only show when logged in */}
-                                    {user && (
+                              return (
+                                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                                  {/* Checkbox - only show when logged in */}
+                                  {user && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        if (isAdministered) {
+                                          // If already administered, show edit date modal
+                                          setEditingDose({ vaccineId: vaccine.id, doseNumber: doseNum, currentDate: doseDate });
+                                        } else {
+                                          // If not administered, show date picker to set date
+                                          setEditingDose({ vaccineId: vaccine.id, doseNumber: doseNum });
+                                        }
+                                      }}
+                                      className={`
+                                        flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer
+                                        ${isAdministered
+                                          ? 'bg-primary border-primary'
+                                          : 'border-gray-300 hover:border-primary'
+                                        }
+                                      `}
+                                      aria-label={`標記為${isAdministered ? '未接種' : '已接種'}`}
+                                    >
+                                      {isAdministered && <Icons.Check className="w-4 h-4 text-white" />}
+                                    </button>
+                                  )}
+                                  <div className="flex-1">
+                                    {isAdministered && doseDate && (
                                       <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          if (isAdministered) {
-                                            // If already administered, show edit date modal
-                                            setEditingDose({ vaccineId: vaccine.id, doseNumber: doseNum, currentDate: doseDate });
-                                          } else {
-                                            // If not administered, show date picker to set date
-                                            setEditingDose({ vaccineId: vaccine.id, doseNumber: doseNum });
-                                          }
-                                        }}
-                                        className={`
-                                          flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer
-                                          ${isAdministered
-                                            ? 'bg-primary border-primary'
-                                            : 'border-gray-300 hover:border-primary'
-                                          }
-                                        `}
-                                        aria-label={`標記第${doseNum}劑為${isAdministered ? '未接種' : '已接種'}`}
+                                        onClick={() => setEditingDose({ vaccineId: vaccine.id, doseNumber: doseNum, currentDate: doseDate })}
+                                        className="text-sm text-green-600 font-medium hover:text-green-700 hover:underline"
                                       >
-                                        {isAdministered && <Icons.Check className="w-4 h-4 text-white" />}
+                                        ✓ {doseDate}
                                       </button>
                                     )}
-                                    <div className="flex-1">
-                                      <span className={`text-sm font-medium ${isAdministered ? 'text-gray-800' : 'text-gray-600'}`}>
-                                        {vaccine.doses > 1 ? `第 ${doseNum} 劑` : ''}
+                                    {!user && !isAdministered && (
+                                      <span className="text-sm text-gray-600">
+                                        登入後可記錄接種
                                       </span>
-                                      {isAdministered && doseDate && (
-                                        <button
-                                          onClick={() => setEditingDose({ vaccineId: vaccine.id, doseNumber: doseNum, currentDate: doseDate })}
-                                          className="text-xs text-green-600 ml-2 hover:text-green-700 hover:underline"
-                                        >
-                                          ✓ {doseDate}
-                                        </button>
-                                      )}
-                                      {!user && !isAdministered && (
-                                        <span className="text-xs text-gray-400 ml-2">
-                                          登入後可記錄
-                                        </span>
-                                      )}
-                                      {user && !isAdministered && (
-                                        <span className="text-xs text-gray-400 ml-2">
-                                          點擊記錄接種
-                                        </span>
-                                      )}
-                                    </div>
+                                    )}
+                                    {user && !isAdministered && (
+                                      <span className="text-sm text-gray-600">
+                                        點擊記錄接種日期
+                                      </span>
+                                    )}
                                   </div>
-                                );
-                              })}
-                            </div>
+                                </div>
+                              );
+                            })()}
 
                             {/* Description and Protection - Always shown */}
                             <div className="mt-3 pt-3 border-t border-gray-100">
