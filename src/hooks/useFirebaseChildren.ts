@@ -1,6 +1,15 @@
-import { ref, set, update, remove } from 'firebase/database';
+import { ref, set, update, remove, get } from 'firebase/database';
 import { database } from '../lib/firebase';
 import { ChildProfile, DailyLog, FoodTrialRecord } from '../types';
+
+// Helper function to generate UUID v4
+function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
 
 // Helper function to remove undefined values from objects
 // Firebase does not allow undefined values - they must be null or omitted
@@ -15,6 +24,12 @@ function removeUndefined<T extends Record<string, any>>(obj: T): Partial<T> {
 }
 
 export function useFirebaseChildren(userId: string | null) {
+  /**
+   * Add a new child profile
+   * - Generates a unique UUID for the child
+   * - Stores child data in children/{uuid}
+   * - Adds UUID to users/{userId}/childrenIds
+   */
   const addChild = async (name: string, birthday: string, currentChildCount: number) => {
     if (!userId) throw new Error('User not authenticated');
 
@@ -23,7 +38,7 @@ export function useFirebaseChildren(userId: string | null) {
       throw new Error('免費版最多只能新增 2 個寶寶，請升級付費會員');
     }
 
-    const childId = Date.now().toString();
+    const childId = generateUUID();
     const newChild: ChildProfile = {
       id: childId,
       name,
@@ -31,32 +46,115 @@ export function useFirebaseChildren(userId: string | null) {
       milestoneProgress: {},
       vaccineProgress: {},
       createdAt: new Date().toISOString(),
+      createdBy: userId,
     };
 
-    const childRef = ref(database, `users/${userId}/children/${childId}`);
+    // Store child data in shared children/ node
+    const childRef = ref(database, `children/${childId}`);
     await set(childRef, newChild);
 
+    // Add child UUID to user's childrenIds
+    const userChildRef = ref(database, `users/${userId}/childrenIds/${childId}`);
+    await set(userChildRef, true);
+
     // 如果是第一個孩子，自動設為 currentChildId
-    const userRef = ref(database, `users/${userId}`);
-    await update(userRef, {
-      currentChildId: childId,
-    });
+    if (currentChildCount === 0) {
+      const userRef = ref(database, `users/${userId}`);
+      await update(userRef, {
+        currentChildId: childId,
+      });
+    }
 
     return childId;
+  };
+
+  /**
+   * Join an existing child profile using UUID
+   * - Verifies the child exists
+   * - Adds UUID to users/{userId}/childrenIds
+   */
+  const joinChild = async (childUuid: string, currentChildCount: number) => {
+    if (!userId) throw new Error('User not authenticated');
+
+    // 免費版限制：最多 2 個寶寶
+    if (currentChildCount >= 2) {
+      throw new Error('免費版最多只能新增 2 個寶寶，請升級付費會員');
+    }
+
+    // Verify child exists
+    const childRef = ref(database, `children/${childUuid}`);
+    const childSnapshot = await get(childRef);
+
+    if (!childSnapshot.exists()) {
+      throw new Error('找不到此寶寶代碼，請確認代碼是否正確');
+    }
+
+    // Check if already joined
+    const userChildRef = ref(database, `users/${userId}/childrenIds/${childUuid}`);
+    const existingSnapshot = await get(userChildRef);
+
+    if (existingSnapshot.exists()) {
+      throw new Error('您已經加入此寶寶');
+    }
+
+    // Add child UUID to user's childrenIds
+    await set(userChildRef, true);
+
+    // 如果是第一個孩子，自動設為 currentChildId
+    if (currentChildCount === 0) {
+      const userRef = ref(database, `users/${userId}`);
+      await update(userRef, {
+        currentChildId: childUuid,
+      });
+    }
+
+    return childUuid;
+  };
+
+  /**
+   * Leave (unlink) from a child profile
+   * - Removes UUID from users/{userId}/childrenIds
+   * - Does NOT delete child data (other family members may still have access)
+   */
+  const leaveChild = async (childId: string) => {
+    if (!userId) throw new Error('User not authenticated');
+
+    const userChildRef = ref(database, `users/${userId}/childrenIds/${childId}`);
+    await remove(userChildRef);
   };
 
   const updateChild = async (childId: string, name: string, birthday: string) => {
     if (!userId) throw new Error('User not authenticated');
 
-    const childRef = ref(database, `users/${userId}/children/${childId}`);
+    const childRef = ref(database, `children/${childId}`);
     await update(childRef, { name, birthday });
   };
 
+  /**
+   * Delete child (only creator can delete)
+   * - Removes child data from children/{childId}
+   * - Removes from all users' childrenIds (TODO: may need to iterate users)
+   * Note: For simplicity, we only remove from current user's childrenIds
+   */
   const deleteChild = async (childId: string) => {
     if (!userId) throw new Error('User not authenticated');
 
-    const childRef = ref(database, `users/${userId}/children/${childId}`);
-    await remove(childRef);
+    // Remove from user's childrenIds
+    const userChildRef = ref(database, `users/${userId}/childrenIds/${childId}`);
+    await remove(userChildRef);
+
+    // Check if user is the creator
+    const childRef = ref(database, `children/${childId}`);
+    const childSnapshot = await get(childRef);
+
+    if (childSnapshot.exists()) {
+      const childData = childSnapshot.val() as ChildProfile;
+
+      // Only creator can fully delete the child
+      if (childData.createdBy === userId) {
+        await remove(childRef);
+      }
+    }
   };
 
   const setCurrentChild = async (childId: string) => {
@@ -71,7 +169,7 @@ export function useFirebaseChildren(userId: string | null) {
   const updateMilestoneProgress = async (childId: string, milestoneId: string, achieved: boolean) => {
     if (!userId) throw new Error('User not authenticated');
 
-    const progressRef = ref(database, `users/${userId}/children/${childId}/milestoneProgress/${milestoneId}`);
+    const progressRef = ref(database, `children/${childId}/milestoneProgress/${milestoneId}`);
     await set(progressRef, removeUndefined({
       achieved,
       achievedDate: achieved ? new Date().toISOString().split('T')[0] : undefined,
@@ -81,7 +179,7 @@ export function useFirebaseChildren(userId: string | null) {
   const updateVaccineProgress = async (childId: string, vaccineId: string, doseNumber: number, administered: boolean, customDate?: string) => {
     if (!userId) throw new Error('User not authenticated');
 
-    const progressRef = ref(database, `users/${userId}/children/${childId}/vaccineProgress/${vaccineId}/doses/${doseNumber}`);
+    const progressRef = ref(database, `children/${childId}/vaccineProgress/${vaccineId}/doses/${doseNumber}`);
     await set(progressRef, removeUndefined({
       administered,
       administeredDate: administered ? (customDate || new Date().toISOString().split('T')[0]) : undefined,
@@ -98,7 +196,7 @@ export function useFirebaseChildren(userId: string | null) {
       id: logId,
     };
 
-    const logRef = ref(database, `users/${userId}/children/${childId}/dailyLogs/${logId}`);
+    const logRef = ref(database, `children/${childId}/dailyLogs/${logId}`);
     await set(logRef, removeUndefined(newLog));
 
     return logId;
@@ -107,7 +205,7 @@ export function useFirebaseChildren(userId: string | null) {
   const updateDailyLog = async (childId: string, logId: string, updates: Partial<DailyLog>) => {
     if (!userId) throw new Error('User not authenticated');
 
-    const logRef = ref(database, `users/${userId}/children/${childId}/dailyLogs/${logId}`);
+    const logRef = ref(database, `children/${childId}/dailyLogs/${logId}`);
     await update(logRef, removeUndefined({
       ...updates,
       updatedAt: new Date().toISOString(),
@@ -117,7 +215,7 @@ export function useFirebaseChildren(userId: string | null) {
   const deleteDailyLog = async (childId: string, logId: string) => {
     if (!userId) throw new Error('User not authenticated');
 
-    const logRef = ref(database, `users/${userId}/children/${childId}/dailyLogs/${logId}`);
+    const logRef = ref(database, `children/${childId}/dailyLogs/${logId}`);
     await remove(logRef);
   };
 
@@ -132,7 +230,7 @@ export function useFirebaseChildren(userId: string | null) {
       createdAt: new Date().toISOString(),
     };
 
-    const foodRef = ref(database, `users/${userId}/children/${childId}/foodTrackingProgress/${foodId}`);
+    const foodRef = ref(database, `children/${childId}/foodTrackingProgress/${foodId}`);
     await set(foodRef, removeUndefined(newFoodTrial));
 
     return foodId;
@@ -141,7 +239,7 @@ export function useFirebaseChildren(userId: string | null) {
   const updateFoodTrial = async (childId: string, foodId: string, updates: Partial<FoodTrialRecord>) => {
     if (!userId) throw new Error('User not authenticated');
 
-    const foodRef = ref(database, `users/${userId}/children/${childId}/foodTrackingProgress/${foodId}`);
+    const foodRef = ref(database, `children/${childId}/foodTrackingProgress/${foodId}`);
     await update(foodRef, removeUndefined({
       ...updates,
       updatedAt: new Date().toISOString(),
@@ -151,15 +249,14 @@ export function useFirebaseChildren(userId: string | null) {
   const deleteFoodTrial = async (childId: string, foodId: string) => {
     if (!userId) throw new Error('User not authenticated');
 
-    const foodRef = ref(database, `users/${userId}/children/${childId}/foodTrackingProgress/${foodId}`);
+    const foodRef = ref(database, `children/${childId}/foodTrackingProgress/${foodId}`);
     await remove(foodRef);
   };
 
-  // Note: addTrialDate is handled through updateFoodTrial
-  // The calling code should read current data and append the new date to trialDates array
-
   return {
     addChild,
+    joinChild, // New: join existing child via UUID
+    leaveChild, // New: leave/unlink from child
     updateChild,
     deleteChild,
     setCurrentChild,

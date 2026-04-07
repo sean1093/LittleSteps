@@ -1,8 +1,9 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Baby, AlertCircle, Home, Syringe, UtensilsCrossed, PlusCircle, Edit, Trash2, LogIn, LogOut, TrendingUp, Moon } from 'lucide-react';
+import { X, Baby, AlertCircle, Home, Syringe, UtensilsCrossed, PlusCircle, Edit, Trash2, LogIn, LogOut, TrendingUp, Moon, Share2 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { ChildProfile } from '../types'; // Import ChildProfile
 import AddChildModal from './AddChildModal'; // Import AddChildModal
+import ShareChildUuidModal from './ShareChildUuidModal'; // Import ShareChildUuidModal
 import { useState } from 'react'; // Import useState
 
 interface SidebarProps {
@@ -14,6 +15,7 @@ interface SidebarProps {
   currentChildId: string | null;
   setCurrentChildId: (id: string) => void;
   addChild: (name: string, birthday: string) => void;
+  joinChild: (uuid: string) => void;
   updateChild: (id: string, name: string, birthday: string) => void;
   deleteChild: (id: string) => void;
   user: User | null;
@@ -30,6 +32,7 @@ export default function Sidebar({
   currentChildId,
   setCurrentChildId,
   addChild,
+  joinChild,
   updateChild,
   deleteChild,
   user,
@@ -38,6 +41,8 @@ export default function Sidebar({
 }: SidebarProps) {
   const [showAddChildModal, setShowAddChildModal] = useState(false);
   const [editingChild, setEditingChild] = useState<ChildProfile | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [sharingChild, setSharingChild] = useState<ChildProfile | null>(null);
 
   // 計算子女數量與免費版限制
   const childCount = childProfiles.length;
@@ -241,7 +246,24 @@ export default function Sidebar({
                       <Baby className={`w-5 h-5 ${child.id === currentChildId ? 'text-[#FF9B9B]' : 'text-[#7EC8E3]'}`} />
                       <span className="font-medium">{child.name}</span>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSharingChild(child);
+                          setShowShareModal(true);
+                        }}
+                        className={`
+                          w-8 h-8 flex items-center justify-center rounded-full transition-colors
+                          ${child.id === currentChildId
+                            ? 'hover:bg-white/20'
+                            : 'hover:bg-gray-200'
+                          }
+                        `}
+                        title="分享寶寶資料給家人"
+                      >
+                        <Share2 className="w-4 h-4 text-blue-600" />
+                      </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -346,7 +368,18 @@ export default function Sidebar({
             isOpen={showAddChildModal}
             onClose={() => setShowAddChildModal(false)}
             onSave={handleSaveChild}
+            onJoin={joinChild}
             editingChild={editingChild}
+          />
+
+          {/* Share Child UUID Modal */}
+          <ShareChildUuidModal
+            isOpen={showShareModal}
+            onClose={() => {
+              setShowShareModal(false);
+              setSharingChild(null);
+            }}
+            child={sharingChild}
           />
         </>
       )}

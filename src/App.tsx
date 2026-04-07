@@ -313,10 +313,33 @@ function AppContent() {
         milestoneProgress: {},
         vaccineProgress: {},
         createdAt: new Date().toISOString(),
+        createdBy: 'local',
       };
       setLocalChildProfiles(prev => [...prev, newChild]);
       setLocalCurrentChildId(newChild.id);
       logChildProfileAction('create');
+    }
+  };
+
+  const joinChild = async (childUuid: string) => {
+    // 檢查子女數量限制（免費版最多 2 個）
+    if (childProfiles.length >= 2) {
+      alert('免費版最多只能新增 2 個寶寶，請升級付費會員');
+      return;
+    }
+
+    if (user) {
+      // Firebase 模式
+      try {
+        await firebaseChildren.joinChild(childUuid, childProfiles.length);
+        logChildProfileAction('create'); // Log as create since we're creating a reference to the child
+      } catch (error: any) {
+        console.error('加入寶寶失敗:', error);
+        alert(error.message || '加入寶寶失敗，請確認代碼是否正確');
+      }
+    } else {
+      // LocalStorage 模式不支援 join
+      alert('請先登入才能加入家人的寶寶資料');
     }
   };
 
@@ -399,6 +422,7 @@ function AppContent() {
         currentChildId={currentChildId}
         setCurrentChildId={handleSetCurrentChild}
         addChild={addChild}
+        joinChild={joinChild}
         updateChild={updateChild}
         deleteChild={deleteChild}
         user={user}

@@ -134,13 +134,25 @@ export interface VaccineProgress {
 }
 
 export interface ChildProfile {
-  id: string;
+  id: string; // Unique UUID for sharing across family members
   name: string;
   birthday: string; // YYYY-MM-DD
   gender?: Gender; // Optional: for growth chart percentiles
   milestoneProgress: MilestoneProgress;
   vaccineProgress: VaccineProgress;
   foodTrackingProgress?: FoodTrackingProgress; // Optional: complementary food tracking
+  createdAt: string; // ISO string
+  createdBy: string; // User ID who created this child profile
+}
+
+// User profile with child references
+export interface UserProfile {
+  id: string; // User ID (from Firebase Auth)
+  email?: string;
+  displayName?: string;
+  photoURL?: string;
+  childrenIds: string[]; // Array of child UUIDs (max 2)
+  currentChildId?: string; // Currently selected child
   createdAt: string; // ISO string
 }
 

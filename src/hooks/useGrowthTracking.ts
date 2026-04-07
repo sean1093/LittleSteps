@@ -4,6 +4,18 @@ import { database } from '../lib/firebase';
 import type { GrowthRecord, Gender } from '../types';
 import { calculateZScore, calculatePercentile } from '../utils/growthCalculator';
 
+// Helper function to remove undefined values from objects
+// Firebase does not allow undefined values - they must be null or omitted
+function removeUndefined<T extends Record<string, any>>(obj: T): Partial<T> {
+  const cleaned: any = {};
+  for (const key in obj) {
+    if (obj[key] !== undefined) {
+      cleaned[key] = obj[key];
+    }
+  }
+  return cleaned;
+}
+
 interface UseGrowthTrackingResult {
   records: GrowthRecord[];
   loading: boolean;
@@ -42,7 +54,7 @@ export function useGrowthTracking(
       // Firebase mode: Real-time listener
       const recordsRef = ref(
         database,
-        `users/${user.uid}/children/${childId}/growthRecords`
+        `children/${childId}/growthRecords`
       );
 
       const unsubscribe = onValue(recordsRef, (snapshot) => {
@@ -101,9 +113,9 @@ export function useGrowthTracking(
       // Firebase mode
       const recordRef = ref(
         database,
-        `users/${user.uid}/children/${childId}/growthRecords/${newRecord.id}`
+        `children/${childId}/growthRecords/${newRecord.id}`
       );
-      await set(recordRef, newRecord);
+      await set(recordRef, removeUndefined(newRecord));
     } else {
       // LocalStorage mode - read latest to avoid race conditions
       let currentRecords: GrowthRecord[] = [];
@@ -156,9 +168,9 @@ export function useGrowthTracking(
       // Firebase mode
       const recordRef = ref(
         database,
-        `users/${user.uid}/children/${childId}/growthRecords/${recordId}`
+        `children/${childId}/growthRecords/${recordId}`
       );
-      await set(recordRef, { ...updatedWithPercentiles, id: recordId });
+      await set(recordRef, removeUndefined({ ...updatedWithPercentiles, id: recordId }));
     } else {
       // LocalStorage mode
       const updatedRecords = records.map((r) =>
@@ -181,7 +193,7 @@ export function useGrowthTracking(
       // Firebase mode
       const recordRef = ref(
         database,
-        `users/${user.uid}/children/${childId}/growthRecords/${recordId}`
+        `children/${childId}/growthRecords/${recordId}`
       );
       await remove(recordRef);
     } else {

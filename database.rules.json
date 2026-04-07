@@ -6,6 +6,12 @@
         ".write": "$userId === auth.uid"
       }
     },
+    "children": {
+      "$childId": {
+        ".read": "root.child('users').child(auth.uid).child('childrenIds').child($childId).val() === true",
+        ".write": "root.child('users').child(auth.uid).child('childrenIds').child($childId).val() === true || (!data.exists() && auth != null)"
+      }
+    },
     "families": {
       "$familyId": {
         ".read": "root.child('users').child(auth.uid).child('families').child($familyId).exists()",
