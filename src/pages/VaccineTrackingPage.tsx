@@ -17,7 +17,7 @@ type MonthFilter = 'all' | number;
 
 interface VaccineTrackingPageProps {
   vaccineProgress: VaccineProgress;
-  onToggleVaccineDose: (vaccineId: string, doseNumber: number) => void;
+  onToggleVaccineDose: (vaccineId: string, doseNumber: number, customDate?: string) => void;
   user?: User | null;
   onSignIn?: () => Promise<void>;
 }
@@ -30,11 +30,11 @@ export default function VaccineTrackingPage({
 }: VaccineTrackingPageProps) {
   const [fundingFilter, setFundingFilter] = useState<FundingFilter>('all');
   const [monthFilter, setMonthFilter] = useState<MonthFilter>('all');
-  const [expandedVaccine, setExpandedVaccine] = useState<string | null>(null);
   const [showEmergencies, setShowEmergencies] = useState(false);
   const [showContraindications, setShowContraindications] = useState(false);
   const [showVaccineTypes, setShowVaccineTypes] = useState(false);
   const [showGuidelines, setShowGuidelines] = useState(false);
+  const [editingDose, setEditingDose] = useState<{ vaccineId: string; doseNumber: number; currentDate?: string } | null>(null);
 
   // Get unique months for filter
   const availableMonths = useMemo(() => {
@@ -71,10 +71,6 @@ export default function VaccineTrackingPage({
     return grouped;
   }, [filteredVaccines]);
 
-  const toggleVaccine = (id: string) => {
-    setExpandedVaccine(expandedVaccine === id ? null : id);
-  };
-
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'mild':
@@ -109,25 +105,6 @@ export default function VaccineTrackingPage({
     return { completed, total: totalDoses };
   };
 
-  // Helper: Render dose progress indicators (dots)
-  const renderDoseIndicators = (vaccineId: string, totalDoses: number) => {
-    if (totalDoses === 1) return null;
-
-    return (
-      <div className="flex items-center gap-1">
-        {Array.from({ length: totalDoses }, (_, i) => i + 1).map((doseNum) => (
-          <div
-            key={doseNum}
-            className={`w-2 h-2 rounded-full ${
-              isDoseAdministered(vaccineId, doseNum)
-                ? 'bg-primary'
-                : 'bg-gray-300'
-            }`}
-          />
-        ))}
-      </div>
-    );
-  };
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] pb-6 relative overflow-hidden">
@@ -333,8 +310,6 @@ export default function VaccineTrackingPage({
                   <div className="space-y-3">
                     <AnimatePresence mode="popLayout">
                       {vaccines.map((vaccine, index) => {
-                        const isExpanded = expandedVaccine === vaccine.id;
-
                         return (
                           <motion.div
                             key={vaccine.id}
@@ -345,185 +320,136 @@ export default function VaccineTrackingPage({
                             transition={{ duration: 0.2, delay: index * 0.02 }}
                             className="card"
                           >
-                  <div className="flex items-start gap-3">
-                    {/* Checkbox for single-dose vaccines - only show when logged in */}
-                    {vaccine.doses === 1 && user && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          onToggleVaccineDose(vaccine.id, 1);
-                        }}
-                        className={`
-                          flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer
-                          ${isDoseAdministered(vaccine.id, 1)
-                            ? 'bg-primary border-primary'
-                            : 'border-gray-300 hover:border-primary'
-                          }
-                        `}
-                        aria-label={`標記${vaccine.name}為已接種`}
-                      >
-                        {isDoseAdministered(vaccine.id, 1) && <Icons.Check className="w-4 h-4 text-white" />}
-                      </button>
-                    )}
+                            {/* Age Badge & Vaccine Header */}
+                            <div className="flex items-start gap-3 mb-3">
+                              <div className={`
+                                w-16 h-16 rounded-full flex-shrink-0 flex flex-col items-center justify-center text-white font-bold text-xs
+                                ${vaccine.fundingType === 'public'
+                                  ? 'bg-[#81C784]'
+                                  : 'bg-[#FF9B9B]'
+                                }
+                              `}>
+                                <div className="text-lg">{vaccine.ageInMonths || 0}</div>
+                                <div className="text-[10px] opacity-90">個月</div>
+                              </div>
 
-                    {/* Age Badge */}
-                    <div className={`
-                      w-16 h-16 rounded-full flex-shrink-0 flex flex-col items-center justify-center text-white font-bold text-xs
-                      ${vaccine.fundingType === 'public'
-                        ? 'bg-[#81C784]'
-                        : 'bg-[#FF9B9B]'
-                      }
-                    `}>
-                      <div className="text-lg">{vaccine.ageInMonths || 0}</div>
-                      <div className="text-[10px] opacity-90">個月</div>
-                    </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-gray-800 leading-tight mb-1">
+                                  {vaccine.name}
+                                </h4>
 
-                    {/* Vaccine Info */}
-                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => toggleVaccine(vaccine.id)}>
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <h4 className="font-semibold text-gray-800 leading-tight">
-                          {vaccine.name}
-                        </h4>
-                        <motion.div
-                          animate={{ rotate: isExpanded ? 180 : 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <Icons.ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                        </motion.div>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600 mb-2">
-                        <span className="flex items-center gap-1">
-                          <Icons.Clock className="w-3 h-3" />
-                          {vaccine.timing}
-                        </span>
-                        <span className={`
-                          px-2 py-0.5 rounded-full font-medium
-                          ${vaccine.fundingType === 'public'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-orange-100 text-orange-700'
-                          }
-                        `}>
-                          {vaccine.fundingType === 'public' ? '公費' : '自費'}
-                        </span>
-                        {vaccine.doses > 1 && (
-                          <>
-                            {renderDoseIndicators(vaccine.id, vaccine.doses)}
-                            <span className="text-gray-500">
-                              {getVaccineCompletionStatus(vaccine.id, vaccine.doses).completed}/{vaccine.doses} 劑已完成
-                            </span>
-                          </>
-                        )}
-                      </div>
-
-                      {/* Show administered date for single-dose vaccines */}
-                      {vaccine.doses === 1 && isDoseAdministered(vaccine.id, 1) && getDoseDate(vaccine.id, 1) && (
-                        <p className="text-xs text-green-600 mb-2">
-                          ✓ 已接種 {getDoseDate(vaccine.id, 1)}
-                        </p>
-                      )}
-
-                      {vaccine.notes && (
-                        <p className="text-xs text-gray-500 italic">
-                          {vaccine.notes}
-                        </p>
-                      )}
-
-                      {/* Expanded Content */}
-                      <AnimatePresence>
-                        {isExpanded && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="mt-3 pt-3 border-t border-gray-100"
-                          >
-                            {/* Dose tracking for multi-dose vaccines */}
-                            {vaccine.doses > 1 && (
-                              <div className="mb-4 space-y-2">
-                                <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                                  <Icons.Syringe className="w-4 h-4 text-primary" />
-                                  <span>接種記錄</span>
+                                <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                                  <span className="flex items-center gap-1">
+                                    <Icons.Clock className="w-3 h-3" />
+                                    {vaccine.timing}
+                                  </span>
+                                  <span className={`
+                                    px-2 py-0.5 rounded-full font-medium
+                                    ${vaccine.fundingType === 'public'
+                                      ? 'bg-green-100 text-green-700'
+                                      : 'bg-orange-100 text-orange-700'
+                                    }
+                                  `}>
+                                    {vaccine.fundingType === 'public' ? '公費' : '自費'}
+                                  </span>
+                                  {vaccine.doses > 1 && (
+                                    <span className="text-gray-500">
+                                      {getVaccineCompletionStatus(vaccine.id, vaccine.doses).completed}/{vaccine.doses} 劑已完成
+                                    </span>
+                                  )}
                                 </div>
-                                {Array.from({ length: vaccine.doses }, (_, i) => i + 1).map((doseNum) => {
-                                  const isAdministered = isDoseAdministered(vaccine.id, doseNum);
-                                  const doseDate = getDoseDate(vaccine.id, doseNum);
 
-                                  return (
-                                    <div
-                                      key={doseNum}
-                                      onClick={(e) => e.stopPropagation()}
-                                      className="flex items-center gap-3 p-2 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-                                    >
-                                      {/* Checkbox - only show when logged in */}
-                                      {user && (
+                                {vaccine.notes && (
+                                  <p className="text-xs text-gray-500 italic mt-1">
+                                    {vaccine.notes}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Dose List - Always shown */}
+                            <div className="space-y-2">
+                              {Array.from({ length: vaccine.doses }, (_, i) => i + 1).map((doseNum) => {
+                                const isAdministered = isDoseAdministered(vaccine.id, doseNum);
+                                const doseDate = getDoseDate(vaccine.id, doseNum);
+
+                                return (
+                                  <div
+                                    key={doseNum}
+                                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                                  >
+                                    {/* Checkbox - only show when logged in */}
+                                    {user && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          if (isAdministered) {
+                                            // If already administered, show edit date modal
+                                            setEditingDose({ vaccineId: vaccine.id, doseNumber: doseNum, currentDate: doseDate });
+                                          } else {
+                                            // If not administered, show date picker to set date
+                                            setEditingDose({ vaccineId: vaccine.id, doseNumber: doseNum });
+                                          }
+                                        }}
+                                        className={`
+                                          flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer
+                                          ${isAdministered
+                                            ? 'bg-primary border-primary'
+                                            : 'border-gray-300 hover:border-primary'
+                                          }
+                                        `}
+                                        aria-label={`標記第${doseNum}劑為${isAdministered ? '未接種' : '已接種'}`}
+                                      >
+                                        {isAdministered && <Icons.Check className="w-4 h-4 text-white" />}
+                                      </button>
+                                    )}
+                                    <div className="flex-1">
+                                      <span className={`text-sm font-medium ${isAdministered ? 'text-gray-800' : 'text-gray-600'}`}>
+                                        {vaccine.doses > 1 ? `第 ${doseNum} 劑` : ''}
+                                      </span>
+                                      {isAdministered && doseDate && (
                                         <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            onToggleVaccineDose(vaccine.id, doseNum);
-                                          }}
-                                          className={`
-                                            flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer
-                                            ${isAdministered
-                                              ? 'bg-primary border-primary'
-                                              : 'border-gray-300 hover:border-primary'
-                                            }
-                                          `}
-                                          aria-label={`標記第${doseNum}劑為${isAdministered ? '未接種' : '已接種'}`}
+                                          onClick={() => setEditingDose({ vaccineId: vaccine.id, doseNumber: doseNum, currentDate: doseDate })}
+                                          className="text-xs text-green-600 ml-2 hover:text-green-700 hover:underline"
                                         >
-                                          {isAdministered && <Icons.Check className="w-3 h-3 text-white" />}
+                                          ✓ {doseDate}
                                         </button>
                                       )}
-                                      <div className="flex-1">
-                                        <span className={`text-sm font-medium ${isAdministered ? 'text-gray-800' : 'text-gray-600'}`}>
-                                          第 {doseNum} 劑
+                                      {!user && !isAdministered && (
+                                        <span className="text-xs text-gray-400 ml-2">
+                                          登入後可記錄
                                         </span>
-                                        {isAdministered && doseDate && (
-                                          <span className="text-xs text-green-600 ml-2">
-                                            ✓ {doseDate}
-                                          </span>
-                                        )}
-                                        {!user && !isAdministered && (
-                                          <span className="text-xs text-gray-400 ml-2">
-                                            登入後可記錄
-                                          </span>
-                                        )}
-                                        {user && !isAdministered && (
-                                          <span className="text-xs text-gray-400 ml-2">
-                                            點擊記錄接種
-                                          </span>
-                                        )}
-                                      </div>
+                                      )}
+                                      {user && !isAdministered && (
+                                        <span className="text-xs text-gray-400 ml-2">
+                                          點擊記錄接種
+                                        </span>
+                                      )}
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                                <Icons.AlertCircle className="w-4 h-4 text-primary" />
-                                <span>可能的副作用</span>
-                              </div>
-                              <ul className="space-y-1 ml-6">
-                                {vaccine.sideEffects.map((effect, idx) => (
-                                  <li key={idx} className="text-sm text-gray-600 flex gap-2">
-                                    <span className="text-primary">•</span>
-                                    <span>{effect}</span>
-                                  </li>
-                                ))}
-                              </ul>
+                                  </div>
+                                );
+                              })}
                             </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </div>
+
+                            {/* Description and Protection - Always shown */}
+                            <div className="mt-3 pt-3 border-t border-gray-100">
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                                  <Icons.AlertCircle className="w-4 h-4 text-primary" />
+                                  <span>可能的副作用</span>
+                                </div>
+                                <ul className="space-y-1 ml-6">
+                                  {vaccine.sideEffects.map((effect, idx) => (
+                                    <li key={idx} className="text-sm text-gray-600 flex gap-2">
+                                      <span className="text-primary">•</span>
+                                      <span>{effect}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            </div>
                           </motion.div>
                         );
                       })}
@@ -788,6 +714,93 @@ export default function VaccineTrackingPage({
                   </div>
                 ))}
               </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Date Editing Modal */}
+      <AnimatePresence>
+        {editingDose && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setEditingDose(null)}
+              className="fixed inset-0 bg-black/50 z-40"
+            />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl z-50 max-h-[90vh] overflow-y-auto"
+            >
+              <div className="sticky top-0 bg-white border-b border-gray-100 flex items-center justify-between p-6 rounded-t-3xl">
+                <h2 className="text-2xl font-bold text-gray-800">
+                  {editingDose.currentDate ? '修改接種日期' : '記錄接種日期'}
+                </h2>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setEditingDose(null)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <Icons.X className="w-5 h-5 text-gray-500" />
+                </motion.button>
+              </div>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.currentTarget);
+                  const date = formData.get('date') as string;
+
+                  if (date) {
+                    // Update the vaccine dose with the selected date
+                    onToggleVaccineDose(editingDose.vaccineId, editingDose.doseNumber, date);
+                    setEditingDose(null);
+                  }
+                }}
+                className="p-6 space-y-6"
+              >
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                    <Icons.Calendar className="w-4 h-4 text-primary" />
+                    接種日期
+                  </label>
+                  <input
+                    type="date"
+                    name="date"
+                    defaultValue={editingDose.currentDate || new Date().toISOString().split('T')[0]}
+                    max={new Date().toISOString().split('T')[0]}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <motion.button
+                    type="button"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setEditingDose(null)}
+                    className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors"
+                  >
+                    取消
+                  </motion.button>
+                  <motion.button
+                    type="submit"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex-1 px-6 py-3 bg-[#81C784] hover:bg-[#6BB870] text-white font-semibold rounded-full shadow-soft hover:shadow-soft-lg transition-all flex items-center justify-center gap-2"
+                  >
+                    <Icons.Check className="w-5 h-5" />
+                    <span>確認</span>
+                  </motion.button>
+                </div>
+              </form>
             </motion.div>
           </>
         )}

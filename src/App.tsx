@@ -193,7 +193,7 @@ function AppContent() {
     }
   };
 
-  const toggleVaccineDose = async (vaccineId: string, doseNumber: number) => {
+  const toggleVaccineDose = async (vaccineId: string, doseNumber: number, customDate?: string) => {
     if (!currentChild) return; // Cannot toggle if no child is selected
 
     if (user) {
@@ -202,7 +202,7 @@ function AppContent() {
         const currentVaccine = currentChildVaccineProgress[vaccineId] || { doses: {} };
         const currentDose = currentVaccine.doses[doseNumber];
         const isAdministered = !currentDose?.administered;
-        await firebaseChildren.updateVaccineProgress(currentChild.id, vaccineId, doseNumber, isAdministered);
+        await firebaseChildren.updateVaccineProgress(currentChild.id, vaccineId, doseNumber, isAdministered, customDate);
         logVaccineToggle(vaccineId, doseNumber, isAdministered);
       } catch (error: any) {
         console.error('更新疫苗記錄失敗:', error);
@@ -218,7 +218,7 @@ function AppContent() {
             const isAdministered = !profileDose?.administered;
 
             const newDoseEntry = isAdministered
-              ? { administered: true, administeredDate: new Date().toISOString().split('T')[0] }
+              ? { administered: true, administeredDate: customDate || new Date().toISOString().split('T')[0] }
               : { administered: false, administeredDate: undefined };
 
             return {

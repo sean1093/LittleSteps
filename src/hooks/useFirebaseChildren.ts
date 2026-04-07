@@ -78,13 +78,13 @@ export function useFirebaseChildren(userId: string | null) {
     }));
   };
 
-  const updateVaccineProgress = async (childId: string, vaccineId: string, doseNumber: number, administered: boolean) => {
+  const updateVaccineProgress = async (childId: string, vaccineId: string, doseNumber: number, administered: boolean, customDate?: string) => {
     if (!userId) throw new Error('User not authenticated');
 
     const progressRef = ref(database, `users/${userId}/children/${childId}/vaccineProgress/${vaccineId}/doses/${doseNumber}`);
     await set(progressRef, removeUndefined({
       administered,
-      administeredDate: administered ? new Date().toISOString().split('T')[0] : undefined,
+      administeredDate: administered ? (customDate || new Date().toISOString().split('T')[0]) : undefined,
     }));
   };
 

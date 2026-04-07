@@ -71,15 +71,16 @@ export default function AddGrowthRecordModal({
             className="fixed inset-0 bg-black/50 z-40"
           />
 
-          {/* Modal */}
+          {/* Modal - Slide up from bottom */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed inset-x-4 top-1/2 -translate-y-1/2 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-lg bg-white rounded-2xl shadow-soft-lg z-50 max-h-[90vh] overflow-y-auto"
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl z-50 max-h-[90vh] overflow-y-auto"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <div className="sticky top-0 bg-white border-b border-gray-100 flex items-center justify-between p-6 rounded-t-3xl">
               <h2 className="text-2xl font-bold text-gray-800">新增成長記錄</h2>
               <motion.button
                 whileHover={{ scale: 1.1 }}
