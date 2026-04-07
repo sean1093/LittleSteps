@@ -28,7 +28,8 @@ import FoodTrackingTab from '../components/FoodTrackingTab';
 import FoodTrialModal from '../components/FoodTrialModal';
 import FourByThreeTracker from '../components/FourByThreeTracker';
 
-type ViewMode = 'overview' | 'stages' | 'menu' | 'safety' | 'tracking' | 'my-foods';
+type ViewMode = 'home' | 'my-tracking' | 'guide-overview' | 'guide-stages' | 'guide-menu' | 'guide-safety';
+type TrackingTab = 'foods' | 'tracker';
 
 interface ComplementaryFoodPageProps {
   currentChild?: ChildProfile | null;
@@ -39,7 +40,8 @@ export default function ComplementaryFoodPage({
   currentChild,
   user,
 }: ComplementaryFoodPageProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>('overview');
+  const [viewMode, setViewMode] = useState<ViewMode>('home');
+  const [trackingTab, setTrackingTab] = useState<TrackingTab>('foods');
   const [showAllergyTest, setShowAllergyTest] = useState(false);
   const [showFingerFood, setShowFingerFood] = useState(false);
   const [expandedStage, setExpandedStage] = useState<number | null>(null);
@@ -205,95 +207,153 @@ export default function ComplementaryFoodPage({
         </div>
       </div>
 
-      {/* View Mode Tabs */}
-      <div className="px-4 mb-4">
-        <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 pl-4 pr-8">
+      {/* Back Button (for sub-pages) */}
+      {viewMode !== 'home' && (
+        <div className="px-4 mb-4">
           <button
-            onClick={() => setViewMode('overview')}
-            className={`
-              flex-shrink-0 px-4 py-2 rounded-2xl font-medium transition-all text-sm
-              ${viewMode === 'overview'
-                ? 'bg-primary text-white shadow-soft'
-                : 'bg-white text-gray-600 hover:bg-gray-50'
-              }
-            `}
+            onClick={() => setViewMode('home')}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
           >
-            總覽
-          </button>
-          <button
-            onClick={() => setViewMode('stages')}
-            className={`
-              flex-shrink-0 px-4 py-2 rounded-2xl font-medium transition-all text-sm
-              ${viewMode === 'stages'
-                ? 'bg-primary text-white shadow-soft'
-                : 'bg-white text-gray-600 hover:bg-gray-50'
-              }
-            `}
-          >
-            發展階段
-          </button>
-          <button
-            onClick={() => setViewMode('menu')}
-            className={`
-              flex-shrink-0 px-4 py-2 rounded-2xl font-medium transition-all text-sm
-              ${viewMode === 'menu'
-                ? 'bg-primary text-white shadow-soft'
-                : 'bg-white text-gray-600 hover:bg-gray-50'
-              }
-            `}
-          >
-            菜單建議
-          </button>
-          <button
-            onClick={() => setViewMode('safety')}
-            className={`
-              flex-shrink-0 px-4 py-2 rounded-2xl font-medium transition-all text-sm
-              ${viewMode === 'safety'
-                ? 'bg-primary text-white shadow-soft'
-                : 'bg-white text-gray-600 hover:bg-gray-50'
-              }
-            `}
-          >
-            安全須知
-          </button>
-          <button
-            onClick={() => setViewMode('my-foods')}
-            className={`
-              flex-shrink-0 px-4 py-2 rounded-2xl font-medium transition-all text-sm
-              ${viewMode === 'my-foods'
-                ? 'bg-green-600 text-white shadow-soft'
-                : 'bg-white text-gray-600 hover:bg-gray-50'
-              }
-            `}
-          >
-            <Icons.Apple className="w-4 h-4 inline mr-1" />
-            我的食物
-            {stats.total > 0 && (
-              <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-xs font-bold ${
-                viewMode === 'my-foods' ? 'bg-white text-green-600' : 'bg-green-100 text-green-700'
-              }`}>
-                {stats.total}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setViewMode('tracking')}
-            className={`
-              flex-shrink-0 px-4 py-2 rounded-2xl font-medium transition-all text-sm
-              ${viewMode === 'tracking'
-                ? 'bg-purple-600 text-white shadow-soft'
-                : 'bg-white text-gray-600 hover:bg-gray-50'
-              }
-            `}
-          >
-            <Icons.Calendar className="w-4 h-4 inline mr-1" />
-            4×3 追蹤
+            <Icons.ChevronLeft className="w-5 h-5" />
+            <span className="font-medium">返回主頁</span>
           </button>
         </div>
-      </div>
+      )}
 
-      {/* Overview Mode */}
-      {viewMode === 'overview' && (
+      {/* Home Page */}
+      {viewMode === 'home' && (
+        <div className="px-4 space-y-6">
+          {/* My Food Tracking Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="card bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-green-600 flex items-center justify-center">
+                <Icons.Apple className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-800">我的副食品追蹤</h3>
+                <p className="text-sm text-gray-600">記錄寶寶的食物嘗試與過敏反應</p>
+              </div>
+            </div>
+
+            {/* Stats Preview */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="bg-white rounded-xl p-3 text-center">
+                <div className="text-2xl font-bold text-green-600">{stats.total}</div>
+                <div className="text-xs text-gray-600 mt-1">已試食物</div>
+              </div>
+              <div className="bg-white rounded-xl p-3 text-center">
+                <div className="text-2xl font-bold text-blue-600">{stats.noAllergy}</div>
+                <div className="text-xs text-gray-600 mt-1">無過敏</div>
+              </div>
+              <div className="bg-white rounded-xl p-3 text-center">
+                <div className="text-2xl font-bold text-orange-600">{stats.withAllergy}</div>
+                <div className="text-xs text-gray-600 mt-1">有過敏</div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-3">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  setTrackingTab('foods');
+                  setViewMode('my-tracking');
+                }}
+                className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-xl font-medium transition-colors shadow-soft"
+              >
+                <Icons.List className="w-5 h-5" />
+                <span>我的食物清單</span>
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  setTrackingTab('tracker');
+                  setViewMode('my-tracking');
+                }}
+                className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-xl font-medium transition-colors shadow-soft"
+              >
+                <Icons.Calendar className="w-5 h-5" />
+                <span>4×3 追蹤</span>
+              </motion.button>
+            </div>
+          </motion.div>
+
+          {/* Knowledge Base Section */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Icons.BookOpen className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-bold text-gray-800">副食品知識庫</h3>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {/* Starting Guide */}
+              <motion.button
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setViewMode('guide-overview')}
+                className="card text-left bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 hover:border-blue-300 transition-all"
+              >
+                <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center mb-3">
+                  <Icons.Lightbulb className="w-5 h-5 text-white" />
+                </div>
+                <h4 className="font-bold text-gray-800 mb-1">開始使用指南</h4>
+                <p className="text-xs text-gray-600">副食品添加原則與時機</p>
+              </motion.button>
+
+              {/* Development Stages */}
+              <motion.button
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setViewMode('guide-stages')}
+                className="card text-left bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 hover:border-green-300 transition-all"
+              >
+                <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center mb-3">
+                  <Icons.Layers className="w-5 h-5 text-white" />
+                </div>
+                <h4 className="font-bold text-gray-800 mb-1">發展階段</h4>
+                <p className="text-xs text-gray-600">奶量與副食品轉換</p>
+              </motion.button>
+
+              {/* Menu Suggestions */}
+              <motion.button
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setViewMode('guide-menu')}
+                className="card text-left bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 hover:border-orange-300 transition-all"
+              >
+                <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center mb-3">
+                  <Icons.UtensilsCrossed className="w-5 h-5 text-white" />
+                </div>
+                <h4 className="font-bold text-gray-800 mb-1">菜單建議</h4>
+                <p className="text-xs text-gray-600">月份推薦與過敏等級</p>
+              </motion.button>
+
+              {/* Safety Guidelines */}
+              <motion.button
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setViewMode('guide-safety')}
+                className="card text-left bg-gradient-to-br from-red-50 to-rose-50 border border-red-200 hover:border-red-300 transition-all"
+              >
+                <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center mb-3">
+                  <Icons.Shield className="w-5 h-5 text-white" />
+                </div>
+                <h4 className="font-bold text-gray-800 mb-1">安全須知</h4>
+                <p className="text-xs text-gray-600">禁忌食物與注意事項</p>
+              </motion.button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Guide: Overview (Starting Guide) */}
+      {viewMode === 'guide-overview' && (
         <div className="px-4 space-y-6">
           {/* Principles */}
           <div>
@@ -426,8 +486,8 @@ export default function ComplementaryFoodPage({
         </div>
       )}
 
-      {/* Stages Mode */}
-      {viewMode === 'stages' && (
+      {/* Guide: Stages */}
+      {viewMode === 'guide-stages' && (
         <div className="px-4">
           <div className="flex items-center gap-2 mb-4">
             <Icons.Layers className="w-5 h-5 text-primary" />
@@ -526,8 +586,8 @@ export default function ComplementaryFoodPage({
         </div>
       )}
 
-      {/* Menu Mode */}
-      {viewMode === 'menu' && (
+      {/* Guide: Menu */}
+      {viewMode === 'guide-menu' && (
         <div className="px-4 space-y-6">
           {/* Monthly Menu */}
           <div>
@@ -646,8 +706,8 @@ export default function ComplementaryFoodPage({
         </div>
       )}
 
-      {/* Safety Mode */}
-      {viewMode === 'safety' && (
+      {/* Guide: Safety */}
+      {viewMode === 'guide-safety' && (
         <div className="px-4">
           <div className="flex items-center gap-2 mb-4">
             <Icons.Shield className="w-5 h-5 text-primary" />
@@ -766,25 +826,68 @@ export default function ComplementaryFoodPage({
         </div>
       )}
 
-      {/* My Foods Mode */}
-      {viewMode === 'my-foods' && (
-        <FoodTrackingTab
-          foodTrials={foodTrials}
-          stats={stats}
-          onAddFood={handleAddFood}
-          onEditFood={handleEditFood}
-          onDeleteFood={handleDeleteFood}
-          user={user}
-        />
-      )}
+      {/* My Food Tracking (with tabs) */}
+      {viewMode === 'my-tracking' && (
+        <div className="space-y-4">
+          {/* Tracking Tabs */}
+          <div className="px-4">
+            <div className="flex gap-2 bg-gray-100 rounded-2xl p-1">
+              <button
+                onClick={() => setTrackingTab('foods')}
+                className={`
+                  flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all text-sm
+                  ${trackingTab === 'foods'
+                    ? 'bg-white text-gray-800 shadow-soft'
+                    : 'text-gray-600 hover:text-gray-800'
+                  }
+                `}
+              >
+                <Icons.List className="w-4 h-4" />
+                <span>我的食物清單</span>
+                {stats.total > 0 && (
+                  <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
+                    trackingTab === 'foods' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
+                  }`}>
+                    {stats.total}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setTrackingTab('tracker')}
+                className={`
+                  flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all text-sm
+                  ${trackingTab === 'tracker'
+                    ? 'bg-white text-gray-800 shadow-soft'
+                    : 'text-gray-600 hover:text-gray-800'
+                  }
+                `}
+              >
+                <Icons.Calendar className="w-4 h-4" />
+                <span>4×3 追蹤</span>
+              </button>
+            </div>
+          </div>
 
-      {/* 4x3 Tracking Mode */}
-      {viewMode === 'tracking' && (
-        <FourByThreeTracker
-          foodTrials={foodTrials}
-          onAddTrialDate={handleAddTrialDate}
-          onViewFood={handleEditFood}
-        />
+          {/* Tab Content */}
+          {trackingTab === 'foods' && (
+            <FoodTrackingTab
+              foodTrials={foodTrials}
+              stats={stats}
+              onAddFood={handleAddFood}
+              onEditFood={handleEditFood}
+              onDeleteFood={handleDeleteFood}
+              user={user}
+            />
+          )}
+
+          {trackingTab === 'tracker' && (
+            <FourByThreeTracker
+              foodTrials={foodTrials}
+              onAddTrialDate={handleAddTrialDate}
+              onViewFood={handleEditFood}
+            />
+          )}
+        </div>
       )}
 
       {/* Food Trial Modal */}
