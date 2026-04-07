@@ -2,6 +2,18 @@ import { ref, set, update, remove } from 'firebase/database';
 import { database } from '../lib/firebase';
 import { ChildProfile, DailyLog, FoodTrialRecord } from '../types';
 
+// Helper function to remove undefined values from objects
+// Firebase does not allow undefined values - they must be null or omitted
+function removeUndefined<T extends Record<string, any>>(obj: T): Partial<T> {
+  const cleaned: any = {};
+  for (const key in obj) {
+    if (obj[key] !== undefined) {
+      cleaned[key] = obj[key];
+    }
+  }
+  return cleaned;
+}
+
 export function useFirebaseChildren(userId: string | null) {
   const addChild = async (name: string, birthday: string, currentChildCount: number) => {
     if (!userId) throw new Error('User not authenticated');
@@ -60,20 +72,20 @@ export function useFirebaseChildren(userId: string | null) {
     if (!userId) throw new Error('User not authenticated');
 
     const progressRef = ref(database, `users/${userId}/children/${childId}/milestoneProgress/${milestoneId}`);
-    await set(progressRef, {
+    await set(progressRef, removeUndefined({
       achieved,
       achievedDate: achieved ? new Date().toISOString().split('T')[0] : undefined,
-    });
+    }));
   };
 
   const updateVaccineProgress = async (childId: string, vaccineId: string, doseNumber: number, administered: boolean) => {
     if (!userId) throw new Error('User not authenticated');
 
     const progressRef = ref(database, `users/${userId}/children/${childId}/vaccineProgress/${vaccineId}/doses/${doseNumber}`);
-    await set(progressRef, {
+    await set(progressRef, removeUndefined({
       administered,
       administeredDate: administered ? new Date().toISOString().split('T')[0] : undefined,
-    });
+    }));
   };
 
   // Daily Log methods
@@ -87,7 +99,7 @@ export function useFirebaseChildren(userId: string | null) {
     };
 
     const logRef = ref(database, `users/${userId}/children/${childId}/dailyLogs/${logId}`);
-    await set(logRef, newLog);
+    await set(logRef, removeUndefined(newLog));
 
     return logId;
   };
@@ -96,10 +108,10 @@ export function useFirebaseChildren(userId: string | null) {
     if (!userId) throw new Error('User not authenticated');
 
     const logRef = ref(database, `users/${userId}/children/${childId}/dailyLogs/${logId}`);
-    await update(logRef, {
+    await update(logRef, removeUndefined({
       ...updates,
       updatedAt: new Date().toISOString(),
-    });
+    }));
   };
 
   const deleteDailyLog = async (childId: string, logId: string) => {
@@ -121,7 +133,7 @@ export function useFirebaseChildren(userId: string | null) {
     };
 
     const foodRef = ref(database, `users/${userId}/children/${childId}/foodTrackingProgress/${foodId}`);
-    await set(foodRef, newFoodTrial);
+    await set(foodRef, removeUndefined(newFoodTrial));
 
     return foodId;
   };
@@ -130,10 +142,10 @@ export function useFirebaseChildren(userId: string | null) {
     if (!userId) throw new Error('User not authenticated');
 
     const foodRef = ref(database, `users/${userId}/children/${childId}/foodTrackingProgress/${foodId}`);
-    await update(foodRef, {
+    await update(foodRef, removeUndefined({
       ...updates,
       updatedAt: new Date().toISOString(),
-    });
+    }));
   };
 
   const deleteFoodTrial = async (childId: string, foodId: string) => {
