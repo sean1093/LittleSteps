@@ -8,7 +8,7 @@
     },
     "children": {
       "$childId": {
-        ".read": "root.child('users').child(auth.uid).child('childrenIds').child($childId).val() === true",
+        ".read": "auth != null",
         ".write": "root.child('users').child(auth.uid).child('childrenIds').child($childId).val() === true || (!data.exists() && auth != null)"
       }
     },
