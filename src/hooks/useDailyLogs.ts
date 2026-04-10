@@ -26,7 +26,7 @@ export function useDailyLogs(
       // Firebase 模式: 即時監聽
       setLoading(true);
 
-      const logsRef = ref(database, `users/${user.uid}/children/${childId}/dailyLogs`);
+      const logsRef = ref(database, `children/${childId}/dailyLogs`);
       const unsubscribe = onValue(logsRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {

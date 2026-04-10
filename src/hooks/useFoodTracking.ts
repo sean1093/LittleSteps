@@ -26,7 +26,7 @@ export function useFoodTracking(
       // Firebase 模式: 即時監聽
       setLoading(true);
 
-      const foodRef = ref(database, `users/${user.uid}/children/${childId}/foodTrackingProgress`);
+      const foodRef = ref(database, `children/${childId}/foodTrackingProgress`);
       const unsubscribe = onValue(foodRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
