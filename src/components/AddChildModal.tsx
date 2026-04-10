@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Baby, Link2 } from 'lucide-react';
-import { ChildProfile } from '../types';
+import { ChildProfile, Gender } from '../types';
 
 interface AddChildModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (name: string, birthday: string) => void;
+  onSave: (name: string, birthday: string, gender?: Gender) => void;
   onJoin?: (uuid: string) => void; // New: join existing child
   editingChild?: ChildProfile | null;
 }
@@ -21,6 +21,7 @@ export default function AddChildModal({
   const [mode, setMode] = useState<'create' | 'join'>('create');
   const [name, setName] = useState('');
   const [birthday, setBirthday] = useState('');
+  const [gender, setGender] = useState<Gender | ''>('');
   const [childUuid, setChildUuid] = useState('');
 
   useEffect(() => {
@@ -28,9 +29,11 @@ export default function AddChildModal({
       setMode('create');
       setName(editingChild.name);
       setBirthday(editingChild.birthday);
+      setGender(editingChild.gender || '');
     } else {
       setName('');
       setBirthday('');
+      setGender('');
       setChildUuid('');
     }
   }, [editingChild, isOpen]);
@@ -40,7 +43,7 @@ export default function AddChildModal({
 
     if (mode === 'create') {
       if (name && birthday) {
-        onSave(name, birthday);
+        onSave(name, birthday, gender || undefined);
         onClose();
       }
     } else if (mode === 'join') {
@@ -154,6 +157,24 @@ export default function AddChildModal({
                       className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-primary focus:border-primary transition-colors"
                       required
                     />
+                  </div>
+                  <div>
+                    <label htmlFor="childGender" className="block text-sm font-medium text-gray-700 mb-1">
+                      寶寶性別
+                    </label>
+                    <select
+                      id="childGender"
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value as Gender | '')}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-primary focus:border-primary transition-colors"
+                    >
+                      <option value="">請選擇性別（選填）</option>
+                      <option value="male">男生 👦</option>
+                      <option value="female">女生 👧</option>
+                    </select>
+                    <p className="mt-1 text-xs text-gray-500">
+                      設定性別後可使用成長曲線圖功能
+                    </p>
                   </div>
                 </>
               ) : (

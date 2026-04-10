@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Menu, Home, Baby } from 'lucide-react';
-import { MilestoneProgress, VaccineProgress, ChildProfile } from './types'; // Import types
+import { MilestoneProgress, VaccineProgress, ChildProfile, Gender } from './types'; // Import types
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { logPageView, logMilestoneToggle, logVaccineToggle, logChildProfileAction } from './lib/firebase';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -288,7 +288,7 @@ function AppContent() {
   const showHeader = currentPage !== 'home' || (user && childProfiles.length > 0);
 
   // Child Management Functions
-  const addChild = async (name: string, birthday: string) => {
+  const addChild = async (name: string, birthday: string, gender?: Gender) => {
     // 檢查子女數量限制（免費版最多 2 個）
     if (childProfiles.length >= 2) {
       alert('免費版最多只能新增 2 個寶寶，請升級付費會員');
@@ -298,7 +298,7 @@ function AppContent() {
     if (user) {
       // Firebase 模式
       try {
-        await firebaseChildren.addChild(name, birthday, childProfiles.length);
+        await firebaseChildren.addChild(name, birthday, childProfiles.length, gender);
         logChildProfileAction('create');
       } catch (error: any) {
         console.error('新增寶寶失敗:', error);
@@ -310,6 +310,7 @@ function AppContent() {
         id: Date.now().toString(),
         name,
         birthday,
+        gender,
         milestoneProgress: {},
         vaccineProgress: {},
         createdAt: new Date().toISOString(),
@@ -343,11 +344,11 @@ function AppContent() {
     }
   };
 
-  const updateChild = async (id: string, name: string, birthday: string) => {
+  const updateChild = async (id: string, name: string, birthday: string, gender?: Gender) => {
     if (user) {
       // Firebase 模式
       try {
-        await firebaseChildren.updateChild(id, name, birthday);
+        await firebaseChildren.updateChild(id, name, birthday, gender);
         logChildProfileAction('update');
       } catch (error: any) {
         console.error('更新寶寶資料失敗:', error);
@@ -356,7 +357,7 @@ function AppContent() {
     } else {
       // LocalStorage 模式
       setLocalChildProfiles(prev =>
-        prev.map(child => (child.id === id ? { ...child, name, birthday } : child))
+        prev.map(child => (child.id === id ? { ...child, name, birthday, gender } : child))
       );
       logChildProfileAction('update');
     }

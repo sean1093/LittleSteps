@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Baby, AlertCircle, Home, Syringe, UtensilsCrossed, PlusCircle, Edit, Trash2, LogIn, LogOut, TrendingUp, Moon, Share2 } from 'lucide-react';
 import { User } from 'firebase/auth';
-import { ChildProfile } from '../types'; // Import ChildProfile
+import { ChildProfile, Gender } from '../types'; // Import ChildProfile and Gender
 import AddChildModal from './AddChildModal'; // Import AddChildModal
 import ShareChildUuidModal from './ShareChildUuidModal'; // Import ShareChildUuidModal
 import { useState } from 'react'; // Import useState
@@ -14,9 +14,9 @@ interface SidebarProps {
   childProfiles: ChildProfile[];
   currentChildId: string | null;
   setCurrentChildId: (id: string) => void;
-  addChild: (name: string, birthday: string) => void;
+  addChild: (name: string, birthday: string, gender?: Gender) => void;
   joinChild: (uuid: string) => void;
-  updateChild: (id: string, name: string, birthday: string) => void;
+  updateChild: (id: string, name: string, birthday: string, gender?: Gender) => void;
   deleteChild: (id: string) => void;
   user: User | null;
   onSignIn: () => Promise<void>;
@@ -108,11 +108,11 @@ export default function Sidebar({
     onClose();
   };
 
-  const handleSaveChild = (name: string, birthday: string) => {
+  const handleSaveChild = (name: string, birthday: string, gender?: Gender) => {
     if (editingChild) {
-      updateChild(editingChild.id, name, birthday);
+      updateChild(editingChild.id, name, birthday, gender);
     } else {
-      addChild(name, birthday);
+      addChild(name, birthday, gender);
     }
     setEditingChild(null);
   };

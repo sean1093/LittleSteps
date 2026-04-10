@@ -1,6 +1,6 @@
 import { ref, set, update, remove, get } from 'firebase/database';
 import { database } from '../lib/firebase';
-import { ChildProfile, DailyLog, FoodTrialRecord } from '../types';
+import { ChildProfile, DailyLog, FoodTrialRecord, Gender } from '../types';
 
 // Helper function to generate UUID v4
 function generateUUID(): string {
@@ -30,7 +30,7 @@ export function useFirebaseChildren(userId: string | null) {
    * - Stores child data in children/{uuid}
    * - Adds UUID to users/{userId}/childrenIds
    */
-  const addChild = async (name: string, birthday: string, currentChildCount: number) => {
+  const addChild = async (name: string, birthday: string, currentChildCount: number, gender?: Gender) => {
     if (!userId) throw new Error('User not authenticated');
 
     // 免費版限制：最多 2 個寶寶
@@ -43,6 +43,7 @@ export function useFirebaseChildren(userId: string | null) {
       id: childId,
       name,
       birthday,
+      gender,
       milestoneProgress: {},
       vaccineProgress: {},
       createdAt: new Date().toISOString(),
@@ -51,7 +52,7 @@ export function useFirebaseChildren(userId: string | null) {
 
     // Store child data in shared children/ node
     const childRef = ref(database, `children/${childId}`);
-    await set(childRef, newChild);
+    await set(childRef, removeUndefined(newChild));
 
     // Add child UUID to user's childrenIds
     const userChildRef = ref(database, `users/${userId}/childrenIds/${childId}`);
@@ -123,11 +124,11 @@ export function useFirebaseChildren(userId: string | null) {
     await remove(userChildRef);
   };
 
-  const updateChild = async (childId: string, name: string, birthday: string) => {
+  const updateChild = async (childId: string, name: string, birthday: string, gender?: Gender) => {
     if (!userId) throw new Error('User not authenticated');
 
     const childRef = ref(database, `children/${childId}`);
-    await update(childRef, { name, birthday });
+    await update(childRef, removeUndefined({ name, birthday, gender }));
   };
 
   /**
