@@ -54,12 +54,16 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
 
   // Parse recommendation hours
   const { max: maxHours } = parseHourRange(recommendation.totalHours);
-  const actualHours = stats.totalDuration / 60;
+  const actualHours = stats.dailyAverage / 60; // 使用每日平均
+
+  // 計算每日平均的夜間和白天睡眠
+  const dailyNightSleep = (stats.nightSleep / stats.daysInPeriod) / 60;
+  const dailyDaytimeNaps = (stats.daytimeNaps / stats.daysInPeriod) / 60;
 
   // Chart data for actual vs recommended
   const comparisonData = [
     {
-      label: '實際睡眠',
+      label: period === 'today' ? '今日睡眠' : '每日平均',
       value: actualHours,
       max: maxHours,
       color: 'bg-gradient-to-r from-blue-400 to-blue-500',
@@ -76,13 +80,13 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
   const nightDayData = [
     {
       label: '夜間睡眠',
-      value: stats.nightSleep / 60,
+      value: dailyNightSleep,
       max: actualHours > 0 ? actualHours : 1,
       color: 'bg-gradient-to-r from-purple-400 to-purple-500',
     },
     {
       label: '白天小睡',
-      value: stats.daytimeNaps / 60,
+      value: dailyDaytimeNaps,
       max: actualHours > 0 ? actualHours : 1,
       color: 'bg-gradient-to-r from-blue-300 to-blue-400',
     },
@@ -209,19 +213,28 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
         >
           <div className="bg-white rounded-2xl p-4 shadow-soft text-center">
             <div className="text-2xl font-bold text-blue-600">
-              {(stats.totalDuration / 60).toFixed(1)}h
+              {(stats.dailyAverage / 60).toFixed(1)}h
             </div>
-            <div className="text-xs text-gray-600 mt-1">總時長</div>
+            <div className="text-xs text-gray-600 mt-1">
+              {period === 'today' ? '今日總時長' : '每日平均'}
+            </div>
           </div>
           <div className="bg-white rounded-2xl p-4 shadow-soft text-center">
-            <div className="text-2xl font-bold text-purple-600">{stats.sleepCount}次</div>
-            <div className="text-xs text-gray-600 mt-1">睡眠次數</div>
+            <div className="text-2xl font-bold text-purple-600">
+              {period === 'today'
+                ? `${stats.sleepCount}次`
+                : `${(stats.sleepCount / stats.daysInPeriod).toFixed(1)}次`
+              }
+            </div>
+            <div className="text-xs text-gray-600 mt-1">
+              {period === 'today' ? '睡眠次數' : '每日次數'}
+            </div>
           </div>
           <div className="bg-white rounded-2xl p-4 shadow-soft text-center">
             <div className="text-2xl font-bold text-pink-600">
               {(stats.averageDuration / 60).toFixed(1)}h
             </div>
-            <div className="text-xs text-gray-600 mt-1">平均時長</div>
+            <div className="text-xs text-gray-600 mt-1">每次平均</div>
           </div>
         </motion.div>
 
