@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Baby, AlertCircle, Home, Syringe, UtensilsCrossed, PlusCircle, Edit, Trash2, LogIn, LogOut, TrendingUp, Moon, Share2 } from 'lucide-react';
+import { X, Baby, AlertCircle, Home, Syringe, UtensilsCrossed, PlusCircle, Edit, Trash2, LogIn, LogOut, TrendingUp, Moon, Share2, BarChart3, ClipboardList } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { ChildProfile, Gender } from '../types'; // Import ChildProfile and Gender
 import AddChildModal from './AddChildModal'; // Import AddChildModal
@@ -9,8 +9,8 @@ import { useState } from 'react'; // Import useState
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  currentPage: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts' | 'sleep-training';
-  onNavigate: (page: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts' | 'sleep-training') => void;
+  currentPage: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts' | 'sleep-training' | 'sleep-analysis';
+  onNavigate: (page: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts' | 'sleep-training' | 'sleep-analysis') => void;
   childProfiles: ChildProfile[];
   currentChildId: string | null;
   setCurrentChildId: (id: string) => void;
@@ -48,62 +48,100 @@ export default function Sidebar({
   const childCount = childProfiles.length;
   const canAddChild = childCount < 2;
 
-  const allMenuItems = [
+  // Menu structure organized by functional domains
+  const menuSections = [
     {
-      id: 'dashboard' as const,
-      label: '儀表板',
-      icon: Home,
-      description: '寶寶成長總覽',
-      requiresAuth: true // Dashboard requires login
+      title: '📊 數據中心',
+      items: [
+        {
+          id: 'dashboard' as const,
+          label: '儀表板',
+          icon: Home,
+          description: '寶寶成長總覽',
+          requiresAuth: true
+        },
+        {
+          id: 'daily-log' as const,
+          label: '快速日誌',
+          icon: ClipboardList,
+          description: '記錄日常照顧',
+          requiresAuth: true
+        },
+        {
+          id: 'growth-charts' as const,
+          label: '成長曲線圖',
+          icon: TrendingUp,
+          description: '追蹤身高體重發展',
+          requiresAuth: true
+        }
+      ]
     },
     {
-      id: 'growth-charts' as const,
-      label: '成長曲線圖',
-      icon: TrendingUp,
-      description: '追蹤身高體重發展',
-      requiresAuth: true // Growth charts require login
+      title: '🎯 發展追蹤',
+      items: [
+        {
+          id: 'milestones' as const,
+          label: '里程碑追蹤',
+          icon: Baby,
+          description: '記錄寶寶發展進度',
+          requiresAuth: false
+        },
+        {
+          id: 'vaccine-tracking' as const,
+          label: '疫苗追蹤',
+          icon: Syringe,
+          description: '疫苗接種時程與副作用',
+          requiresAuth: false
+        }
+      ]
     },
     {
-      id: 'milestones' as const,
-      label: '里程碑追蹤',
-      icon: Baby,
-      description: '記錄寶寶發展進度',
-      requiresAuth: false // Can view without login (read-only)
+      title: '🍼 飲食與睡眠',
+      items: [
+        {
+          id: 'complementary-food' as const,
+          label: '副食品指南',
+          icon: UtensilsCrossed,
+          description: '副食品添加完整攻略',
+          requiresAuth: false
+        },
+        {
+          id: 'sleep-training' as const,
+          label: '睡眠訓練',
+          icon: Moon,
+          description: '睡眠需求與訓練技巧',
+          requiresAuth: false
+        },
+        {
+          id: 'sleep-analysis' as const,
+          label: '睡眠分析',
+          icon: BarChart3,
+          description: '分析寶寶睡眠模式',
+          requiresAuth: true
+        }
+      ]
     },
     {
-      id: 'care-guide' as const,
-      label: '照顧重點',
-      icon: AlertCircle,
-      description: '各階段注意事項',
-      requiresAuth: false // Open to all users
-    },
-    {
-      id: 'vaccine-tracking' as const,
-      label: '疫苗追蹤',
-      icon: Syringe,
-      description: '疫苗接種時程與副作用',
-      requiresAuth: false // Can view without login (read-only)
-    },
-    {
-      id: 'complementary-food' as const,
-      label: '副食品指南',
-      icon: UtensilsCrossed,
-      description: '副食品添加完整攻略',
-      requiresAuth: false // Open to all users
-    },
-    {
-      id: 'sleep-training' as const,
-      label: '睡眠訓練',
-      icon: Moon,
-      description: '睡眠需求與訓練技巧',
-      requiresAuth: false // Open to all users
+      title: '📖 照顧指南',
+      items: [
+        {
+          id: 'care-guide' as const,
+          label: '照顧重點',
+          icon: AlertCircle,
+          description: '各階段注意事項',
+          requiresAuth: false
+        }
+      ]
     }
   ];
 
-  // Filter menu items based on auth status
-  const menuItems = allMenuItems.filter(item => !item.requiresAuth || user);
+  // Filter menu sections based on auth status
+  const filteredSections = menuSections.map(section => ({
+    ...section,
+    items: section.items.filter(item => !item.requiresAuth || user)
+  })).filter(section => section.items.length > 0);
 
-  const handleNavigate = (page: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts' | 'sleep-training') => {
+  const handleNavigate = (page: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts' | 'sleep-training' | 'sleep-analysis') => {
     onNavigate(page);
     onClose();
   };
@@ -321,36 +359,51 @@ export default function Sidebar({
               </div>
             </div>
 
-            {/* Menu Items */}
-            <div className="p-4 space-y-2">
-              {menuItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = currentPage === item.id;
+            {/* Menu Items - Grouped by Function */}
+            <div className="p-4 pb-6 space-y-6">
+              {filteredSections.map((section, sectionIndex) => (
+                <div key={section.title}>
+                  {/* Section Title */}
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-2">
+                    {section.title}
+                  </h3>
 
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleNavigate(item.id)}
-                    className={`
-                      w-full p-4 rounded-3xl transition-all text-left
-                      ${isActive
-                        ? 'bg-[#7EC8E3] text-white shadow-soft'
-                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
-                      }
-                    `}
-                  >
-                    <div className="flex items-start gap-3">
-                      <Icon className={`w-6 h-6 flex-shrink-0 mt-0.5 ${isActive ? 'text-white' : 'text-[#7EC8E3]'}`} />
-                      <div className="flex-1">
-                        <div className="font-semibold mb-1">{item.label}</div>
-                        <div className={`text-sm ${isActive ? 'text-white/80' : 'text-gray-500'}`}>
-                          {item.description}
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
+                  {/* Section Items */}
+                  <div className="space-y-2">
+                    {section.items.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = currentPage === item.id;
+
+                      return (
+                        <motion.button
+                          key={item.id}
+                          onClick={() => handleNavigate(item.id)}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: sectionIndex * 0.05 }}
+                          className={`
+                            w-full p-4 rounded-3xl transition-all text-left
+                            ${isActive
+                              ? 'bg-[#7EC8E3] text-white shadow-soft'
+                              : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                            }
+                          `}
+                        >
+                          <div className="flex items-start gap-3">
+                            <Icon className={`w-6 h-6 flex-shrink-0 mt-0.5 ${isActive ? 'text-white' : 'text-[#7EC8E3]'}`} />
+                            <div className="flex-1">
+                              <div className="font-semibold mb-1">{item.label}</div>
+                              <div className={`text-sm ${isActive ? 'text-white/80' : 'text-gray-500'}`}>
+                                {item.description}
+                              </div>
+                            </div>
+                          </div>
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Footer */}
