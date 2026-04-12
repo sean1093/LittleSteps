@@ -17,8 +17,9 @@ import ComplementaryFoodPage from './pages/ComplementaryFoodPage';
 import GrowthChartsPage from './pages/GrowthChartsPage';
 import SleepTrainingPage from './pages/SleepTrainingPage';
 import DailyLogPage from './pages/DailyLogPage';
+import SleepAnalysisPage from './pages/SleepAnalysisPage';
 
-type Page = 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts' | 'sleep-training';
+type Page = 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts' | 'sleep-training' | 'sleep-analysis';
 
 function AppContent() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
@@ -39,7 +40,8 @@ function AppContent() {
       '#/complementary-food': 'complementary-food',
       '#/daily-log': 'daily-log',
       '#/growth-charts': 'growth-charts',
-      '#/sleep-training': 'sleep-training'
+      '#/sleep-training': 'sleep-training',
+      '#/sleep-analysis': 'sleep-analysis'
     };
     return pageMap[hash] || 'home';
   };
@@ -143,7 +145,8 @@ function AppContent() {
       'complementary-food': '#/complementary-food',
       'daily-log': '#/daily-log',
       'growth-charts': '#/growth-charts',
-      'sleep-training': '#/sleep-training'
+      'sleep-training': '#/sleep-training',
+      'sleep-analysis': '#/sleep-analysis'
     };
     window.location.hash = hashMap[page];
     setCurrentPage(page);
@@ -277,6 +280,9 @@ function AppContent() {
         break;
       case 'sleep-training':
         title += '睡眠訓練';
+        break;
+      case 'sleep-analysis':
+        title += '睡眠分析';
         break;
       default:
         break;
@@ -519,6 +525,9 @@ function AppContent() {
         )}
         {currentPage === 'sleep-training' && (
           <SleepTrainingPage />
+        )}
+        {currentPage === 'sleep-analysis' && (
+          <SleepAnalysisPage currentChild={currentChild} user={user} />
         )}
       </main>
     </div>
