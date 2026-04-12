@@ -300,6 +300,132 @@ claude: Read skills/firebase-integration.md
 
 ---
 
+## Post-Implementation Workflow
+
+**CRITICAL: After completing any code changes, you MUST follow this workflow:**
+
+### 1. Test Your Changes
+
+**Manual Testing:**
+```bash
+# Start dev server and manually test
+npm run dev
+
+# Test both modes:
+# - Guest mode (without login)
+# - Authenticated mode (with Google login)
+
+# Test all affected features:
+# - Click through all UI elements
+# - Test edge cases (empty states, errors, loading)
+# - Test on different screen sizes (mobile, tablet, desktop)
+```
+
+**Automated Testing (if applicable):**
+```bash
+# Run existing tests
+npm run test
+
+# Run Playwright E2E tests (if available)
+npx playwright test
+
+# Check for TypeScript errors
+npm run build
+```
+
+### 2. Organize Commits
+
+**Guidelines:**
+- **One commit per logical change** - Don't mix unrelated changes
+- **Descriptive commit messages** - Follow conventional commits format
+- **Commit types:**
+  - `feat:` - New feature
+  - `fix:` - Bug fix
+  - `refactor:` - Code refactoring
+  - `style:` - Styling changes
+  - `docs:` - Documentation
+  - `test:` - Test changes
+  - `chore:` - Build/config changes
+
+**Example workflow:**
+```bash
+# Check status
+git status
+
+# Stage files by logical groups
+git add src/utils/newFeature.ts src/components/NewComponent.tsx
+git commit -m "feat: add new feature with component and utils
+
+Detailed description of what was added and why.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
+
+# Stage bug fix separately
+git add src/hooks/useBuggyHook.ts
+git commit -m "fix: resolve issue with buggy hook
+
+Description of the bug and how it was fixed.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
+```
+
+### 3. Push to Remote
+
+**Always push after committing:**
+```bash
+git push origin master
+```
+
+**IMPORTANT:** Do NOT skip this step. Every commit should be pushed to ensure:
+- Code is backed up
+- Team members have access to latest changes
+- CI/CD pipeline can run
+- GitHub Actions can deploy
+
+### 4. Complete Workflow Example
+
+```bash
+# 1. Test changes
+npm run dev
+# (manually test all affected features)
+
+# 2. Build to check for errors
+npm run build
+
+# 3. Check git status
+git status
+
+# 4. Stage and commit by logical groups
+git add src/pages/NewPage.tsx src/components/NewComponent.tsx
+git commit -m "feat: add new page with component
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
+
+# 5. Push to remote
+git push origin master
+```
+
+### 5. Automated Testing with Playwright (Future)
+
+**When Playwright tests are available:**
+```bash
+# Run all E2E tests
+npx playwright test
+
+# Run specific test file
+npx playwright test tests/sleep-analysis.spec.ts
+
+# Run tests in headed mode (see browser)
+npx playwright test --headed
+
+# Run tests in debug mode
+npx playwright test --debug
+```
+
+**Note:** Playwright tests are not yet implemented. When adding new features, consider writing E2E tests for critical user flows.
+
+---
+
 ## Environment Setup
 
 ### Required Environment Variables (.env)
