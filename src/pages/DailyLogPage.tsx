@@ -1,137 +1,202 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import * as Icons from 'lucide-react';
+import { User } from 'firebase/auth';
+import { ChildProfile, DailyLog } from '../types';
+import { useDailyLogs } from '../hooks/useDailyLogs';
+import { useFirebaseChildren } from '../hooks/useFirebaseChildren';
+import { isSameDay } from '../utils/dateHelpers';
+import QuickLogButtons from '../components/QuickLogButtons';
+import LogEntryModal from '../components/LogEntryModal';
+import LogTimeline from '../components/LogTimeline';
 
-export default function DailyLogPage() {
-  return (
-    <div className="min-h-screen bg-warm-white flex items-center justify-center px-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-md w-full"
-      >
-        {/* Main Card */}
-        <div className="card text-center">
-          {/* Icon */}
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-            className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-[#E8F4F8] mb-6"
-          >
-            <Icons.Construction className="w-12 h-12 text-[#7EC8E3]" />
-          </motion.div>
+interface DailyLogPageProps {
+  currentChild?: ChildProfile | null;
+  user: User | null;
+}
 
-          {/* Title */}
-          <motion.h2
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            className="text-2xl font-bold text-gray-800 mb-3"
-          >
-            功能開發中
-          </motion.h2>
+export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) {
+  const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState<'feeding' | 'sleep' | 'diaper' | null>(null);
+  const [editingLog, setEditingLog] = useState<DailyLog | null>(null);
 
-          {/* Description */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
-            className="text-gray-600 leading-relaxed mb-6"
-          >
-            快速日誌功能正在努力開發中，敬請期待！
-            <br />
-            我們將提供便捷的餵奶、睡眠、尿布記錄功能。
-          </motion.p>
+  // Load data
+  const { logs, loading } = useDailyLogs(currentChild?.id || null, user);
+  const firebaseChildren = useFirebaseChildren(user?.uid || null);
 
-          {/* Features Preview */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
-            className="bg-[#E8F4F8]/50 rounded-3xl p-4 mb-6"
-          >
-            <h3 className="text-sm font-semibold text-gray-800 mb-3">即將推出的功能</h3>
-            <div className="space-y-2 text-left">
-              <div className="flex items-center gap-2 text-sm text-gray-700">
-                <Icons.Milk className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                <span>餵奶記錄（母乳/配方奶/副食品）</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-700">
-                <Icons.Moon className="w-4 h-4 text-purple-500 flex-shrink-0" />
-                <span>睡眠追蹤（開始/結束時間）</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-700">
-                <Icons.Baby className="w-4 h-4 text-pink-500 flex-shrink-0" />
-                <span>尿布更換記錄（大便/小便）</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-700">
-                <Icons.LineChart className="w-4 h-4 text-green-500 flex-shrink-0" />
-                <span>每日統計與時間軸檢視</span>
-              </div>
-            </div>
-          </motion.div>
+  // Calculate today's statistics
+  const todayLogs = logs.filter((log) => isSameDay(log.timestamp, new Date()));
+  const feedingCount = todayLogs.filter((l) => l.type === 'feeding').length;
+  const sleepCount = todayLogs.filter((l) => l.type === 'sleep').length;
+  const diaperCount = todayLogs.filter((l) => l.type === 'diaper').length;
 
-          {/* Animation Indicator */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6, duration: 0.5 }}
-            className="flex items-center justify-center gap-2 text-sm text-gray-500"
-          >
-            <motion.div
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.5, 1, 0.5]
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-              className="w-2 h-2 rounded-full bg-blue-500"
-            />
-            <motion.div
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.5, 1, 0.5]
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: 0.2
-              }}
-              className="w-2 h-2 rounded-full bg-purple-500"
-            />
-            <motion.div
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.5, 1, 0.5]
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: 0.4
-              }}
-              className="w-2 h-2 rounded-full bg-pink-500"
-            />
-          </motion.div>
-        </div>
+  // Handlers
+  const handleQuickLog = (type: 'feeding' | 'sleep' | 'diaper') => {
+    setModalType(type);
+    setEditingLog(null);
+    setShowModal(true);
+  };
 
-        {/* Additional Info */}
+  const handleSave = async (logData: Omit<DailyLog, 'id'>) => {
+    if (!currentChild) {
+      alert('請先選擇寶寶');
+      return;
+    }
+
+    try {
+      const completeLogData = {
+        ...logData,
+        childId: currentChild.id,
+      };
+
+      if (editingLog) {
+        // Update existing log
+        if (user) {
+          await firebaseChildren.updateDailyLog(currentChild.id, editingLog.id, completeLogData);
+        } else {
+          // LocalStorage mode - handled by useDailyLogs
+          throw new Error('LocalStorage update not supported yet');
+        }
+      } else {
+        // Create new log
+        if (user) {
+          await firebaseChildren.addDailyLog(currentChild.id, completeLogData);
+        } else {
+          // LocalStorage mode - handled by useDailyLogs
+          throw new Error('LocalStorage create not supported yet');
+        }
+      }
+
+      setShowModal(false);
+      setEditingLog(null);
+    } catch (error: any) {
+      console.error('保存日誌失敗:', error);
+      alert(error.message || '保存失敗，請稍後再試');
+    }
+  };
+
+  const handleEdit = (log: DailyLog) => {
+    setEditingLog(log);
+    setModalType(log.type);
+    setShowModal(true);
+  };
+
+  const handleDelete = async (logId: string) => {
+    if (!currentChild) return;
+
+    try {
+      if (user) {
+        await firebaseChildren.deleteDailyLog(currentChild.id, logId);
+      } else {
+        // LocalStorage mode - handled by useDailyLogs
+        throw new Error('LocalStorage delete not supported yet');
+      }
+    } catch (error: any) {
+      console.error('刪除日誌失敗:', error);
+      alert(error.message || '刪除失敗，請稍後再試');
+    }
+  };
+
+  // No child selected
+  if (!currentChild) {
+    return (
+      <div className="min-h-screen bg-warm-white flex items-center justify-center px-4">
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7, duration: 0.5 }}
-          className="mt-6 text-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="card text-center max-w-md"
         >
-          <p className="text-xs text-gray-500">
-            💡 目前您可以使用其他功能，如里程碑追蹤、疫苗記錄、睡眠訓練指南等
-          </p>
+          <p className="text-gray-600">請先在側邊欄選擇或新增寶寶</p>
         </motion.div>
-      </motion.div>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-warm-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">載入中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-warm-white pb-24">
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6"
+        >
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">
+            {currentChild.name}的快速日誌
+          </h1>
+          <p className="text-sm text-gray-600">今日記錄</p>
+        </motion.div>
+
+        {/* Today's Statistics */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white rounded-2xl shadow-soft p-4 mb-6"
+        >
+          <h2 className="text-sm font-semibold text-gray-700 mb-3">今日統計</h2>
+          <div className="flex justify-around">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{feedingCount}</div>
+              <div className="text-xs text-gray-600">🍼 餵奶</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600">{sleepCount}</div>
+              <div className="text-xs text-gray-600">💤 睡眠</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-pink-600">{diaperCount}</div>
+              <div className="text-xs text-gray-600">💩 尿布</div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Quick Log Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-6"
+        >
+          <h2 className="text-sm font-semibold text-gray-700 mb-3">快速記錄</h2>
+          <QuickLogButtons onLogClick={handleQuickLog} />
+        </motion.div>
+
+        {/* Log Timeline */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <h2 className="text-sm font-semibold text-gray-700 mb-3">今日記錄</h2>
+          <LogTimeline logs={logs} onEdit={handleEdit} onDelete={handleDelete} />
+        </motion.div>
+
+        {/* Log Entry Modal */}
+        {modalType && (
+          <LogEntryModal
+            isOpen={showModal}
+            onClose={() => {
+              setShowModal(false);
+              setEditingLog(null);
+            }}
+            onSave={handleSave}
+            logType={modalType}
+            editingLog={editingLog}
+          />
+        )}
+      </div>
     </div>
   );
 }

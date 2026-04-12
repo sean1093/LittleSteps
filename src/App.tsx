@@ -509,7 +509,7 @@ function AppContent() {
           />
         )}
         {currentPage === 'daily-log' && (
-          <DailyLogPage />
+          <DailyLogPage currentChild={currentChild} user={user} />
         )}
         {currentPage === 'growth-charts' && (
           <GrowthChartsPage
