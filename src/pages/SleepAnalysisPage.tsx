@@ -53,7 +53,7 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
   }, [stats, ageInMonths]);
 
   // Parse recommendation hours
-  const { min: minHours, max: maxHours } = parseHourRange(recommendation.totalHours);
+  const { max: maxHours } = parseHourRange(recommendation.totalHours);
   const actualHours = stats.totalDuration / 60;
 
   // Chart data for actual vs recommended
