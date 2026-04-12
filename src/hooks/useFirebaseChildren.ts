@@ -11,13 +11,19 @@ function generateUUID(): string {
   });
 }
 
-// Helper function to remove undefined values from objects
+// Helper function to recursively remove undefined values from objects
 // Firebase does not allow undefined values - they must be null or omitted
 function removeUndefined<T extends Record<string, any>>(obj: T): Partial<T> {
   const cleaned: any = {};
   for (const key in obj) {
-    if (obj[key] !== undefined) {
-      cleaned[key] = obj[key];
+    const value = obj[key];
+    if (value !== undefined) {
+      // Recursively clean nested objects
+      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        cleaned[key] = removeUndefined(value);
+      } else {
+        cleaned[key] = value;
+      }
     }
   }
   return cleaned;
