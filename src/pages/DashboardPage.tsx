@@ -16,7 +16,7 @@ interface DashboardPageProps {
   currentChild?: ChildProfile;
   dailyLogs: DailyLog[];
   user: User | null;
-  onNavigate: (page: 'milestones' | 'vaccine-tracking' | 'daily-log' | 'care-guide' | 'complementary-food') => void;
+  onNavigate: (page: 'milestones' | 'vaccine-tracking' | 'daily-log' | 'care-guide' | 'complementary-food' | 'sleep-analysis') => void;
 }
 
 const containerVariants = {
