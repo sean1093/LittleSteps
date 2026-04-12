@@ -273,7 +273,7 @@ export default function DashboardPage({
           {/* Sleep Analytics */}
           <SleepAnalyticsCard
             analytics={sleepAnalytics}
-            onNavigate={() => onNavigate('daily-log')}
+            onNavigate={() => onNavigate('sleep-analysis')}
           />
         </motion.div>
 
