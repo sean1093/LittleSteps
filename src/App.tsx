@@ -18,6 +18,7 @@ import GrowthChartsPage from './pages/GrowthChartsPage';
 import SleepTrainingPage from './pages/SleepTrainingPage';
 import DailyLogPage from './pages/DailyLogPage';
 import SleepAnalysisPage from './pages/SleepAnalysisPage';
+import FeedbackButton from './components/FeedbackButton';
 
 type Page = 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts' | 'sleep-training' | 'sleep-analysis';
 
@@ -530,6 +531,9 @@ function AppContent() {
           <SleepAnalysisPage currentChild={currentChild} user={user} />
         )}
       </main>
+
+      {/* Feedback Button */}
+      <FeedbackButton user={user} />
     </div>
   );
 }

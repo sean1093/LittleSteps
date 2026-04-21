@@ -260,6 +260,30 @@ export function useFirebaseChildren(userId: string | null) {
     await remove(foodRef);
   };
 
+  // Feedback submission
+  const submitFeedback = async (feedback: {
+    title: string;
+    content: string;
+    userId: string;
+    userEmail: string;
+    userName: string;
+  }) => {
+    if (!userId) throw new Error('User not authenticated');
+
+    const feedbackId = `feedback_${Date.now()}`;
+    const feedbackData = {
+      id: feedbackId,
+      ...feedback,
+      timestamp: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+    };
+
+    const feedbackRef = ref(database, `feedbacks/${feedbackId}`);
+    await set(feedbackRef, feedbackData);
+
+    return feedbackId;
+  };
+
   return {
     addChild,
     joinChild, // New: join existing child via UUID
@@ -275,5 +299,6 @@ export function useFirebaseChildren(userId: string | null) {
     addFoodTrial,
     updateFoodTrial,
     deleteFoodTrial,
+    submitFeedback,
   };
 }

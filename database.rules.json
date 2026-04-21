@@ -17,6 +17,12 @@
         ".read": "root.child('users').child(auth.uid).child('families').child($familyId).exists()",
         ".write": "(!data.exists() && newData.child('createdBy').val() === auth.uid) || root.child('users').child(auth.uid).child('families').child($familyId).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('families').child($familyId).child('role').val() === 'member'"
       }
+    },
+    "feedbacks": {
+      "$feedbackId": {
+        ".read": "false",
+        ".write": "auth != null && !data.exists() && newData.child('userId').val() === auth.uid"
+      }
     }
   }
 }
