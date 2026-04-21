@@ -38,8 +38,16 @@ export default function LogEntryModal({
   // Common
   const [notes, setNotes] = useState('');
 
+  // Loading and error states
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   // Initialize form when editing
   useEffect(() => {
+    // Reset error state when modal opens/closes
+    setError(null);
+    setIsSubmitting(false);
+
     if (editingLog) {
       setTimestamp(editingLog.timestamp.slice(0, 16)); // Convert ISO to datetime-local format
 
@@ -74,52 +82,61 @@ export default function LogEntryModal({
     }
   }, [editingLog, logType, isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
 
-    let data: FeedingData | SleepData | DiaperData;
-    let finalTimestamp: string;
+    try {
+      let data: FeedingData | SleepData | DiaperData;
+      let finalTimestamp: string;
 
-    if (logType === 'feeding') {
-      finalTimestamp = dateTimeLocalToISO(timestamp);
-      data = {
-        feedingType,
-        duration: duration ? parseInt(duration) : undefined,
-        amount: amount ? parseInt(amount) : undefined,
-        notes: notes.trim() || undefined,
-      } as FeedingData;
-    } else if (logType === 'sleep') {
-      finalTimestamp = dateTimeLocalToISO(startTime);
-      const sleepData: SleepData = {
-        startTime: dateTimeLocalToISO(startTime),
-        endTime: endTime ? dateTimeLocalToISO(endTime) : undefined,
-        notes: notes.trim() || undefined,
-      };
-      // Calculate duration if endTime is provided
-      if (endTime) {
-        sleepData.duration = calculateDuration(sleepData.startTime, sleepData.endTime!);
+      if (logType === 'feeding') {
+        finalTimestamp = dateTimeLocalToISO(timestamp);
+        data = {
+          feedingType,
+          duration: duration ? parseInt(duration) : undefined,
+          amount: amount ? parseInt(amount) : undefined,
+          notes: notes.trim() || undefined,
+        } as FeedingData;
+      } else if (logType === 'sleep') {
+        finalTimestamp = dateTimeLocalToISO(startTime);
+        const sleepData: SleepData = {
+          startTime: dateTimeLocalToISO(startTime),
+          endTime: endTime ? dateTimeLocalToISO(endTime) : undefined,
+          notes: notes.trim() || undefined,
+        };
+        // Calculate duration if endTime is provided
+        if (endTime) {
+          sleepData.duration = calculateDuration(sleepData.startTime, sleepData.endTime!);
+        }
+        data = sleepData;
+      } else {
+        finalTimestamp = dateTimeLocalToISO(timestamp);
+        data = {
+          type: diaperType,
+          consistency: (diaperType === 'poop' || diaperType === 'both') ? consistency : undefined,
+          notes: notes.trim() || undefined,
+        } as DiaperData;
       }
-      data = sleepData;
-    } else {
-      finalTimestamp = dateTimeLocalToISO(timestamp);
-      data = {
-        type: diaperType,
-        consistency: (diaperType === 'poop' || diaperType === 'both') ? consistency : undefined,
-        notes: notes.trim() || undefined,
-      } as DiaperData;
+
+      const logData: Omit<DailyLog, 'id'> = {
+        childId: '', // Will be set by parent component
+        type: logType,
+        timestamp: finalTimestamp,
+        data,
+        createdAt: editingLog?.createdAt || new Date().toISOString(),
+        updatedAt: editingLog ? new Date().toISOString() : undefined,
+      };
+
+      await onSave(logData);
+      onClose();
+    } catch (err: any) {
+      console.error('保存失敗:', err);
+      setError(err.message || '保存失敗，請稍後再試');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const logData: Omit<DailyLog, 'id'> = {
-      childId: '', // Will be set by parent component
-      type: logType,
-      timestamp: finalTimestamp,
-      data,
-      createdAt: editingLog?.createdAt || new Date().toISOString(),
-      updatedAt: editingLog ? new Date().toISOString() : undefined,
-    };
-
-    onSave(logData);
-    onClose();
   };
 
   if (!isOpen) return null;
@@ -337,15 +354,24 @@ export default function LogEntryModal({
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-primary focus:border-primary transition-colors resize-none"
                   rows={3}
                   placeholder="選填"
+                  disabled={isSubmitting}
                 />
               </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                  <p className="text-sm text-red-800">{error}</p>
+                </div>
+              )}
 
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full py-3 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-xl shadow-soft hover:shadow-soft-lg transition-all"
+                disabled={isSubmitting}
+                className="w-full py-3 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-xl shadow-soft hover:shadow-soft-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {editingLog ? '更新' : '儲存'}
+                {isSubmitting ? '儲存中...' : (editingLog ? '更新' : '儲存')}
               </button>
             </form>
           </motion.div>
