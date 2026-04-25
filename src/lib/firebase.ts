@@ -42,7 +42,55 @@ export const logEvent = (eventName: string, eventParams?: Record<string, any>) =
 
 // Pre-defined event helpers
 export const logPageView = (pageName: string) => {
-  logEvent('page_view', { page_name: pageName });
+  // Determine app category and page details
+  const getPageMetadata = (page: string) => {
+    // Determine which app
+    let app = 'main';
+    let section = 'home';
+    let feature = page;
+
+    if (page === 'home') {
+      app = 'main';
+      section = 'landing';
+      feature = 'main-entry';
+    } else if (page === 'littlebloom') {
+      app = 'littlebloom';
+      section = 'wip';
+      feature = 'pregnancy-companion';
+    } else if (page.startsWith('littlesteps')) {
+      app = 'littlesteps';
+      const parts = page.split('/');
+      feature = parts[1] || 'home';
+
+      // Categorize by section
+      if (feature === 'dashboard' || feature === 'daily-log' || feature === 'growth-charts' || feature === 'sleep-analysis') {
+        section = 'data-tracking';
+      } else if (feature === 'milestones' || feature === 'vaccine-tracking') {
+        section = 'development';
+      } else if (feature === 'complementary-food' || feature === 'sleep-training') {
+        section = 'nutrition-sleep';
+      } else if (feature === 'care-guide') {
+        section = 'education';
+      } else {
+        section = 'landing';
+      }
+    }
+
+    return { app, section, feature };
+  };
+
+  const metadata = getPageMetadata(pageName);
+
+  logEvent('page_view', {
+    page_name: pageName,
+    page_path: window.location.hash || '/',
+    page_location: window.location.href,
+    page_title: document.title,
+    // Custom dimensions for better segmentation
+    app_name: metadata.app,           // main | littlesteps | littlebloom
+    app_section: metadata.section,    // landing | data-tracking | development | etc.
+    app_feature: metadata.feature,    // specific feature name
+  });
 };
 
 export const logMilestoneToggle = (milestoneId: string, achieved: boolean) => {
