@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Baby, AlertCircle, Home, Syringe, UtensilsCrossed, PlusCircle, Edit, Trash2, LogIn, LogOut, TrendingUp, Moon, Share2, BarChart3, ClipboardList } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { ChildProfile, Gender } from '../types'; // Import ChildProfile and Gender
+import { LittleStepsPage } from '../types/routes'; // Import route types
 import AddChildModal from './AddChildModal'; // Import AddChildModal
 import ShareChildUuidModal from './ShareChildUuidModal'; // Import ShareChildUuidModal
 import { useState } from 'react'; // Import useState
@@ -9,8 +10,8 @@ import { useState } from 'react'; // Import useState
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  currentPage: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts' | 'sleep-training' | 'sleep-analysis';
-  onNavigate: (page: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts' | 'sleep-training' | 'sleep-analysis') => void;
+  currentPage: LittleStepsPage;
+  onNavigate: (page: LittleStepsPage) => void;
   childProfiles: ChildProfile[];
   currentChildId: string | null;
   setCurrentChildId: (id: string) => void;
@@ -54,21 +55,21 @@ export default function Sidebar({
       title: '📊 數據中心',
       items: [
         {
-          id: 'dashboard' as const,
+          id: 'littlesteps/dashboard' as const,
           label: '儀表板',
           icon: Home,
           description: '寶寶成長總覽',
           requiresAuth: true
         },
         {
-          id: 'daily-log' as const,
+          id: 'littlesteps/daily-log' as const,
           label: '快速日誌',
           icon: ClipboardList,
           description: '記錄日常照顧',
           requiresAuth: true
         },
         {
-          id: 'growth-charts' as const,
+          id: 'littlesteps/growth-charts' as const,
           label: '成長曲線圖',
           icon: TrendingUp,
           description: '追蹤身高體重發展',
@@ -80,14 +81,14 @@ export default function Sidebar({
       title: '🎯 發展追蹤',
       items: [
         {
-          id: 'milestones' as const,
+          id: 'littlesteps/milestones' as const,
           label: '里程碑追蹤',
           icon: Baby,
           description: '記錄寶寶發展進度',
           requiresAuth: false
         },
         {
-          id: 'vaccine-tracking' as const,
+          id: 'littlesteps/vaccine-tracking' as const,
           label: '疫苗追蹤',
           icon: Syringe,
           description: '疫苗接種時程與副作用',
@@ -99,21 +100,21 @@ export default function Sidebar({
       title: '🍼 飲食與睡眠',
       items: [
         {
-          id: 'complementary-food' as const,
+          id: 'littlesteps/complementary-food' as const,
           label: '副食品指南',
           icon: UtensilsCrossed,
           description: '副食品添加完整攻略',
           requiresAuth: false
         },
         {
-          id: 'sleep-training' as const,
+          id: 'littlesteps/sleep-training' as const,
           label: '睡眠訓練',
           icon: Moon,
           description: '睡眠需求與訓練技巧',
           requiresAuth: false
         },
         {
-          id: 'sleep-analysis' as const,
+          id: 'littlesteps/sleep-analysis' as const,
           label: '睡眠分析',
           icon: BarChart3,
           description: '分析寶寶睡眠模式',
@@ -125,7 +126,7 @@ export default function Sidebar({
       title: '📖 照顧指南',
       items: [
         {
-          id: 'care-guide' as const,
+          id: 'littlesteps/care-guide' as const,
           label: '照顧重點',
           icon: AlertCircle,
           description: '各階段注意事項',
@@ -141,7 +142,7 @@ export default function Sidebar({
     items: section.items.filter(item => !item.requiresAuth || user)
   })).filter(section => section.items.length > 0);
 
-  const handleNavigate = (page: 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts' | 'sleep-training' | 'sleep-analysis') => {
+  const handleNavigate = (page: LittleStepsPage) => {
     onNavigate(page);
     onClose();
   };

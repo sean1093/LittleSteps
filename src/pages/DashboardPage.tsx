@@ -16,7 +16,7 @@ interface DashboardPageProps {
   currentChild?: ChildProfile;
   dailyLogs: DailyLog[];
   user: User | null;
-  onNavigate: (page: 'milestones' | 'vaccine-tracking' | 'daily-log' | 'care-guide' | 'complementary-food' | 'sleep-analysis') => void;
+  onNavigate: (page: 'littlesteps/milestones' | 'littlesteps/vaccine-tracking' | 'littlesteps/daily-log' | 'littlesteps/care-guide' | 'littlesteps/complementary-food' | 'littlesteps/sleep-analysis') => void;
 }
 
 const containerVariants = {
@@ -249,7 +249,7 @@ export default function DashboardPage({
           {milestoneSummary && (
             <MilestoneSummaryCard
               milestoneProgress={currentChild.milestoneProgress || {}}
-              onNavigate={() => onNavigate('milestones')}
+              onNavigate={() => onNavigate('littlesteps/milestones')}
             />
           )}
 
@@ -257,7 +257,7 @@ export default function DashboardPage({
           {vaccineSummary && (
             <VaccineSummaryCard
               vaccineProgress={currentChild.vaccineProgress || {}}
-              onNavigate={() => onNavigate('vaccine-tracking')}
+              onNavigate={() => onNavigate('littlesteps/vaccine-tracking')}
             />
           )}
         </motion.div>
@@ -267,13 +267,13 @@ export default function DashboardPage({
           {/* Daily Log Summary */}
           <DailyLogSummaryCard
             summary={todaySummary}
-            onNavigate={() => onNavigate('daily-log')}
+            onNavigate={() => onNavigate('littlesteps/daily-log')}
           />
 
           {/* Sleep Analytics */}
           <SleepAnalyticsCard
             analytics={sleepAnalytics}
-            onNavigate={() => onNavigate('sleep-analysis')}
+            onNavigate={() => onNavigate('littlesteps/sleep-analysis')}
           />
         </motion.div>
 
@@ -281,7 +281,7 @@ export default function DashboardPage({
         <motion.div variants={itemVariants} className="mb-6">
           <FoodTrackingSummaryCard
             stats={foodStats}
-            onNavigate={() => onNavigate('complementary-food')}
+            onNavigate={() => onNavigate('littlesteps/complementary-food')}
           />
         </motion.div>
 
@@ -291,22 +291,22 @@ export default function DashboardPage({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <NavButton
               label="里程碑"
-              onClick={() => onNavigate('milestones')}
+              onClick={() => onNavigate('littlesteps/milestones')}
               gradient="from-pink-400 to-pink-600"
             />
             <NavButton
               label="疫苗追蹤"
-              onClick={() => onNavigate('vaccine-tracking')}
+              onClick={() => onNavigate('littlesteps/vaccine-tracking')}
               gradient="from-green-400 to-green-600"
             />
             <NavButton
               label="副食品"
-              onClick={() => onNavigate('complementary-food')}
+              onClick={() => onNavigate('littlesteps/complementary-food')}
               gradient="from-orange-400 to-orange-600"
             />
             <NavButton
               label="照顧重點"
-              onClick={() => onNavigate('care-guide')}
+              onClick={() => onNavigate('littlesteps/care-guide')}
               gradient="from-blue-400 to-blue-600"
             />
           </div>

@@ -4,7 +4,7 @@ import { Baby, Heart, Sparkles, ArrowRight, Moon, TrendingUp, Shield, Lock, Book
 import { User } from 'firebase/auth';
 
 interface LandingPageProps {
-  onNavigate: (page: 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'sleep-training' | 'growth-charts') => void;
+  onNavigate: (page: 'littlesteps/milestones' | 'littlesteps/care-guide' | 'littlesteps/vaccine-tracking' | 'littlesteps/complementary-food' | 'littlesteps/sleep-training' | 'littlesteps/growth-charts') => void;
   user: User | null;
   onSignIn: () => Promise<void>;
 }
@@ -19,7 +19,7 @@ export default function LandingPage({ onNavigate, user, onSignIn }: LandingPageP
     if (prevUserRef.current === null && user !== null) {
       // Small delay for smooth transition
       setTimeout(() => {
-        window.location.hash = '#/dashboard';
+        window.location.hash = '#/littlesteps/dashboard';
       }, 300);
     }
     prevUserRef.current = user;
@@ -197,7 +197,7 @@ export default function LandingPage({ onNavigate, user, onSignIn }: LandingPageP
                 <motion.button
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => onNavigate('sleep-training')}
+                  onClick={() => onNavigate('littlesteps/sleep-training')}
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#7EC8E3] text-white font-semibold hover:bg-[#6BB8D3] transition-colors"
                 >
                   <BookOpen className="w-5 h-5" />
@@ -235,28 +235,28 @@ export default function LandingPage({ onNavigate, user, onSignIn }: LandingPageP
                 desc: '記錄寶寶每個珍貴的成長時刻',
                 bg: 'bg-[#FFE5E5]',
                 icon: '👶',
-                page: 'milestones' as const
+                page: 'littlesteps/milestones' as const
               },
               {
                 title: '疫苗追蹤',
                 desc: '完整的疫苗接種時程表',
                 bg: 'bg-[#E8F5E9]',
                 icon: '💉',
-                page: 'vaccine-tracking' as const
+                page: 'littlesteps/vaccine-tracking' as const
               },
               {
                 title: '副食品指南',
                 desc: '科學的副食品添加方法',
                 bg: 'bg-[#FFF3E0]',
                 icon: '🍽️',
-                page: 'complementary-food' as const
+                page: 'littlesteps/complementary-food' as const
               },
               {
                 title: '照顧重點',
                 desc: '各階段專業照護建議',
                 bg: 'bg-[#E8F4F8]',
                 icon: '🛡️',
-                page: 'care-guide' as const
+                page: 'littlesteps/care-guide' as const
               }
             ].map((feature, index) => (
               <motion.div

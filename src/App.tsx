@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Menu, Home, Baby } from 'lucide-react';
 import { MilestoneProgress, VaccineProgress, ChildProfile, Gender } from './types'; // Import types
+import { Page, LittleStepsPage } from './types/routes'; // Import route types
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { logPageView, logMilestoneToggle, logVaccineToggle, logChildProfileAction } from './lib/firebase';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -18,9 +19,8 @@ import GrowthChartsPage from './pages/GrowthChartsPage';
 import SleepTrainingPage from './pages/SleepTrainingPage';
 import DailyLogPage from './pages/DailyLogPage';
 import SleepAnalysisPage from './pages/SleepAnalysisPage';
+import LittleBloomPage from './pages/LittleBloomPage';
 import FeedbackButton from './components/FeedbackButton';
-
-type Page = 'home' | 'dashboard' | 'milestones' | 'care-guide' | 'vaccine-tracking' | 'complementary-food' | 'daily-log' | 'growth-charts' | 'sleep-training' | 'sleep-analysis';
 
 function AppContent() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
@@ -33,18 +33,20 @@ function AppContent() {
   const getPageFromHash = (): Page => {
     const hash = window.location.hash;
     const pageMap: Record<string, Page> = {
-      '#/': 'home',
-      '#/dashboard': 'dashboard',
-      '#/milestones': 'milestones',
-      '#/care-guide': 'care-guide',
-      '#/vaccine-tracking': 'vaccine-tracking',
-      '#/complementary-food': 'complementary-food',
-      '#/daily-log': 'daily-log',
-      '#/growth-charts': 'growth-charts',
-      '#/sleep-training': 'sleep-training',
-      '#/sleep-analysis': 'sleep-analysis'
+      '#/': 'littlesteps',
+      '#/littlesteps': 'littlesteps',
+      '#/littlesteps/dashboard': 'littlesteps/dashboard',
+      '#/littlesteps/milestones': 'littlesteps/milestones',
+      '#/littlesteps/care-guide': 'littlesteps/care-guide',
+      '#/littlesteps/vaccine-tracking': 'littlesteps/vaccine-tracking',
+      '#/littlesteps/complementary-food': 'littlesteps/complementary-food',
+      '#/littlesteps/daily-log': 'littlesteps/daily-log',
+      '#/littlesteps/growth-charts': 'littlesteps/growth-charts',
+      '#/littlesteps/sleep-training': 'littlesteps/sleep-training',
+      '#/littlesteps/sleep-analysis': 'littlesteps/sleep-analysis',
+      '#/littlebloom': 'littlebloom'
     };
-    return pageMap[hash] || 'home';
+    return pageMap[hash] || 'littlesteps';
   };
 
   const [currentPage, setCurrentPage] = useState<Page>(getPageFromHash());
@@ -109,16 +111,16 @@ function AppContent() {
 
   // Auto-redirect to dashboard when user logs in or adds first baby
   useEffect(() => {
-    if (user && childProfiles.length > 0 && currentPage === 'home') {
-      navigateToPage('dashboard');
+    if (user && childProfiles.length > 0 && currentPage === 'littlesteps') {
+      navigateToPage('littlesteps/dashboard');
     }
   }, [user, childProfiles.length]);
 
-  // Redirect to home if accessing protected pages without login
+  // Redirect to littlesteps home if accessing protected pages without login
   useEffect(() => {
-    const protectedPages: Page[] = ['dashboard', 'daily-log', 'growth-charts'];
+    const protectedPages: Page[] = ['littlesteps/dashboard', 'littlesteps/daily-log', 'littlesteps/growth-charts'];
     if (!user && protectedPages.includes(currentPage)) {
-      navigateToPage('home');
+      navigateToPage('littlesteps');
     }
   }, [user, currentPage]);
 
@@ -138,16 +140,17 @@ function AppContent() {
   // Update URL when page changes
   const navigateToPage = (page: Page) => {
     const hashMap: Record<Page, string> = {
-      'home': '#/',
-      'dashboard': '#/dashboard',
-      'milestones': '#/milestones',
-      'care-guide': '#/care-guide',
-      'vaccine-tracking': '#/vaccine-tracking',
-      'complementary-food': '#/complementary-food',
-      'daily-log': '#/daily-log',
-      'growth-charts': '#/growth-charts',
-      'sleep-training': '#/sleep-training',
-      'sleep-analysis': '#/sleep-analysis'
+      'littlesteps': '#/littlesteps',
+      'littlesteps/dashboard': '#/littlesteps/dashboard',
+      'littlesteps/milestones': '#/littlesteps/milestones',
+      'littlesteps/care-guide': '#/littlesteps/care-guide',
+      'littlesteps/vaccine-tracking': '#/littlesteps/vaccine-tracking',
+      'littlesteps/complementary-food': '#/littlesteps/complementary-food',
+      'littlesteps/daily-log': '#/littlesteps/daily-log',
+      'littlesteps/growth-charts': '#/littlesteps/growth-charts',
+      'littlesteps/sleep-training': '#/littlesteps/sleep-training',
+      'littlesteps/sleep-analysis': '#/littlesteps/sleep-analysis',
+      'littlebloom': '#/littlebloom'
     };
     window.location.hash = hashMap[page];
     setCurrentPage(page);
@@ -250,39 +253,44 @@ function AppContent() {
   };
 
   const getPageTitle = () => {
+    // LittleBloom has its own title
+    if (currentPage === 'littlebloom') {
+      return 'LittleBloom';
+    }
+
     let title = 'LittleSteps';
-    if (currentChild && currentPage !== 'home') {
+    if (currentChild && currentPage !== 'littlesteps') {
       title = `${currentChild.name} 的 `;
     }
 
     switch (currentPage) {
-      case 'home':
-        break; // Handled above
-      case 'dashboard':
+      case 'littlesteps':
+        break; // Use default 'LittleSteps'
+      case 'littlesteps/dashboard':
         title += '成長總覽';
         break;
-      case 'milestones':
+      case 'littlesteps/milestones':
         title += '里程碑追蹤';
         break;
-      case 'care-guide':
+      case 'littlesteps/care-guide':
         title += '照顧重點';
         break;
-      case 'vaccine-tracking':
+      case 'littlesteps/vaccine-tracking':
         title += '疫苗追蹤';
         break;
-      case 'complementary-food':
+      case 'littlesteps/complementary-food':
         title += '副食品指南';
         break;
-      case 'daily-log':
+      case 'littlesteps/daily-log':
         title += '快速日誌';
         break;
-      case 'growth-charts':
+      case 'littlesteps/growth-charts':
         title += '成長曲線圖';
         break;
-      case 'sleep-training':
+      case 'littlesteps/sleep-training':
         title += '睡眠訓練';
         break;
-      case 'sleep-analysis':
+      case 'littlesteps/sleep-analysis':
         title += '睡眠分析';
         break;
       default:
@@ -291,8 +299,11 @@ function AppContent() {
     return title;
   };
 
-  // Show header for all pages except home (unless user is logged in with babies, then show Dashboard with header)
-  const showHeader = currentPage !== 'home' || (user && childProfiles.length > 0);
+  // Show header for all pages except littlesteps home (unless user is logged in with babies, then show Dashboard with header)
+  // Hide header for LittleBloom (it has its own header)
+  const showHeader = currentPage === 'littlebloom'
+    ? false
+    : (currentPage !== 'littlesteps' || (user && childProfiles.length > 0));
 
   // Child Management Functions
   const addChild = async (name: string, birthday: string, gender?: Gender) => {
@@ -420,23 +431,25 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-warm-white">
-      {/* Sidebar */}
-      <Sidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        currentPage={currentPage}
-        onNavigate={navigateToPage}
-        childProfiles={childProfiles}
-        currentChildId={currentChildId}
-        setCurrentChildId={handleSetCurrentChild}
-        addChild={addChild}
-        joinChild={joinChild}
-        updateChild={updateChild}
-        deleteChild={deleteChild}
-        user={user}
-        onSignIn={signInWithGoogle}
-        onSignOut={signOut}
-      />
+      {/* Sidebar - Only show for LittleSteps routes */}
+      {currentPage !== 'littlebloom' && (
+        <Sidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          currentPage={currentPage as LittleStepsPage}
+          onNavigate={navigateToPage}
+          childProfiles={childProfiles}
+          currentChildId={currentChildId}
+          setCurrentChildId={handleSetCurrentChild}
+          addChild={addChild}
+          joinChild={joinChild}
+          updateChild={updateChild}
+          deleteChild={deleteChild}
+          user={user}
+          onSignIn={signInWithGoogle}
+          onSignOut={signOut}
+        />
+      )}
 
       {/* Header */}
       {showHeader && (
@@ -452,7 +465,7 @@ function AppContent() {
               {getPageTitle()}
             </h1>
             <button
-              onClick={() => navigateToPage('home')}
+              onClick={() => navigateToPage('littlesteps')}
               className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center"
               title="返回首頁"
             >
@@ -464,7 +477,8 @@ function AppContent() {
 
       {/* Main Content */}
       <main className={showHeader ? "pb-6" : ""}>
-        {currentPage === 'home' && (
+        {/* LittleSteps Routes */}
+        {currentPage === 'littlesteps' && (
           <>
             {user && childProfiles.length > 0 ? (
               <DashboardPage
@@ -482,7 +496,7 @@ function AppContent() {
             )}
           </>
         )}
-        {currentPage === 'dashboard' && (
+        {currentPage === 'littlesteps/dashboard' && (
           <DashboardPage
             currentChild={currentChild}
             dailyLogs={dailyLogs}
@@ -490,7 +504,7 @@ function AppContent() {
             onNavigate={navigateToPage}
           />
         )}
-        {currentPage === 'milestones' && (
+        {currentPage === 'littlesteps/milestones' && (
           <MilestonesPage
             progress={currentChildMilestoneProgress}
             onToggleMilestone={toggleMilestone}
@@ -498,10 +512,10 @@ function AppContent() {
             onSignIn={signInWithGoogle}
           />
         )}
-        {currentPage === 'care-guide' && (
+        {currentPage === 'littlesteps/care-guide' && (
           <CareGuidePage />
         )}
-        {currentPage === 'vaccine-tracking' && (
+        {currentPage === 'littlesteps/vaccine-tracking' && (
           <VaccineTrackingPage
             vaccineProgress={currentChildVaccineProgress}
             onToggleVaccineDose={toggleVaccineDose}
@@ -509,27 +523,30 @@ function AppContent() {
             onSignIn={signInWithGoogle}
           />
         )}
-        {currentPage === 'complementary-food' && (
+        {currentPage === 'littlesteps/complementary-food' && (
           <ComplementaryFoodPage
             currentChild={currentChild}
             user={user}
           />
         )}
-        {currentPage === 'daily-log' && (
+        {currentPage === 'littlesteps/daily-log' && (
           <DailyLogPage currentChild={currentChild} user={user} />
         )}
-        {currentPage === 'growth-charts' && (
+        {currentPage === 'littlesteps/growth-charts' && (
           <GrowthChartsPage
             currentChild={currentChild}
             user={user}
           />
         )}
-        {currentPage === 'sleep-training' && (
+        {currentPage === 'littlesteps/sleep-training' && (
           <SleepTrainingPage />
         )}
-        {currentPage === 'sleep-analysis' && (
+        {currentPage === 'littlesteps/sleep-analysis' && (
           <SleepAnalysisPage currentChild={currentChild} user={user} />
         )}
+
+        {/* LittleBloom Route */}
+        {currentPage === 'littlebloom' && <LittleBloomPage />}
       </main>
 
       {/* Feedback Button */}

@@ -20,6 +20,31 @@ export default {
         warm: {
           white: '#FAFAF9',
           cream: '#FEF3C7',
+        },
+        // LittleBloom Morandi Color Palette
+        bloom: {
+          // Primary colors
+          'dusty-rose': '#D4A5A5',
+          'dusty-rose-light': '#E6C9C9',
+          'dusty-rose-dark': '#B88A8A',
+          'sage': '#A8B5A0',
+          'sage-light': '#C4CFC0',
+          'sage-dark': '#8A9985',
+          // Secondary colors
+          'mauve': '#B8A8C8',
+          'mauve-light': '#D5C9DF',
+          'mauve-dark': '#9A8AAD',
+          'terracotta': '#D4A59A',
+          'terracotta-light': '#E6C9BF',
+          'terracotta-dark': '#B88A7E',
+          // Neutral colors
+          'cream': '#F5F0E8',
+          'sand': '#E8DFD3',
+          'stone': '#C9C0B5',
+          // Accent
+          'dusty-blue': '#A8B8C8',
+          'dusty-blue-light': '#C4D0DD',
+          'dusty-blue-dark': '#8A9AAD',
         }
       },
       borderRadius: {
