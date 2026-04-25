@@ -1,12 +1,14 @@
 /**
  * Route types for the application
  *
- * Two sub-apps:
+ * Main landing page and two sub-apps:
+ * - Home: Main entry point for both apps
  * - LittleSteps: Baby tracking app (existing features)
  * - LittleBloom: Pregnancy companion app (WIP)
  */
 
 export type Page =
+  | 'home'
   | 'littlesteps'
   | 'littlesteps/dashboard'
   | 'littlesteps/milestones'

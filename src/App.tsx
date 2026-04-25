@@ -9,6 +9,7 @@ import { useUserChildren } from './hooks/useUserChildren';
 import { useFirebaseChildren } from './hooks/useFirebaseChildren';
 import { useDailyLogs } from './hooks/useDailyLogs';
 import Sidebar from './components/Sidebar';
+import MainLandingPage from './pages/MainLandingPage';
 import LandingPage from './pages/LandingPage';
 import DashboardPage from './pages/DashboardPage';
 import MilestonesPage from './pages/MilestonesPage';
@@ -33,7 +34,7 @@ function AppContent() {
   const getPageFromHash = (): Page => {
     const hash = window.location.hash;
     const pageMap: Record<string, Page> = {
-      '#/': 'littlesteps',
+      '#/': 'home',
       '#/littlesteps': 'littlesteps',
       '#/littlesteps/dashboard': 'littlesteps/dashboard',
       '#/littlesteps/milestones': 'littlesteps/milestones',
@@ -46,7 +47,7 @@ function AppContent() {
       '#/littlesteps/sleep-analysis': 'littlesteps/sleep-analysis',
       '#/littlebloom': 'littlebloom'
     };
-    return pageMap[hash] || 'littlesteps';
+    return pageMap[hash] || 'home';
   };
 
   const [currentPage, setCurrentPage] = useState<Page>(getPageFromHash());
@@ -140,6 +141,7 @@ function AppContent() {
   // Update URL when page changes
   const navigateToPage = (page: Page) => {
     const hashMap: Record<Page, string> = {
+      'home': '#/',
       'littlesteps': '#/littlesteps',
       'littlesteps/dashboard': '#/littlesteps/dashboard',
       'littlesteps/milestones': '#/littlesteps/milestones',
@@ -299,9 +301,8 @@ function AppContent() {
     return title;
   };
 
-  // Show header for all pages except littlesteps home (unless user is logged in with babies, then show Dashboard with header)
-  // Hide header for LittleBloom (it has its own header)
-  const showHeader = currentPage === 'littlebloom'
+  // Show header for all pages except main home, littlesteps home (unless user is logged in with babies, then show Dashboard with header), and LittleBloom
+  const showHeader = currentPage === 'home' || currentPage === 'littlebloom'
     ? false
     : (currentPage !== 'littlesteps' || (user && childProfiles.length > 0));
 
@@ -477,6 +478,11 @@ function AppContent() {
 
       {/* Main Content */}
       <main className={showHeader ? "pb-6" : ""}>
+        {/* Main Landing Page */}
+        {currentPage === 'home' && (
+          <MainLandingPage onNavigate={navigateToPage} />
+        )}
+
         {/* LittleSteps Routes */}
         {currentPage === 'littlesteps' && (
           <>
