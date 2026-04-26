@@ -1,10 +1,11 @@
 /**
  * Route types for the application
  *
- * Main landing page and two sub-apps:
- * - Home: Main entry point for both apps
+ * Main landing page and three sub-apps:
+ * - Home: Main entry point for all apps
  * - LittleSteps: Baby tracking app (existing features)
  * - LittleBloom: Pregnancy companion app (WIP)
+ * - BabyOasis: Nursing room map (standalone)
  */
 
 export type Page =
@@ -19,7 +20,8 @@ export type Page =
   | 'littlesteps/growth-charts'
   | 'littlesteps/sleep-training'
   | 'littlesteps/sleep-analysis'
-  | 'littlebloom';
+  | 'littlebloom'
+  | 'babyoasis';
 
 /**
  * Type for LittleSteps sub-routes only (used by Sidebar)

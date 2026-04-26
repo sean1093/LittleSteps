@@ -1,14 +1,14 @@
 import { motion } from 'framer-motion';
-import { Baby, Flower2, Heart, Sparkles, ArrowRight, Sun } from 'lucide-react';
+import { Baby, Flower2, Heart, Sparkles, ArrowRight, Sun, MapPin } from 'lucide-react';
 
 /**
- * MainLandingPage - Entry point for both LittleSteps and LittleBloom apps
+ * MainLandingPage - Entry point for LittleSteps, LittleBloom, and BabyOasis apps
  *
- * Provides warm, inviting introduction to both applications
+ * Provides warm, inviting introduction to all applications
  */
 
 interface MainLandingPageProps {
-  onNavigate: (page: 'littlesteps' | 'littlebloom') => void;
+  onNavigate: (page: 'littlesteps' | 'littlebloom' | 'babyoasis') => void;
 }
 
 export default function MainLandingPage({ onNavigate }: MainLandingPageProps) {
@@ -232,6 +232,72 @@ export default function MainLandingPage({ onNavigate }: MainLandingPageProps) {
                 <ArrowRight className="w-5 h-5" />
               </motion.button>
             </motion.div>
+          </motion.div>
+        </motion.div>
+
+        {/* BabyOasis Card - Standalone Feature */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mb-16"
+        >
+          <motion.div
+            whileHover={{ y: -4, scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => onNavigate('babyoasis')}
+            className="bg-white rounded-3xl p-8 shadow-soft hover:shadow-soft-lg transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-green-400/30 max-w-3xl mx-auto"
+          >
+            {/* Icon Header */}
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                <MapPin className="w-9 h-9 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold text-gray-800 mb-1">
+                  BabyOasis
+                </h2>
+                <p className="text-sm text-gray-500">哺乳室地圖</p>
+              </div>
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                立即可用
+              </span>
+            </div>
+
+            {/* Description */}
+            <div className="mb-6">
+              <p className="text-gray-700 leading-relaxed mb-4">
+                找到最近的哺乳室，讓外出育兒更輕鬆自在。改善政府地圖的使用體驗，提供更友善的搜尋與導航功能。
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                  <span>定位最近哺乳室</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>詳細設施資訊</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="w-1.5 h-1.5 rounded-full bg-teal-500" />
+                  <span>一鍵導航</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
+                  <span>評分與評論</span>
+                </div>
+              </div>
+            </div>
+
+            {/* CTA Button */}
+            <motion.button
+              whileHover={{ x: 4 }}
+              className="w-full flex items-center justify-between px-6 py-4 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-medium shadow-soft hover:shadow-soft-lg transition-all"
+            >
+              <span>探索附近哺乳室</span>
+              <ArrowRight className="w-5 h-5" />
+            </motion.button>
           </motion.div>
         </motion.div>
 

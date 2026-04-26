@@ -21,6 +21,7 @@ import SleepTrainingPage from './pages/SleepTrainingPage';
 import DailyLogPage from './pages/DailyLogPage';
 import SleepAnalysisPage from './pages/SleepAnalysisPage';
 import LittleBloomPage from './pages/LittleBloomPage';
+import BabyOasisPage from './pages/BabyOasisPage';
 import FeedbackButton from './components/FeedbackButton';
 
 function AppContent() {
@@ -45,7 +46,8 @@ function AppContent() {
       '#/littlesteps/growth-charts': 'littlesteps/growth-charts',
       '#/littlesteps/sleep-training': 'littlesteps/sleep-training',
       '#/littlesteps/sleep-analysis': 'littlesteps/sleep-analysis',
-      '#/littlebloom': 'littlebloom'
+      '#/littlebloom': 'littlebloom',
+      '#/babyoasis': 'babyoasis'
     };
     return pageMap[hash] || 'home';
   };
@@ -152,7 +154,8 @@ function AppContent() {
       'littlesteps/growth-charts': '#/littlesteps/growth-charts',
       'littlesteps/sleep-training': '#/littlesteps/sleep-training',
       'littlesteps/sleep-analysis': '#/littlesteps/sleep-analysis',
-      'littlebloom': '#/littlebloom'
+      'littlebloom': '#/littlebloom',
+      'babyoasis': '#/babyoasis'
     };
     window.location.hash = hashMap[page];
     setCurrentPage(page);
@@ -301,8 +304,8 @@ function AppContent() {
     return title;
   };
 
-  // Show header for all pages except main home, littlesteps home (unless user is logged in with babies, then show Dashboard with header), and LittleBloom
-  const showHeader = currentPage === 'home' || currentPage === 'littlebloom'
+  // Show header for all pages except main home, littlesteps home (unless user is logged in with babies, then show Dashboard with header), LittleBloom, and BabyOasis
+  const showHeader = currentPage === 'home' || currentPage === 'littlebloom' || currentPage === 'babyoasis'
     ? false
     : (currentPage !== 'littlesteps' || (user && childProfiles.length > 0));
 
@@ -433,7 +436,7 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-warm-white">
       {/* Sidebar - Only show for LittleSteps routes */}
-      {currentPage !== 'littlebloom' && (
+      {currentPage !== 'littlebloom' && currentPage !== 'babyoasis' && (
         <Sidebar
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
@@ -553,6 +556,9 @@ function AppContent() {
 
         {/* LittleBloom Route */}
         {currentPage === 'littlebloom' && <LittleBloomPage />}
+
+        {/* BabyOasis Route */}
+        {currentPage === 'babyoasis' && <BabyOasisPage />}
       </main>
 
       {/* Feedback Button */}

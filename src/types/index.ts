@@ -372,3 +372,42 @@ export interface WeeklyMealPlan {
   updatedAt?: string;
 }
 
+// BabyOasis - Nursing Room Map Types
+export interface NursingRoomFacilities {
+  privateCurtain?: boolean;          // 獨立/有簾子空間
+  nursingChair?: boolean;            // 哺乳椅
+  waterDispenser?: boolean;          // 飲水機
+  changingTable?: boolean;           // 尿布台
+  washBasin?: boolean;               // 洗手台
+  refrigerator?: boolean;            // 冰箱
+  microwave?: boolean;               // 微波爐
+  airConditioning?: boolean;         // 冷氣
+  babyBed?: boolean;                 // 嬰兒床
+  socket?: boolean;                  // 插座
+}
+
+export interface NursingRoom {
+  id: string;
+  name: string;                      // 場所名稱
+  address: string;                   // 地址
+  city: string;                      // 縣市
+  district?: string;                 // 鄉鎮市區
+  floor?: string;                    // 樓層
+  locationDescription?: string;      // 位置描述
+  latitude: number;                  // 緯度
+  longitude: number;                 // 經度
+  facilities: NursingRoomFacilities; // 設施
+  openingHours?: string;             // 開放時間
+  phone?: string;                    // 聯絡電話
+  remarks?: string;                  // 備註
+  lastUpdated?: string;              // 最後更新時間 (YYYY-MM-DD)
+  isVerified?: boolean;              // 是否經過驗證
+  rating?: number;                   // 評分 (1-5)
+  reviewCount?: number;              // 評論數
+}
+
+// For clustering and display
+export interface NursingRoomMarker extends NursingRoom {
+  isUserLocation?: boolean;
+}
+
