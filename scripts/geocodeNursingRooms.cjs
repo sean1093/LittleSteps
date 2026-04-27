@@ -20,9 +20,22 @@ const dataPath = path.join(__dirname, '../src/data/nursingRoomsData.ts');
 // Read the TypeScript file
 const content = fs.readFileSync(dataPath, 'utf-8');
 
-// Extract the JSON array
-const jsonStart = content.indexOf('[');
+// Extract the JSON array - find the actual array start after the variable declaration
+const arrayDeclaration = 'export const nursingRoomsTaipei: NursingRoom[] = ';
+const declarationIndex = content.indexOf(arrayDeclaration);
+if (declarationIndex === -1) {
+  throw new Error('Could not find nursingRoomsTaipei array declaration');
+}
+
+// Skip past the declaration to find the actual array opening bracket
+const searchStart = declarationIndex + arrayDeclaration.length;
+const jsonStart = content.indexOf('[', searchStart);
 const jsonEnd = content.lastIndexOf(']') + 1;
+
+if (jsonStart === -1 || jsonEnd === 0) {
+  throw new Error('Could not find array boundaries');
+}
+
 const jsonContent = content.substring(jsonStart, jsonEnd);
 const nursingRooms = JSON.parse(jsonContent);
 
