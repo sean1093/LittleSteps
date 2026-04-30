@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Baby, AlertCircle, Home, Syringe, UtensilsCrossed, PlusCircle, Edit, Trash2, LogIn, LogOut, TrendingUp, Moon, Share2, BarChart3, ClipboardList } from 'lucide-react';
+import { X, Baby, AlertCircle, Home, Syringe, UtensilsCrossed, PlusCircle, Edit, Trash2, LogIn, LogOut, TrendingUp, Moon, Share2, BarChart3, ClipboardList, BookOpen, Stethoscope, FileBarChart } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { ChildProfile, Gender } from '../types'; // Import ChildProfile and Gender
 import { LittleStepsPage } from '../types/routes'; // Import route types
@@ -74,6 +74,20 @@ export default function Sidebar({
           icon: TrendingUp,
           description: '追蹤身高體重發展',
           requiresAuth: true
+        },
+        {
+          id: 'littlesteps/report' as const,
+          label: '週報月報',
+          icon: FileBarChart,
+          description: '數據趨勢與報告',
+          requiresAuth: true
+        },
+        {
+          id: 'littlesteps/clinic-summary' as const,
+          label: '看診摘要',
+          icon: Stethoscope,
+          description: '一鍵產生看診資料',
+          requiresAuth: true
         }
       ]
     },
@@ -130,6 +144,13 @@ export default function Sidebar({
           label: '照顧重點',
           icon: AlertCircle,
           description: '各階段注意事項',
+          requiresAuth: false
+        },
+        {
+          id: 'littlesteps/baby-wiki' as const,
+          label: '寶寶百科',
+          icon: BookOpen,
+          description: '常見狀況與處理方式',
           requiresAuth: false
         }
       ]

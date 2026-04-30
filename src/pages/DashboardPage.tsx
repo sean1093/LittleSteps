@@ -6,17 +6,20 @@ import { useChildSummary } from '../hooks/useChildSummary';
 import { useSleepAnalytics } from '../hooks/useSleepAnalytics';
 import { useFoodTracking } from '../hooks/useFoodTracking';
 import { calculateAgeDisplay } from '../utils/summaryCalculator';
+import { getActiveAlerts } from '../utils/alertEngine';
 import MilestoneSummaryCard from '../components/MilestoneSummaryCard';
 import VaccineSummaryCard from '../components/VaccineSummaryCard';
 import DailyLogSummaryCard from '../components/DailyLogSummaryCard';
 import SleepAnalyticsCard from '../components/SleepAnalyticsCard';
 import FoodTrackingSummaryCard from '../components/FoodTrackingSummaryCard';
+import AlertBanner from '../components/AlertBanner';
+import PoopSummaryCard from '../components/PoopSummaryCard';
 
 interface DashboardPageProps {
   currentChild?: ChildProfile;
   dailyLogs: DailyLog[];
   user: User | null;
-  onNavigate: (page: 'littlesteps/milestones' | 'littlesteps/vaccine-tracking' | 'littlesteps/daily-log' | 'littlesteps/care-guide' | 'littlesteps/complementary-food' | 'littlesteps/sleep-analysis') => void;
+  onNavigate: (page: 'littlesteps/milestones' | 'littlesteps/vaccine-tracking' | 'littlesteps/daily-log' | 'littlesteps/care-guide' | 'littlesteps/complementary-food' | 'littlesteps/sleep-analysis' | 'littlesteps/clinic-summary') => void;
 }
 
 const containerVariants = {
@@ -47,6 +50,16 @@ export default function DashboardPage({
   const { milestoneSummary, vaccineSummary, todaySummary } = useChildSummary(currentChild, dailyLogs);
   const { analytics: sleepAnalytics } = useSleepAnalytics(dailyLogs);
   const { stats: foodStats } = useFoodTracking(currentChild?.id || null, user);
+
+  // Calculate baby's age in months
+  const ageMonths = currentChild?.birthday
+    ? Math.max(0, Math.floor(
+        (Date.now() - new Date(currentChild.birthday).getTime()) / (1000 * 60 * 60 * 24 * 30.44)
+      ))
+    : 0;
+
+  // Get active alerts
+  const activeAlerts = currentChild ? getActiveAlerts(dailyLogs, ageMonths) : [];
 
   if (!currentChild) {
     return (
@@ -240,6 +253,13 @@ export default function DashboardPage({
           </div>
         </motion.div>
 
+        {/* Alert Banner */}
+        {activeAlerts.length > 0 && (
+          <motion.div variants={itemVariants} className="mb-6">
+            <AlertBanner alerts={activeAlerts} />
+          </motion.div>
+        )}
+
         {/* Summary Cards Grid */}
         <motion.div
           variants={itemVariants}
@@ -267,18 +287,24 @@ export default function DashboardPage({
           {/* Daily Log Summary */}
           <DailyLogSummaryCard
             summary={todaySummary}
+            dailyLogs={dailyLogs}
             onNavigate={() => onNavigate('littlesteps/daily-log')}
           />
 
           {/* Sleep Analytics */}
           <SleepAnalyticsCard
             analytics={sleepAnalytics}
+            ageMonths={ageMonths}
             onNavigate={() => onNavigate('littlesteps/sleep-analysis')}
           />
         </motion.div>
 
-        {/* Food Tracking Summary */}
-        <motion.div variants={itemVariants} className="mb-6">
+        {/* Poop & Food Tracking */}
+        <motion.div variants={itemVariants} className="grid md:grid-cols-2 gap-6 mb-6">
+          <PoopSummaryCard
+            dailyLogs={dailyLogs}
+            onNavigate={() => onNavigate('littlesteps/daily-log')}
+          />
           <FoodTrackingSummaryCard
             stats={foodStats}
             onNavigate={() => onNavigate('littlesteps/complementary-food')}

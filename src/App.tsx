@@ -22,6 +22,9 @@ import DailyLogPage from './pages/DailyLogPage';
 import SleepAnalysisPage from './pages/SleepAnalysisPage';
 import LittleBloomPage from './pages/LittleBloomPage';
 import BabyOasisPage from './pages/BabyOasisPage';
+import BabyWikiPage from './pages/BabyWikiPage';
+import ClinicSummaryPage from './pages/ClinicSummaryPage';
+import ReportPage from './pages/ReportPage';
 import FeedbackButton from './components/FeedbackButton';
 
 function AppContent() {
@@ -46,6 +49,9 @@ function AppContent() {
       '#/littlesteps/growth-charts': 'littlesteps/growth-charts',
       '#/littlesteps/sleep-training': 'littlesteps/sleep-training',
       '#/littlesteps/sleep-analysis': 'littlesteps/sleep-analysis',
+      '#/littlesteps/baby-wiki': 'littlesteps/baby-wiki',
+      '#/littlesteps/clinic-summary': 'littlesteps/clinic-summary',
+      '#/littlesteps/report': 'littlesteps/report',
       '#/littlebloom': 'littlebloom',
       '#/babyoasis': 'babyoasis'
     };
@@ -121,7 +127,7 @@ function AppContent() {
 
   // Redirect to littlesteps home if accessing protected pages without login
   useEffect(() => {
-    const protectedPages: Page[] = ['littlesteps/dashboard', 'littlesteps/daily-log', 'littlesteps/growth-charts'];
+    const protectedPages: Page[] = ['littlesteps/dashboard', 'littlesteps/daily-log', 'littlesteps/growth-charts', 'littlesteps/clinic-summary', 'littlesteps/report'];
     if (!user && protectedPages.includes(currentPage)) {
       navigateToPage('littlesteps');
     }
@@ -154,6 +160,9 @@ function AppContent() {
       'littlesteps/growth-charts': '#/littlesteps/growth-charts',
       'littlesteps/sleep-training': '#/littlesteps/sleep-training',
       'littlesteps/sleep-analysis': '#/littlesteps/sleep-analysis',
+      'littlesteps/baby-wiki': '#/littlesteps/baby-wiki',
+      'littlesteps/clinic-summary': '#/littlesteps/clinic-summary',
+      'littlesteps/report': '#/littlesteps/report',
       'littlebloom': '#/littlebloom',
       'babyoasis': '#/babyoasis'
     };
@@ -297,6 +306,15 @@ function AppContent() {
         break;
       case 'littlesteps/sleep-analysis':
         title += '睡眠分析';
+        break;
+      case 'littlesteps/baby-wiki':
+        title += '寶寶百科';
+        break;
+      case 'littlesteps/clinic-summary':
+        title += '看診摘要';
+        break;
+      case 'littlesteps/report':
+        title += '週報月報';
         break;
       default:
         break;
@@ -552,6 +570,23 @@ function AppContent() {
         )}
         {currentPage === 'littlesteps/sleep-analysis' && (
           <SleepAnalysisPage currentChild={currentChild} user={user} />
+        )}
+        {currentPage === 'littlesteps/baby-wiki' && (
+          <BabyWikiPage />
+        )}
+        {currentPage === 'littlesteps/clinic-summary' && (
+          <ClinicSummaryPage
+            currentChild={currentChild}
+            dailyLogs={dailyLogs}
+            user={user}
+          />
+        )}
+        {currentPage === 'littlesteps/report' && (
+          <ReportPage
+            currentChild={currentChild}
+            dailyLogs={dailyLogs}
+            user={user}
+          />
         )}
 
         {/* LittleBloom Route */}

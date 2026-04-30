@@ -1,18 +1,23 @@
 import { ClipboardList } from 'lucide-react';
 import DashboardCard from './DashboardCard';
-import { DailySummary } from '../types';
+import SparklineChart from './SparklineChart';
+import { DailySummary, DailyLog } from '../types';
 import { formatDuration } from '../utils/logHelpers';
+import { getFeedingTrend } from '../utils/trendCalculator';
 
 interface DailyLogSummaryCardProps {
   summary: DailySummary;
+  dailyLogs: DailyLog[];
   onNavigate: () => void;
 }
 
 export default function DailyLogSummaryCard({
   summary,
+  dailyLogs,
   onNavigate,
 }: DailyLogSummaryCardProps) {
   const hasAnyLogs = summary.feedingCount > 0 || summary.sleepCount > 0 || summary.diaperCount > 0;
+  const feedingTrend = getFeedingTrend(dailyLogs, 7);
 
   return (
     <DashboardCard
@@ -65,6 +70,23 @@ export default function DailyLogSummaryCard({
               )}
             </div>
           </div>
+
+          {/* 7-day Feeding Sparkline */}
+          {feedingTrend.sparklinePoints.some(v => v > 0) && (
+            <div className="bg-white rounded-xl p-3">
+              <div className="text-xs text-gray-600 mb-2">近 7 天餵奶量趨勢</div>
+              <SparklineChart
+                data={feedingTrend.sparklinePoints}
+                width={200}
+                height={36}
+                color="#7EC8E3"
+                fillColor="#7EC8E3"
+              />
+              <div className="text-xs text-gray-500 mt-1">
+                平均 {Math.round(feedingTrend.averageValue)}ml
+              </div>
+            </div>
+          )}
 
           {/* View Details Link */}
           <div className="pt-3 border-t border-gray-200">

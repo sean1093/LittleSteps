@@ -20,6 +20,9 @@ export type Page =
   | 'littlesteps/growth-charts'
   | 'littlesteps/sleep-training'
   | 'littlesteps/sleep-analysis'
+  | 'littlesteps/baby-wiki'
+  | 'littlesteps/clinic-summary'
+  | 'littlesteps/report'
   | 'littlebloom'
   | 'babyoasis';
 
@@ -36,4 +39,7 @@ export type LittleStepsPage =
   | 'littlesteps/daily-log'
   | 'littlesteps/growth-charts'
   | 'littlesteps/sleep-training'
-  | 'littlesteps/sleep-analysis';
+  | 'littlesteps/sleep-analysis'
+  | 'littlesteps/baby-wiki'
+  | 'littlesteps/clinic-summary'
+  | 'littlesteps/report';

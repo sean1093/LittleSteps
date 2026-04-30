@@ -8,14 +8,17 @@ import {
   PartyPopper,
   Heart,
   AlertCircle,
-  Calendar
+  Calendar,
+  CheckCircle2,
 } from 'lucide-react';
 import DashboardCard from './DashboardCard';
 import type { SleepAnalytics } from '../types';
 import { formatDuration } from '../utils/logHelpers';
+import { getRecommendedSleepHours } from '../utils/trendCalculator';
 
 interface SleepAnalyticsCardProps {
   analytics: SleepAnalytics;
+  ageMonths?: number;
   onNavigate: () => void;
 }
 
@@ -34,6 +37,7 @@ const iconMap: Record<string, React.ElementType> = {
 
 export default function SleepAnalyticsCard({
   analytics,
+  ageMonths,
   onNavigate,
 }: SleepAnalyticsCardProps) {
   // Get quality score color
@@ -194,6 +198,28 @@ export default function SleepAnalyticsCard({
                 </div>
               )}
             </div>
+          )}
+
+          {/* Recommended Sleep Hours */}
+          {ageMonths !== undefined && (
+            (() => {
+              const recommended = getRecommendedSleepHours(ageMonths);
+              const currentSleepHours = analytics.totalSleepDuration / 60;
+              const meetsMinimum = currentSleepHours >= recommended.min;
+
+              return (
+                <div className={`flex items-center gap-2 rounded-xl p-3 ${meetsMinimum ? 'bg-green-50' : 'bg-amber-50'}`}>
+                  {meetsMinimum ? (
+                    <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                  )}
+                  <span className={`text-xs ${meetsMinimum ? 'text-green-700' : 'text-amber-700'}`}>
+                    建議睡眠時數：{recommended.min}-{recommended.max} 小時
+                  </span>
+                </div>
+              );
+            })()
           )}
 
           {/* View More Link */}
