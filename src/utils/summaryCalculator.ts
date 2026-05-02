@@ -1,6 +1,6 @@
 import { MilestoneProgress, VaccineProgress } from '../types';
-import { milestones } from '../data/milestones';
-import { vaccineSchedules } from '../data/vaccines';
+import { milestones } from '../littlesteps/data/milestones';
+import { vaccineSchedules } from '../littlesteps/data/vaccines';
 
 /**
  * 計算里程碑達成率

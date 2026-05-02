@@ -1,5 +1,5 @@
 import { DailyLog, SleepData } from '../types';
-import { sleepRequirements, SleepRequirement } from '../data/sleep';
+import { sleepRequirements, SleepRequirement } from '../littlesteps/data/sleep';
 
 // 睡眠統計介面
 export interface SleepStats {
