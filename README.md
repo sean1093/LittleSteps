@@ -1,6 +1,6 @@
-# 🍼 LittleSteps - Comprehensive Baby Care Companion
+# 🍼 LittleSteps - Comprehensive Family Care Platform
 
-> A mobile-first Progressive Web App providing professional parenting guidance, milestone tracking, vaccine schedules, and complementary food guides for new parents
+> A mobile-first Progressive Web App providing comprehensive pregnancy and baby care solutions, including milestone tracking, nursing room maps, and professional parenting guidance for expecting and new parents in Taiwan
 
 <div align="center">
 
@@ -16,76 +16,77 @@
 
 ## 🌟 Overview
 
-LittleSteps is a comprehensive digital parenting companion designed to support new parents through the first year of their baby's life. Built with modern web technologies, it provides a seamless experience across all devices while maintaining professional medical accuracy.
+LittleSteps is a comprehensive digital family care platform designed to support parents from pregnancy through their baby's early years. Built with modern web technologies, it provides three integrated modules with seamless cross-device synchronization.
 
-## ✨ Core Features
+## 🎯 Platform Modules
 
-### 🏠 Landing Page
-- **Welcoming Introduction** - Warm, supportive messaging for new parents
-- **Feature Highlights** - Visual overview of all available tools
-- **Google Sign-In** - Prominent login button for cloud sync
-- **Modern Design** - Gradient backgrounds, smooth animations, and intuitive navigation
+### 🍼 LittleSteps - Baby Tracking & Care
+Comprehensive tracking and guidance for babies 0-12+ months:
+- **Dashboard** - Visual overview of baby's growth and daily activities
+- **Milestone Tracking** - 30+ developmental milestones across physical, motor, cognitive, and feeding categories
+- **Vaccine Tracking** - Complete Taiwan vaccination schedule with public and private vaccines
+- **Daily Log** - Quick logging for feeding, sleep, and diaper changes
+- **Sleep Training & Analysis** - Sleep pattern tracking with visual analytics
+- **Growth Charts** - WHO standard growth curves with percentile tracking
+- **Complementary Food Guide** - Stage-based weaning guide with 4x3 allergy testing approach
+- **Care Guide** - Age-appropriate safety and care instructions
+- **Baby Wiki** - Common health issues with causes, solutions, and warning signs
+- **Clinic Summary** - One-click generation of medical visit summaries
+- **Weekly/Monthly Reports** - Data trends and development insights
+
+### 🗺️ BabyOasis - Nursing Room Locator
+Interactive map for finding nursing rooms and baby-friendly facilities:
+- **Interactive Map** - Real-time location-based search using Leaflet
+- **Facility Information** - Amenities, photos, and ratings
+- **Taiwan Coverage** - Comprehensive database of nursing rooms nationwide
+- **Cluster View** - Grouped markers for better map navigation
+
+### 🌸 LittleBloom - Pregnancy Companion (Coming Soon)
+Dedicated module for expecting mothers:
+- **Pregnancy Tracking** - Week-by-week development and information
+- **Health & Wellness** - Nutrition, exercise, and self-care guidance
+- **Emotional Journal** - Mood and experience tracking
+- **Reminders** - Medical appointments and daily tips
+
+## ✨ Key Features
 
 ### 🔐 Authentication & Sync
 - **Google Sign-In** - Secure authentication via Firebase
-- **Multi-Device Sync** - Access your data across all devices in real-time
-- **Dual-Mode Support** - Works offline (guest mode) or with cloud sync (logged in)
-- **Automatic Migration** - LocalStorage data automatically syncs when you sign in
-
-### 📊 Dashboard
-- **Growth Overview** - Visual summary of baby's development progress
-- **Milestone Summary** - Achievement rate with recent milestones
-- **Vaccine Summary** - Vaccination progress and next dose due
-- **Daily Log Summary** - Today's feeding, sleep, and diaper statistics (coming soon)
-- **Quick Navigation** - Fast access to all features from one place
+- **Multi-Device Sync** - Real-time data synchronization across all devices
+- **Dual-Mode Support** - Works offline (guest mode) or with cloud sync (authenticated)
+- **Automatic Migration** - LocalStorage data automatically syncs when signing in
+- **Privacy-First** - Guest mode keeps all data local, no server communication
 
 ### 👶 Multi-Child Profile Management
 - **Multiple Profiles** - Track up to 2 babies (free tier)
-- **Individual Records** - Each child has their own milestone progress and data
+- **Individual Records** - Separate milestone progress, logs, and data per child
+- **Family Sharing** - Share child profiles with family members via unique codes
 - **Easy Switching** - Quick toggle between different children's profiles
-- **CRUD Operations** - Add, edit, and delete child profiles with ease
-- **Cloud Backup** - All data automatically backed up to Firebase when logged in
+- **CRUD Operations** - Add, edit, and delete child profiles
+- **Cloud Backup** - Automatic Firebase backup when authenticated
 
-### 📊 Milestone Tracking
-- **Comprehensive Database** - 30+ developmental milestones from 0-12 months
-- **Four Categories** - Physical, Motor, Cognitive, and Feeding development
-- **Month-by-Month** - Organized by age range (0-2, 3-4, 5-6, 7-9, 10-12, 12+ months)
-- **Progress Recording** - Track achievement status and dates for each milestone
-- **Detailed Information** - Full descriptions, tips, and guidance for each milestone
+### 📊 Advanced Analytics
+- **Sleep Analytics** - Daily, weekly patterns with visual charts
+- **Growth Tracking** - WHO percentile charts for weight, height, head circumference
+- **Development Progress** - Milestone achievement rates and trends
+- **Food Tracking** - Allergen introduction and reaction monitoring
+- **Clinic Reports** - Comprehensive summaries for pediatrician visits
 
-### 🛡️ Care Guide
-- **General Safety** - 6 essential safety guidelines for all ages
-- **Monthly Care** - Detailed care instructions for each month (0-12 months)
-- **Category Filtering** - Filter by physiological, feeding, or safety concerns
-- **Visual Hierarchy** - Easy-to-scan format with icons and color coding
-
-### 💉 Vaccine Tracking
-- **Complete Schedule** - 30+ vaccines from birth to 6 years
-- **Public & Private** - Clear distinction between funded and self-paid vaccines
-- **Month Grouping** - Vaccines organized by age in months
-- **Dual Filters** - Filter by funding type and age
-- **Side Effects Guide** - Comprehensive information on potential reactions
-- **Emergency Guidelines** - Clear instructions for concerning symptoms
-- **Contraindications** - Important safety information and precautions
-
-### 🥄 Complementary Food Guide
-- **Three-Stage System** - Level 1-3 progression (4-12 months)
-- **Food Progression** - Texture and frequency guidelines by age
-- **4x3 Allergy Testing** - Modern approach to introducing allergens
-- **Monthly Menus** - Sample food suggestions for each month
-- **Finger Food Guide** - BLW (Baby-Led Weaning) guidelines
-- **Safety Warnings** - Critical information about forbidden foods (honey, choking hazards)
-- **Multiple Views** - Overview, stages, menu, and safety tabs
+### 💬 User Feedback System
+- **In-App Reporting** - Floating feedback button for logged-in users
+- **Issue Tracking** - Title and detailed content submission
+- **Firebase Integration** - Direct storage for team review
 
 ## 🛠️ Technical Stack
 
 ### Frontend
 - **Framework**: React 18 with TypeScript
 - **Build Tool**: Vite 5.x
-- **Styling**: Tailwind CSS with custom theme
-- **Animations**: Framer Motion
+- **Styling**: Tailwind CSS with custom design system
+- **Animations**: Framer Motion for smooth transitions
 - **Icons**: Lucide React
 - **State Management**: React Hooks + Context API
+- **Maps**: Leaflet with React-Leaflet and clustering support
 
 ### Backend & Services
 - **Authentication**: Firebase Authentication (Google Sign-In)
@@ -96,15 +97,16 @@ LittleSteps is a comprehensive digital parenting companion designed to support n
 ### Development
 - **TypeScript**: Full type safety with strict mode
 - **ESLint**: Code quality enforcement
+- **Vitest**: Unit testing framework
 - **Vite PWA**: Progressive Web App capabilities
-- **GitHub Actions**: Automated deployment
+- **GitHub Actions**: Automated CI/CD pipeline
 
 ### Deployment
 - **Hosting**: Firebase Hosting
 - **CI/CD**: GitHub Actions with automated deployment
 - **Production**: Auto-deploy on push to master
 - **Preview**: Auto-generated preview URLs for pull requests
-- **Environment Variables**: Managed via GitHub Secrets
+- **Environment**: Managed via GitHub Secrets
 
 ## 🎨 Design System
 
@@ -112,14 +114,22 @@ LittleSteps is a comprehensive digital parenting companion designed to support n
 - **Primary Pink**: `#F472B6` - Warm, nurturing primary color
 - **Secondary Blue**: `#60A5FA` - Calm, trustworthy accent
 - **Warm White**: `#FAFAF9` - Soft background color
-- **Gradients**: Subtle gradients for visual depth
+- **Gradients**: Subtle gradients for visual depth and hierarchy
+
+### Bloom Color Palette (LittleBloom Module)
+- **Dusty Rose**: Feminine and soft primary
+- **Sage Green**: Calming and natural
+- **Mauve**: Gentle and supportive
+- **Terracotta**: Warm and earthy
+- **Cream**: Soft neutral background
 
 ### UI Principles
 - **Mobile-First**: Optimized for one-handed operation
-- **Rounded Corners**: Extensive use of `rounded-2xl` for softness
-- **Soft Shadows**: Gentle shadows for subtle depth
-- **Touch-Friendly**: All interactive elements sized for easy tapping
-- **Responsive**: Seamless experience across all screen sizes
+- **Touch-Friendly**: 80x80px minimum touch targets
+- **3-Second Rule**: Critical actions complete within 3 seconds
+- **Visual Hierarchy**: Size, color, and contrast for information priority
+- **Reduced Cognitive Load**: Icons over text, immediate visual feedback
+- **Soft Aesthetics**: Rounded corners (`rounded-2xl`), soft shadows, warm tones
 
 ## 📱 Progressive Web App
 
@@ -194,11 +204,20 @@ npm run preview
 
 # Run linter
 npm run lint
+
+# Run tests
+npm run test
+
+# Run tests with UI
+npm run test:ui
+
+# Generate coverage report
+npm run test:coverage
 ```
 
 ### Deployment to Firebase Hosting
 
-The project is configured for automatic deployment to Firebase Hosting via GitHub Actions:
+The project uses automated deployment via GitHub Actions:
 
 **Automatic Deployment**:
 - Push to `master` branch → Automatically deploys to production
@@ -206,7 +225,7 @@ The project is configured for automatic deployment to Firebase Hosting via GitHu
 
 **Manual Deployment** (optional):
 ```bash
-# Install Firebase CLI (if not already installed)
+# Install Firebase CLI
 npm install -g firebase-tools
 
 # Login to Firebase
@@ -225,101 +244,140 @@ firebase deploy --only hosting
 ```
 LittleSteps/
 ├── .claude/                  # AI assistant configuration
-│   ├── CLAUDE.md                   # Project overview and skill usage guide
-│   └── skills/                     # Development guidelines and patterns
-│       ├── component-patterns.md   # React component structure
-│       ├── firebase-integration.md # Firebase & dual-mode patterns
-│       ├── styling-guide.md        # Tailwind & design system
-│       ├── typescript-conventions.md # TypeScript best practices
-│       └── ux-design.md            # UI/UX patterns & animations
+│   ├── CLAUDE.md            # Project overview and guidelines
+│   └── skills/              # Development patterns and conventions
 ├── src/
-│   ├── components/           # React components
-│   │   ├── AddChildModal.tsx       # Child profile modal
-│   │   ├── CategoryFilter.tsx      # Milestone category filter
-│   │   ├── DailyLogSummaryCard.tsx # Daily log summary card
-│   │   ├── DashboardCard.tsx       # Reusable dashboard card
-│   │   ├── MilestoneCard.tsx       # Milestone card component
-│   │   ├── MilestoneModal.tsx      # Milestone detail modal
-│   │   ├── MilestoneSummaryCard.tsx # Milestone summary card
-│   │   ├── MonthPicker.tsx         # Month range selector
-│   │   ├── Sidebar.tsx             # Navigation sidebar
-│   │   └── VaccineSummaryCard.tsx  # Vaccine summary card
-│   ├── contexts/             # React contexts
-│   │   └── AuthContext.tsx         # Authentication context
-│   ├── data/                 # Application data
-│   │   ├── careGuides.ts           # Care guide data
-│   │   ├── complementaryFood.ts    # Food guide data
-│   │   ├── milestones.ts           # Milestone data
-│   │   └── vaccines.ts             # Vaccine schedule data
-│   ├── hooks/                # Custom React hooks
-│   │   ├── useChildSummary.ts      # Dashboard statistics hook
-│   │   ├── useDailyLogs.ts         # Daily logs management hook
-│   │   ├── useFirebaseChildren.ts  # Firebase children CRUD hook
-│   │   ├── useFirebaseFamily.ts    # Firebase family management hook
-│   │   └── useLocalStorage.ts      # LocalStorage hook
-│   ├── lib/                  # Third-party configurations
-│   │   └── firebase.ts             # Firebase initialization & config
-│   ├── pages/                # Page components
-│   │   ├── CareGuidePage.tsx       # Care guide page
-│   │   ├── ComplementaryFoodPage.tsx # Food guide page
-│   │   ├── DashboardPage.tsx       # Dashboard page
-│   │   ├── LandingPage.tsx         # Home/landing page
-│   │   ├── MilestonesPage.tsx      # Milestone tracking page
-│   │   └── VaccineTrackingPage.tsx # Vaccine schedule page
-│   ├── types/                # TypeScript definitions
-│   │   └── index.ts                # Type definitions
-│   ├── utils/                # Utility functions
-│   │   ├── logHelpers.ts           # Daily log utility functions
-│   │   ├── migration.ts            # LocalStorage to Firebase migration
-│   │   ├── share.ts                # Web Share API utils
-│   │   └── summaryCalculator.ts    # Statistics calculation utils
-│   ├── App.tsx               # Main app component
-│   ├── main.tsx              # Application entry
-│   └── index.css             # Global styles
-├── public/                   # Static assets
-│   └── manifest.webmanifest  # PWA manifest
-├── .github/workflows/        # CI/CD configuration
-│   ├── firebase-hosting-merge.yml        # Production deployment
-│   └── firebase-hosting-pull-request.yml # PR preview deployment
-├── .env.example              # Environment variables template
-├── firebase.json             # Firebase Hosting config
-├── .firebaserc               # Firebase project config
-└── vite.config.ts            # Vite configuration
+│   ├── babyoasis/           # Nursing room map module
+│   │   ├── pages/           # BabyOasis pages
+│   │   └── data/            # Nursing room data
+│   ├── littlebloom/         # Pregnancy tracking module (WIP)
+│   │   └── pages/           # LittleBloom pages
+│   ├── littlesteps/         # Baby tracking module
+│   │   ├── pages/           # Feature pages
+│   │   ├── components/      # Feature-specific components
+│   │   │   ├── milestone/   # Milestone tracking components
+│   │   │   ├── vaccine/     # Vaccine tracking components
+│   │   │   ├── sleep/       # Sleep analysis components
+│   │   │   ├── growth/      # Growth chart components
+│   │   │   ├── dailylog/    # Daily logging components
+│   │   │   ├── food/        # Food tracking components
+│   │   │   ├── dashboard/   # Dashboard components
+│   │   │   ├── wiki/        # Baby wiki components
+│   │   │   ├── report/      # Report components
+│   │   │   └── shared/      # Shared utility components
+│   │   ├── hooks/           # Feature-specific hooks
+│   │   └── data/            # Static data (milestones, vaccines, etc.)
+│   ├── common/              # Shared resources
+│   │   ├── components/      # Reusable components
+│   │   ├── hooks/           # Common hooks
+│   │   └── pages/           # Landing and auth pages
+│   ├── contexts/            # React contexts
+│   ├── lib/                 # Third-party configurations
+│   ├── types/               # TypeScript type definitions
+│   ├── utils/               # Utility functions
+│   ├── App.tsx              # Main app component
+│   ├── main.tsx             # Application entry
+│   └── index.css            # Global styles
+├── public/                  # Static assets
+├── .github/workflows/       # CI/CD configuration
+├── firebase.json            # Firebase Hosting config
+└── vite.config.ts           # Vite configuration
 ```
 
 ## 🔗 URL Routing
 
 The application uses hash-based routing for shareable URLs:
 
-- **Home**: `/#/` (Landing Page for guests, Dashboard for logged-in users)
-- **Dashboard**: `/#/dashboard` (Growth overview)
-- **Milestones**: `/#/milestones` (Milestone tracking)
-- **Care Guide**: `/#/care-guide` (Care guidelines)
-- **Vaccines**: `/#/vaccine-tracking` (Vaccine schedule)
-- **Food Guide**: `/#/complementary-food` (Complementary food guide)
-- **Daily Log**: `/#/daily-log` (Coming soon)
+### Main Routes
+- **Home**: `/#/` - Main landing page with module selection
 
-## 💾 Data Persistence
+### LittleSteps Routes
+- **LittleSteps Home**: `/#/littlesteps` - Baby tracking landing
+- **Dashboard**: `/#/littlesteps/dashboard` - Growth overview
+- **Milestones**: `/#/littlesteps/milestones` - Milestone tracking
+- **Vaccines**: `/#/littlesteps/vaccine-tracking` - Vaccine schedule
+- **Daily Log**: `/#/littlesteps/daily-log` - Quick daily logging
+- **Sleep Training**: `/#/littlesteps/sleep-training` - Sleep timer tools
+- **Sleep Analysis**: `/#/littlesteps/sleep-analysis` - Sleep pattern analytics
+- **Growth Charts**: `/#/littlesteps/growth-charts` - WHO growth curves
+- **Care Guide**: `/#/littlesteps/care-guide` - Age-based care instructions
+- **Food Guide**: `/#/littlesteps/complementary-food` - Weaning guide
+- **Baby Wiki**: `/#/littlesteps/baby-wiki` - Common health issues
+- **Clinic Summary**: `/#/littlesteps/clinic-summary` - Medical visit summaries
+- **Reports**: `/#/littlesteps/report` - Weekly/monthly insights
+
+### Other Modules
+- **BabyOasis**: `/#/babyoasis` - Nursing room map
+- **LittleBloom**: `/#/littlebloom` - Pregnancy module (WIP)
+
+## 💾 Data Architecture
 
 LittleSteps uses a **dual-mode architecture** for maximum flexibility:
 
 ### Guest Mode (Not Logged In)
-- Data stored locally in browser's LocalStorage
+- Data stored in browser's LocalStorage
 - Works completely offline
 - No account required
-- Data stays on your device only
+- Data stays on device only
+- Perfect for privacy-conscious users
 
 ### Authenticated Mode (Logged In)
 - Data stored in Firebase Realtime Database
 - Automatic multi-device synchronization
 - Real-time updates across devices
 - Secure cloud backup
+- Family sharing capabilities
 - LocalStorage data automatically migrates on first sign-in
 
-**Privacy**:
+### Firebase Database Structure
+```
+{
+  "users": {
+    "$userId": {
+      "email": "user@example.com",
+      "displayName": "User Name",
+      "childrenIds": { "$childId": true },
+      "currentChildId": "$childId",
+      "families": { "$familyId": { "role": "admin" } }
+    }
+  },
+  "children": {
+    "$childId": {
+      "name": "Baby Name",
+      "birthday": "2024-01-01",
+      "gender": "male",
+      "uuid": "unique-share-code",
+      "milestoneProgress": {},
+      "vaccineProgress": {},
+      "growthRecords": [],
+      "foodTrials": []
+    }
+  },
+  "dailyLogs": {
+    "$childId": {
+      "$logId": {
+        "type": "feeding|sleep|diaper",
+        "timestamp": "2024-01-01T10:00:00Z",
+        "details": {}
+      }
+    }
+  },
+  "feedbacks": {
+    "$feedbackId": {
+      "title": "Feedback title",
+      "content": "Feedback content",
+      "userId": "$userId",
+      "timestamp": "2024-01-01T10:00:00Z"
+    }
+  }
+}
+```
+
+**Privacy & Security**:
 - Guest mode: No data sent to servers
-- Logged-in mode: Data encrypted and secured by Firebase
-- You control your data - sign out anytime to return to guest mode
+- Authenticated mode: Data encrypted and secured by Firebase
+- Security rules enforce user-only access
+- Optional family sharing via unique codes
 
 ## 🌐 Browser Support
 
@@ -328,35 +386,74 @@ LittleSteps uses a **dual-mode architecture** for maximum flexibility:
 - ✅ Firefox 88+
 - ✅ Mobile browsers (iOS Safari, Chrome Mobile)
 
-## 📖 Documentation
+## 📖 Feature Documentation
 
 ### Milestone Categories
-- **Physical Development** (🏃): Rolling, sitting, crawling, standing, walking
-- **Motor Skills** (✋): Grasping, transferring, fine motor control
-- **Cognitive** (🧠): Recognition, problem-solving, communication
-- **Feeding** (🍼): Sucking, solid foods, self-feeding
+- **Physical Development** 🏃: Rolling, sitting, crawling, standing, walking
+- **Motor Skills** ✋: Grasping, transferring, fine motor control
+- **Cognitive** 🧠: Recognition, problem-solving, communication
+- **Feeding** 🍼: Sucking, solid foods, self-feeding
 
 ### Vaccine Information
 Based on Taiwan's Ministry of Health and Welfare vaccination schedule:
-- Public funded vaccines (公費)
-- Private self-paid vaccines (自費)
-- Detailed side effect information
-- Emergency response guidelines
+- **Public Funded** (公費): Free government-provided vaccines
+- **Self-Paid** (自費): Optional private vaccines
+- **Detailed Information**: Side effects, contraindications, emergency guidelines
+- **Scheduling**: Age-based organization with dose tracking
 
-### Care Guide Categories
-- **Physiological**: Physical development and health
-- **Feeding**: Nutrition and feeding schedules
-- **Safety**: Important safety precautions
+### Complementary Food Stages
+- **Stage 1** (4-6 months): Purées, single ingredients
+- **Stage 2** (6-9 months): Mashed textures, combinations
+- **Stage 3** (9-12 months): Chopped foods, finger foods
+- **4x3 Method**: Modern allergen introduction approach
+
+### Growth Chart Standards
+- **WHO Standards**: International growth reference
+- **Metrics**: Weight, height, head circumference
+- **Percentiles**: P3, P15, P50, P85, P97 curves
+- **Gender-Specific**: Separate curves for boys and girls
+
+## 🧪 Testing
+
+The project includes testing infrastructure:
+
+```bash
+# Run all tests
+npm run test
+
+# Run tests with UI
+npm run test:ui
+
+# Generate coverage report
+npm run test:coverage
+```
+
+**Testing Stack**:
+- **Framework**: Vitest
+- **DOM Testing**: @testing-library/react
+- **User Events**: @testing-library/user-event
+- **Assertions**: @testing-library/jest-dom
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please follow these steps:
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+3. Follow the coding guidelines in `.claude/skills/`
+4. Commit your changes (`git commit -m 'feat: add some amazing feature'`)
+5. Push to the branch (`git push origin feature/AmazingFeature`)
+6. Open a Pull Request
+
+### Commit Convention
+Follow conventional commits format:
+- `feat:` - New feature
+- `fix:` - Bug fix
+- `refactor:` - Code refactoring
+- `style:` - Styling changes
+- `docs:` - Documentation updates
+- `test:` - Test changes
+- `chore:` - Build/config changes
 
 ## 📄 License
 
@@ -364,16 +461,38 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🙏 Acknowledgments
 
-- Medical information based on Taiwan's Ministry of Health and Welfare guidelines
-- Designed with input from pediatric professionals
-- Built with love for new parents everywhere
+- **Medical Information**: Taiwan Ministry of Health and Welfare guidelines
+- **Growth Standards**: WHO Child Growth Standards
+- **Nursing Room Data**: Taiwan government open data
+- **Design**: Inspired by modern parenting apps with Taiwanese localization
+- **Built with**: React, TypeScript, Firebase, Tailwind CSS
+
+## 🗺️ Roadmap
+
+### Phase 1 (Current)
+- ✅ LittleSteps core features
+- ✅ BabyOasis nursing room map
+- ✅ Multi-device sync
+- ✅ Feedback system
+
+### Phase 2 (In Progress)
+- 🚧 LittleBloom pregnancy tracking
+- 🚧 Premium tier features
+- 🚧 Enhanced analytics
+
+### Phase 3 (Planned)
+- 📋 Photo gallery for milestones
+- 📋 Parent community features
+- 📋 Multilingual support (English, Simplified Chinese)
+- 📋 Dark mode
+- 📋 Advanced PWA features
 
 ---
 
 <div align="center">
 
-Made with ❤️ for new parents
+Made with ❤️ for families in Taiwan
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
+🤖 Built with [Claude Code](https://claude.com/claude-code)
 
 </div>
