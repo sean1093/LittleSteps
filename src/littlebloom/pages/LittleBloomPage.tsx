@@ -84,10 +84,13 @@ function LittleBloomPage() {
             <Bell className="w-8 h-8 text-bloom-sage mb-2" />
             <span className="font-semibold">產檢時程</span>
           </div>
-          <div className="bg-white rounded-2xl p-4 shadow-soft flex flex-col items-center justify-center text-center">
+          <button 
+            onClick={() => window.location.hash = '#/littlesteps/baby-wiki'}
+            className="bg-white rounded-2xl p-4 shadow-soft flex flex-col items-center justify-center text-center hover:bg-bloom-cream transition-colors"
+          >
             <Book className="w-8 h-8 text-bloom-terracotta mb-2" />
             <span className="font-semibold">完整知識庫</span>
-          </div>
+          </button>
         </div>
       </main>
     </div>

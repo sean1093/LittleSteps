@@ -8,10 +8,41 @@ export const wikiCategoryLabels: Record<WikiCategory, string> = {
   fever: '發燒與感冒',
   sleep: '睡眠問題',
   daily: '日常照顧',
+  pregnancy: '孕期照護',
 };
 
 export const babyWikiArticles: BabyWikiArticle[] = [
-  // ── 皮膚問題 ──
+  // ── 孕期照護 ──
+  {
+    id: 'prenatal-nutrition',
+    title: '孕期營養攝取',
+    summary: '孕期均衡飲食對胎兒發育至關重要，葉酸、鐵質、鈣質是關鍵營養素。',
+    category: 'pregnancy',
+    causes: [],
+    solutions: [
+      { step: '補充葉酸', detail: '懷孕初期應額外補充葉酸，預防胎兒神經管缺陷。' },
+      { step: '鐵質與鈣質', detail: '多攝取深綠色蔬菜、瘦肉及乳製品，滿足胎兒骨骼與血液發育需求。' },
+      { step: '少量多餐', detail: '若有孕吐困擾，採取少量多餐方式減少胃部壓力。' },
+    ],
+    warningSignals: ['嚴重營養不良', '持續性劇烈嘔吐無法進食'],
+    relatedArticleIds: [],
+    icon: 'Apple',
+  },
+  {
+    id: 'prenatal-exercise',
+    title: '孕期運動建議',
+    summary: '適度運動有助於控制體重、緩解下背痛並增加順產機率。',
+    category: 'pregnancy',
+    causes: [],
+    solutions: [
+      { step: '選擇合適運動', detail: '孕婦瑜伽、散步、游泳是相對安全的運動選擇。' },
+      { step: '注意強度', detail: '運動時以感覺稍微喘但仍可對話為原則。' },
+    ],
+    warningSignals: ['運動時出現腹部疼痛', '陰道出血'],
+    relatedArticleIds: [],
+    icon: 'Activity',
+  },
+  // ... (keep existing articles)
   {
     id: 'drool-rash',
     title: '口水疹',
