@@ -590,7 +590,12 @@ function AppContent() {
         )}
 
         {/* LittleBloom Route */}
-        {currentPage === 'littlebloom' && <LittleBloomPage />}
+        {currentPage === 'littlebloom' && (
+          <LittleBloomPage
+            currentChild={currentChild}
+            user={user}
+          />
+        )}
 
         {/* BabyOasis Route */}
         {currentPage === 'babyoasis' && <BabyOasisPage />}

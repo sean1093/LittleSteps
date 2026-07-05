@@ -1,22 +1,30 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Flower2, Sparkles, Book, Bell, Calendar, Plus } from 'lucide-react';
+import { User } from 'firebase/auth';
 import { pregnancyGuides } from '../../data/pregnancyGuides';
-import { PrenatalCheckup } from '../../types';
+import { ChildProfile, PrenatalCheckup } from '../../types';
+import { usePregnancyData } from '../hooks/usePregnancyData';
 
-function LittleBloomPage() {
-  const [lastPeriodDate] = useState('2026-03-27');
+interface LittleBloomPageProps {
+  currentChild?: ChildProfile | null;
+  user: User | null;
+}
+
+function LittleBloomPage({ currentChild, user }: LittleBloomPageProps) {
+  const { pregnancyData } = usePregnancyData(currentChild?.id || null, user);
   const [checkups] = useState<PrenatalCheckup[]>([
     { id: '1', childId: 'c1', date: '2026-04-15', clinicName: '幸福婦產科', notes: '初步檢查', completed: false }
   ]);
 
   const currentWeek = useMemo(() => {
-    const start = new Date(lastPeriodDate);
+    if (!pregnancyData) return 1;
+    const start = new Date(pregnancyData.lastPeriodDate);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - start.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return Math.floor(diffDays / 7) + 1;
-  }, [lastPeriodDate]);
+  }, [pregnancyData]);
 
   const currentGuide = useMemo(() => {
     return pregnancyGuides.find(g => g.week === currentWeek) || pregnancyGuides[0];
