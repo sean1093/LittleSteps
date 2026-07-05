@@ -141,6 +141,9 @@ export interface ChildProfile {
   milestoneProgress: MilestoneProgress;
   vaccineProgress: VaccineProgress;
   foodTrackingProgress?: FoodTrackingProgress; // Optional: complementary food tracking
+  // Pregnancy specific fields
+  isPregnancy?: boolean;
+  pregnancyData?: PregnancyData;
   createdAt: string; // ISO string
   createdBy: string; // User ID who created this child profile
 }
@@ -199,7 +202,21 @@ export interface FoodQAItem {
   answer: string;
 }
 
-// Daily Log Types (快速日誌)
+export interface PregnancyData {
+  childId: string;
+  dueDate: string; // YYYY-MM-DD
+  lastPeriodDate: string; // YYYY-MM-DD
+  status: 'active' | 'archived';
+}
+
+export interface PrenatalCheckup {
+  id: string;
+  childId: string;
+  date: string; // YYYY-MM-DD
+  clinicName: string;
+  notes: string;
+  completed: boolean;
+}
 export interface DailyLog {
   id: string;
   childId: string;

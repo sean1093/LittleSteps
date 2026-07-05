@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Baby, Link2 } from 'lucide-react';
+import { X, Baby, Link2, Flower2 } from 'lucide-react';
 import { ChildProfile, Gender } from '../../types';
 
 interface AddChildModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (name: string, birthday: string, gender?: Gender) => void;
+  onSave: (name: string, birthday: string, gender?: Gender, isPregnancy?: boolean, dueDate?: string) => void;
   onJoin?: (uuid: string) => void; // New: join existing child
   editingChild?: ChildProfile | null;
 }
@@ -18,9 +18,10 @@ export default function AddChildModal({
   onJoin,
   editingChild
 }: AddChildModalProps) {
-  const [mode, setMode] = useState<'create' | 'join'>('create');
+  const [mode, setMode] = useState<'create' | 'join' | 'pregnancy'>('create');
   const [name, setName] = useState('');
   const [birthday, setBirthday] = useState('');
+  const [dueDate, setDueDate] = useState('');
   const [gender, setGender] = useState<Gender | ''>('');
   const [childUuid, setChildUuid] = useState('');
 
@@ -33,6 +34,7 @@ export default function AddChildModal({
     } else {
       setName('');
       setBirthday('');
+      setDueDate('');
       setGender('');
       setChildUuid('');
     }
@@ -44,6 +46,12 @@ export default function AddChildModal({
     if (mode === 'create') {
       if (name && birthday) {
         onSave(name, birthday, gender || undefined);
+        onClose();
+      }
+    } else if (mode === 'pregnancy') {
+      if (name && dueDate) {
+        // Assume birthday is dueDate for simplicity or pass differently
+        onSave(name, dueDate, undefined, true, dueDate);
         onClose();
       }
     } else if (mode === 'join') {
@@ -83,7 +91,7 @@ export default function AddChildModal({
             {/* Header */}
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold text-gray-800">
-                {editingChild ? '編輯寶寶資料' : mode === 'create' ? '新增寶寶' : '加入寶寶'}
+                {editingChild ? '編輯寶寶資料' : mode === 'create' ? '新增寶寶' : mode === 'pregnancy' ? '新增孕期' : '加入寶寶'}
               </h2>
               <button
                 onClick={onClose}
@@ -108,7 +116,21 @@ export default function AddChildModal({
                   `}
                 >
                   <Baby className="w-4 h-4" />
-                  <span>新增寶寶</span>
+                  <span>寶寶</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode('pregnancy')}
+                  className={`
+                    flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-all
+                    ${mode === 'pregnancy'
+                      ? 'bg-primary text-white shadow-soft'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }
+                  `}
+                >
+                  <Flower2 className="w-4 h-4" />
+                  <span>懷孕中</span>
                 </button>
                 <button
                   type="button"
@@ -122,7 +144,7 @@ export default function AddChildModal({
                   `}
                 >
                   <Link2 className="w-4 h-4" />
-                  <span>加入寶寶</span>
+                  <span>加入</span>
                 </button>
               </div>
             )}
@@ -172,9 +194,35 @@ export default function AddChildModal({
                       <option value="male">男生 👦</option>
                       <option value="female">女生 👧</option>
                     </select>
-                    <p className="mt-1 text-xs text-gray-500">
-                      設定性別後可使用成長曲線圖功能
-                    </p>
+                  </div>
+                </>
+              ) : mode === 'pregnancy' ? (
+                <>
+                  <div>
+                    <label htmlFor="pregnancyName" className="block text-sm font-medium text-gray-700 mb-1">
+                      寶寶小名 (選填)
+                    </label>
+                    <input
+                      type="text"
+                      id="pregnancyName"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-primary focus:border-primary transition-colors"
+                      placeholder="例如: 小花苞"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 mb-1">
+                      預產期
+                    </label>
+                    <input
+                      type="date"
+                      id="dueDate"
+                      value={dueDate}
+                      onChange={(e) => setDueDate(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-primary focus:border-primary transition-colors"
+                      required
+                    />
                   </div>
                 </>
               ) : (
@@ -189,12 +237,9 @@ export default function AddChildModal({
                       value={childUuid}
                       onChange={(e) => setChildUuid(e.target.value)}
                       className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-primary focus:border-primary transition-colors font-mono text-sm"
-                      placeholder="例如: 1234abcd-5678-90ef-ghij-klmnopqrstuv"
+                      placeholder="例如: 1234abcd-..."
                       required
                     />
-                    <p className="mt-2 text-xs text-gray-500">
-                      請輸入家人分享的寶寶代碼，即可一起管理寶寶資料
-                    </p>
                   </div>
                 </>
               )}
@@ -203,7 +248,7 @@ export default function AddChildModal({
                 type="submit"
                 className="w-full bg-primary text-white py-3 rounded-xl font-semibold shadow-soft hover:bg-primary-dark transition-colors"
               >
-                {editingChild ? '儲存修改' : mode === 'create' ? '新增寶寶' : '加入寶寶'}
+                {editingChild ? '儲存修改' : mode === 'create' ? '新增寶寶' : mode === 'pregnancy' ? '開始追蹤孕期' : '加入寶寶'}
               </button>
             </form>
           </motion.div>
