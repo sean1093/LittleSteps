@@ -26,14 +26,15 @@ export function useSleepAnalytics(
   analytics: SleepAnalytics;
   patterns: SleepPattern[];
 } {
+  const now = new Date();
   // Calculate sleep analytics (memoized)
   const analytics = useMemo(() => {
-    return analyzeSleepPatterns(logs);
+    return analyzeSleepPatterns(logs, now);
   }, [logs]);
 
   // Get sleep patterns by date (memoized)
   const patterns = useMemo(() => {
-    return getSleepPatternsByDate(logs, days);
+    return getSleepPatternsByDate(logs, days, now);
   }, [logs, days]);
 
   return {

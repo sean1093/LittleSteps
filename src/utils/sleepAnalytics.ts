@@ -10,14 +10,14 @@ export function filterSleepLogs(logs: DailyLog[]): DailyLog[] {
 /**
  * Get sleep logs from the last N days
  */
-export function getSleepLogsInRange(logs: DailyLog[], days: number = 1): DailyLog[] {
-  const cutoffDate = new Date();
+export function getSleepLogsInRange(logs: DailyLog[], days: number = 1, baseDate: Date = new Date()): DailyLog[] {
+  const cutoffDate = new Date(baseDate);
   cutoffDate.setDate(cutoffDate.getDate() - days);
   cutoffDate.setHours(0, 0, 0, 0);
 
   return filterSleepLogs(logs).filter(log => {
     const logDate = new Date(log.timestamp);
-    return logDate >= cutoffDate;
+    return logDate >= cutoffDate && logDate <= baseDate;
   });
 }
 
@@ -132,8 +132,8 @@ export function calculateSleepQualityScore(logs: DailyLog[]): number {
  * Calculate routine score (0-100)
  * Measures consistency of sleep start times
  */
-export function calculateRoutineScore(logs: DailyLog[], days: number = 7): number {
-  const sleepLogs = getSleepLogsInRange(logs, days);
+export function calculateRoutineScore(logs: DailyLog[], days: number = 7, baseDate: Date = new Date()): number {
+  const sleepLogs = getSleepLogsInRange(logs, days, baseDate);
   if (sleepLogs.length < 3) return 0; // Need at least 3 data points
 
   // Group by date and find first sleep of each day
@@ -175,8 +175,8 @@ export function calculateRoutineScore(logs: DailyLog[], days: number = 7): numbe
 /**
  * Calculate average bedtime (first sleep of the day)
  */
-export function calculateAverageBedtime(logs: DailyLog[], days: number = 7): string | undefined {
-  const sleepLogs = getSleepLogsInRange(logs, days);
+export function calculateAverageBedtime(logs: DailyLog[], days: number = 7, baseDate: Date = new Date()): string | undefined {
+  const sleepLogs = getSleepLogsInRange(logs, days, baseDate);
   if (sleepLogs.length === 0) return undefined;
 
   // Group by date and find first sleep of each day
@@ -210,8 +210,8 @@ export function calculateAverageBedtime(logs: DailyLog[], days: number = 7): str
 /**
  * Calculate average wake time (last sleep end of the day)
  */
-export function calculateAverageWakeTime(logs: DailyLog[], days: number = 7): string | undefined {
-  const sleepLogs = getSleepLogsInRange(logs, days);
+export function calculateAverageWakeTime(logs: DailyLog[], days: number = 7, baseDate: Date = new Date()): string | undefined {
+  const sleepLogs = getSleepLogsInRange(logs, days, baseDate);
   if (sleepLogs.length === 0) return undefined;
 
   // Group by date and find last sleep end of each day
@@ -357,9 +357,9 @@ export function generateSleepRecommendations(
 /**
  * Analyze sleep patterns and generate full analytics
  */
-export function analyzeSleepPatterns(logs: DailyLog[]): SleepAnalytics {
-  const last24hLogs = getSleepLogsInRange(logs, 1);
-  const last7dLogs = getSleepLogsInRange(logs, 7);
+export function analyzeSleepPatterns(logs: DailyLog[], baseDate: Date = new Date()): SleepAnalytics {
+  const last24hLogs = getSleepLogsInRange(logs, 1, baseDate);
+  const last7dLogs = getSleepLogsInRange(logs, 7, baseDate);
 
   const totalSleepDuration = calculateTotalSleepDuration(last24hLogs);
   const longestSleepDuration = findLongestSleepSession(last24hLogs);
@@ -369,9 +369,9 @@ export function analyzeSleepPatterns(logs: DailyLog[]): SleepAnalytics {
   const nightWakingsTotal = calculateTotalNightWakings(last24hLogs);
   const isSleepingThroughNight = detectSleepingThroughNight(last24hLogs);
   const longestContinuousSleep = longestSleepDuration;
-  const routineScore = calculateRoutineScore(last7dLogs, 7);
-  const averageBedtime = calculateAverageBedtime(last7dLogs, 7);
-  const averageWakeTime = calculateAverageWakeTime(last7dLogs, 7);
+  const routineScore = calculateRoutineScore(last7dLogs, 7, baseDate);
+  const averageBedtime = calculateAverageBedtime(last7dLogs, 7, baseDate);
+  const averageWakeTime = calculateAverageWakeTime(last7dLogs, 7, baseDate);
 
   const analytics: SleepAnalytics = {
     totalSleepDuration,
@@ -397,8 +397,8 @@ export function analyzeSleepPatterns(logs: DailyLog[]): SleepAnalytics {
 /**
  * Get sleep patterns by date (for visualization)
  */
-export function getSleepPatternsByDate(logs: DailyLog[], days: number = 7): SleepPattern[] {
-  const sleepLogs = getSleepLogsInRange(logs, days);
+export function getSleepPatternsByDate(logs: DailyLog[], days: number = 7, baseDate: Date = new Date()): SleepPattern[] {
+  const sleepLogs = getSleepLogsInRange(logs, days, baseDate);
 
   // Group by date
   const logsByDate: { [date: string]: DailyLog[] } = {};

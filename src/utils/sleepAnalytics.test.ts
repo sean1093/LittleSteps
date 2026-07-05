@@ -71,7 +71,7 @@ describe('sleepAnalytics', () => {
 
   describe('getSleepLogsInRange', () => {
     it('should return logs from today (since midnight)', () => {
-      const now = new Date();
+      const now = new Date("2026-07-05T12:00:00Z");
       const twoDaysAgo = new Date(now);
       twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
 
@@ -88,7 +88,7 @@ describe('sleepAnalytics', () => {
     });
 
     it('should return logs from last 7 days', () => {
-      const now = new Date();
+      const now = new Date("2026-07-05T12:00:00Z");
       const logs: DailyLog[] = [];
 
       // Create logs for last 7 days
@@ -235,16 +235,16 @@ describe('sleepAnalytics', () => {
   describe('calculateRoutineScore', () => {
     it('should give high score for consistent sleep times', () => {
       const logs: DailyLog[] = [];
-      const baseDate = new Date('2026-04-01T10:00:00Z');
+      const baseDate = new Date('2026-04-07T10:00:00Z');
 
       // Create 7 days of logs at same time
       for (let i = 0; i < 7; i++) {
         const date = new Date(baseDate);
-        date.setDate(date.getDate() + i);
+        date.setDate(date.getDate() - 7 + i);
         logs.push(createSleepLog(date.toISOString(), 120));
       }
 
-      const score = calculateRoutineScore(logs, 7);
+      const score = calculateRoutineScore(logs, 7, baseDate);
       expect(score).toBeGreaterThanOrEqual(90);
     });
 
@@ -255,8 +255,9 @@ describe('sleepAnalytics', () => {
         createSleepLog('2026-04-03T16:00:00Z', 120),
         createSleepLog('2026-04-04T20:00:00Z', 120)
       ];
+      const baseDate = new Date('2026-04-07T00:00:00Z');
 
-      const score = calculateRoutineScore(logs, 7);
+      const score = calculateRoutineScore(logs, 7, baseDate);
       expect(score).toBeLessThan(50);
     });
 
@@ -264,8 +265,9 @@ describe('sleepAnalytics', () => {
       const logs: DailyLog[] = [
         createSleepLog('2026-04-01T10:00:00Z', 120)
       ];
+      const baseDate = new Date('2026-04-07T00:00:00Z');
 
-      expect(calculateRoutineScore(logs, 7)).toBe(0);
+      expect(calculateRoutineScore(logs, 7, baseDate)).toBe(0);
     });
   });
 
@@ -276,29 +278,32 @@ describe('sleepAnalytics', () => {
         createSleepLog('2026-04-02T22:30:00Z', 120),
         createSleepLog('2026-04-03T22:15:00Z', 120)
       ];
+      const baseDate = new Date('2026-04-07T00:00:00Z');
 
-      const avgBedtime = calculateAverageBedtime(logs, 7);
+      const avgBedtime = calculateAverageBedtime(logs, 7, baseDate);
       expect(avgBedtime).toBeDefined();
       expect(avgBedtime).toMatch(/^\d{2}:\d{2}$/); // HH:mm format
-    });
+      });
 
-    it('should return undefined for empty logs', () => {
+      it('should return undefined for empty logs', () => {
       expect(calculateAverageBedtime([], 7)).toBeUndefined();
-    });
-  });
+      });
+      });
 
-  describe('calculateAverageWakeTime', () => {
-    it('should calculate average wake time', () => {
+      describe('calculateAverageWakeTime', () => {
+      it('should calculate average wake time', () => {
       const logs: DailyLog[] = [
         createSleepLog('2026-04-01T22:00:00Z', 480), // 8 hours sleep
         createSleepLog('2026-04-02T22:00:00Z', 480),
         createSleepLog('2026-04-03T22:00:00Z', 480)
       ];
+      const baseDate = new Date('2026-04-07T00:00:00Z');
 
-      const avgWakeTime = calculateAverageWakeTime(logs, 7);
+      const avgWakeTime = calculateAverageWakeTime(logs, 7, baseDate);
       expect(avgWakeTime).toBeDefined();
       expect(avgWakeTime).toMatch(/^\d{2}:\d{2}$/); // HH:mm format
-    });
+      });
+
 
     it('should return undefined for empty logs', () => {
       expect(calculateAverageWakeTime([], 7)).toBeUndefined();
@@ -311,8 +316,9 @@ describe('sleepAnalytics', () => {
         createSleepLog('2026-04-06T10:00:00Z', 360, 'good', 0), // 6 hours
         createSleepLog('2026-04-06T18:00:00Z', 120, 'fair', 1)  // 2 hours
       ];
+      const baseDate = new Date('2026-04-07T00:00:00Z');
 
-      const analytics = analyzeSleepPatterns(logs);
+      const analytics = analyzeSleepPatterns(logs, baseDate);
 
       expect(analytics.totalSleepDuration).toBe(480); // 8 hours
       expect(analytics.sleepCount).toBe(2);
@@ -328,8 +334,9 @@ describe('sleepAnalytics', () => {
       const logs: DailyLog[] = [
         createSleepLog('2026-04-06T10:00:00Z', 360, 'good', 0)
       ];
+      const baseDate = new Date('2026-04-07T00:00:00Z');
 
-      const analytics = analyzeSleepPatterns(logs);
+      const analytics = analyzeSleepPatterns(logs, baseDate);
 
       expect(analytics.recommendations).toBeDefined();
       expect(analytics.recommendations.length).toBeGreaterThan(0);
@@ -348,8 +355,9 @@ describe('sleepAnalytics', () => {
         createSleepLog('2026-04-06T14:00:00Z', 90),
         createSleepLog('2026-04-05T10:00:00Z', 180)
       ];
+      const baseDate = new Date('2026-04-07T00:00:00Z');
 
-      const patterns = getSleepPatternsByDate(logs, 7);
+      const patterns = getSleepPatternsByDate(logs, 7, baseDate);
 
       expect(patterns).toHaveLength(2); // 2 different dates
       expect(patterns[0].date).toBe('2026-04-06');
@@ -363,8 +371,9 @@ describe('sleepAnalytics', () => {
       const logs: DailyLog[] = [
         createSleepLog('2026-04-06T10:00:00Z', 180, 'good', 0)
       ];
+      const baseDate = new Date('2026-04-07T00:00:00Z');
 
-      const patterns = getSleepPatternsByDate(logs, 7);
+      const patterns = getSleepPatternsByDate(logs, 7, baseDate);
 
       expect(patterns[0].qualityScore).toBeGreaterThan(0);
     });
@@ -375,8 +384,9 @@ describe('sleepAnalytics', () => {
         createSleepLog('2026-04-06T10:00:00Z', 120),
         createSleepLog('2026-04-04T10:00:00Z', 120)
       ];
+      const baseDate = new Date('2026-04-07T00:00:00Z');
 
-      const patterns = getSleepPatternsByDate(logs, 7);
+      const patterns = getSleepPatternsByDate(logs, 7, baseDate);
 
       expect(patterns[0].date).toBe('2026-04-06');
       expect(patterns[1].date).toBe('2026-04-05');
