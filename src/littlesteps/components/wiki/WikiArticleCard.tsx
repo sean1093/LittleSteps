@@ -17,7 +17,6 @@ const categoryColors: Record<WikiCategory, { bg: string; text: string; pill: str
   fever: { bg: 'bg-red-50', text: 'text-red-700', pill: 'bg-red-100 text-red-700' },
   sleep: { bg: 'bg-indigo-50', text: 'text-indigo-700', pill: 'bg-indigo-100 text-indigo-700' },
   daily: { bg: 'bg-teal-50', text: 'text-teal-700', pill: 'bg-teal-100 text-teal-700' },
-  pregnancy: { bg: 'bg-rose-50', text: 'text-rose-700', pill: 'bg-rose-100 text-rose-700' },
 };
 
 export default function WikiArticleCard({ article, isExpanded, onToggle }: WikiArticleCardProps) {

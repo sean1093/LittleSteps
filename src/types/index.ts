@@ -429,7 +429,7 @@ export interface NursingRoomMarker extends NursingRoom {
 }
 
 // Baby Wiki Types (寶寶百科)
-export type WikiCategory = 'skin' | 'oral' | 'motor' | 'digestive' | 'fever' | 'sleep' | 'daily' | 'pregnancy';
+export type WikiCategory = 'skin' | 'oral' | 'motor' | 'digestive' | 'fever' | 'sleep' | 'daily';
 
 export interface BabyWikiArticle {
   id: string;

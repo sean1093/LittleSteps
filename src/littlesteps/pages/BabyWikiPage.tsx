@@ -13,7 +13,6 @@ const categoryIcons: Record<WikiCategory, string> = {
   fever: 'Thermometer',
   sleep: 'Moon',
   daily: 'Baby',
-  pregnancy: 'Apple',
 };
 
 export default function BabyWikiPage() {

@@ -21,6 +21,7 @@ import SleepTrainingPage from './littlesteps/pages/SleepTrainingPage';
 import DailyLogPage from './littlesteps/pages/DailyLogPage';
 import SleepAnalysisPage from './littlesteps/pages/SleepAnalysisPage';
 import LittleBloomPage from './littlebloom/pages/LittleBloomPage';
+import LittleBloomWikiPage from './littlebloom/pages/LittleBloomWikiPage';
 import BabyOasisPage from './babyoasis/pages/BabyOasisPage';
 import BabyWikiPage from './littlesteps/pages/BabyWikiPage';
 import ClinicSummaryPage from './littlesteps/pages/ClinicSummaryPage';
@@ -53,6 +54,7 @@ function AppContent() {
       '#/littlesteps/clinic-summary': 'littlesteps/clinic-summary',
       '#/littlesteps/report': 'littlesteps/report',
       '#/littlebloom': 'littlebloom',
+      '#/littlebloom/wiki': 'littlebloom/wiki',
       '#/babyoasis': 'babyoasis'
     };
     return pageMap[hash] || 'home';
@@ -164,6 +166,7 @@ function AppContent() {
       'littlesteps/clinic-summary': '#/littlesteps/clinic-summary',
       'littlesteps/report': '#/littlesteps/report',
       'littlebloom': '#/littlebloom',
+      'littlebloom/wiki': '#/littlebloom/wiki',
       'babyoasis': '#/babyoasis'
     };
     window.location.hash = hashMap[page];
@@ -596,6 +599,7 @@ function AppContent() {
             user={user}
           />
         )}
+        {currentPage === 'littlebloom/wiki' && <LittleBloomWikiPage />}
 
         {/* BabyOasis Route */}
         {currentPage === 'babyoasis' && <BabyOasisPage />}

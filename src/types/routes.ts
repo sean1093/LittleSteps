@@ -24,6 +24,7 @@ export type Page =
   | 'littlesteps/clinic-summary'
   | 'littlesteps/report'
   | 'littlebloom'
+  | 'littlebloom/wiki'
   | 'babyoasis';
 
 /**

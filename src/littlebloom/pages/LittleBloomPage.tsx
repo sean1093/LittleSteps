@@ -93,7 +93,7 @@ function LittleBloomPage({ currentChild, user }: LittleBloomPageProps) {
             <span className="font-semibold">產檢時程</span>
           </div>
           <button 
-            onClick={() => window.location.hash = '#/littlesteps/baby-wiki'}
+            onClick={() => window.location.hash = '#/littlebloom/wiki'}
             className="bg-white rounded-2xl p-4 shadow-soft flex flex-col items-center justify-center text-center hover:bg-bloom-cream transition-colors"
           >
             <Book className="w-8 h-8 text-bloom-terracotta mb-2" />
