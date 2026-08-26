@@ -347,11 +347,11 @@ describe('logHelpers', () => {
       expect(formatDuration(600)).toBe('10小時');
     });
 
-    it('renders a partial hour as a one-decimal hour value', () => {
-      expect(formatDuration(90)).toBe('1.5小時');
-      expect(formatDuration(75)).toBe('1.3小時'); // 15min -> 0.25h -> rounds to .3
-      expect(formatDuration(65)).toBe('1.1小時'); // 5min -> 0.083h -> rounds to .1
-      expect(formatDuration(210)).toBe('3.5小時');
+    it('renders a partial hour as hours and minutes', () => {
+      expect(formatDuration(90)).toBe('1小時30分鐘');
+      expect(formatDuration(75)).toBe('1小時15分鐘');
+      expect(formatDuration(65)).toBe('1小時5分鐘');
+      expect(formatDuration(210)).toBe('3小時30分鐘');
     });
   });
 

@@ -130,22 +130,11 @@ export function formatDate(isoString: string): string {
 }
 
 /**
- * 格式化時長顯示（例如: "1.5小時", "30分鐘"）
+ * 格式化時長顯示（例如: "1小時30分鐘", "30分鐘"）。
+ * Single canonical implementation lives in dateHelpers; re-exported here so the
+ * whole app formats durations consistently.
  */
-export function formatDuration(minutes: number): string {
-  if (minutes < 60) {
-    return `${minutes}分鐘`;
-  }
-
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
-
-  if (remainingMinutes === 0) {
-    return `${hours}小時`;
-  }
-
-  return `${hours}.${Math.round((remainingMinutes / 60) * 10)}小時`;
-}
+export { formatDuration } from './dateHelpers';
 
 /**
  * 獲取餵奶類型的中文顯示名稱
