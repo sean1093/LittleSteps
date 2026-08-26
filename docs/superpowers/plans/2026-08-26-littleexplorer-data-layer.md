@@ -1,16 +1,18 @@
-# LittleExplorer 幼兒期子應用 Implementation Plan
+# LittleExplorer 資料與純函式層 Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 為 1-3 歲幼兒新增第四個子應用 LittleExplorer，提供 12-36 個月發展檢核、幼兒知識庫，以及依出生日精算法定時程的照護提醒中心（含行事曆匯出）。
+**Goal:** 建立 LittleExplorer 的全部型別、純函式與靜態內容——提醒引擎、行事曆序列化、日記分組、四份內容資料集。交付後這一層可獨立驗證，UI 層只需消費。
 
-**Architecture:** 獨立子應用，自帶 chrome（比照 LittleBloom／BabyOasis），不使用 LittleSteps 的 Sidebar。三條 hash 路由。所有到期計算與行事曆序列化為零 I/O 純函式，可完整單元測試。資料存於既有 `children/{childId}` RTDB 子樹，不需修改安全規則。
+**Architecture:** 零 React、零 I/O。所有邏輯為可注入時間的純函式，所有內容為靜態陣列，全部以資料完整性測試把關。`children/{childId}` RTDB 子樹的讀寫留給 UI 層計畫。
 
 **Tech Stack:** React 18 + TypeScript 5.2、Vite 5、Tailwind 3.4、Framer Motion 10、Firebase RTDB 12、Vitest 4.1、lucide-react
 
 **Spec:** `docs/superpowers/specs/2026-08-26-littleexplorer-toddler-design.md`
 
 **Prerequisite plan:** `docs/superpowers/plans/2026-08-26-littlesteps-data-corrections.md` 必須先完成。Task 3 的 `careTasks.ts` 直接連動勘誤後的疫苗 id 與劑次；未修正前建立的對應表會指向錯誤劑次。
+
+**Downstream plan:** `docs/superpowers/plans/2026-08-26-littleexplorer-ui.md` 消費本計畫的全部產出。本計畫完成前不要開始它。
 
 ## Global Constraints
 
@@ -21,15 +23,13 @@
 - 所有時間相依的純函式必須接受可注入的 `today?: Date` 參數，遵循 commit `a9c17ab` 建立的慣例。
 - 不新增任何 npm 依賴。
 - 不新增頁面級或 E2E 測試（本 repo 現況 11 個測試檔中 9 個為純邏輯、0 個頁面測試；不引入第二套慣例）。
-- 樣式沿用既有共用 token：`rounded-3xl`、`shadow-soft`、`shadow-soft-lg`；顏色使用本計畫 Task 8 新增的 `explorer-*` namespace。
+- 顏色 token 由 UI 層計畫新增（`explorer-*` namespace）；本計畫不產生任何樣式。
 - husky pre-commit hook 會執行 `npm run build`（`tsc && vite build`）。
 - 醫療與制度性內容不得憑記憶撰寫。每筆檢核題目與每篇文章都必須對照衛福部國健署「兒童健康手冊」、疾管署預防接種時程，或台灣兒科醫學會發布之指引，並在資料檔以註解標註出處。
 
-## 關於頁面任務的規格粒度
+## 規格粒度
 
-Task 1-6（型別、純函式、資料、hooks）以完整可貼上的程式碼指定，因為它們是介面契約，任何偏差都會在下游斷掉。
-
-Task 7-9（三個頁面元件）改以「指名要照抄的既有檔案 ＋ 逐項行為規格 ＋ 明確的 props 介面」指定，不轉錄 JSX。理由：本專案的頁面樣式慣例活在 `LittleBloomPage.tsx` 與 `LittleBloomWikiPage.tsx` 裡，直接讀那兩個檔案比讀本計畫的轉錄副本準確——轉錄品會隨原檔演進而失真，而失真的樣板比沒有樣板更糟。每個頁面任務的 **Interfaces** 區塊仍以程式碼明確定義 props 型別，那是 Task 10 接線時唯一會出錯的地方。
+本計畫全部以完整可貼上的程式碼指定——它產出的是介面契約與內容資料，任何偏差都會在 UI 層斷掉。唯二例外是 Task 4 與 Task 5 的衛教文字：那些受 Global Constraints 最後一條規範，必須逐筆查證來源後撰寫，不得由本計畫代填。兩個任務都以完整列表釘死了 id、標題與分類，只留文字本身待填。
 
 ---
 
@@ -145,6 +145,31 @@ export interface ResolvedCareTask {
   /** 距建議日的天數；負數表示已過 */
   daysUntilDue: number;
   completedDate?: string;
+}
+
+export type ToddlerTipCategory = 'safety' | 'feeding' | 'behavior' | 'health';
+
+export interface ToddlerCareTip {
+  ageBand: ToddlerAgeBand;
+  category: ToddlerTipCategory;
+  title: string;
+  /** 3-4 條具體重點 */
+  highlights: string[];
+}
+
+export type DiaryMood = 'happy' | 'proud' | 'tired' | 'worried' | 'funny';
+
+export interface DiaryEntry {
+  id: string;
+  childId: string;
+  /** YYYY-MM-DD，家長可改，預設今天 */
+  date: string;
+  content: string;
+  mood?: DiaryMood;
+  /** 由成長分頁勾選時建立的條目會帶此欄，指向該檢核項目 */
+  linkedCheckItemId?: string;
+  createdAt: string; // ISO 8601
+  updatedAt?: string;
 }
 ```
 
@@ -1637,496 +1662,3 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 ```
 
 ---
-
-### Task 6: Firebase 寫入器與讀取 hooks
-
-**Files:**
-- Modify: `src/common/hooks/useFirebaseChildren.ts`
-- Modify: `src/common/hooks/useChildStore.ts`
-- Create: `src/littleexplorer/hooks/useDevelopmentProgress.ts`
-- Create: `src/littleexplorer/hooks/useCareTasks.ts`
-
-**Interfaces:**
-- Consumes: `useFirebaseCollection<T>(childId, user, { firebasePath, empty, fromFirebase, errorLabel })` from `src/common/hooks/useFirebaseCollection.ts`；`removeUndefined` from `src/utils/firebaseData.ts`；`resolveCareTasks` from Task 1；`careTaskTemplates` from Task 3
-- Produces:
-  - `updateDevelopmentProgress(childId: string, checkItemId: string, achieved: boolean, achievedDate?: string): Promise<void>`
-  - `upsertCareTaskRecord(childId: string, record: CareTaskRecord): Promise<void>`
-  - `useDevelopmentProgress(childId, user): { progress: DevelopmentCheckProgress; loading: boolean }`
-  - `useCareTasks(child, user): { tasks: ResolvedCareTask[]; loading: boolean }`
-
-- [ ] **Step 1: 新增 RTDB 寫入器**
-
-Read `src/common/hooks/useFirebaseChildren.ts` and locate `updateMilestoneProgress`. Add two functions following its exact pattern（`ref(database, path)` → `set(removeUndefined(value))`，`if (!userId) return;` 前置守衛），and add both names to the hook's returned object:
-
-```ts
-  const updateDevelopmentProgress = async (
-    childId: string,
-    checkItemId: string,
-    achieved: boolean,
-    achievedDate?: string,
-  ) => {
-    if (!userId) return;
-    const itemRef = ref(
-      database,
-      `children/${childId}/developmentProgress/${checkItemId}`,
-    );
-    await set(itemRef, removeUndefined({ achieved, achievedDate }));
-  };
-
-  const upsertCareTaskRecord = async (
-    childId: string,
-    record: CareTaskRecord,
-  ) => {
-    if (!userId) return;
-    const taskRef = ref(
-      database,
-      `children/${childId}/careTaskProgress/${record.taskId}`,
-    );
-    await set(taskRef, removeUndefined(record));
-  };
-```
-
-Import `CareTaskRecord` from `../../types` in the same file. No `database.rules.json` change is needed: the existing `children/$childId` rule covers the whole subtree.
-
-- [ ] **Step 2: 於 `useChildStore` 透出兩個 mutator**
-
-In `src/common/hooks/useChildStore.ts`, add to the `ChildStore` interface:
-
-```ts
-  updateDevelopmentProgress: (
-    checkItemId: string,
-    achieved: boolean,
-    achievedDate?: string,
-  ) => Promise<void>;
-  upsertCareTaskRecord: (record: CareTaskRecord) => Promise<void>;
-```
-
-and add the corresponding wrappers in the hook body, binding `currentChildId` and no-oping when it is null — mirroring how the existing `toggleMilestone` wrapper handles it. Import `CareTaskRecord` from `../../types`.
-
-- [ ] **Step 3: 建立 `useDevelopmentProgress`**
-
-Create `src/littleexplorer/hooks/useDevelopmentProgress.ts`, following `src/littlebloom/hooks/usePregnancyData.ts` exactly:
-
-```ts
-import type { User } from 'firebase/auth';
-import type { DevelopmentCheckProgress } from '../../types';
-import { useFirebaseCollection } from '../../common/hooks/useFirebaseCollection';
-
-const EMPTY: DevelopmentCheckProgress = {};
-
-/** 讀取幼兒發展檢核進度。寫入請走 useChildStore.updateDevelopmentProgress。 */
-export function useDevelopmentProgress(childId: string | null, user: User | null) {
-  const { data: progress, loading } = useFirebaseCollection<DevelopmentCheckProgress>(
-    childId,
-    user,
-    {
-      firebasePath: `children/${childId}/developmentProgress`,
-      empty: EMPTY,
-      fromFirebase: (data) => (data as DevelopmentCheckProgress) || EMPTY,
-      errorLabel: 'Error fetching development progress:',
-    },
-  );
-  return { progress, loading };
-}
-```
-
-- [ ] **Step 4: 建立 `useCareTasks`**
-
-Create `src/littleexplorer/hooks/useCareTasks.ts`:
-
-```ts
-import { useMemo } from 'react';
-import type { User } from 'firebase/auth';
-import type { CareTaskProgress, ChildProfile, ResolvedCareTask } from '../../types';
-import { useFirebaseCollection } from '../../common/hooks/useFirebaseCollection';
-import { careTaskTemplates } from '../data/careTasks';
-import { resolveCareTasks } from '../utils/careSchedule';
-
-const EMPTY: CareTaskProgress = {};
-
-/**
- * 將靜態時程、使用者的完成記錄與 LittleSteps 的疫苗進度，
- * 合成為帶狀態的照護任務清單。
- */
-export function useCareTasks(
-  child: ChildProfile | undefined | null,
-  user: User | null,
-): { tasks: ResolvedCareTask[]; loading: boolean } {
-  const childId = child?.id ?? null;
-
-  const { data: careProgress, loading } = useFirebaseCollection<CareTaskProgress>(
-    childId,
-    user,
-    {
-      firebasePath: `children/${childId}/careTaskProgress`,
-      empty: EMPTY,
-      fromFirebase: (data) => (data as CareTaskProgress) || EMPTY,
-      errorLabel: 'Error fetching care task progress:',
-    },
-  );
-
-  const tasks = useMemo(
-    () =>
-      child
-        ? resolveCareTasks(
-            child.birthday,
-            careTaskTemplates,
-            careProgress,
-            child.vaccineProgress ?? {},
-          )
-        : [],
-    [child, careProgress],
-  );
-
-  return { tasks, loading };
-}
-```
-
-- [ ] **Step 5: 型別檢查與既有測試**
-
-Run: `npm run build && npx vitest run src/common/hooks/useChildStore.test.ts`
-
-Expected: build 成功；`useChildStore.test.ts` PASS。該測試斷言 `useChildStore` 對 mock 的委派行為，新增方法不應破壞既有斷言。若因 mock 物件缺少新方法而失敗，於該測試的 `useFirebaseChildren` mock 補上 `updateDevelopmentProgress: vi.fn()` 與 `upsertCareTaskRecord: vi.fn()`。
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add src/common/hooks/useFirebaseChildren.ts src/common/hooks/useChildStore.ts src/littleexplorer/hooks/
-git commit -m "feat: add LittleExplorer data hooks and RTDB writers
-
-Development-check progress and care-task completion live under
-the existing children/{childId} subtree, so the current security
-rule covers them with no change.
-
-Writers go into useFirebaseChildren, the single write point for
-that subtree, rather than a parallel local hook.
-
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
-```
-
----
-
-### Task 7: 品牌色票與提醒 Hub 頁
-
-**Files:**
-- Modify: `tailwind.config.js`
-- Create: `src/littleexplorer/pages/LittleExplorerPage.tsx`
-
-**Interfaces:**
-- Consumes: `useCareTasks` from Task 6；`careTaskKindLabels` from Task 3；`downloadIcs`、`buildGoogleCalendarUrl` from Task 2；`calculateAgeDisplay` from `src/utils/summaryCalculator.ts`
-- Produces: `LittleExplorerPage` default export，props `{ currentChild?: ChildProfile | null; user: User | null; onUpsertCareTask: (record: CareTaskRecord) => Promise<void> }`
-
-- [ ] **Step 1: 新增 `explorer` 色票**
-
-In `tailwind.config.js`, add to `theme.extend.colors` after the `bloom` object:
-
-```js
-        // LittleExplorer（幼兒期）Palette
-        explorer: {
-          'sunbeam': '#F5B843',
-          'sunbeam-light': '#FBE0A6',
-          'sunbeam-dark': '#D99A22',
-          'meadow': '#7FB77E',
-          'meadow-light': '#B7D9B6',
-          'meadow-dark': '#5C9159',
-          'sky': '#6FB3D2',
-          'sky-light': '#B3D8E8',
-          'clay': '#E08D6F',
-          'sand': '#FDF8EE',
-          'bark': '#6B5B4E',
-        }
-```
-
-- [ ] **Step 2: 建立 Hub 頁**
-
-Create `src/littleexplorer/pages/LittleExplorerPage.tsx`. 結構比照 `src/littlebloom/pages/LittleBloomPage.tsx`：module 層級的 `containerVariants`（`staggerChildren: 0.1`）與 `itemVariants`（`y: 20 → 0`），外層 `min-h-screen bg-explorer-sand px-4 py-8`，內容欄 `max-w-4xl mx-auto`，各區塊為 `bg-white rounded-3xl shadow-soft` 卡片。
-
-必要區塊，由上而下：
-
-1. **頁首** — `Sun` icon、標題「LittleExplorer」、副標「小小探險家 · {`calculateAgeDisplay(currentChild.birthday)`}」。這是中文名在 UI 唯一露出的地方；首頁卡片的副標維持功能描述「幼兒期陪伴」，與 LittleBloom 的「孕期陪伴」一致。
-2. **年齡守門** — 依 `currentChild.birthday` 算出月齡：
-   - `< 12`：顯示引導卡「寶寶還不到 1 歲，先到 LittleSteps 追蹤里程碑與副食品」，按鈕 `onClick={() => { window.location.hash = '#/littlesteps'; }}`。不渲染下方任何區塊。
-   - `>= 36`：顯示畢業卡「已經滿 3 歲了，幼兒期的追蹤告一段落」，仍渲染逾期任務區塊。
-   - 無 `currentChild`：顯示「請先於 LittleSteps 新增寶寶」引導卡。
-3. **逾期任務**（`status === 'overdue'`）— 以 `bg-explorer-clay/10 border-explorer-clay` 強調，置於清單最上方。清單為空時整區不渲染。
-4. **待辦任務**（`status === 'due'`，以及 `upcoming` 中 `daysUntilDue <= 90` 者）— 每列顯示 `careTaskKindLabels[kind]` 標籤、標題、`dueDate`、以及「還有 N 天」或「已逾期 N 天」。每列一個「標記完成」按鈕；`kind === 'vaccine'` 的任務**不顯示**該按鈕，改顯示深連結「到疫苗追蹤勾選」→ `window.location.hash = '#/littlesteps/vaccine-tracking'`，因為疫苗完成狀態的唯一真相來源是 `vaccineProgress`。
-5. **標記完成互動** — 點擊後呼叫 `onUpsertCareTask({ taskId, completedDate: <今天 YYYY-MM-DD>, location, notes })`。院所與備註為選填，以同一張卡片內展開的簡易表單輸入，不另開 modal。
-6. **匯出行事曆** — 兩個按鈕：「匯出全部時程（.ics）」呼叫 `downloadIcs(tasks, currentChild.name)`；每個任務列上一個小的「加入 Google 日曆」連結，`href={buildGoogleCalendarUrl(task, currentChild.name)}`、`target="_blank"`、`rel="noopener noreferrer"`。
-7. **快速導覽** — 三個按鈕：「發展檢核」→ `#/littleexplorer/checkup`、「幼兒百科」→ `#/littleexplorer/wiki`、「成長曲線」→ `#/littlesteps/growth-charts`（深連結，不重建）。
-
-`已完成` 任務不在 Hub 顯示，避免清單被歷史記錄淹沒。
-
-- [ ] **Step 3: 型別檢查**
-
-Run: `npm run build`
-Expected: 成功。此時頁面尚未被任何路由引用，僅驗證型別正確。
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add tailwind.config.js src/littleexplorer/pages/LittleExplorerPage.tsx
-git commit -m "feat: add LittleExplorer hub page and brand palette
-
-The hub is the reminder centre: a parent opening this app always
-asks the same first question, so overdue and due-soon tasks are
-the top of the page rather than a separate route.
-
-Vaccine rows deliberately offer no complete button - they deep
-link to the existing vaccine tracker, keeping one source of
-truth for dose state.
-
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
-```
-
----
-
-### Task 8: 發展檢核頁
-
-**Files:**
-- Create: `src/littleexplorer/pages/DevelopmentCheckPage.tsx`
-
-**Interfaces:**
-- Consumes: `useDevelopmentProgress` from Task 6；`developmentCheckItems`、`developmentWarnings`、`ageBandLabels`、`domainLabels`、`domainIcons` from Task 4；`getLucideIcon` from `src/common/lucideIcons.ts`
-- Produces: `DevelopmentCheckPage` default export，props `{ currentChild?: ChildProfile | null; user: User | null; onToggleCheckItem: (checkItemId: string, achieved: boolean) => Promise<void> }`
-
-- [ ] **Step 1: 建立頁面**
-
-Create `src/littleexplorer/pages/DevelopmentCheckPage.tsx`。結構：
-
-1. **自帶頁首** — `bg-explorer-sunbeam` header，`ChevronLeft` 返回鍵 `onClick={() => { window.location.hash = '#/littleexplorer'; }}`，標題「發展檢核」。比照 `src/littlebloom/pages/LittleBloomWikiPage.tsx:18-30`。
-2. **年齡段選擇器** — 橫向可捲動的 chip 列，選項來自 `ageBandLabels`。**預設選中孩子目前月齡所屬的年齡段**（月齡 < 12 選 `'12-15'`，>= 36 選 `'30-36'`），而非固定第一段——這是 `MilestonesPage.tsx:20` 固定預設 `'0-2'` 的已知體驗缺陷，此處不重蹈。
-3. **檢核清單** — 依 `domain` 分組，每組一個小標（`domainLabels` ＋ `getLucideIcon(domainIcons[domain])`）。每題一列，含勾選框、`title`、可展開的 `detail` 與 `tips`。勾選呼叫 `onToggleCheckItem(item.id, !achieved)`。
-4. **進度摘要** — 該年齡段「已達成 N／6」，以 `bg-explorer-meadow` 進度條呈現。
-5. **紅旗警訊區** — 置於清單下方，`bg-explorer-clay/10` 卡片，標題「這些情況建議諮詢醫師」，列出該年齡段 `developmentWarnings` 的 `signals` 與 `action`。**永遠顯示**，不依勾選狀態隱藏——警訊的價值在於家長主動辨識，而非系統判定。
-6. **免責說明** — 頁尾一行小字：發展有個別差異，本檢核表僅供參考，正式評估請至兒童發展聯合評估中心。
-
-- [ ] **Step 2: 型別檢查**
-
-Run: `npm run build`
-Expected: 成功。
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add src/littleexplorer/pages/DevelopmentCheckPage.tsx
-git commit -m "feat: add development checklist page
-
-Defaults the age-band picker to the child's actual age rather
-than the first bucket, avoiding the fixed '0-2' default that
-makes MilestonesPage awkward for older babies.
-
-Red flags always render, independent of tick state: their value
-is helping a parent recognise a pattern, not a verdict the app
-computes.
-
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
-```
-
----
-
-### Task 9: 幼兒百科頁
-
-**Files:**
-- Create: `src/littleexplorer/pages/ToddlerWikiPage.tsx`
-
-**Interfaces:**
-- Consumes: `toddlerWikiArticles`、`toddlerWikiCategoryLabels`、`toddlerWikiCategoryColors` from Task 5；`WikiArticleCard` from `src/common/components/wiki/WikiArticleCard.tsx`
-- Produces: `ToddlerWikiPage` default export，無 props
-
-- [ ] **Step 1: 建立頁面**
-
-Create `src/littleexplorer/pages/ToddlerWikiPage.tsx`, following `src/littlebloom/pages/LittleBloomWikiPage.tsx` closely:
-
-- 自帶 `bg-explorer-sunbeam` header ＋ `ChevronLeft` 返回鍵 → `#/littleexplorer`，標題「幼兒百科」；頁面根 `bg-explorer-sand`。
-- 搜尋輸入框，`focus:ring-explorer-sunbeam`。過濾以 `useMemo` ＋ `.toLowerCase().includes()` 比對 `title` 與 `summary`，與既有兩個 wiki 頁一致。
-- **加上分類 chip 列**（`toddlerWikiCategoryLabels`，含「全部」選項）。LittleBloom 的 wiki 沒有分類篩選，但它只有 1 篇文章；20 篇沒有分類篩選會難以瀏覽。分類與搜尋為 AND 關係。
-- 單一展開的手風琴（`expandedId: string | null`），渲染共用 `<WikiArticleCard>`，傳入 `article`、`isExpanded`、`onToggle`、`categoryLabel={toddlerWikiCategoryLabels[article.category]}`、`categoryColors={toddlerWikiCategoryColors[article.category]}`。
-- 過濾後為空時顯示空狀態文案「找不到符合的文章，換個關鍵字試試」。
-
-- [ ] **Step 2: 型別檢查**
-
-Run: `npm run build`
-Expected: 成功。
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add src/littleexplorer/pages/ToddlerWikiPage.tsx
-git commit -m "feat: add toddler wiki page
-
-Adds a category filter on top of the LittleBloom wiki pattern:
-twenty articles are past the point where search alone is enough
-to browse.
-
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
-```
-
----
-
-### Task 10: 路由註冊與首頁入口
-
-**Files:**
-- Modify: `src/types/routes.ts`
-- Modify: `src/App.tsx`
-- Modify: `src/lib/firebase.ts`
-- Modify: `src/common/pages/MainLandingPage.tsx`
-
-**Interfaces:**
-- Consumes: 全部三個頁面元件、`useChildStore` 的兩個新 mutator
-- Produces: 三條可用路由 `#/littleexplorer`、`#/littleexplorer/checkup`、`#/littleexplorer/wiki`
-
-- [ ] **Step 1: 擴充 `Page` union**
-
-In `src/types/routes.ts`, add to the `Page` union（**不要**加入 `LittleStepsPage`，該 union 專供 Sidebar，結構上排除其他子 app）:
-
-```ts
-  | 'littleexplorer'
-  | 'littleexplorer/checkup'
-  | 'littleexplorer/wiki'
-```
-
-Also update the file's leading doc comment（`:1-9`）to mention the fourth sub-app.
-
-- [ ] **Step 2: 在 `App.tsx` 註冊路由**
-
-Six edits in `src/App.tsx`:
-
-1. 於 lazy import 區塊末端加入：
-
-```ts
-const LittleExplorerPage = lazy(() => import('./littleexplorer/pages/LittleExplorerPage'));
-const DevelopmentCheckPage = lazy(() => import('./littleexplorer/pages/DevelopmentCheckPage'));
-const ToddlerWikiPage = lazy(() => import('./littleexplorer/pages/ToddlerWikiPage'));
-```
-
-2. 於 `getPageFromHash()` 的 `pageMap` 加入：
-
-```ts
-      '#/littleexplorer': 'littleexplorer',
-      '#/littleexplorer/checkup': 'littleexplorer/checkup',
-      '#/littleexplorer/wiki': 'littleexplorer/wiki',
-```
-
-3. 於 `navigateToPage()` 的 `hashMap` 加入（`Record<Page, string>` 為窮舉型別，漏一個 `tsc` 就會擋下）：
-
-```ts
-      'littleexplorer': '#/littleexplorer',
-      'littleexplorer/checkup': '#/littleexplorer/checkup',
-      'littleexplorer/wiki': '#/littleexplorer/wiki',
-```
-
-4. 於 `getPageTitle()` 開頭、既有 `littlebloom` 早退分支旁加入：
-
-```ts
-    if (currentPage.startsWith('littleexplorer')) {
-      return 'LittleExplorer';
-    }
-```
-
-5. 修改 `isStandaloneSubApp`：
-
-```ts
-  const isStandaloneSubApp =
-    currentPage.startsWith('littlebloom') ||
-    currentPage.startsWith('littleexplorer') ||
-    currentPage === 'babyoasis';
-```
-
-6. 於 `<Suspense>` 內、BabyOasis 分支之前加入三個渲染分支。`onUpsertCareTask` 與 `onToggleCheckItem` 由 `useChildStore` 解構而來（Task 6 Step 2 已透出）：
-
-```tsx
-        {/* LittleExplorer Routes */}
-        {currentPage === 'littleexplorer' && (
-          <LittleExplorerPage
-            currentChild={currentChild}
-            user={user}
-            onUpsertCareTask={upsertCareTaskRecord}
-          />
-        )}
-        {currentPage === 'littleexplorer/checkup' && (
-          <DevelopmentCheckPage
-            currentChild={currentChild}
-            user={user}
-            onToggleCheckItem={updateDevelopmentProgress}
-          />
-        )}
-        {currentPage === 'littleexplorer/wiki' && <ToddlerWikiPage />}
-```
-
-Add `upsertCareTaskRecord` and `updateDevelopmentProgress` to the existing `useChildStore(user)` destructuring at the top of `AppContent`.
-
-- [ ] **Step 3: 修正並擴充 analytics 分頁標記**
-
-In `src/lib/firebase.ts`, inside `logPageView`'s `getPageMetadata`, add a LittleExplorer branch and **fix the existing LittleBloom bug**: it uses `page === 'littlebloom'`, so `'littlebloom/wiki'` silently falls through to the `app: 'main'` default. Change it to `startsWith`, matching the LittleSteps branch:
-
-```ts
-  } else if (page.startsWith('littlebloom')) {
-    return { app: 'littlebloom', section: 'wip', feature: 'pregnancy-companion' };
-  } else if (page.startsWith('littleexplorer')) {
-    return { app: 'littleexplorer', section: 'toddler', feature: 'development-and-reminders' };
-  } else if (page.startsWith('littlesteps')) {
-```
-
-Also update the `app_name` enumeration comment（`:90`）to include `littleexplorer`.
-
-- [ ] **Step 4: 首頁新增第四張卡並接上時間軸**
-
-In `src/common/pages/MainLandingPage.tsx`:
-
-1. Widen the props union（`:11`）:
-
-```ts
-  onNavigate: (page: 'littlesteps' | 'littlebloom' | 'babyoasis' | 'littleexplorer') => void;
-```
-
-2. Add a LittleExplorer card. Place it in the same 2-column grid as LittleSteps/LittleBloom so the three life-stage apps read as one progression（BabyOasis stays separate below as a standalone utility）。The grid becomes `grid-cols-1 md:grid-cols-3`. Copy the LittleSteps card block verbatim and change: icon `Sun`, icon background `from-explorer-sunbeam/20 to-explorer-meadow/20`, icon colour `text-explorer-sunbeam-dark`, title `LittleExplorer`, subtitle 「幼兒期陪伴」, hover border `hover:border-explorer-sunbeam/30`, CTA gradient `from-explorer-sunbeam to-explorer-meadow`, CTA text 「進入幼兒期」, `onClick={() => onNavigate('littleexplorer')}`, status badge 「立即可用」（綠色脈動點，同 LittleSteps）。Three feature bullets: 「12-36 個月發展檢核」、「健檢與疫苗提醒」、「幼兒照顧知識庫」。
-
-3. Wire the Journey Timeline's 「幼兒期 / 1-3 歲」 marker（`:341-350`）— add `onClick={() => onNavigate('littleexplorer')}` and `className` additions `cursor-pointer` to its `motion.div`. This slot has been decorative since it was written; it now has a destination.
-
-4. Update the footer copyright literal（`:365`）to include LittleExplorer.
-
-- [ ] **Step 5: 型別檢查與完整測試**
-
-Run: `npm run build && npx vitest run`
-Expected: 兩者皆成功。`hashMap` 是 `Record<Page, string>`，漏掉任一新路由 `tsc` 會直接報錯。
-
-- [ ] **Step 6: 手動煙霧測試**
-
-Run: `npm run dev`
-
-逐項確認：
-
-1. 首頁 `#/` 顯示四張卡，LittleExplorer 卡片可點。
-2. 首頁時間軸的「幼兒期 1-3 歲」可點且導向 `#/littleexplorer`。
-3. `#/littleexplorer` 不顯示 LittleSteps 的 header 與 Sidebar（`isStandaloneSubApp` 生效）。
-4. 選一個 1-3 歲的寶寶：Hub 顯示到期與逾期任務，日期與該寶寶生日相符。
-5. 選一個未滿 1 歲的寶寶：Hub 顯示引導卡並可跳回 LittleSteps。
-6. 疫苗任務**沒有**「標記完成」按鈕，只有跳往疫苗追蹤的連結；到疫苗追蹤勾選該劑次後回到 Hub，該任務消失（已 done 不顯示）。
-7. 非疫苗任務點「標記完成」後消失；重新整理後仍維持完成狀態（確認已寫入 RTDB）。
-8. 「匯出全部時程」下載 `.ics`，以行事曆 App 開啟可見全天事件與提前 7 天提醒。
-9. `#/littleexplorer/checkup` 預設選中的年齡段與寶寶實際月齡相符；勾選後重新整理仍保持。
-10. `#/littleexplorer/wiki` 搜尋與分類篩選皆生效，文章可展開。
-11. 瀏覽器上一頁／下一頁在三條路由間正常運作（`hashchange` 監聽器）。
-
-- [ ] **Step 7: Commit**
-
-```bash
-git add src/types/routes.ts src/App.tsx src/lib/firebase.ts src/common/pages/MainLandingPage.tsx
-git commit -m "feat: register LittleExplorer routes and landing entry
-
-Wires the fourth sub-app into the hash router, the landing page,
-and analytics. The journey timeline's '幼兒期 1-3 歲' marker has
-been decorative since it was written; it now has a destination.
-
-Also fixes logPageView's LittleBloom branch, which matched with
-=== and so dropped littlebloom/wiki into the generic 'main'
-bucket.
-
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
-```
-
-- [ ] **Step 8: Push**
-
-```bash
-git push origin master
-```

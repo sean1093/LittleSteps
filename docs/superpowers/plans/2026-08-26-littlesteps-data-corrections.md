@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript 5.2、Vitest 4.1（happy-dom、globals: true）、co-located `*.test.ts`
 
-**Spec:** `docs/superpowers/specs/2026-08-26-littleexplorer-toddler-design.md` §7
+**Spec:** `docs/superpowers/specs/2026-08-26-littleexplorer-toddler-design.md` §8
 
 ## Global Constraints
 
