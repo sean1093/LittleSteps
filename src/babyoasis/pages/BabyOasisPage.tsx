@@ -20,7 +20,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NursingRoom } from '../../types';
-import { nursingRoomsTaipei } from '../data/nursingRoomsData';
 
 // Import leaflet CSS
 import 'leaflet/dist/leaflet.css';
@@ -254,7 +253,27 @@ const RoomDetailSheet = ({ room, onClose }: RoomDetailSheetProps) => {
 const BabyOasisPage = () => {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<NursingRoom | null>(null);
-  const [nursingRooms] = useState<NursingRoom[]>(nursingRoomsTaipei);
+  const [nursingRooms, setNursingRooms] = useState<NursingRoom[]>([]);
+
+  // Nursing-room dataset (~300 records) is served as static JSON so it stays
+  // out of the JS bundle and can be cached independently of the app code.
+  useEffect(() => {
+    let active = true;
+    fetch(`${import.meta.env.BASE_URL}data/nursingRooms.json`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<NursingRoom[]>;
+      })
+      .then((rooms) => {
+        if (active) setNursingRooms(rooms);
+      })
+      .catch((error) => {
+        console.error('哺乳室資料載入失敗:', error);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Default center: Taipei 101
   const defaultCenter: [number, number] = [25.0340, 121.5645];

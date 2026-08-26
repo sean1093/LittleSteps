@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import * as Icons from 'lucide-react';
+import { AlertCircle, AlertTriangle, Apple, Calendar, CheckCircle2, Heart, Info, Plus, RotateCw, Salad, Trash2 } from 'lucide-react';
 import { FoodTrialRecord, FoodPreference, AllergySeverity } from '../../../types';
 
 interface FoodTrackingTabProps {
@@ -71,7 +71,7 @@ export default function FoodTrackingTab({
       <div className="grid grid-cols-2 gap-3">
         <div className="card bg-[#E8F4F8]/50 border border-[#7EC8E3]/30">
           <div className="flex items-center gap-2 mb-1">
-            <Icons.Apple className="w-5 h-5 text-blue-600" />
+            <Apple className="w-5 h-5 text-blue-600" />
             <span className="text-sm font-medium text-blue-900">已嘗試食物</span>
           </div>
           <div className="text-3xl font-bold text-blue-700">{stats.total}</div>
@@ -79,7 +79,7 @@ export default function FoodTrackingTab({
 
         <div className="card bg-[#E8F5E9]/50 border border-[#81C784]/30">
           <div className="flex items-center gap-2 mb-1">
-            <Icons.CheckCircle2 className="w-5 h-5 text-green-600" />
+            <CheckCircle2 className="w-5 h-5 text-green-600" />
             <span className="text-sm font-medium text-green-900">無過敏</span>
           </div>
           <div className="text-3xl font-bold text-green-700">{stats.noAllergy}</div>
@@ -87,7 +87,7 @@ export default function FoodTrackingTab({
 
         <div className="card bg-[#FFE5E5]/50 border border-[#FF9B9B]/30">
           <div className="flex items-center gap-2 mb-1">
-            <Icons.Heart className="w-5 h-5 text-pink-600" />
+            <Heart className="w-5 h-5 text-pink-600" />
             <span className="text-sm font-medium text-pink-900">喜歡</span>
           </div>
           <div className="text-3xl font-bold text-pink-700">{stats.loved}</div>
@@ -95,7 +95,7 @@ export default function FoodTrackingTab({
 
         <div className="card bg-red-50/50 border border-red-200/30">
           <div className="flex items-center gap-2 mb-1">
-            <Icons.AlertCircle className="w-5 h-5 text-red-600" />
+            <AlertCircle className="w-5 h-5 text-red-600" />
             <span className="text-sm font-medium text-red-900">有過敏</span>
           </div>
           <div className="text-3xl font-bold text-red-700">{stats.withAllergy}</div>
@@ -126,7 +126,7 @@ export default function FoodTrackingTab({
             }
           `}
         >
-          <Icons.CheckCircle2 className="w-4 h-4 inline mr-1" />
+          <CheckCircle2 className="w-4 h-4 inline mr-1" />
           無過敏 ({stats.noAllergy})
         </button>
         <button
@@ -139,7 +139,7 @@ export default function FoodTrackingTab({
             }
           `}
         >
-          <Icons.AlertTriangle className="w-4 h-4 inline mr-1" />
+          <AlertTriangle className="w-4 h-4 inline mr-1" />
           有過敏 ({stats.withAllergy})
         </button>
       </div>
@@ -149,7 +149,7 @@ export default function FoodTrackingTab({
         onClick={onAddFood}
         className="w-full flex items-center justify-center gap-2 p-4 rounded-full bg-[#7EC8E3] hover:bg-[#6BB8D3] text-white font-semibold shadow-soft hover:shadow-soft-lg transition-all"
       >
-        <Icons.Plus className="w-5 h-5" />
+        <Plus className="w-5 h-5" />
         記錄新食物嘗試
       </button>
 
@@ -157,7 +157,7 @@ export default function FoodTrackingTab({
       {!user && foodTrials.length > 0 && (
         <div className="card bg-blue-50 border-2 border-blue-200">
           <div className="flex items-start gap-3">
-            <Icons.Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1 text-sm text-blue-800">
               <p className="font-medium mb-1">提示：使用 Google 登入保存資料</p>
               <p>目前使用本地儲存，登入後可跨裝置同步您的食物追蹤記錄。</p>
@@ -169,7 +169,7 @@ export default function FoodTrackingTab({
       {/* Food Trials List */}
       {filteredFoods.length === 0 && (
         <div className="card text-center py-12">
-          <Icons.Salad className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <Salad className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-500 text-sm">
             {filter === 'all' ? '尚未記錄任何食物嘗試' : '無符合條件的食物記錄'}
           </p>
@@ -240,11 +240,11 @@ export default function FoodTrackingTab({
                   {/* Trial Info */}
                   <div className="flex items-center gap-3 text-xs text-gray-600 mb-2">
                     <div className="flex items-center gap-1">
-                      <Icons.Calendar className="w-3 h-3" />
+                      <Calendar className="w-3 h-3" />
                       <span>首次：{food.firstTriedDate}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Icons.RotateCw className="w-3 h-3" />
+                      <RotateCw className="w-3 h-3" />
                       <span>嘗試 {trialCount} 次</span>
                     </div>
                   </div>
@@ -299,7 +299,7 @@ export default function FoodTrackingTab({
                   className="flex-shrink-0 w-8 h-8 rounded-full hover:bg-red-100 flex items-center justify-center transition-colors"
                   title="刪除記錄"
                 >
-                  <Icons.Trash2 className="w-4 h-4 text-red-500" />
+                  <Trash2 className="w-4 h-4 text-red-500" />
                 </button>
               </div>
             </motion.div>

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import * as Icons from 'lucide-react';
+import { AlertCircle, AlertTriangle, BookOpen, Calendar, Check, CheckCircle2, Clock, Filter, Pill, ShieldAlert, Stethoscope, Syringe, X } from 'lucide-react';
+import { getLucideIcon } from '../../common/lucideIcons';
 import { User } from 'firebase/auth';
 import { VaccineProgress } from '../../types';
 import {
@@ -102,7 +103,7 @@ export default function VaccineTrackingPage({
       <div className="relative z-10 bg-[#E8F5E9]/30 px-4 py-6 mb-6">
         <div className="flex items-center gap-2 mb-3">
           <div className="w-10 h-10 rounded-full bg-[#E8F5E9] flex items-center justify-center">
-            <Icons.Syringe className="w-5 h-5 text-[#81C784]" />
+            <Syringe className="w-5 h-5 text-[#81C784]" />
           </div>
           <h2 className="text-xl font-bold text-gray-800">疫苗接種時程表</h2>
         </div>
@@ -120,7 +121,7 @@ export default function VaccineTrackingPage({
             <div className="bg-[#E8F5E9]/50 border-2 border-[#81C784]/30 rounded-3xl p-4">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-full bg-[#81C784] flex items-center justify-center flex-shrink-0">
-                  <Icons.Syringe className="w-5 h-5 text-white" />
+                  <Syringe className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
                   <h4 className="font-semibold text-gray-800 mb-1">登入以記錄疫苗接種</h4>
@@ -128,16 +129,7 @@ export default function VaccineTrackingPage({
                     登入後即可追蹤並記錄寶寶的疫苗接種進度，資料會自動同步到所有裝置
                   </p>
                   <button
-                    onClick={async () => {
-                      try {
-                        await onSignIn();
-                      } catch (error: any) {
-                        if (error?.code === 'auth/popup-closed-by-user') {
-                          return;
-                        }
-                        console.error('登入失敗:', error);
-                      }
-                    }}
+                    onClick={onSignIn}
                     className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#81C784] text-white text-sm font-medium hover:bg-[#6BB870] transition-colors"
                   >
                     <img
@@ -159,28 +151,28 @@ export default function VaccineTrackingPage({
             onClick={() => setShowEmergencies(true)}
             className="flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-700 px-3 py-2 rounded-xl transition-colors text-sm font-medium"
           >
-            <Icons.AlertTriangle className="w-4 h-4" />
+            <AlertTriangle className="w-4 h-4" />
             <span>緊急狀況處理</span>
           </button>
           <button
             onClick={() => setShowContraindications(true)}
             className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded-xl transition-colors text-sm font-medium"
           >
-            <Icons.ShieldAlert className="w-4 h-4" />
+            <ShieldAlert className="w-4 h-4" />
             <span>接種注意事項</span>
           </button>
           <button
             onClick={() => setShowVaccineTypes(true)}
             className="flex items-center gap-2 bg-purple-50 hover:bg-purple-100 text-purple-700 px-3 py-2 rounded-xl transition-colors text-sm font-medium"
           >
-            <Icons.Pill className="w-4 h-4" />
+            <Pill className="w-4 h-4" />
             <span>疫苗種類說明</span>
           </button>
           <button
             onClick={() => setShowGuidelines(true)}
             className="flex items-center gap-2 bg-green-50 hover:bg-green-100 text-green-700 px-3 py-2 rounded-xl transition-colors text-sm font-medium"
           >
-            <Icons.BookOpen className="w-4 h-4" />
+            <BookOpen className="w-4 h-4" />
             <span>接種指南</span>
           </button>
         </div>
@@ -189,7 +181,7 @@ export default function VaccineTrackingPage({
       {/* Funding Filter */}
       <div className="px-4 mb-4">
         <div className="flex items-center gap-2 mb-3">
-          <Icons.Filter className="w-5 h-5 text-gray-600" />
+          <Filter className="w-5 h-5 text-gray-600" />
           <h3 className="font-semibold text-gray-800">篩選疫苗類型</h3>
         </div>
         <div className="flex gap-2">
@@ -235,7 +227,7 @@ export default function VaccineTrackingPage({
       {/* Month Filter */}
       <div className="px-4 mb-4">
         <div className="flex items-center gap-2 mb-3">
-          <Icons.Calendar className="w-5 h-5 text-gray-600" />
+          <Calendar className="w-5 h-5 text-gray-600" />
           <h3 className="font-semibold text-gray-800">月齡篩選</h3>
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 pl-4 pr-8">
@@ -272,7 +264,7 @@ export default function VaccineTrackingPage({
       {/* Vaccine Timeline - Grouped by Month */}
       <div className="px-4">
         <div className="flex items-center gap-2 mb-4">
-          <Icons.Syringe className="w-5 h-5 text-gray-600" />
+          <Syringe className="w-5 h-5 text-gray-600" />
           <h3 className="font-semibold text-gray-800">接種時程</h3>
           <span className="text-sm text-gray-500">（共 {filteredVaccines.length} 項）</span>
         </div>
@@ -289,7 +281,7 @@ export default function VaccineTrackingPage({
                   {/* Month Header */}
                   <div className="flex items-center gap-3 mb-3">
                     <div className="flex items-center gap-2 bg-[#E8F5E9]/30 px-4 py-2 rounded-full">
-                      <Icons.Calendar className="w-4 h-4 text-[#81C784]" />
+                      <Calendar className="w-4 h-4 text-[#81C784]" />
                       <span className="font-bold text-[#81C784]">{month} 個月</span>
                       <span className="text-sm text-gray-500">({vaccines.length} 項)</span>
                     </div>
@@ -330,7 +322,7 @@ export default function VaccineTrackingPage({
 
                                 <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
                                   <span className="flex items-center gap-1">
-                                    <Icons.Clock className="w-3 h-3" />
+                                    <Clock className="w-3 h-3" />
                                     {vaccine.timing}
                                   </span>
                                   <span className={`
@@ -384,7 +376,7 @@ export default function VaccineTrackingPage({
                                       `}
                                       aria-label={`標記為${isAdministered ? '未接種' : '已接種'}`}
                                     >
-                                      {isAdministered && <Icons.Check className="w-4 h-4 text-white" />}
+                                      {isAdministered && <Check className="w-4 h-4 text-white" />}
                                     </button>
                                   )}
                                   <div className="flex-1">
@@ -415,7 +407,7 @@ export default function VaccineTrackingPage({
                             <div className="mt-3 pt-3 border-t border-gray-100">
                               <div className="space-y-2">
                                 <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                                  <Icons.AlertCircle className="w-4 h-4 text-primary" />
+                                  <AlertCircle className="w-4 h-4 text-primary" />
                                   <span>可能的副作用</span>
                                 </div>
                                 <ul className="space-y-1 ml-6">
@@ -442,13 +434,13 @@ export default function VaccineTrackingPage({
       {/* Side Effects Reference */}
       <div className="px-4 mt-6">
         <div className="flex items-center gap-2 mb-4">
-          <Icons.Stethoscope className="w-5 h-5 text-gray-600" />
+          <Stethoscope className="w-5 h-5 text-gray-600" />
           <h3 className="font-semibold text-gray-800">副作用處理指南</h3>
         </div>
 
         <div className="space-y-3">
           {vaccineSideEffects.map((category) => {
-            const IconComponent = Icons[category.icon as keyof typeof Icons] as React.ComponentType<{ className?: string }>;
+            const IconComponent = getLucideIcon(category.icon);
 
             return (
               <div key={category.category} className="card">
@@ -496,20 +488,20 @@ export default function VaccineTrackingPage({
             >
               <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Icons.AlertTriangle className="w-6 h-6 text-red-600" />
+                  <AlertTriangle className="w-6 h-6 text-red-600" />
                   <h3 className="text-lg font-bold text-gray-800">緊急狀況處理</h3>
                 </div>
                 <button
                   onClick={() => setShowEmergencies(false)}
                   className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
                 >
-                  <Icons.X className="w-5 h-5 text-gray-600" />
+                  <X className="w-5 h-5 text-gray-600" />
                 </button>
               </div>
 
               <div className="p-4 space-y-3">
                 {vaccineEmergencies.map((emergency) => {
-                  const IconComponent = Icons[emergency.icon as keyof typeof Icons] as React.ComponentType<{ className?: string }>;
+                  const IconComponent = getLucideIcon(emergency.icon);
 
                   return (
                     <div key={emergency.id} className="bg-red-50 border-2 border-red-200 rounded-2xl p-4">
@@ -553,14 +545,14 @@ export default function VaccineTrackingPage({
             >
               <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Icons.ShieldAlert className="w-6 h-6 text-blue-600" />
+                  <ShieldAlert className="w-6 h-6 text-blue-600" />
                   <h3 className="text-lg font-bold text-gray-800">接種禁忌與注意事項</h3>
                 </div>
                 <button
                   onClick={() => setShowContraindications(false)}
                   className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
                 >
-                  <Icons.X className="w-5 h-5 text-gray-600" />
+                  <X className="w-5 h-5 text-gray-600" />
                 </button>
               </div>
 
@@ -571,7 +563,7 @@ export default function VaccineTrackingPage({
                     <ul className="space-y-2">
                       {section.items.map((item, itemIdx) => (
                         <li key={itemIdx} className="flex gap-2 text-sm text-gray-700">
-                          <Icons.CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                          <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
                           <span>{item}</span>
                         </li>
                       ))}
@@ -604,14 +596,14 @@ export default function VaccineTrackingPage({
             >
               <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Icons.Pill className="w-6 h-6 text-purple-600" />
+                  <Pill className="w-6 h-6 text-purple-600" />
                   <h3 className="text-lg font-bold text-gray-800">疫苗種類說明</h3>
                 </div>
                 <button
                   onClick={() => setShowVaccineTypes(false)}
                   className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
                 >
-                  <Icons.X className="w-5 h-5 text-gray-600" />
+                  <X className="w-5 h-5 text-gray-600" />
                 </button>
               </div>
 
@@ -666,14 +658,14 @@ export default function VaccineTrackingPage({
             >
               <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Icons.BookOpen className="w-6 h-6 text-green-600" />
+                  <BookOpen className="w-6 h-6 text-green-600" />
                   <h3 className="text-lg font-bold text-gray-800">疫苗接種指南</h3>
                 </div>
                 <button
                   onClick={() => setShowGuidelines(false)}
                   className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
                 >
-                  <Icons.X className="w-5 h-5 text-gray-600" />
+                  <X className="w-5 h-5 text-gray-600" />
                 </button>
               </div>
 
@@ -684,7 +676,7 @@ export default function VaccineTrackingPage({
                     <ul className="space-y-2">
                       {section.items.map((item, itemIdx) => (
                         <li key={itemIdx} className="flex gap-2 text-sm text-gray-700">
-                          <Icons.CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                          <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                           <span>{item}</span>
                         </li>
                       ))}
@@ -725,7 +717,7 @@ export default function VaccineTrackingPage({
                   onClick={() => setEditingDose(null)}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <Icons.X className="w-5 h-5 text-gray-500" />
+                  <X className="w-5 h-5 text-gray-500" />
                 </motion.button>
               </div>
 
@@ -745,7 +737,7 @@ export default function VaccineTrackingPage({
               >
                 <div>
                   <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                    <Icons.Calendar className="w-4 h-4 text-primary" />
+                    <Calendar className="w-4 h-4 text-primary" />
                     接種日期
                   </label>
                   <input
@@ -774,7 +766,7 @@ export default function VaccineTrackingPage({
                     whileTap={{ scale: 0.98 }}
                     className="flex-1 px-6 py-3 bg-[#81C784] hover:bg-[#6BB870] text-white font-semibold rounded-full shadow-soft hover:shadow-soft-lg transition-all flex items-center justify-center gap-2"
                   >
-                    <Icons.Check className="w-5 h-5" />
+                    <Check className="w-5 h-5" />
                     <span>確認</span>
                   </motion.button>
                 </div>

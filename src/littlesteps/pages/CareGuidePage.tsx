@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import * as Icons from 'lucide-react';
+import { AlertTriangle, Calendar, CheckCircle2, Filter } from 'lucide-react';
+import { getLucideIcon } from '../../common/lucideIcons';
 import { generalSafetyItems, monthlyCareGuides, careCategories } from '../data/careGuides';
 
 export default function CareGuidePage() {
@@ -37,7 +38,7 @@ export default function CareGuidePage() {
       <div className="relative z-10 bg-[#FFF3E0]/30 px-4 py-6 mb-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-10 h-10 rounded-full bg-[#FFE5E5] flex items-center justify-center">
-            <Icons.AlertTriangle className="w-5 h-5 text-[#FF9B9B]" />
+            <AlertTriangle className="w-5 h-5 text-[#FF9B9B]" />
           </div>
           <h2 className="text-xl font-bold text-gray-800">重點注意事項</h2>
         </div>
@@ -45,7 +46,7 @@ export default function CareGuidePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {generalSafetyItems.map((item) => {
-            const IconComponent = Icons[item.icon as keyof typeof Icons] as React.ComponentType<{ className?: string }>;
+            const IconComponent = getLucideIcon(item.icon);
 
             return (
               <motion.div
@@ -74,12 +75,12 @@ export default function CareGuidePage() {
       {/* Category Filter */}
       <div className="px-4 mb-4">
         <div className="flex items-center gap-2 mb-3">
-          <Icons.Filter className="w-5 h-5 text-gray-600" />
+          <Filter className="w-5 h-5 text-gray-600" />
           <h3 className="font-semibold text-gray-800">篩選照顧類別</h3>
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-4 pl-4 pr-8">
           {careCategories.map((category) => {
-            const IconComponent = Icons[category.icon as keyof typeof Icons] as React.ComponentType<{ className?: string }>;
+            const IconComponent = getLucideIcon(category.icon);
 
             return (
               <button
@@ -104,7 +105,7 @@ export default function CareGuidePage() {
       {/* Monthly Care Guides */}
       <div className="px-4">
         <div className="flex items-center gap-2 mb-4">
-          <Icons.Calendar className="w-5 h-5 text-gray-600" />
+          <Calendar className="w-5 h-5 text-gray-600" />
           <h3 className="font-semibold text-gray-800">按月齡照顧重點</h3>
           <span className="text-sm text-gray-500">（共 {filteredGuides.length} 項）</span>
         </div>
@@ -138,7 +139,7 @@ export default function CareGuidePage() {
                 <ul className="space-y-2">
                   {guide.highlights.map((highlight, idx) => (
                     <li key={idx} className="flex gap-2 text-sm text-gray-700">
-                      <Icons.CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
                       <span>{highlight}</span>
                     </li>
                   ))}

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import * as Icons from 'lucide-react';
+import { BookOpen, Search, SearchX, X } from 'lucide-react';
+import { getLucideIcon } from '../../common/lucideIcons';
 import { WikiCategory } from '../../types';
 import { babyWikiArticles, wikiCategoryLabels } from '../data/babyWiki';
 import WikiArticleCard from '../components/wiki/WikiArticleCard';
@@ -65,7 +66,7 @@ export default function BabyWikiPage() {
       <div className="relative z-10 bg-[#E8F4F8]/30 px-4 py-6 mb-4">
         <div className="flex items-center gap-2 mb-3">
           <div className="w-10 h-10 rounded-full bg-[#E8F4F8] flex items-center justify-center">
-            <Icons.BookOpen className="w-5 h-5 text-[#7EC8E3]" />
+            <BookOpen className="w-5 h-5 text-[#7EC8E3]" />
           </div>
           <h2 className="text-xl font-bold text-gray-800">寶寶百科</h2>
         </div>
@@ -77,7 +78,7 @@ export default function BabyWikiPage() {
       {/* Search */}
       <div className="px-4 mb-4">
         <div className="relative">
-          <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
             placeholder="搜尋症狀、關鍵字..."
@@ -90,7 +91,7 @@ export default function BabyWikiPage() {
               onClick={() => setSearchQuery('')}
               className="absolute right-3 top-1/2 -translate-y-1/2"
             >
-              <Icons.X className="w-4 h-4 text-gray-400" />
+              <X className="w-4 h-4 text-gray-400" />
             </button>
           )}
         </div>
@@ -100,7 +101,7 @@ export default function BabyWikiPage() {
       <div className="px-4 mb-4">
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-4 pl-4 pr-8">
           {categories.map(cat => {
-            const CatIcon = Icons[cat.icon as keyof typeof Icons] as React.ComponentType<{ className?: string }>;
+            const CatIcon = getLucideIcon(cat.icon);
             const isActive = selectedCategory === cat.value;
 
             return (
@@ -163,7 +164,7 @@ export default function BabyWikiPage() {
             className="flex flex-col items-center justify-center py-16 text-center"
           >
             <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-              <Icons.SearchX className="w-8 h-8 text-gray-300" />
+              <SearchX className="w-8 h-8 text-gray-300" />
             </div>
             <p className="text-gray-500 font-medium mb-1">找不到相關文章</p>
             <p className="text-sm text-gray-400">

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import * as Icons from 'lucide-react';
+import { AlertTriangle, Calendar, Check, ChevronDown, Clock, GraduationCap, Heart, Lightbulb, ListChecks, MessageSquare, Moon, ShieldAlert, Users, X } from 'lucide-react';
+import { getLucideIcon } from '../../common/lucideIcons';
 import {
   sleepRequirements,
   sleepKnowledge,
@@ -27,7 +28,7 @@ export default function SleepTrainingPage() {
       <div className="relative z-10 bg-[#E8F4F8]/30 px-4 py-6 mb-6">
         <div className="flex items-center gap-2 mb-3">
           <div className="w-10 h-10 rounded-full bg-[#E8F4F8] flex items-center justify-center">
-            <Icons.Moon className="w-5 h-5 text-[#7EC8E3]" />
+            <Moon className="w-5 h-5 text-[#7EC8E3]" />
           </div>
           <h2 className="text-xl font-bold text-gray-800">寶寶睡眠全攻略</h2>
         </div>
@@ -39,7 +40,7 @@ export default function SleepTrainingPage() {
       {/* 睡眠時間參考表 */}
       <div className="px-4 mb-6">
         <div className="flex items-center gap-2 mb-4">
-          <Icons.Clock className="w-5 h-5 text-indigo-600" />
+          <Clock className="w-5 h-5 text-indigo-600" />
           <h3 className="font-semibold text-gray-800">睡眠時間參考表</h3>
         </div>
         <div className="card overflow-hidden p-0">
@@ -78,12 +79,12 @@ export default function SleepTrainingPage() {
       {/* 睡眠知識 */}
       <div className="px-4 mb-6">
         <div className="flex items-center gap-2 mb-4">
-          <Icons.Lightbulb className="w-5 h-5 text-yellow-600" />
+          <Lightbulb className="w-5 h-5 text-yellow-600" />
           <h3 className="font-semibold text-gray-800">睡眠狀況與相關知識</h3>
         </div>
         <div className="space-y-3">
           {sleepKnowledge.map((knowledge) => {
-            const IconComponent = Icons[knowledge.icon as keyof typeof Icons] as React.ComponentType<{ className?: string }>;
+            const IconComponent = getLucideIcon(knowledge.icon);
             return (
               <motion.div
                 key={knowledge.id}
@@ -102,7 +103,7 @@ export default function SleepTrainingPage() {
                 <ul className="space-y-2">
                   {knowledge.content.map((item, idx) => (
                     <li key={idx} className="flex gap-2 text-sm text-gray-700">
-                      <Icons.Check className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                      <Check className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
                       <span>{item}</span>
                     </li>
                   ))}
@@ -116,7 +117,7 @@ export default function SleepTrainingPage() {
       {/* 睡眠安全 - 重點強調 */}
       <div className="px-4 mb-6">
         <div className="flex items-center gap-2 mb-4">
-          <Icons.ShieldAlert className="w-5 h-5 text-red-600" />
+          <ShieldAlert className="w-5 h-5 text-red-600" />
           <h3 className="font-semibold text-gray-800">睡眠安全守則</h3>
           <span className="text-xs text-red-600 font-medium">(降低嬰兒猝死症風險)</span>
         </div>
@@ -125,7 +126,7 @@ export default function SleepTrainingPage() {
         <div className="card bg-red-50/50 border-2 border-red-200 mb-4">
           <div className="flex items-start gap-3">
             <div className="w-12 h-12 rounded-xl bg-red-500 flex items-center justify-center flex-shrink-0">
-              <Icons.AlertTriangle className="w-6 h-6 text-white" />
+              <AlertTriangle className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1">
               <h4 className="font-bold text-red-900 mb-1">重要提醒</h4>
@@ -158,9 +159,9 @@ export default function SleepTrainingPage() {
                   ${rule.type === 'do' ? 'bg-green-500' : 'bg-red-500'}
                 `}>
                   {rule.type === 'do' ? (
-                    <Icons.Check className="w-5 h-5 text-white" />
+                    <Check className="w-5 h-5 text-white" />
                   ) : (
-                    <Icons.X className="w-5 h-5 text-white" />
+                    <X className="w-5 h-5 text-white" />
                   )}
                 </div>
                 <div className="flex-1">
@@ -184,7 +185,7 @@ export default function SleepTrainingPage() {
       {/* 睡眠儀式 */}
       <div className="px-4 mb-6">
         <div className="flex items-center gap-2 mb-4">
-          <Icons.ListChecks className="w-5 h-5 text-purple-600" />
+          <ListChecks className="w-5 h-5 text-purple-600" />
           <h3 className="font-semibold text-gray-800">睡眠儀式清單</h3>
         </div>
         <div className="card bg-purple-50/50">
@@ -193,7 +194,7 @@ export default function SleepTrainingPage() {
           </p>
           <div className="space-y-3">
             {sleepRitualSteps.map((step) => {
-              const IconComponent = Icons[step.icon as keyof typeof Icons] as React.ComponentType<{ className?: string }>;
+              const IconComponent = getLucideIcon(step.icon);
               const isChecked = ritualChecklist[step.id] || false;
 
               return (
@@ -225,7 +226,7 @@ export default function SleepTrainingPage() {
                       }
                     `}
                   >
-                    {isChecked && <Icons.Check className="w-4 h-4 text-white" />}
+                    {isChecked && <Check className="w-4 h-4 text-white" />}
                   </button>
 
                   {/* Step Number */}
@@ -268,12 +269,12 @@ export default function SleepTrainingPage() {
       {/* 睡眠訓練技巧 */}
       <div className="px-4 mb-6">
         <div className="flex items-center gap-2 mb-4">
-          <Icons.GraduationCap className="w-5 h-5 text-indigo-600" />
+          <GraduationCap className="w-5 h-5 text-indigo-600" />
           <h3 className="font-semibold text-gray-800">睡眠訓練技巧</h3>
         </div>
         <div className="space-y-3">
           {sleepTrainingMethods.map((method) => {
-            const IconComponent = Icons[method.icon as keyof typeof Icons] as React.ComponentType<{ className?: string }>;
+            const IconComponent = getLucideIcon(method.icon);
             const isExpanded = selectedMethod === method.id;
 
             return (
@@ -298,7 +299,7 @@ export default function SleepTrainingPage() {
                         animate={{ rotate: isExpanded ? 180 : 0 }}
                         transition={{ duration: 0.2 }}
                       >
-                        <Icons.ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                        <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
                       </motion.div>
                     </div>
                     <p className="text-sm text-gray-600 leading-relaxed">
@@ -339,14 +340,14 @@ export default function SleepTrainingPage() {
       {/* 訓練建議 */}
       <div className="px-4">
         <div className="flex items-center gap-2 mb-4">
-          <Icons.MessageSquare className="w-5 h-5 text-blue-600" />
+          <MessageSquare className="w-5 h-5 text-blue-600" />
           <h3 className="font-semibold text-gray-800">訓練建議與提醒</h3>
         </div>
         <div className="space-y-3">
           <div className="card bg-[#E8F4F8]/50 border-2 border-[#7EC8E3]/30">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center flex-shrink-0">
-                <Icons.Calendar className="w-5 h-5 text-white" />
+                <Calendar className="w-5 h-5 text-white" />
               </div>
               <div>
                 <h5 className="font-semibold text-blue-900 mb-1">{trainingTips.timing.title}</h5>
@@ -358,7 +359,7 @@ export default function SleepTrainingPage() {
           <div className="card bg-[#E8F5E9]/50 border-2 border-[#81C784]/30">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-lg bg-green-500 flex items-center justify-center flex-shrink-0">
-                <Icons.Users className="w-5 h-5 text-white" />
+                <Users className="w-5 h-5 text-white" />
               </div>
               <div>
                 <h5 className="font-semibold text-green-900 mb-1">{trainingTips.consistency.title}</h5>
@@ -370,7 +371,7 @@ export default function SleepTrainingPage() {
           <div className="card bg-amber-50/50 border-2 border-amber-200/30">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center flex-shrink-0">
-                <Icons.Heart className="w-5 h-5 text-white" />
+                <Heart className="w-5 h-5 text-white" />
               </div>
               <div>
                 <h5 className="font-semibold text-amber-900 mb-1">{trainingTips.patience.title}</h5>

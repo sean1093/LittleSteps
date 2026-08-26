@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import * as Icons from 'lucide-react';
+import { AlertCircle, AlertTriangle, Apple, Ban, BookOpen, Calendar, Carrot, Check, CheckCircle2, ChefHat, ChevronDown, ChevronLeft, Clock, Dot, Hand, HelpCircle, Layers, Lightbulb, List, MessageCircle, PlayCircle, Shield, TestTube, TrendingUp, Utensils, UtensilsCrossed, X, XCircle } from 'lucide-react';
+import { getLucideIcon } from '../../common/lucideIcons';
 import { User } from 'firebase/auth';
 import {
   foodStages,
@@ -180,7 +181,7 @@ export default function ComplementaryFoodPage({
       <div className="relative z-10 bg-[#FFF3E0]/30 px-4 py-6 mb-6">
         <div className="flex items-center gap-2 mb-3">
           <div className="w-10 h-10 rounded-full bg-[#FFF3E0] flex items-center justify-center">
-            <Icons.UtensilsCrossed className="w-5 h-5 text-[#FF9B9B]" />
+            <UtensilsCrossed className="w-5 h-5 text-[#FF9B9B]" />
           </div>
           <h2 className="text-xl font-bold text-gray-800">副食品指南</h2>
         </div>
@@ -194,14 +195,14 @@ export default function ComplementaryFoodPage({
             onClick={() => setShowAllergyTest(true)}
             className="flex items-center gap-2 bg-purple-50 hover:bg-purple-100 text-purple-700 px-3 py-2 rounded-xl transition-colors text-sm font-medium"
           >
-            <Icons.TestTube className="w-4 h-4" />
+            <TestTube className="w-4 h-4" />
             <span>4x3 試敏法</span>
           </button>
           <button
             onClick={() => setShowFingerFood(true)}
             className="flex items-center gap-2 bg-orange-50 hover:bg-orange-100 text-orange-700 px-3 py-2 rounded-xl transition-colors text-sm font-medium"
           >
-            <Icons.Hand className="w-4 h-4" />
+            <Hand className="w-4 h-4" />
             <span>手指食物指南</span>
           </button>
         </div>
@@ -214,7 +215,7 @@ export default function ComplementaryFoodPage({
             onClick={() => setViewMode('home')}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
           >
-            <Icons.ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-5 h-5" />
             <span className="font-medium">返回主頁</span>
           </button>
         </div>
@@ -231,7 +232,7 @@ export default function ComplementaryFoodPage({
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-2xl bg-green-600 flex items-center justify-center">
-                <Icons.Apple className="w-6 h-6 text-white" />
+                <Apple className="w-6 h-6 text-white" />
               </div>
               <div>
                 <h3 className="text-lg font-bold text-gray-800">我的副食品追蹤</h3>
@@ -266,7 +267,7 @@ export default function ComplementaryFoodPage({
                 }}
                 className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-xl font-medium transition-colors shadow-soft"
               >
-                <Icons.List className="w-5 h-5" />
+                <List className="w-5 h-5" />
                 <span>我的食物清單</span>
               </motion.button>
               <motion.button
@@ -278,7 +279,7 @@ export default function ComplementaryFoodPage({
                 }}
                 className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-xl font-medium transition-colors shadow-soft"
               >
-                <Icons.Calendar className="w-5 h-5" />
+                <Calendar className="w-5 h-5" />
                 <span>4×3 追蹤</span>
               </motion.button>
             </div>
@@ -287,7 +288,7 @@ export default function ComplementaryFoodPage({
           {/* Knowledge Base Section */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <Icons.BookOpen className="w-5 h-5 text-primary" />
+              <BookOpen className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-bold text-gray-800">副食品知識庫</h3>
             </div>
 
@@ -300,7 +301,7 @@ export default function ComplementaryFoodPage({
                 className="card text-left bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 hover:border-blue-300 transition-all"
               >
                 <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center mb-3">
-                  <Icons.Lightbulb className="w-5 h-5 text-white" />
+                  <Lightbulb className="w-5 h-5 text-white" />
                 </div>
                 <h4 className="font-bold text-gray-800 mb-1">開始使用指南</h4>
                 <p className="text-xs text-gray-600">副食品添加原則與時機</p>
@@ -314,7 +315,7 @@ export default function ComplementaryFoodPage({
                 className="card text-left bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 hover:border-green-300 transition-all"
               >
                 <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center mb-3">
-                  <Icons.Layers className="w-5 h-5 text-white" />
+                  <Layers className="w-5 h-5 text-white" />
                 </div>
                 <h4 className="font-bold text-gray-800 mb-1">發展階段</h4>
                 <p className="text-xs text-gray-600">奶量與副食品轉換</p>
@@ -328,7 +329,7 @@ export default function ComplementaryFoodPage({
                 className="card text-left bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 hover:border-orange-300 transition-all"
               >
                 <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center mb-3">
-                  <Icons.UtensilsCrossed className="w-5 h-5 text-white" />
+                  <UtensilsCrossed className="w-5 h-5 text-white" />
                 </div>
                 <h4 className="font-bold text-gray-800 mb-1">菜單建議</h4>
                 <p className="text-xs text-gray-600">月份推薦與過敏等級</p>
@@ -342,7 +343,7 @@ export default function ComplementaryFoodPage({
                 className="card text-left bg-gradient-to-br from-red-50 to-rose-50 border border-red-200 hover:border-red-300 transition-all"
               >
                 <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center mb-3">
-                  <Icons.Shield className="w-5 h-5 text-white" />
+                  <Shield className="w-5 h-5 text-white" />
                 </div>
                 <h4 className="font-bold text-gray-800 mb-1">安全須知</h4>
                 <p className="text-xs text-gray-600">禁忌食物與注意事項</p>
@@ -358,12 +359,12 @@ export default function ComplementaryFoodPage({
           {/* Principles */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <Icons.Lightbulb className="w-5 h-5 text-primary" />
+              <Lightbulb className="w-5 h-5 text-primary" />
               <h3 className="font-semibold text-gray-800">副食品添加三大原則</h3>
             </div>
             <div className="space-y-3">
               {foodPrinciples.map((principle) => {
-                const IconComponent = Icons[principle.icon as keyof typeof Icons] as React.ComponentType<{ className?: string }>;
+                const IconComponent = getLucideIcon(principle.icon);
                 return (
                   <motion.div
                     key={principle.id}
@@ -391,14 +392,14 @@ export default function ComplementaryFoodPage({
           {/* Starting Signals */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <Icons.PlayCircle className="w-5 h-5 text-primary" />
+              <PlayCircle className="w-5 h-5 text-primary" />
               <h3 className="font-semibold text-gray-800">開始副食品的時機</h3>
             </div>
             <div className="card">
               <ul className="space-y-2">
                 {startingSignals.map((signal, idx) => (
                   <li key={idx} className="flex gap-2 text-sm text-gray-700">
-                    <Icons.Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                    <Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
                     <span>{signal}</span>
                   </li>
                 ))}
@@ -409,7 +410,7 @@ export default function ComplementaryFoodPage({
           {/* Feeding Methods */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <Icons.Utensils className="w-5 h-5 text-primary" />
+              <Utensils className="w-5 h-5 text-primary" />
               <h3 className="font-semibold text-gray-800">常見副食品餵食法</h3>
             </div>
             <div className="space-y-2">
@@ -425,7 +426,7 @@ export default function ComplementaryFoodPage({
           {/* Food Progression */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <Icons.TrendingUp className="w-5 h-5 text-primary" />
+              <TrendingUp className="w-5 h-5 text-primary" />
               <h3 className="font-semibold text-gray-800">質地與頻率轉變</h3>
             </div>
             <div className="space-y-3">
@@ -452,7 +453,7 @@ export default function ComplementaryFoodPage({
           {/* Feeding Principles */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <Icons.CheckCircle2 className="w-5 h-5 text-green-600" />
+              <CheckCircle2 className="w-5 h-5 text-green-600" />
               <h3 className="font-semibold text-gray-800">副食品添加基本原則</h3>
             </div>
             <div className="space-y-2">
@@ -468,14 +469,14 @@ export default function ComplementaryFoodPage({
           {/* Food QA */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <Icons.HelpCircle className="w-5 h-5 text-blue-600" />
+              <HelpCircle className="w-5 h-5 text-blue-600" />
               <h3 className="font-semibold text-gray-800">副食品常見問答</h3>
             </div>
             <div className="space-y-3">
               {foodQA.map((qa, idx) => (
                 <div key={idx} className="card bg-blue-50/50">
                   <h4 className="font-semibold text-gray-800 mb-2 flex items-start gap-2">
-                    <Icons.MessageCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <MessageCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
                     <span>{qa.question}</span>
                   </h4>
                   <p className="text-sm text-gray-700 ml-6">{qa.answer}</p>
@@ -490,7 +491,7 @@ export default function ComplementaryFoodPage({
       {viewMode === 'guide-stages' && (
         <div className="px-4">
           <div className="flex items-center gap-2 mb-4">
-            <Icons.Layers className="w-5 h-5 text-primary" />
+            <Layers className="w-5 h-5 text-primary" />
             <h3 className="font-semibold text-gray-800">副食品與奶量轉換三階段</h3>
           </div>
           <div className="space-y-3">
@@ -518,7 +519,7 @@ export default function ComplementaryFoodPage({
                           animate={{ rotate: isExpanded ? 180 : 0 }}
                           transition={{ duration: 0.2 }}
                         >
-                          <Icons.ChevronDown className="w-5 h-5 text-gray-400" />
+                          <ChevronDown className="w-5 h-5 text-gray-400" />
                         </motion.div>
                       </div>
 
@@ -534,7 +535,7 @@ export default function ComplementaryFoodPage({
                       </div>
 
                       <div className="flex items-center gap-2 text-xs text-gray-600">
-                        <Icons.Clock className="w-3 h-3" />
+                        <Clock className="w-3 h-3" />
                         <span>{stage.mealsPerDay}</span>
                         <span className="mx-1">•</span>
                         <span>{stage.texture}</span>
@@ -554,7 +555,7 @@ export default function ComplementaryFoodPage({
                               <ul className="space-y-1">
                                 {stage.keyPoints.map((point, idx) => (
                                   <li key={idx} className="text-sm text-gray-600 flex gap-2">
-                                    <Icons.Dot className="w-4 h-4 text-primary flex-shrink-0" />
+                                    <Dot className="w-4 h-4 text-primary flex-shrink-0" />
                                     <span>{point}</span>
                                   </li>
                                 ))}
@@ -564,7 +565,7 @@ export default function ComplementaryFoodPage({
                             {stage.warnings && stage.warnings.length > 0 && (
                               <div className="bg-red-50 border border-red-200 rounded-xl p-3">
                                 <div className="flex items-center gap-2 mb-2">
-                                  <Icons.AlertTriangle className="w-4 h-4 text-red-600" />
+                                  <AlertTriangle className="w-4 h-4 text-red-600" />
                                   <span className="text-sm font-medium text-red-800">特別注意</span>
                                 </div>
                                 <ul className="space-y-1">
@@ -592,7 +593,7 @@ export default function ComplementaryFoodPage({
           {/* Monthly Menu */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <Icons.BookOpen className="w-5 h-5 text-primary" />
+              <BookOpen className="w-5 h-5 text-primary" />
               <h3 className="font-semibold text-gray-800">試敏菜單與月份推薦</h3>
             </div>
             <div className="space-y-3">
@@ -606,7 +607,7 @@ export default function ComplementaryFoodPage({
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Icons.Calendar className="w-4 h-4 text-primary" />
+                      <Calendar className="w-4 h-4 text-primary" />
                     </div>
                     <div>
                       <h4 className="font-semibold text-gray-800">{menu.month}</h4>
@@ -631,7 +632,7 @@ export default function ComplementaryFoodPage({
           {/* Vegetable Allergy Levels */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <Icons.Carrot className="w-5 h-5 text-green-600" />
+              <Carrot className="w-5 h-5 text-green-600" />
               <h3 className="font-semibold text-gray-800">蔬菜類過敏等級</h3>
             </div>
             <div className="space-y-3">
@@ -658,7 +659,7 @@ export default function ComplementaryFoodPage({
           {/* Fruit Allergy Levels */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <Icons.Apple className="w-5 h-5 text-red-600" />
+              <Apple className="w-5 h-5 text-red-600" />
               <h3 className="font-semibold text-gray-800">水果類過敏等級</h3>
             </div>
             <div className="space-y-3">
@@ -685,7 +686,7 @@ export default function ComplementaryFoodPage({
           {/* Finger Food */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <Icons.Hand className="w-5 h-5 text-primary" />
+              <Hand className="w-5 h-5 text-primary" />
               <h3 className="font-semibold text-gray-800">手指食物推薦（7-8個月起）</h3>
             </div>
             <div className="space-y-2">
@@ -710,12 +711,12 @@ export default function ComplementaryFoodPage({
       {viewMode === 'guide-safety' && (
         <div className="px-4">
           <div className="flex items-center gap-2 mb-4">
-            <Icons.Shield className="w-5 h-5 text-primary" />
+            <Shield className="w-5 h-5 text-primary" />
             <h3 className="font-semibold text-gray-800">專業提醒與禁忌</h3>
           </div>
           <div className="space-y-3">
             {foodWarnings.map((warning) => {
-              const IconComponent = Icons[warning.icon as keyof typeof Icons] as React.ComponentType<{ className?: string }>;
+              const IconComponent = getLucideIcon(warning.icon);
               return (
                 <motion.div
                   key={warning.id}
@@ -742,7 +743,7 @@ export default function ComplementaryFoodPage({
           {/* Infant Food Restrictions */}
           <div className="mt-6">
             <div className="flex items-center gap-2 mb-4">
-              <Icons.Ban className="w-5 h-5 text-red-600" />
+              <Ban className="w-5 h-5 text-red-600" />
               <h3 className="font-semibold text-gray-800">嬰幼兒飲食禁忌</h3>
             </div>
             <div className="space-y-4">
@@ -753,7 +754,7 @@ export default function ComplementaryFoodPage({
                     {category.items.map((item, itemIdx) => (
                       <div key={itemIdx} className="card bg-red-50 border border-red-200">
                         <div className="flex items-start gap-2">
-                          <Icons.AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                          <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
                           <div className="flex-1">
                             <div className="font-medium text-red-900">{item.food}</div>
                             <div className="text-sm text-red-700 mt-1">
@@ -772,7 +773,7 @@ export default function ComplementaryFoodPage({
           {/* Cooking Tips */}
           <div className="mt-6">
             <div className="flex items-center gap-2 mb-4">
-              <Icons.ChefHat className="w-5 h-5 text-orange-600" />
+              <ChefHat className="w-5 h-5 text-orange-600" />
               <h3 className="font-semibold text-gray-800">烹調與保存技巧</h3>
             </div>
             <div className="space-y-4">
@@ -795,7 +796,7 @@ export default function ComplementaryFoodPage({
           {/* Food Handling Tips */}
           <div className="mt-6">
             <div className="flex items-center gap-2 mb-4">
-              <Icons.Lightbulb className="w-5 h-5 text-yellow-600" />
+              <Lightbulb className="w-5 h-5 text-yellow-600" />
               <h3 className="font-semibold text-gray-800">食材特殊處理</h3>
             </div>
             <div className="space-y-4">
@@ -807,9 +808,9 @@ export default function ComplementaryFoodPage({
                       <div key={itemIdx} className={`card ${item.canEat ? 'bg-green-50' : 'bg-red-50'}`}>
                         <div className="flex items-start gap-2">
                           {item.canEat ? (
-                            <Icons.CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                            <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
                           ) : (
-                            <Icons.XCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                            <XCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
                           )}
                           <div className="flex-1">
                             <div className="font-medium text-gray-800">{item.food}</div>
@@ -842,7 +843,7 @@ export default function ComplementaryFoodPage({
                   }
                 `}
               >
-                <Icons.List className="w-4 h-4" />
+                <List className="w-4 h-4" />
                 <span>我的食物清單</span>
                 {stats.total > 0 && (
                   <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
@@ -862,7 +863,7 @@ export default function ComplementaryFoodPage({
                   }
                 `}
               >
-                <Icons.Calendar className="w-4 h-4" />
+                <Calendar className="w-4 h-4" />
                 <span>4×3 追蹤</span>
               </button>
             </div>
@@ -921,14 +922,14 @@ export default function ComplementaryFoodPage({
             >
               <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Icons.TestTube className="w-6 h-6 text-purple-600" />
+                  <TestTube className="w-6 h-6 text-purple-600" />
                   <h3 className="text-lg font-bold text-gray-800">{allergyTestingMethod.name}</h3>
                 </div>
                 <button
                   onClick={() => setShowAllergyTest(false)}
                   className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
                 >
-                  <Icons.X className="w-5 h-5 text-gray-600" />
+                  <X className="w-5 h-5 text-gray-600" />
                 </button>
               </div>
 
@@ -953,7 +954,7 @@ export default function ComplementaryFoodPage({
 
                 <div className="bg-yellow-50 border-2 border-yellow-200 rounded-2xl p-4">
                   <div className="flex items-start gap-2">
-                    <Icons.Lightbulb className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+                    <Lightbulb className="w-5 h-5 text-yellow-600 flex-shrink-0" />
                     <p className="text-sm text-yellow-800 font-medium">{allergyTestingMethod.principle}</p>
                   </div>
                 </div>
@@ -983,14 +984,14 @@ export default function ComplementaryFoodPage({
             >
               <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Icons.Hand className="w-6 h-6 text-orange-600" />
+                  <Hand className="w-6 h-6 text-orange-600" />
                   <h3 className="text-lg font-bold text-gray-800">{fingerFoodPrinciples.title}</h3>
                 </div>
                 <button
                   onClick={() => setShowFingerFood(false)}
                   className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
                 >
-                  <Icons.X className="w-5 h-5 text-gray-600" />
+                  <X className="w-5 h-5 text-gray-600" />
                 </button>
               </div>
 
@@ -1003,7 +1004,7 @@ export default function ComplementaryFoodPage({
                   <div key={idx} className="card">
                     <div className="flex gap-3">
                       <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
-                        <Icons.CheckCircle2 className="w-5 h-5 text-orange-600" />
+                        <CheckCircle2 className="w-5 h-5 text-orange-600" />
                       </div>
                       <div className="flex-1">
                         <h4 className="font-semibold text-gray-800 mb-1">{principle.name}</h4>

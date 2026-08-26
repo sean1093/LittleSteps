@@ -1,6 +1,5 @@
 import { Category } from '../../../types';
-import * as Icons from 'lucide-react';
-
+import { getLucideIcon } from '../../../common/lucideIcons';
 interface CategoryFilterProps {
   categories: { value: Category; label: string; icon: string }[];
   selected: Category;
@@ -11,7 +10,7 @@ export default function CategoryFilter({ categories, selected, onChange }: Categ
   return (
     <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide pr-4">
       {categories.map((category) => {
-        const IconComponent = Icons[category.icon as keyof typeof Icons] as React.ComponentType<{ className?: string }>;
+        const IconComponent = getLucideIcon(category.icon);
 
         return (
           <button

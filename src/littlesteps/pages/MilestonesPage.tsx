@@ -66,16 +66,7 @@ export default function MilestonesPage({ progress, onToggleMilestone, user, onSi
                   登入後即可追蹤並記錄寶寶的成長里程碑，資料會自動同步到所有裝置
                 </p>
                 <button
-                  onClick={async () => {
-                    try {
-                      await onSignIn?.();
-                    } catch (error: any) {
-                      if (error?.code === 'auth/popup-closed-by-user') {
-                        return;
-                      }
-                      console.error('登入失敗:', error);
-                    }
-                  }}
+                  onClick={() => onSignIn?.()}
                   className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#7EC8E3] text-white text-sm font-medium hover:bg-[#6BB8D3] transition-colors"
                 >
                   <img

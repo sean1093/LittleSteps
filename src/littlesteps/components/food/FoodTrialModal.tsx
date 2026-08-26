@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import * as Icons from 'lucide-react';
+import { AlertTriangle, Apple, Calendar, Plus, X } from 'lucide-react';
 import { FoodTrialRecord, AllergyReaction, AllergyReactionType, AllergySeverity, FoodPreference } from '../../../types';
 
 interface FoodTrialModalProps {
@@ -139,7 +139,7 @@ export default function FoodTrialModal({
             {/* Header */}
             <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Icons.Apple className="w-6 h-6 text-primary" />
+                <Apple className="w-6 h-6 text-primary" />
                 <h3 className="text-lg font-bold text-gray-800">
                   {editingFood ? '編輯食物記錄' : '記錄新食物嘗試'}
                 </h3>
@@ -148,7 +148,7 @@ export default function FoodTrialModal({
                 onClick={onClose}
                 className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
               >
-                <Icons.X className="w-5 h-5 text-gray-600" />
+                <X className="w-5 h-5 text-gray-600" />
               </button>
             </div>
 
@@ -238,7 +238,7 @@ export default function FoodTrialModal({
               <div className="card bg-gray-50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Icons.AlertTriangle className={`w-5 h-5 ${hasAllergy ? 'text-red-600' : 'text-gray-400'}`} />
+                    <AlertTriangle className={`w-5 h-5 ${hasAllergy ? 'text-red-600' : 'text-gray-400'}`} />
                     <span className="font-medium text-gray-800">有過敏反應</span>
                   </div>
                   <button
@@ -295,7 +295,7 @@ export default function FoodTrialModal({
                           onClick={() => removeAllergyReaction(index)}
                           className="flex-shrink-0 w-7 h-7 rounded-full hover:bg-red-200 flex items-center justify-center transition-colors"
                         >
-                          <Icons.X className="w-4 h-4 text-red-600" />
+                          <X className="w-4 h-4 text-red-600" />
                         </button>
                       </div>
                     </div>
@@ -351,7 +351,7 @@ export default function FoodTrialModal({
                         onClick={addAllergyReaction}
                         className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition-colors"
                       >
-                        <Icons.Plus className="w-4 h-4" />
+                        <Plus className="w-4 h-4" />
                         新增反應記錄
                       </button>
                     </div>
@@ -366,7 +366,7 @@ export default function FoodTrialModal({
                 </label>
                 <div className="card bg-purple-50 border border-purple-200">
                   <div className="flex items-center gap-2 mb-2">
-                    <Icons.Calendar className="w-4 h-4 text-purple-600" />
+                    <Calendar className="w-4 h-4 text-purple-600" />
                     <span className="text-sm text-purple-800">已記錄 {trialDates.length} 次嘗試</span>
                   </div>
                   <div className="flex flex-wrap gap-2 mb-3">
@@ -381,7 +381,7 @@ export default function FoodTrialModal({
                     onClick={addTrialDate}
                     className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-purple-500 text-white text-sm font-medium hover:bg-purple-600 transition-colors"
                   >
-                    <Icons.Plus className="w-4 h-4" />
+                    <Plus className="w-4 h-4" />
                     記錄今天嘗試
                   </button>
                 </div>

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import * as Icons from 'lucide-react';
+import { CheckCircle2, Clock, Info, Plus } from 'lucide-react';
 import { FoodTrialRecord } from '../../../types';
 
 interface FourByThreeTrackerProps {
@@ -86,7 +86,7 @@ export default function FourByThreeTracker({
       <div className="card bg-purple-50/50 border border-purple-200/30">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center flex-shrink-0">
-            <Icons.Info className="w-5 h-5 text-white" />
+            <Info className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1">
             <h4 className="font-semibold text-purple-900 mb-1">4×3 試敏法則</h4>
@@ -106,7 +106,7 @@ export default function FourByThreeTracker({
       {/* No Active Tracking */}
       {activeFoods.length === 0 && (
         <div className="card text-center py-12">
-          <Icons.CheckCircle2 className="w-16 h-16 text-green-300 mx-auto mb-4" />
+          <CheckCircle2 className="w-16 h-16 text-green-300 mx-auto mb-4" />
           <p className="text-gray-500 text-sm">目前沒有正在追蹤的食物</p>
           <p className="text-gray-400 text-xs mt-1">新增食物記錄後會在這裡顯示追蹤進度</p>
         </div>
@@ -204,7 +204,7 @@ export default function FourByThreeTracker({
                   {/* Next Trial Info */}
                   {!canTry && (
                     <div className="flex items-center gap-1 text-xs text-gray-600">
-                      <Icons.Clock className="w-3 h-3" />
+                      <Clock className="w-3 h-3" />
                       <span>下次嘗試：{getNextTrialDate(food)}</span>
                     </div>
                   )}
@@ -218,7 +218,7 @@ export default function FourByThreeTracker({
                       }}
                       className="mt-2 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-green-500 text-white text-sm font-medium hover:bg-green-600 transition-colors"
                     >
-                      <Icons.Plus className="w-4 h-4" />
+                      <Plus className="w-4 h-4" />
                       記錄今天嘗試
                     </button>
                   )}
@@ -233,7 +233,7 @@ export default function FourByThreeTracker({
       {foodTrials.length > activeFoods.length && (
         <div className="card bg-gray-50">
           <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Icons.CheckCircle2 className="w-4 h-4 text-green-600" />
+            <CheckCircle2 className="w-4 h-4 text-green-600" />
             <span>
               {foodTrials.length - activeFoods.length} 種食物已完成 4×3 試敏追蹤
             </span>

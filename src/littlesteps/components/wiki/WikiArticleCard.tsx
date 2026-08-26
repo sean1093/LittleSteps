@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import * as Icons from 'lucide-react';
+import { AlertCircle, AlertTriangle, ChevronDown, HelpCircle, Lightbulb, Link2 } from 'lucide-react';
+import { getLucideIcon } from '../../../common/lucideIcons';
 import { BabyWikiArticle, WikiCategory } from '../../../types';
 import { wikiCategoryLabels } from '../../data/babyWiki';
 
@@ -20,7 +21,7 @@ const categoryColors: Record<WikiCategory, { bg: string; text: string; pill: str
 };
 
 export default function WikiArticleCard({ article, isExpanded, onToggle }: WikiArticleCardProps) {
-  const IconComponent = Icons[article.icon as keyof typeof Icons] as React.ComponentType<{ className?: string }>;
+  const IconComponent = getLucideIcon(article.icon);
   const colors = categoryColors[article.category];
 
   return (
@@ -60,7 +61,7 @@ export default function WikiArticleCard({ article, isExpanded, onToggle }: WikiA
             transition={{ duration: 0.2 }}
             className="flex-shrink-0 mt-1"
           >
-            <Icons.ChevronDown className="w-5 h-5 text-gray-400" />
+            <ChevronDown className="w-5 h-5 text-gray-400" />
           </motion.div>
         </div>
       </div>
@@ -79,7 +80,7 @@ export default function WikiArticleCard({ article, isExpanded, onToggle }: WikiA
               {/* Causes */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <Icons.HelpCircle className="w-4 h-4 text-gray-500" />
+                  <HelpCircle className="w-4 h-4 text-gray-500" />
                   <h4 className="font-semibold text-gray-700 text-sm">可能原因</h4>
                 </div>
                 <ul className="space-y-1.5">
@@ -95,7 +96,7 @@ export default function WikiArticleCard({ article, isExpanded, onToggle }: WikiA
               {/* Solutions */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <Icons.Lightbulb className="w-4 h-4 text-amber-500" />
+                  <Lightbulb className="w-4 h-4 text-amber-500" />
                   <h4 className="font-semibold text-gray-700 text-sm">處理方式</h4>
                 </div>
                 <ol className="space-y-3">
@@ -118,13 +119,13 @@ export default function WikiArticleCard({ article, isExpanded, onToggle }: WikiA
               {/* Warning Signals */}
               <div className="bg-red-50/60 rounded-xl p-3 border border-red-100">
                 <div className="flex items-center gap-2 mb-2">
-                  <Icons.AlertTriangle className="w-4 h-4 text-red-500" />
+                  <AlertTriangle className="w-4 h-4 text-red-500" />
                   <h4 className="font-semibold text-red-700 text-sm">就醫警訊</h4>
                 </div>
                 <ul className="space-y-1.5">
                   {article.warningSignals.map((signal, idx) => (
                     <li key={idx} className="flex gap-2 text-sm text-red-700">
-                      <Icons.AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-red-400" />
+                      <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-red-400" />
                       <span>{signal}</span>
                     </li>
                   ))}
@@ -134,7 +135,7 @@ export default function WikiArticleCard({ article, isExpanded, onToggle }: WikiA
               {/* Related Articles hint */}
               {article.relatedArticleIds.length > 0 && (
                 <div className="flex items-center gap-2 text-xs text-gray-400 pt-1">
-                  <Icons.Link2 className="w-3.5 h-3.5" />
+                  <Link2 className="w-3.5 h-3.5" />
                   <span>有 {article.relatedArticleIds.length} 篇相關文章</span>
                 </div>
               )}
