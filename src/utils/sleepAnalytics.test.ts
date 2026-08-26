@@ -82,7 +82,7 @@ describe('sleepAnalytics', () => {
         createSleepLog(today.toISOString(), 90)
       ];
 
-      const recentLogs = getSleepLogsInRange(logs, 1);
+      const recentLogs = getSleepLogsInRange(logs, 1, now);
       expect(recentLogs).toHaveLength(1);
       expect(recentLogs[0].timestamp).toBe(today.toISOString());
     });
@@ -101,7 +101,7 @@ describe('sleepAnalytics', () => {
       const oldLog = new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000);
       logs.push(createSleepLog(oldLog.toISOString(), 120));
 
-      const recentLogs = getSleepLogsInRange(logs, 7);
+      const recentLogs = getSleepLogsInRange(logs, 7, now);
       expect(recentLogs).toHaveLength(7);
     });
   });
