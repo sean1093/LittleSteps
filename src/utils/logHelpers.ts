@@ -73,20 +73,22 @@ export function calculateDailySummary(logs: DailyLog[], date?: string): DailySum
 
   dailyLogs.forEach(log => {
     switch (log.type) {
-      case 'feeding':
+      case 'feeding': {
         summary.feedingCount++;
         const feedingData = log.data as FeedingData;
         summary.totalFeedingAmount += feedingData.amount || 0;
         break;
+      }
 
-      case 'sleep':
+      case 'sleep': {
         summary.sleepCount++;
         const sleepData = log.data as SleepData;
         const duration = sleepData.duration || calculateSleepDuration(sleepData) || 0;
         summary.totalSleepDuration += duration;
         break;
+      }
 
-      case 'diaper':
+      case 'diaper': {
         summary.diaperCount++;
         const diaperData = log.data as DiaperData;
         if (diaperData.type === 'poop' || diaperData.type === 'both') {
@@ -96,6 +98,7 @@ export function calculateDailySummary(logs: DailyLog[], date?: string): DailySum
           summary.peeCount++;
         }
         break;
+      }
     }
   });
 
