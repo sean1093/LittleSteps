@@ -1,39 +1,48 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { Menu, Home, Baby } from 'lucide-react';
-import { MilestoneProgress, VaccineProgress, ChildProfile, Gender } from './types'; // Import types
 import { Page, LittleStepsPage } from './types/routes'; // Import route types
-import { useLocalStorage } from './common/hooks/useLocalStorage';
-import { logPageView, logMilestoneToggle, logVaccineToggle, logChildProfileAction } from './lib/firebase';
+import { logPageView } from './lib/firebase';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { useUserChildren } from './common/hooks/useUserChildren';
-import { useFirebaseChildren } from './common/hooks/useFirebaseChildren';
 import { useDailyLogs } from './littlesteps/hooks/useDailyLogs';
+import { useChildStore } from './common/hooks/useChildStore';
 import Sidebar from './common/components/Sidebar';
 import MainLandingPage from './common/pages/MainLandingPage';
-import LandingPage from './common/pages/LandingPage';
-import DashboardPage from './littlesteps/pages/DashboardPage';
-import MilestonesPage from './littlesteps/pages/MilestonesPage';
-import CareGuidePage from './littlesteps/pages/CareGuidePage';
-import VaccineTrackingPage from './littlesteps/pages/VaccineTrackingPage';
-import ComplementaryFoodPage from './littlesteps/pages/ComplementaryFoodPage';
-import GrowthChartsPage from './littlesteps/pages/GrowthChartsPage';
-import SleepTrainingPage from './littlesteps/pages/SleepTrainingPage';
-import DailyLogPage from './littlesteps/pages/DailyLogPage';
-import SleepAnalysisPage from './littlesteps/pages/SleepAnalysisPage';
-import LittleBloomPage from './littlebloom/pages/LittleBloomPage';
-import LittleBloomWikiPage from './littlebloom/pages/LittleBloomWikiPage';
-import BabyOasisPage from './babyoasis/pages/BabyOasisPage';
-import BabyWikiPage from './littlesteps/pages/BabyWikiPage';
-import ClinicSummaryPage from './littlesteps/pages/ClinicSummaryPage';
-import ReportPage from './littlesteps/pages/ReportPage';
+const LandingPage = lazy(() => import('./common/pages/LandingPage'));
+const DashboardPage = lazy(() => import('./littlesteps/pages/DashboardPage'));
+const MilestonesPage = lazy(() => import('./littlesteps/pages/MilestonesPage'));
+const CareGuidePage = lazy(() => import('./littlesteps/pages/CareGuidePage'));
+const VaccineTrackingPage = lazy(() => import('./littlesteps/pages/VaccineTrackingPage'));
+const ComplementaryFoodPage = lazy(() => import('./littlesteps/pages/ComplementaryFoodPage'));
+const GrowthChartsPage = lazy(() => import('./littlesteps/pages/GrowthChartsPage'));
+const SleepTrainingPage = lazy(() => import('./littlesteps/pages/SleepTrainingPage'));
+const DailyLogPage = lazy(() => import('./littlesteps/pages/DailyLogPage'));
+const SleepAnalysisPage = lazy(() => import('./littlesteps/pages/SleepAnalysisPage'));
+const LittleBloomPage = lazy(() => import('./littlebloom/pages/LittleBloomPage'));
+const LittleBloomWikiPage = lazy(() => import('./littlebloom/pages/LittleBloomWikiPage'));
+const BabyOasisPage = lazy(() => import('./babyoasis/pages/BabyOasisPage'));
+const BabyWikiPage = lazy(() => import('./littlesteps/pages/BabyWikiPage'));
+const ClinicSummaryPage = lazy(() => import('./littlesteps/pages/ClinicSummaryPage'));
+const ReportPage = lazy(() => import('./littlesteps/pages/ReportPage'));
 import FeedbackButton from './common/components/FeedbackButton';
 
 function AppContent() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
 
-  // Firebase hooks (for logged in users)
-  const { children: firebaseChildProfiles, currentChildId: firebaseCurrentChildId, loading: childrenLoading } = useUserChildren(user);
-  const firebaseChildren = useFirebaseChildren(user?.uid || null);
+  const {
+    childProfiles,
+    currentChildId,
+    currentChild,
+    currentChildMilestoneProgress,
+    currentChildVaccineProgress,
+    childrenLoading,
+    toggleMilestone,
+    toggleVaccineDose,
+    addChild,
+    joinChild,
+    updateChild,
+    deleteChild,
+    setCurrentChild: handleSetCurrentChild,
+  } = useChildStore(user);
 
   // Parse initial page from URL hash
   const getPageFromHash = (): Page => {
@@ -63,62 +72,10 @@ function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>(getPageFromHash());
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Manage multiple child profiles (dual mode: Firebase vs LocalStorage)
-  const [localChildProfiles, setLocalChildProfiles] = useLocalStorage<ChildProfile[]>("child-profiles", []);
-  const [localCurrentChildId, setLocalCurrentChildId] = useLocalStorage<string | null>("current-child-id", null);
-
-  // 根據登入狀態決定使用哪個資料源
-  const childProfiles = user
-    ? firebaseChildProfiles
-    : localChildProfiles;
-
-  const currentChildId = user
-    ? firebaseCurrentChildId
-    : localCurrentChildId;
-
-  // Derive current child based on currentChildId
-  const currentChild = useMemo(() => {
-    return childProfiles.find(child => child.id === currentChildId);
-  }, [childProfiles, currentChildId]);
 
   // Get daily logs for current child
   const { logs: dailyLogs } = useDailyLogs(currentChildId, user);
 
-  // Derive current child's milestone progress
-  const currentChildMilestoneProgress: MilestoneProgress = useMemo(() => {
-    return currentChild ? (currentChild.milestoneProgress || {}) : {};
-  }, [currentChild]);
-
-  // Derive current child's vaccine progress
-  const currentChildVaccineProgress: VaccineProgress = useMemo(() => {
-    return currentChild ? (currentChild.vaccineProgress || {}) : {};
-  }, [currentChild]);
-
-  // LocalStorage mode: Auto-select first child if none is selected
-  useEffect(() => {
-    if (!user) {
-      if (localChildProfiles.length > 0 && !currentChild) {
-        setLocalCurrentChildId(localChildProfiles[0].id);
-      } else if (localChildProfiles.length === 0 && localCurrentChildId !== null) {
-        setLocalCurrentChildId(null);
-      }
-    }
-  }, [user, localChildProfiles, currentChild, localCurrentChildId]);
-
-  // LocalStorage mode: Migrate existing profiles to include vaccineProgress if missing
-  useEffect(() => {
-    if (!user) {
-      const needsMigration = localChildProfiles.some(profile => !profile.vaccineProgress);
-      if (needsMigration) {
-        setLocalChildProfiles(prevProfiles =>
-          prevProfiles.map(profile => ({
-            ...profile,
-            vaccineProgress: profile.vaccineProgress || {}
-          }))
-        );
-      }
-    }
-  }, [user, localChildProfiles]);
 
   // Auto-redirect to dashboard when user logs in or adds first baby
   useEffect(() => {
@@ -177,97 +134,6 @@ function AppContent() {
     logPageView(page);
   };
 
-  const toggleMilestone = async (id: string) => {
-    if (!currentChild) return; // Cannot toggle if no child is selected
-
-    if (user) {
-      // Firebase 模式
-      try {
-        const isAchieved = !currentChildMilestoneProgress[id]?.achieved;
-        await firebaseChildren.updateMilestoneProgress(currentChild.id, id, isAchieved);
-        logMilestoneToggle(id, isAchieved);
-      } catch (error: any) {
-        console.error('更新里程碑失敗:', error);
-      }
-    } else {
-      // LocalStorage 模式
-      setLocalChildProfiles(prevProfiles => {
-        return prevProfiles.map(profile => {
-          if (profile.id === currentChild.id) {
-            // 從最新的 profile 資料計算 isAchieved，避免 race condition
-            const isAchieved = !profile.milestoneProgress?.[id]?.achieved;
-            const newProgressEntry = isAchieved
-              ? { achieved: true, achievedDate: new Date().toISOString().split('T')[0] }
-              : { achieved: false, achievedDate: undefined };
-
-            return {
-              ...profile,
-              milestoneProgress: {
-                ...profile.milestoneProgress,
-                [id]: newProgressEntry,
-              },
-            };
-          }
-          return profile;
-        });
-      });
-      // 使用最新狀態記錄 log
-      const isAchieved = !currentChildMilestoneProgress[id]?.achieved;
-      logMilestoneToggle(id, isAchieved);
-    }
-  };
-
-  const toggleVaccineDose = async (vaccineId: string, doseNumber: number, customDate?: string) => {
-    if (!currentChild) return; // Cannot toggle if no child is selected
-
-    if (user) {
-      // Firebase 模式
-      try {
-        const currentVaccine = currentChildVaccineProgress[vaccineId] || { doses: {} };
-        const currentDose = currentVaccine.doses[doseNumber];
-        const isAdministered = !currentDose?.administered;
-        await firebaseChildren.updateVaccineProgress(currentChild.id, vaccineId, doseNumber, isAdministered, customDate);
-        logVaccineToggle(vaccineId, doseNumber, isAdministered);
-      } catch (error: any) {
-        console.error('更新疫苗記錄失敗:', error);
-      }
-    } else {
-      // LocalStorage 模式
-      setLocalChildProfiles(prevProfiles => {
-        return prevProfiles.map(profile => {
-          if (profile.id === currentChild.id) {
-            // 從最新的 profile 資料計算 isAdministered，避免 race condition
-            const profileVaccine = profile.vaccineProgress?.[vaccineId] || { doses: {} };
-            const profileDose = profileVaccine.doses[doseNumber];
-            const isAdministered = !profileDose?.administered;
-
-            const newDoseEntry = isAdministered
-              ? { administered: true, administeredDate: customDate || new Date().toISOString().split('T')[0] }
-              : { administered: false, administeredDate: undefined };
-
-            return {
-              ...profile,
-              vaccineProgress: {
-                ...profile.vaccineProgress,
-                [vaccineId]: {
-                  doses: {
-                    ...profileVaccine.doses,
-                    [doseNumber]: newDoseEntry,
-                  },
-                },
-              },
-            };
-          }
-          return profile;
-        });
-      });
-      // 使用最新狀態記錄 log
-      const currentVaccine = currentChildVaccineProgress[vaccineId] || { doses: {} };
-      const currentDose = currentVaccine.doses[doseNumber];
-      const isAdministered = !currentDose?.administered;
-      logVaccineToggle(vaccineId, doseNumber, isAdministered);
-    }
-  };
 
   const getPageTitle = () => {
     // LittleBloom has its own title
@@ -330,117 +196,6 @@ function AppContent() {
     ? false
     : (currentPage !== 'littlesteps' || (user && childProfiles.length > 0));
 
-  // Child Management Functions
-  const addChild = async (name: string, birthday: string, gender?: Gender) => {
-    // 檢查子女數量限制（免費版最多 2 個）
-    if (childProfiles.length >= 2) {
-      alert('免費版最多只能新增 2 個寶寶，請升級付費會員');
-      return;
-    }
-
-    if (user) {
-      // Firebase 模式
-      try {
-        await firebaseChildren.addChild(name, birthday, childProfiles.length, gender);
-        logChildProfileAction('create');
-      } catch (error: any) {
-        console.error('新增寶寶失敗:', error);
-        alert(error.message || '新增寶寶失敗，請稍後再試');
-      }
-    } else {
-      // LocalStorage 模式
-      const newChild: ChildProfile = {
-        id: Date.now().toString(),
-        name,
-        birthday,
-        gender,
-        milestoneProgress: {},
-        vaccineProgress: {},
-        createdAt: new Date().toISOString(),
-        createdBy: 'local',
-      };
-      setLocalChildProfiles(prev => [...prev, newChild]);
-      setLocalCurrentChildId(newChild.id);
-      logChildProfileAction('create');
-    }
-  };
-
-  const joinChild = async (childUuid: string) => {
-    // 檢查子女數量限制（免費版最多 2 個）
-    if (childProfiles.length >= 2) {
-      alert('免費版最多只能新增 2 個寶寶，請升級付費會員');
-      return;
-    }
-
-    if (user) {
-      // Firebase 模式
-      try {
-        await firebaseChildren.joinChild(childUuid, childProfiles.length);
-        logChildProfileAction('create'); // Log as create since we're creating a reference to the child
-      } catch (error: any) {
-        console.error('加入寶寶失敗:', error);
-        alert(error.message || '加入寶寶失敗，請確認代碼是否正確');
-      }
-    } else {
-      // LocalStorage 模式不支援 join
-      alert('請先登入才能加入家人的寶寶資料');
-    }
-  };
-
-  const updateChild = async (id: string, name: string, birthday: string, gender?: Gender) => {
-    if (user) {
-      // Firebase 模式
-      try {
-        await firebaseChildren.updateChild(id, name, birthday, gender);
-        logChildProfileAction('update');
-      } catch (error: any) {
-        console.error('更新寶寶資料失敗:', error);
-        alert(error.message || '更新失敗，請稍後再試');
-      }
-    } else {
-      // LocalStorage 模式
-      setLocalChildProfiles(prev =>
-        prev.map(child => (child.id === id ? { ...child, name, birthday, gender } : child))
-      );
-      logChildProfileAction('update');
-    }
-  };
-
-  const deleteChild = async (id: string) => {
-    if (user) {
-      // Firebase 模式
-      try {
-        await firebaseChildren.deleteChild(id);
-        logChildProfileAction('delete');
-      } catch (error: any) {
-        console.error('刪除寶寶失敗:', error);
-        alert(error.message || '刪除失敗，請稍後再試');
-      }
-    } else {
-      // LocalStorage 模式
-      setLocalChildProfiles(prev => prev.filter(child => child.id !== id));
-      if (localCurrentChildId === id) {
-        setLocalCurrentChildId(localChildProfiles[0]?.id || null);
-      }
-      logChildProfileAction('delete');
-    }
-  };
-
-  const handleSetCurrentChild = async (id: string) => {
-    if (user) {
-      // Firebase 模式
-      try {
-        await firebaseChildren.setCurrentChild(id);
-        logChildProfileAction('switch');
-      } catch (error: any) {
-        console.error('切換寶寶失敗:', error);
-      }
-    } else {
-      // LocalStorage 模式
-      setLocalCurrentChildId(id);
-      logChildProfileAction('switch');
-    }
-  };
 
   // Show loading state while auth or children data is loading
   if (loading || (user && childrenLoading)) {
@@ -502,6 +257,13 @@ function AppContent() {
 
       {/* Main Content */}
       <main className={showHeader ? "pb-6" : ""}>
+        <Suspense
+          fallback={
+            <div className="min-h-[50vh] flex items-center justify-center">
+              <Baby className="w-12 h-12 text-primary animate-pulse" />
+            </div>
+          }
+        >
         {/* Main Landing Page */}
         {currentPage === 'home' && (
           <MainLandingPage onNavigate={navigateToPage} />
@@ -597,12 +359,14 @@ function AppContent() {
           <LittleBloomPage
             currentChild={currentChild}
             user={user}
+            onSignIn={signInWithGoogle}
           />
         )}
         {currentPage === 'littlebloom/wiki' && <LittleBloomWikiPage />}
 
         {/* BabyOasis Route */}
         {currentPage === 'babyoasis' && <BabyOasisPage />}
+        </Suspense>
       </main>
 
       {/* Feedback Button */}

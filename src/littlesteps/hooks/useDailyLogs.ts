@@ -1,8 +1,6 @@
-import { useState, useEffect } from 'react';
-import { ref, onValue } from 'firebase/database';
-import { database } from '../../lib/firebase';
 import { DailyLog } from '../../types';
 import { User } from 'firebase/auth';
+import { useDualModeCollection } from '../../common/hooks/useDualModeCollection';
 
 /**
  * 管理寶寶日誌資料的 Hook
@@ -12,58 +10,17 @@ export function useDailyLogs(
   childId: string | null,
   user: User | null
 ) {
-  const [logs, setLogs] = useState<DailyLog[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!childId) {
-      setLogs([]);
-      setLoading(false);
-      return;
-    }
-
-    if (user) {
-      // Firebase 模式: 即時監聽
-      setLoading(true);
-
-      const logsRef = ref(database, `children/${childId}/dailyLogs`);
-      const unsubscribe = onValue(logsRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          // Convert object to array
-          const logsArray = Object.values(data) as DailyLog[];
-          setLogs(logsArray);
-        } else {
-          setLogs([]);
-        }
-        setLoading(false);
-      }, (error) => {
-        console.error('Error fetching daily logs:', error);
-        setLogs([]);
-        setLoading(false);
-      });
-
-      return () => unsubscribe();
-    } else {
-      // LocalStorage 模式
-      const storageKey = `daily-logs-${childId}`;
-      const storedLogs = localStorage.getItem(storageKey);
-
-      if (storedLogs) {
-        try {
-          const parsedLogs = JSON.parse(storedLogs) as DailyLog[];
-          setLogs(parsedLogs);
-        } catch (error) {
-          console.error('Error parsing stored logs:', error);
-          setLogs([]);
-        }
-      } else {
-        setLogs([]);
-      }
-
-      setLoading(false);
-    }
-  }, [childId, user]);
+  const { data: logs, setData: setLogs, loading } = useDualModeCollection<DailyLog[]>(
+    childId,
+    user,
+    {
+      firebasePath: `children/${childId}/dailyLogs`,
+      storageKey: `daily-logs-${childId}`,
+      empty: [],
+      fromFirebase: (data) => (data ? (Object.values(data) as DailyLog[]) : []),
+      errorLabel: 'Error fetching daily logs:',
+    },
+  );
 
   /**
    * 新增日誌

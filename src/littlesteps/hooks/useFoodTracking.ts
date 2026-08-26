@@ -1,6 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { ref, onValue } from 'firebase/database';
-import { database } from '../../lib/firebase';
+import { useMemo } from 'react';
+import { useDualModeCollection } from '../../common/hooks/useDualModeCollection';
 import { FoodTrialRecord, FoodTrackingProgress } from '../../types';
 import { User } from 'firebase/auth';
 
@@ -12,56 +11,17 @@ export function useFoodTracking(
   childId: string | null,
   user: User | null
 ) {
-  const [foodProgress, setFoodProgress] = useState<FoodTrackingProgress>({});
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!childId) {
-      setFoodProgress({});
-      setLoading(false);
-      return;
-    }
-
-    if (user) {
-      // Firebase 模式: 即時監聽
-      setLoading(true);
-
-      const foodRef = ref(database, `children/${childId}/foodTrackingProgress`);
-      const unsubscribe = onValue(foodRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          setFoodProgress(data as FoodTrackingProgress);
-        } else {
-          setFoodProgress({});
-        }
-        setLoading(false);
-      }, (error) => {
-        console.error('Error fetching food tracking data:', error);
-        setFoodProgress({});
-        setLoading(false);
-      });
-
-      return () => unsubscribe();
-    } else {
-      // LocalStorage 模式
-      const storageKey = `food-tracking-${childId}`;
-      const storedProgress = localStorage.getItem(storageKey);
-
-      if (storedProgress) {
-        try {
-          const parsedProgress = JSON.parse(storedProgress) as FoodTrackingProgress;
-          setFoodProgress(parsedProgress);
-        } catch (error) {
-          console.error('Error parsing stored food tracking data:', error);
-          setFoodProgress({});
-        }
-      } else {
-        setFoodProgress({});
-      }
-
-      setLoading(false);
-    }
-  }, [childId, user]);
+  const { data: foodProgress, setData: setFoodProgress, loading } = useDualModeCollection<FoodTrackingProgress>(
+    childId,
+    user,
+    {
+      firebasePath: `children/${childId}/foodTrackingProgress`,
+      storageKey: `food-tracking-${childId}`,
+      empty: {},
+      fromFirebase: (data) => (data ? (data as FoodTrackingProgress) : {}),
+      errorLabel: 'Error fetching food tracking data:',
+    },
+  );
 
   /**
    * 將 FoodTrackingProgress 物件轉換為陣列，方便排序和顯示

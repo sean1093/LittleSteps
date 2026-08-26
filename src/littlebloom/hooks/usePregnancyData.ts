@@ -1,48 +1,23 @@
-import { useState, useEffect } from 'react';
-import { ref, onValue } from 'firebase/database';
-import { database } from '../../lib/firebase';
-import { User } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 import { PregnancyData } from '../../types';
+import { useDualModeCollection } from '../../common/hooks/useDualModeCollection';
 
 /**
- * Hook for managing pregnancy data
+ * Hook for reading pregnancy data (Firebase for authenticated users,
+ * LocalStorage for guests). Read-only for now — no write path exists yet.
  */
-export function usePregnancyData(
-  childId: string | null,
-  user: User | null
-) {
-  const [pregnancyData, setPregnancyData] = useState<PregnancyData | null>(null);
-  const [loading, setLoading] = useState(true);
+export function usePregnancyData(childId: string | null, user: User | null) {
+  const { data: pregnancyData, loading } = useDualModeCollection<PregnancyData | null>(
+    childId,
+    user,
+    {
+      firebasePath: `children/${childId}/pregnancyData`,
+      storageKey: `pregnancy-${childId}`,
+      empty: null,
+      fromFirebase: (data) => (data as PregnancyData) || null,
+      errorLabel: 'Error fetching pregnancy data:',
+    },
+  );
 
-  useEffect(() => {
-    if (!childId) {
-      setPregnancyData(null);
-      setLoading(false);
-      return;
-    }
-
-    if (user) {
-      setLoading(true);
-      const pregnancyRef = ref(database, `children/${childId}/pregnancyData`);
-      const unsubscribe = onValue(pregnancyRef, (snapshot) => {
-        const data = snapshot.val();
-        setPregnancyData(data || null);
-        setLoading(false);
-      });
-
-      return () => unsubscribe();
-    } else {
-      // LocalStorage implementation for guest mode (simplified for now)
-      const stored = localStorage.getItem(`pregnancy-${childId}`);
-      if (stored) {
-        setPregnancyData(JSON.parse(stored));
-      }
-      setLoading(false);
-    }
-  }, [childId, user]);
-
-  return {
-    pregnancyData,
-    loading
-  };
+  return { pregnancyData, loading };
 }
