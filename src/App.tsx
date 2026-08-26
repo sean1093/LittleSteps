@@ -191,8 +191,11 @@ function AppContent() {
     return title;
   };
 
-  // Show header for all pages except main home, littlesteps home (unless user is logged in with babies, then show Dashboard with header), LittleBloom, and BabyOasis
-  const showHeader = currentPage === 'home' || currentPage === 'littlebloom' || currentPage === 'babyoasis'
+  // LittleBloom (hub + wiki) and BabyOasis are standalone sub-apps that render
+  // their own chrome, so the LittleSteps header/sidebar must stay hidden for the
+  // whole sub-app, not just its landing route.
+  const isStandaloneSubApp = currentPage.startsWith('littlebloom') || currentPage === 'babyoasis';
+  const showHeader = currentPage === 'home' || isStandaloneSubApp
     ? false
     : (currentPage !== 'littlesteps' || (user && childProfiles.length > 0));
 
@@ -212,7 +215,7 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-warm-white">
       {/* Sidebar - Only show for LittleSteps routes */}
-      {currentPage !== 'littlebloom' && currentPage !== 'babyoasis' && (
+      {!isStandaloneSubApp && (
         <Sidebar
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}

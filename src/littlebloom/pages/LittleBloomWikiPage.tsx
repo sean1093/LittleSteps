@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { ChevronLeft } from 'lucide-react';
 import { pregnancyWikiArticles, pregnancyWikiCategoryLabels, pregnancyWikiCategoryColors } from '../data/wiki';
 import WikiArticleCard from '../../common/components/wiki/WikiArticleCard';
 
@@ -16,7 +17,16 @@ export default function LittleBloomWikiPage() {
   return (
     <div className="min-h-screen bg-bloom-cream pb-6">
       <header className="bg-bloom-dusty-rose px-4 py-6 text-white mb-4">
-        <h2 className="text-xl font-bold">孕期知識庫</h2>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => { window.location.hash = '#/littlebloom'; }}
+            aria-label="返回"
+            className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 transition-colors flex items-center justify-center flex-shrink-0"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <h2 className="text-xl font-bold">孕期知識庫</h2>
+        </div>
       </header>
 
       <div className="px-4 mb-4">
