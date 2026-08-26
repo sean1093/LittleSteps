@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, remove } from 'firebase/database';
 import { database } from '../../lib/firebase';
 import { ChildProfile } from '../../types';
 import { User } from 'firebase/auth';
@@ -50,8 +50,14 @@ export function useUserChildren(user: User | null) {
             if (childSnapshot.exists()) {
               loadedChildren[childId] = childSnapshot.val() as ChildProfile;
             } else {
-              // Child doesn't exist anymore, remove from loaded
+              // Child no longer exists (e.g. its creator deleted a shared child).
+              // Self-heal this user's own stale reference — security rules only
+              // permit each user to write their own childrenIds, so orphans can
+              // only be cleaned client-side by the referencing user.
               delete loadedChildren[childId];
+              remove(ref(database, `users/${user.uid}/childrenIds/${childId}`)).catch(() => {
+                /* best-effort cleanup; ignore */
+              });
             }
 
             loadedCount++;

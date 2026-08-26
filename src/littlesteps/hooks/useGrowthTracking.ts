@@ -18,7 +18,7 @@ interface UseGrowthTrackingResult {
 
 /**
  * Hook for managing growth records (weight, height, head circumference)
- * Supports dual-mode: LocalStorage (guest) or Firebase (authenticated)
+ * backed by Firebase. Login is mandatory; without a user it yields no records.
  */
 export function useGrowthTracking(
   childId: string | null,
@@ -29,104 +29,37 @@ export function useGrowthTracking(
   const [records, setRecords] = useState<GrowthRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const storageKey = childId ? `growth-records-${childId}` : '';
-
-  // Load records on mount
+  // Real-time listener
   useEffect(() => {
-    if (!childId) {
+    if (!childId || !user) {
       setRecords([]);
       setLoading(false);
       return;
     }
 
-    if (user) {
-      // Firebase mode: Real-time listener
-      const recordsRef = ref(
-        database,
-        `children/${childId}/growthRecords`
-      );
-
-      const unsubscribe = onValue(recordsRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          const recordsArray = Object.values(data) as GrowthRecord[];
-          setRecords(sortRecordsByDate(recordsArray));
-        } else {
-          setRecords([]);
-        }
-        setLoading(false);
-      });
-
-      return () => unsubscribe();
-    } else {
-      // LocalStorage mode
-      try {
-        const stored = localStorage.getItem(storageKey);
-        if (stored) {
-          const parsed = JSON.parse(stored) as GrowthRecord[];
-          setRecords(sortRecordsByDate(parsed));
-        }
-      } catch (error) {
-        console.error('Failed to load growth records from LocalStorage:', error);
-      }
+    const recordsRef = ref(database, `children/${childId}/growthRecords`);
+    const unsubscribe = onValue(recordsRef, (snapshot) => {
+      const data = snapshot.val();
+      setRecords(data ? sortRecordsByDate(Object.values(data) as GrowthRecord[]) : []);
       setLoading(false);
-    }
-  }, [childId, user, storageKey]);
+    });
+    return () => unsubscribe();
+  }, [childId, user]);
 
-  /**
-   * Add a new growth record
-   */
-  const addRecord = async (
-    record: Omit<GrowthRecord, 'id'>
-  ): Promise<void> => {
+  const addRecord = async (record: Omit<GrowthRecord, 'id'>): Promise<void> => {
     if (!childId) {
       throw new Error('No child selected');
     }
-
-    // Validate record
     validateRecord(record);
-
-    // Calculate percentiles if not provided and we have child info
-    const recordWithPercentiles = await calculatePercentiles(
-      record,
-      childGender,
-      childBirthday
-    );
-
+    const recordWithPercentiles = await calculatePercentiles(record, childGender, childBirthday);
     const newRecord: GrowthRecord = {
       ...recordWithPercentiles,
-      id: `growth_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: crypto.randomUUID(),
     };
-
-    if (user) {
-      // Firebase mode
-      const recordRef = ref(
-        database,
-        `children/${childId}/growthRecords/${newRecord.id}`
-      );
-      await set(recordRef, removeUndefined(newRecord));
-    } else {
-      // LocalStorage mode - read latest to avoid race conditions
-      let currentRecords: GrowthRecord[] = [];
-      try {
-        const stored = localStorage.getItem(storageKey);
-        if (stored) {
-          currentRecords = JSON.parse(stored);
-        }
-
-        const updated = [...currentRecords, newRecord];
-        localStorage.setItem(storageKey, JSON.stringify(updated));
-        setRecords(sortRecordsByDate(updated));
-      } catch (error) {
-        console.error('Failed to save record to LocalStorage:', error);
-        throw error;
-      }
-    }
+    const recordRef = ref(database, `children/${childId}/growthRecords/${newRecord.id}`);
+    await set(recordRef, removeUndefined(newRecord));
   };
 
-  /**
-   * Update an existing record
-   */
   const updateRecord = async (
     recordId: string,
     updates: Partial<Omit<GrowthRecord, 'id' | 'childId'>>
@@ -134,63 +67,23 @@ export function useGrowthTracking(
     if (!childId) {
       throw new Error('No child selected');
     }
-
     const existing = records.find((r) => r.id === recordId);
     if (!existing) {
       throw new Error('Record not found');
     }
-
-    // Merge updates with existing record
     const updated = { ...existing, ...updates };
-
-    // Validate
     validateRecord(updated);
-
-    // Recalculate percentiles if measurements changed
-    const updatedWithPercentiles = await calculatePercentiles(
-      updated,
-      childGender,
-      childBirthday
-    );
-
-    if (user) {
-      // Firebase mode
-      const recordRef = ref(
-        database,
-        `children/${childId}/growthRecords/${recordId}`
-      );
-      await set(recordRef, removeUndefined({ ...updatedWithPercentiles, id: recordId }));
-    } else {
-      // LocalStorage mode
-      const updatedRecords = records.map((r) =>
-        r.id === recordId ? { ...updatedWithPercentiles, id: recordId } : r
-      );
-      localStorage.setItem(storageKey, JSON.stringify(updatedRecords));
-      setRecords(sortRecordsByDate(updatedRecords));
-    }
+    const updatedWithPercentiles = await calculatePercentiles(updated, childGender, childBirthday);
+    const recordRef = ref(database, `children/${childId}/growthRecords/${recordId}`);
+    await set(recordRef, removeUndefined({ ...updatedWithPercentiles, id: recordId }));
   };
 
-  /**
-   * Delete a record
-   */
   const deleteRecord = async (recordId: string): Promise<void> => {
     if (!childId) {
       throw new Error('No child selected');
     }
-
-    if (user) {
-      // Firebase mode
-      const recordRef = ref(
-        database,
-        `children/${childId}/growthRecords/${recordId}`
-      );
-      await remove(recordRef);
-    } else {
-      // LocalStorage mode
-      const filtered = records.filter((r) => r.id !== recordId);
-      localStorage.setItem(storageKey, JSON.stringify(filtered));
-      setRecords(filtered);
-    }
+    const recordRef = ref(database, `children/${childId}/growthRecords/${recordId}`);
+    await remove(recordRef);
   };
 
   return {

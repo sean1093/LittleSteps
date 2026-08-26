@@ -5,12 +5,10 @@ import { User } from 'firebase/auth';
 import { pregnancyGuides } from '../../data/pregnancyGuides';
 import { ChildProfile, PrenatalCheckup } from '../../types';
 import { usePregnancyData } from '../hooks/usePregnancyData';
-import LoginPrompt from '../../common/components/LoginPrompt';
 
 interface LittleBloomPageProps {
   currentChild?: ChildProfile | null;
   user: User | null;
-  onSignIn: () => void;
 }
 
 const containerVariants = {
@@ -37,7 +35,7 @@ const PLACEHOLDER_CHECKUPS: PrenatalCheckup[] = [
   { id: '1', childId: 'c1', date: '2026-04-15', clinicName: '幸福婦產科', notes: '初步檢查', completed: false }
 ];
 
-function LittleBloomPage({ currentChild, user, onSignIn }: LittleBloomPageProps) {
+function LittleBloomPage({ currentChild, user }: LittleBloomPageProps) {
   const { pregnancyData } = usePregnancyData(currentChild?.id || null, user);
 
   const currentWeek = useMemo(() => {
@@ -56,17 +54,6 @@ function LittleBloomPage({ currentChild, user, onSignIn }: LittleBloomPageProps)
   const nextCheckup = useMemo(() => {
     return PLACEHOLDER_CHECKUPS.find(c => !c.completed && new Date(c.date) > new Date());
   }, []);
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-4">
-        <LoginPrompt 
-          message="登入以開始您的孕期記錄旅程，讓我們陪伴妳度過這段珍貴的時光 ✨" 
-          onSignIn={onSignIn}
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] px-4 py-8 relative overflow-hidden">

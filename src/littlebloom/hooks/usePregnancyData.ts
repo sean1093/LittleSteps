@@ -1,23 +1,17 @@
 import type { User } from 'firebase/auth';
 import { PregnancyData } from '../../types';
-import { useDualModeCollection } from '../../common/hooks/useDualModeCollection';
+import { useFirebaseCollection } from '../../common/hooks/useFirebaseCollection';
 
 /**
- * Hook for reading pregnancy data (Firebase for authenticated users,
- * LocalStorage for guests). Read-only for now — no write path exists yet.
+ * Realtime listener for a child's pregnancy data (Firebase). Read-only for now.
  */
 export function usePregnancyData(childId: string | null, user: User | null) {
-  const { data: pregnancyData, loading } = useDualModeCollection<PregnancyData | null>(
-    childId,
-    user,
-    {
-      firebasePath: `children/${childId}/pregnancyData`,
-      storageKey: `pregnancy-${childId}`,
-      empty: null,
-      fromFirebase: (data) => (data as PregnancyData) || null,
-      errorLabel: 'Error fetching pregnancy data:',
-    },
-  );
+  const { data: pregnancyData, loading } = useFirebaseCollection<PregnancyData | null>(childId, user, {
+    firebasePath: `children/${childId}/pregnancyData`,
+    empty: null,
+    fromFirebase: (data) => (data as PregnancyData) || null,
+    errorLabel: 'Error fetching pregnancy data:',
+  });
 
   return { pregnancyData, loading };
 }

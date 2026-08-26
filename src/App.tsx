@@ -7,7 +7,7 @@ import { useDailyLogs } from './littlesteps/hooks/useDailyLogs';
 import { useChildStore } from './common/hooks/useChildStore';
 import Sidebar from './common/components/Sidebar';
 import MainLandingPage from './common/pages/MainLandingPage';
-const LandingPage = lazy(() => import('./common/pages/LandingPage'));
+import LandingPage from './common/pages/LandingPage';
 const DashboardPage = lazy(() => import('./littlesteps/pages/DashboardPage'));
 const MilestonesPage = lazy(() => import('./littlesteps/pages/MilestonesPage'));
 const CareGuidePage = lazy(() => import('./littlesteps/pages/CareGuidePage'));
@@ -192,12 +192,11 @@ function AppContent() {
   };
 
   // LittleBloom (hub + wiki) and BabyOasis are standalone sub-apps that render
-  // their own chrome, so the LittleSteps header/sidebar must stay hidden for the
-  // whole sub-app, not just its landing route.
+  // their own chrome, so the LittleSteps header/sidebar stays hidden for them.
   const isStandaloneSubApp = currentPage.startsWith('littlebloom') || currentPage === 'babyoasis';
-  const showHeader = currentPage === 'home' || isStandaloneSubApp
-    ? false
-    : (currentPage !== 'littlesteps' || (user && childProfiles.length > 0));
+  // Login is mandatory, so every LittleSteps route shows the header (and thus the
+  // sidebar/menu) once we reach the authenticated tree below.
+  const showHeader = !(currentPage === 'home' || isStandaloneSubApp);
 
 
   // Show loading state while auth or children data is loading
@@ -210,6 +209,12 @@ function AppContent() {
         </div>
       </div>
     );
+  }
+
+  // Login is required for the entire app — unauthenticated users only ever see
+  // the landing/login screen.
+  if (!user) {
+    return <LandingPage onNavigate={navigateToPage} user={user} onSignIn={signInWithGoogle} />;
   }
 
   return (
@@ -274,22 +279,27 @@ function AppContent() {
 
         {/* LittleSteps Routes */}
         {currentPage === 'littlesteps' && (
-          <>
-            {user && childProfiles.length > 0 ? (
-              <DashboardPage
-                currentChild={currentChild}
-                dailyLogs={dailyLogs}
-                user={user}
-                onNavigate={navigateToPage}
-              />
-            ) : (
-              <LandingPage
-                onNavigate={navigateToPage}
-                user={user}
-                onSignIn={signInWithGoogle}
-              />
-            )}
-          </>
+          childProfiles.length > 0 ? (
+            <DashboardPage
+              currentChild={currentChild}
+              dailyLogs={dailyLogs}
+              user={user}
+              onNavigate={navigateToPage}
+            />
+          ) : (
+            <div className="max-w-md mx-auto px-4 py-16 text-center">
+              <Baby className="w-16 h-16 text-primary mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">開始記錄寶寶的成長</h2>
+              <p className="text-gray-600 mb-6">先新增一個寶寶，即可開始追蹤里程碑、疫苗與日常照顧。</p>
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-primary to-secondary text-white font-semibold shadow-soft hover:shadow-soft-lg transition-all"
+              >
+                <Baby className="w-5 h-5" />
+                新增寶寶
+              </button>
+            </div>
+          )
         )}
         {currentPage === 'littlesteps/dashboard' && (
           <DashboardPage
@@ -362,7 +372,6 @@ function AppContent() {
           <LittleBloomPage
             currentChild={currentChild}
             user={user}
-            onSignIn={signInWithGoogle}
           />
         )}
         {currentPage === 'littlebloom/wiki' && <LittleBloomWikiPage />}

@@ -49,28 +49,16 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
       };
 
       if (editingLog) {
-        // Update existing log
-        if (user) {
-          await firebaseChildren.updateDailyLog(currentChild.id, editingLog.id, completeLogData);
-        } else {
-          // LocalStorage mode - handled by useDailyLogs
-          throw new Error('LocalStorage update not supported yet');
-        }
+        await firebaseChildren.updateDailyLog(currentChild.id, editingLog.id, completeLogData);
       } else {
-        // Create new log
-        if (user) {
-          await firebaseChildren.addDailyLog(currentChild.id, completeLogData);
-        } else {
-          // LocalStorage mode - handled by useDailyLogs
-          throw new Error('LocalStorage create not supported yet');
-        }
+        await firebaseChildren.addDailyLog(currentChild.id, completeLogData);
       }
 
       setShowModal(false);
       setEditingLog(null);
-    } catch (error: any) {
+    } catch (error) {
       console.error('保存日誌失敗:', error);
-      alert(error.message || '保存失敗，請稍後再試');
+      alert(error instanceof Error ? error.message : '保存失敗，請稍後再試');
     }
   };
 
@@ -84,15 +72,10 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
     if (!currentChild) return;
 
     try {
-      if (user) {
-        await firebaseChildren.deleteDailyLog(currentChild.id, logId);
-      } else {
-        // LocalStorage mode - handled by useDailyLogs
-        throw new Error('LocalStorage delete not supported yet');
-      }
-    } catch (error: any) {
+      await firebaseChildren.deleteDailyLog(currentChild.id, logId);
+    } catch (error) {
       console.error('刪除日誌失敗:', error);
-      alert(error.message || '刪除失敗，請稍後再試');
+      alert(error instanceof Error ? error.message : '刪除失敗，請稍後再試');
     }
   };
 

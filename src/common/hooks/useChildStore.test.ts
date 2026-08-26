@@ -1,9 +1,26 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
+import type { User } from 'firebase/auth';
+import type { ChildProfile } from '../../types';
 import { useChildStore } from './useChildStore';
 
-// lib/firebase's analytics helpers are fire-and-forget side effects; stub them
-// so the guest-mode paths under test don't reach real Firebase.
+// Login is mandatory, so the store is Firebase-only. Mock the Firebase-backed
+// hooks it composes and assert it delegates to them correctly.
+const h = vi.hoisted(() => ({
+  userChildren: { children: [] as ChildProfile[], currentChildId: null as string | null, loading: false },
+  firebaseChildren: {
+    addChild: vi.fn().mockResolvedValue(undefined),
+    joinChild: vi.fn().mockResolvedValue(undefined),
+    updateChild: vi.fn().mockResolvedValue(undefined),
+    deleteChild: vi.fn().mockResolvedValue(undefined),
+    setCurrentChild: vi.fn().mockResolvedValue(undefined),
+    updateMilestoneProgress: vi.fn().mockResolvedValue(undefined),
+    updateVaccineProgress: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
+vi.mock('./useUserChildren', () => ({ useUserChildren: () => h.userChildren }));
+vi.mock('./useFirebaseChildren', () => ({ useFirebaseChildren: () => h.firebaseChildren }));
 vi.mock('../../lib/firebase', () => ({
   database: {},
   logMilestoneToggle: vi.fn(),
@@ -11,115 +28,108 @@ vi.mock('../../lib/firebase', () => ({
   logChildProfileAction: vi.fn(),
 }));
 
-describe('useChildStore (guest / LocalStorage mode)', () => {
+const user = { uid: 'u1' } as User;
+
+const child = (overrides: Partial<ChildProfile> = {}): ChildProfile => ({
+  id: 'c1',
+  name: '小明',
+  birthday: '2026-01-01',
+  milestoneProgress: {},
+  vaccineProgress: {},
+  createdAt: '2026-01-01T00:00:00.000Z',
+  createdBy: 'u1',
+  ...overrides,
+});
+
+describe('useChildStore (Firebase mode)', () => {
   beforeEach(() => {
-    localStorage.clear();
+    vi.clearAllMocks();
+    h.userChildren = { children: [], currentChildId: null, loading: false };
     vi.stubGlobal('alert', vi.fn());
-    // addChild derives ids from Date.now(); make it strictly increasing so
-    // rapid successive adds in tests get distinct ids (real usage is seconds apart).
-    let tick = 0;
-    vi.spyOn(Date, 'now').mockImplementation(() => 1_700_000_000_000 + tick++);
   });
 
-  it('adds a child and auto-selects it', async () => {
-    const { result } = renderHook(() => useChildStore(null));
-
-    await act(async () => {
-      await result.current.addChild('小明', '2026-01-01');
-    });
+  it('exposes children and the resolved current child from useUserChildren', () => {
+    h.userChildren = { children: [child()], currentChildId: 'c1', loading: false };
+    const { result } = renderHook(() => useChildStore(user));
 
     expect(result.current.childProfiles).toHaveLength(1);
-    expect(result.current.childProfiles[0].name).toBe('小明');
-    expect(result.current.currentChildId).toBe(result.current.childProfiles[0].id);
     expect(result.current.currentChild?.name).toBe('小明');
+    expect(result.current.currentChildId).toBe('c1');
   });
 
-  it('enforces the 2-child free-tier limit', async () => {
+  it('delegates addChild to Firebase with the current child count', async () => {
+    h.userChildren = { children: [child()], currentChildId: 'c1', loading: false };
+    const { result } = renderHook(() => useChildStore(user));
+
+    await act(async () => {
+      await result.current.addChild('小華', '2026-02-02', 'female');
+    });
+
+    expect(h.firebaseChildren.addChild).toHaveBeenCalledWith('小華', '2026-02-02', 1, 'female');
+  });
+
+  it('enforces the 2-child free-tier limit without calling Firebase', async () => {
+    h.userChildren = { children: [child(), child({ id: 'c2' })], currentChildId: 'c1', loading: false };
     const alertSpy = vi.fn();
     vi.stubGlobal('alert', alertSpy);
-    const { result } = renderHook(() => useChildStore(null));
+    const { result } = renderHook(() => useChildStore(user));
 
     await act(async () => {
-      await result.current.addChild('A', '2026-01-01');
-    });
-    await act(async () => {
-      await result.current.addChild('B', '2026-02-01');
-    });
-    expect(result.current.childProfiles).toHaveLength(2);
-
-    await act(async () => {
-      await result.current.addChild('C', '2026-03-01');
+      await result.current.addChild('第三個', '2026-03-03');
     });
 
-    expect(result.current.childProfiles).toHaveLength(2);
+    expect(h.firebaseChildren.addChild).not.toHaveBeenCalled();
     expect(alertSpy).toHaveBeenCalled();
   });
 
-  it('toggles a milestone on and off for the current child', async () => {
-    const { result } = renderHook(() => useChildStore(null));
-    await act(async () => {
-      await result.current.addChild('小明', '2026-01-01');
-    });
+  it('toggles a milestone, deriving the new achieved state', async () => {
+    h.userChildren = {
+      children: [child({ milestoneProgress: { m1: { achieved: false } } })],
+      currentChildId: 'c1',
+      loading: false,
+    };
+    const { result } = renderHook(() => useChildStore(user));
 
     await act(async () => {
       await result.current.toggleMilestone('m1');
     });
-    expect(result.current.currentChildMilestoneProgress['m1']?.achieved).toBe(true);
 
-    await act(async () => {
-      await result.current.toggleMilestone('m1');
-    });
-    expect(result.current.currentChildMilestoneProgress['m1']?.achieved).toBe(false);
+    expect(h.firebaseChildren.updateMilestoneProgress).toHaveBeenCalledWith('c1', 'm1', true);
   });
 
   it('toggles a vaccine dose administered state', async () => {
-    const { result } = renderHook(() => useChildStore(null));
-    await act(async () => {
-      await result.current.addChild('小明', '2026-01-01');
-    });
+    h.userChildren = { children: [child()], currentChildId: 'c1', loading: false };
+    const { result } = renderHook(() => useChildStore(user));
 
     await act(async () => {
       await result.current.toggleVaccineDose('bcg', 1, '2026-05-01');
     });
 
-    const dose = result.current.currentChildVaccineProgress['bcg']?.doses[1];
-    expect(dose?.administered).toBe(true);
-    expect(dose?.administeredDate).toBe('2026-05-01');
+    expect(h.firebaseChildren.updateVaccineProgress).toHaveBeenCalledWith('c1', 'bcg', 1, true, '2026-05-01');
   });
 
-  it('switches the current child', async () => {
-    const { result } = renderHook(() => useChildStore(null));
-    await act(async () => {
-      await result.current.addChild('A', '2026-01-01');
-    });
-    await act(async () => {
-      await result.current.addChild('B', '2026-02-01');
-    });
-    const [a, b] = result.current.childProfiles;
-    expect(result.current.currentChildId).toBe(b.id); // last added is selected
+  it('delegates delete and switch to Firebase', async () => {
+    h.userChildren = { children: [child()], currentChildId: 'c1', loading: false };
+    const { result } = renderHook(() => useChildStore(user));
 
     await act(async () => {
-      await result.current.setCurrentChild(a.id);
+      await result.current.setCurrentChild('c1');
+      await result.current.deleteChild('c1');
     });
-    expect(result.current.currentChildId).toBe(a.id);
+
+    expect(h.firebaseChildren.setCurrentChild).toHaveBeenCalledWith('c1');
+    expect(h.firebaseChildren.deleteChild).toHaveBeenCalledWith('c1');
   });
 
-  it('deletes a child and reselects the first remaining', async () => {
+  it('is a no-op for every mutator when there is no user', async () => {
     const { result } = renderHook(() => useChildStore(null));
-    await act(async () => {
-      await result.current.addChild('A', '2026-01-01');
-    });
-    await act(async () => {
-      await result.current.addChild('B', '2026-02-01');
-    });
-    const [a, b] = result.current.childProfiles;
 
     await act(async () => {
-      await result.current.deleteChild(b.id);
+      await result.current.addChild('X', '2026-01-01');
+      await result.current.setCurrentChild('c1');
     });
 
-    expect(result.current.childProfiles).toHaveLength(1);
-    expect(result.current.childProfiles[0].id).toBe(a.id);
-    await waitFor(() => expect(result.current.currentChildId).toBe(a.id));
+    expect(h.firebaseChildren.addChild).not.toHaveBeenCalled();
+    expect(h.firebaseChildren.setCurrentChild).not.toHaveBeenCalled();
   });
 });

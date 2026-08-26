@@ -8,7 +8,7 @@ import {
   signOut as firebaseSignOut
 } from 'firebase/auth';
 import { auth, googleProvider, logAuthEvent } from '../lib/firebase';
-import { migrateLocalStorageToFirebase } from '../utils/migration';
+
 
 interface AuthContextType {
   user: User | null;
@@ -70,21 +70,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     handleRedirectResult();
 
     // Listen for auth state changes
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
-
-      if (user) {
-        // 檢查是否需要遷移
-        const migrated = localStorage.getItem('migrated-to-firebase');
-        if (!migrated) {
-          try {
-            await migrateLocalStorageToFirebase(user);
-          } catch (error) {
-            console.error('資料遷移失敗:', error);
-          }
-        }
-      }
-
       setLoading(false);
     });
 

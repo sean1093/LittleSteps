@@ -51,14 +51,7 @@ export default function ComplementaryFoodPage({
 
   // Food tracking hook
   const childId = currentChild?.id || null;
-  const {
-    foodProgress,
-    foodTrials,
-    stats,
-    addFoodTrial,
-    updateFoodTrial,
-    deleteFoodTrial,
-  } = useFoodTracking(childId, user);
+  const { foodProgress, foodTrials, stats } = useFoodTracking(childId, user);
 
   // Firebase methods (for logged-in users)
   const firebaseChildren = useFirebaseChildren(user?.uid || null);
@@ -107,26 +100,16 @@ export default function ComplementaryFoodPage({
     }
 
     try {
-      if (user) {
-        // Firebase mode
-        if (editingFood) {
-          await firebaseChildren.updateFoodTrial(childId, editingFood.id, foodData);
-        } else {
-          await firebaseChildren.addFoodTrial(childId, foodData);
-        }
+      if (editingFood) {
+        await firebaseChildren.updateFoodTrial(childId, editingFood.id, foodData);
       } else {
-        // LocalStorage mode
-        if (editingFood) {
-          await updateFoodTrial(editingFood.id, foodData);
-        } else {
-          await addFoodTrial(foodData);
-        }
+        await firebaseChildren.addFoodTrial(childId, foodData);
       }
       setShowFoodModal(false);
       setEditingFood(null);
-    } catch (error: any) {
+    } catch (error) {
       console.error('保存食物記錄失敗:', error);
-      alert(error.message || '保存失敗，請稍後再試');
+      alert(error instanceof Error ? error.message : '保存失敗，請稍後再試');
     }
   };
 
@@ -134,16 +117,10 @@ export default function ComplementaryFoodPage({
     if (!childId) return;
 
     try {
-      if (user) {
-        // Firebase mode
-        await firebaseChildren.deleteFoodTrial(childId, foodId);
-      } else {
-        // LocalStorage mode
-        await deleteFoodTrial(foodId);
-      }
-    } catch (error: any) {
+      await firebaseChildren.deleteFoodTrial(childId, foodId);
+    } catch (error) {
       console.error('刪除食物記錄失敗:', error);
-      alert(error.message || '刪除失敗，請稍後再試');
+      alert(error instanceof Error ? error.message : '刪除失敗，請稍後再試');
     }
   };
 
@@ -155,23 +132,13 @@ export default function ComplementaryFoodPage({
     if (!food) return;
 
     try {
-      // Update trialDates array
       const updatedTrialDates = [...(food.trialDates || []), today].sort();
-
-      if (user) {
-        // Firebase mode
-        await firebaseChildren.updateFoodTrial(childId, foodId, {
-          trialDates: updatedTrialDates,
-        });
-      } else {
-        // LocalStorage mode
-        await updateFoodTrial(foodId, {
-          trialDates: updatedTrialDates,
-        });
-      }
-    } catch (error: any) {
+      await firebaseChildren.updateFoodTrial(childId, foodId, {
+        trialDates: updatedTrialDates,
+      });
+    } catch (error) {
       console.error('新增嘗試日期失敗:', error);
-      alert(error.message || '新增失敗，請稍後再試');
+      alert(error instanceof Error ? error.message : '新增失敗，請稍後再試');
     }
   };
 
