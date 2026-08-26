@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, Search, SearchX, X } from 'lucide-react';
 import { getLucideIcon } from '../../common/lucideIcons';
 import { WikiCategory } from '../../types';
-import { babyWikiArticles, wikiCategoryLabels } from '../data/babyWiki';
-import WikiArticleCard from '../components/wiki/WikiArticleCard';
+import { babyWikiArticles, wikiCategoryLabels, babyWikiCategoryColors } from '../data/babyWiki';
+import WikiArticleCard from '../../common/components/wiki/WikiArticleCard';
 
 const categoryIcons: Record<WikiCategory, string> = {
   skin: 'Droplets',
@@ -152,6 +152,8 @@ export default function BabyWikiPage() {
                     article={article}
                     isExpanded={expandedId === article.id}
                     onToggle={() => handleToggle(article.id)}
+                    categoryLabel={wikiCategoryLabels[article.category]}
+                    categoryColors={babyWikiCategoryColors[article.category]}
                   />
                 </motion.div>
               ))}

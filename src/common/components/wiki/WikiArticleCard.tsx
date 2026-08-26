@@ -1,28 +1,32 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, AlertTriangle, ChevronDown, HelpCircle, Lightbulb, Link2 } from 'lucide-react';
-import { getLucideIcon } from '../../../common/lucideIcons';
-import { BabyWikiArticle, WikiCategory } from '../../../types';
-import { wikiCategoryLabels } from '../../data/babyWiki';
+import { getLucideIcon } from '../../lucideIcons';
+import type { WikiArticle, WikiCategoryColors } from '../../../types';
 
 interface WikiArticleCardProps {
-  article: BabyWikiArticle;
+  article: WikiArticle;
   isExpanded: boolean;
   onToggle: () => void;
+  /** Display label for the article's category; resolved by the owning sub-app. */
+  categoryLabel: string;
+  /** Category color scheme; resolved by the owning sub-app. */
+  categoryColors: WikiCategoryColors;
 }
 
-const categoryColors: Record<WikiCategory, { bg: string; text: string; pill: string }> = {
-  skin: { bg: 'bg-pink-50', text: 'text-pink-700', pill: 'bg-pink-100 text-pink-700' },
-  oral: { bg: 'bg-sky-50', text: 'text-sky-700', pill: 'bg-sky-100 text-sky-700' },
-  motor: { bg: 'bg-emerald-50', text: 'text-emerald-700', pill: 'bg-emerald-100 text-emerald-700' },
-  digestive: { bg: 'bg-amber-50', text: 'text-amber-700', pill: 'bg-amber-100 text-amber-700' },
-  fever: { bg: 'bg-red-50', text: 'text-red-700', pill: 'bg-red-100 text-red-700' },
-  sleep: { bg: 'bg-indigo-50', text: 'text-indigo-700', pill: 'bg-indigo-100 text-indigo-700' },
-  daily: { bg: 'bg-teal-50', text: 'text-teal-700', pill: 'bg-teal-100 text-teal-700' },
-};
-
-export default function WikiArticleCard({ article, isExpanded, onToggle }: WikiArticleCardProps) {
+/**
+ * Presentational wiki card shared by every sub-app. It is deliberately
+ * data-agnostic: the category label and colors are passed in, so it knows
+ * nothing about baby-vs-pregnancy category sets. Each sub-app owns its own
+ * categories, labels, colors and article data.
+ */
+export default function WikiArticleCard({
+  article,
+  isExpanded,
+  onToggle,
+  categoryLabel,
+  categoryColors,
+}: WikiArticleCardProps) {
   const IconComponent = getLucideIcon(article.icon);
-  const colors = categoryColors[article.category];
 
   return (
     <motion.div
@@ -37,8 +41,8 @@ export default function WikiArticleCard({ article, isExpanded, onToggle }: WikiA
         <div className="flex items-start gap-3">
           {/* Icon */}
           {IconComponent && (
-            <div className={`w-10 h-10 rounded-xl ${colors.bg} flex items-center justify-center flex-shrink-0`}>
-              <IconComponent className={`w-5 h-5 ${colors.text}`} />
+            <div className={`w-10 h-10 rounded-xl ${categoryColors.bg} flex items-center justify-center flex-shrink-0`}>
+              <IconComponent className={`w-5 h-5 ${categoryColors.text}`} />
             </div>
           )}
 
@@ -46,8 +50,8 @@ export default function WikiArticleCard({ article, isExpanded, onToggle }: WikiA
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <h3 className="font-semibold text-gray-800">{article.title}</h3>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colors.pill}`}>
-                {wikiCategoryLabels[article.category]}
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${categoryColors.pill}`}>
+                {categoryLabel}
               </span>
             </div>
             <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">
@@ -78,20 +82,22 @@ export default function WikiArticleCard({ article, isExpanded, onToggle }: WikiA
           >
             <div className="px-4 pb-4 space-y-4 border-t border-gray-100 pt-4">
               {/* Causes */}
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <HelpCircle className="w-4 h-4 text-gray-500" />
-                  <h4 className="font-semibold text-gray-700 text-sm">可能原因</h4>
+              {article.causes.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <HelpCircle className="w-4 h-4 text-gray-500" />
+                    <h4 className="font-semibold text-gray-700 text-sm">可能原因</h4>
+                  </div>
+                  <ul className="space-y-1.5">
+                    {article.causes.map((cause, idx) => (
+                      <li key={idx} className="flex gap-2 text-sm text-gray-600">
+                        <span className="text-gray-400 flex-shrink-0 mt-0.5">•</span>
+                        <span>{cause}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <ul className="space-y-1.5">
-                  {article.causes.map((cause, idx) => (
-                    <li key={idx} className="flex gap-2 text-sm text-gray-600">
-                      <span className="text-gray-400 flex-shrink-0 mt-0.5">•</span>
-                      <span>{cause}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              )}
 
               {/* Solutions */}
               <div>
@@ -117,20 +123,22 @@ export default function WikiArticleCard({ article, isExpanded, onToggle }: WikiA
               </div>
 
               {/* Warning Signals */}
-              <div className="bg-red-50/60 rounded-xl p-3 border border-red-100">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertTriangle className="w-4 h-4 text-red-500" />
-                  <h4 className="font-semibold text-red-700 text-sm">就醫警訊</h4>
+              {article.warningSignals.length > 0 && (
+                <div className="bg-red-50/60 rounded-xl p-3 border border-red-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                    <h4 className="font-semibold text-red-700 text-sm">就醫警訊</h4>
+                  </div>
+                  <ul className="space-y-1.5">
+                    {article.warningSignals.map((signal, idx) => (
+                      <li key={idx} className="flex gap-2 text-sm text-red-700">
+                        <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-red-400" />
+                        <span>{signal}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <ul className="space-y-1.5">
-                  {article.warningSignals.map((signal, idx) => (
-                    <li key={idx} className="flex gap-2 text-sm text-red-700">
-                      <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-red-400" />
-                      <span>{signal}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              )}
 
               {/* Related Articles hint */}
               {article.relatedArticleIds.length > 0 && (

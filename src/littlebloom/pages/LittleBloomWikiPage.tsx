@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { pregnancyWikiArticles } from '../data/wiki';
-import WikiArticleCard from '../../littlesteps/components/wiki/WikiArticleCard';
+import { pregnancyWikiArticles, pregnancyWikiCategoryLabels, pregnancyWikiCategoryColors } from '../data/wiki';
+import WikiArticleCard from '../../common/components/wiki/WikiArticleCard';
 
 export default function LittleBloomWikiPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,6 +36,8 @@ export default function LittleBloomWikiPage() {
             article={article}
             isExpanded={expandedId === article.id}
             onToggle={() => setExpandedId(expandedId === article.id ? null : article.id)}
+            categoryLabel={pregnancyWikiCategoryLabels[article.category]}
+            categoryColors={pregnancyWikiCategoryColors[article.category]}
           />
         ))}
       </div>
