@@ -1,4 +1,4 @@
-# LittleLeap 幼兒期（1-3 歲）子應用設計規格
+# LittleExplorer 幼兒期（1-3 歲）子應用設計規格
 
 > 日期：2026-08-26
 > 定位：LittleSteps 家族的第四個子應用，銜接 0-1 歲之後的空窗
@@ -18,9 +18,9 @@
 | 快速日誌 | `DailyLogPage.tsx` 不含任何年齡判斷 | **不重做**，深連結回 LittleSteps |
 | 睡眠 | `sleep.ts:53-54` 最後一段 `1.5-2 歲`；`trendCalculator.ts:178-181`、`sleepAnalysis.ts:247-248` 分支至 24 個月 | **不重做**，深連結回 LittleSteps |
 | 成長曲線 | `growthChartData.ts:160-161` 超過 24 個月直接 `throw`；`GrowthChartDisplay.tsx:62` 以 `Math.min(24, ...)` 夾住 x 軸 | **非目標**，見 §9 |
-| 里程碑 | 37 筆中僅 4 筆落在單一大桶 `'12+'`（`milestones.ts:319-353`） | **搬移至 LittleLeap 並移除該桶**，見 §7 |
-| 照顧重點 | `careGuides.ts` 以 `month: 1..12` 整數編號，最後一筆 `month: 12` | 由 LittleLeap 發展檢核與百科承接 |
-| 副食品 | `foodStages` 天花板 `10-12個月`；`ComplementaryFoodPage.tsx:156` 標題寫死「4-12個月」 | 由 LittleLeap 百科 `eating` 分類承接 |
+| 里程碑 | 37 筆中僅 4 筆落在單一大桶 `'12+'`（`milestones.ts:319-353`） | **搬移至 LittleExplorer 並移除該桶**，見 §7 |
+| 照顧重點 | `careGuides.ts` 以 `month: 1..12` 整數編號，最後一筆 `month: 12` | 由 LittleExplorer 發展檢核與百科承接 |
+| 副食品 | `foodStages` 天花板 `10-12個月`；`ComplementaryFoodPage.tsx:156` 標題寫死「4-12個月」 | 由 LittleExplorer 百科 `eating` 分類承接 |
 | 提醒 | 全 repo 無任何排程／到期／通知機制 | **本次核心新增** |
 
 ### 1.2 需要更正的既有文件
@@ -47,16 +47,16 @@
 
 ### 3.1 形態：獨立子應用，嚴格互補
 
-LittleLeap 自帶 chrome（比照 LittleBloom／BabyOasis），在 `App.tsx` 的 `isStandaloneSubApp` 判斷式中加入，不使用 LittleSteps 的 Sidebar 與 Header。
+LittleExplorer 自帶 chrome（比照 LittleBloom／BabyOasis），在 `App.tsx` 的 `isStandaloneSubApp` 判斷式中加入，不使用 LittleSteps 的 Sidebar 與 Header。
 
-**互補紀律（本規格最重要的約束）**：LittleLeap 只實作 LittleSteps 沒有的能力。成長曲線、睡眠分析、快速日誌一律以 `window.location.hash` 深連結跳回 LittleSteps 既有頁面，不在 LittleLeap 內重建任何視圖。違反此紀律等同於製造第二套維護成本。
+**互補紀律（本規格最重要的約束）**：LittleExplorer 只實作 LittleSteps 沒有的能力。成長曲線、睡眠分析、快速日誌一律以 `window.location.hash` 深連結跳回 LittleSteps 既有頁面，不在 LittleExplorer 內重建任何視圖。違反此紀律等同於製造第二套維護成本。
 
 ### 3.2 頁面結構：3 頁
 
 ```
-littleleap            Hub —— 目前年齡、未來 90 天到期事項、逾期警示、匯出行事曆、跨 app 深連結
-littleleap/checkup    發展檢核 —— 12-36 個月，5 年齡段 × 5 發展面向，含紅旗警訊
-littleleap/wiki       幼兒知識庫 —— 7 分類，沿用共用 WikiArticleCard
+littleexplorer            Hub —— 目前年齡、未來 90 天到期事項、逾期警示、匯出行事曆、跨 app 深連結
+littleexplorer/checkup    發展檢核 —— 12-36 個月，5 年齡段 × 5 發展面向，含紅旗警訊
+littleexplorer/wiki       幼兒知識庫 —— 7 分類，沿用共用 WikiArticleCard
 ```
 
 Hub 本身即是提醒中心，不另闢頁面：家長開啟此 app 的第一個問題恆為「現在該做什麼」。
@@ -68,10 +68,10 @@ Hub 本身即是提醒中心，不另闢頁面：家長開啟此 app 的第一�
 
 ### 3.4 品牌識別
 
-新增 `tailwind.config.js` 的 `leap` 色票 namespace，比照 `bloom` 的作法：
+新增 `tailwind.config.js` 的 `explorer` 色票 namespace，比照 `bloom` 的作法：
 
 ```js
-leap: {
+explorer: {
   'sunbeam': '#F5B843',       // 主色：溫暖陽光黃
   'sunbeam-light': '#FBE0A6',
   'sunbeam-dark': '#D99A22',
@@ -86,7 +86,18 @@ leap: {
 }
 ```
 
-命名理由：既有家族為 LittleSteps／LittleBloom，`steps → leap` 的語意遞進對應學步到奔跑；首頁時間軸「幼兒期」格既有的 `Sun` icon 可直接沿用。
+**命名**：LittleExplorer，中文「小小探險家」。
+
+1-3 歲的定義性行為就是探索——開始走、什麼都要摸、到處跑、「我自己來」。名字直接描述這個階段在做什麼，而非只是階段的代號。「小小探險家」是台灣繪本與幼兒園的既有慣用語，家長一看就懂、唸得出來。
+
+**評估過但否決的兩個候選**：
+
+- **LittleLeap（小躍）** — 語意上 `steps → leap` 有遞進感，但「LittleSteps」同時是整個專案與其中一個子 app 的名字（`package.json` 的 `name`、頁尾版權宣告、repo 名稱皆是）。再放一個語意幾乎同義的移動名詞進去，兩者會被混淆。且「小躍」在台灣華語裡偏書面，家長不會這樣講。
+- **LittleSprout（小芽）** — 與 LittleBloom 的植物意象成對，但順序是反的：植物先發芽再開花。Bloom 給孕期、Sprout 給其後的幼兒期，隱喻方向錯置。
+
+首頁時間軸「幼兒期」格既有的 `Sun` icon 直接沿用，不另外設計識別。
+
+Tailwind namespace 取 `explorer`（`LittleExplorer` 的識別半部），與 `bloom` 對應 `LittleBloom` 的作法一致。class 名稱較長（`bg-explorer-sunbeam`）是可接受的代價。
 
 ---
 
@@ -212,7 +223,7 @@ export type ToddlerWikiArticle = WikiArticle<ToddlerWikiCategory>;
 
 ### 5.1 純函式，可注入時間
 
-實作於 `src/littleleap/utils/careSchedule.ts`，無任何 I/O：
+實作於 `src/littleexplorer/utils/careSchedule.ts`，無任何 I/O：
 
 ```ts
 export function resolveCareTasks(
@@ -245,7 +256,7 @@ export function resolveCareTasks(
 
 ## 6. 行事曆匯出
 
-實作於 `src/littleleap/utils/icsExport.ts`，純字串組裝，**零新增依賴**。
+實作於 `src/littleexplorer/utils/icsExport.ts`，純字串組裝，**零新增依賴**。
 
 - `buildIcs(tasks: ResolvedCareTask[], childName: string): string` — 產生 RFC 5545 `VCALENDAR`。每個非 `done` 任務一個 `VEVENT`，全天事件（`DTSTART;VALUE=DATE`），附 `VALARM` 於前 7 天觸發。需對 `SUMMARY`／`DESCRIPTION` 進行 RFC 5545 跳脫（`\` `;` `,` 與換行）。
 - 下載以 `Blob` + `URL.createObjectURL` 觸發，不需後端。
@@ -259,13 +270,13 @@ export function resolveCareTasks(
 
 ## 7. LittleSteps 前置勘誤
 
-LittleLeap 的提醒引擎會直接連動 LittleSteps 的疫苗資料，且發展檢核與既有里程碑內容重疊。以下勘誤是 LittleLeap 的**前置條件**，各自獨立 commit，不與 LittleLeap 的新增程式碼混雜。
+LittleExplorer 的提醒引擎會直接連動 LittleSteps 的疫苗資料，且發展檢核與既有里程碑內容重疊。以下勘誤是 LittleExplorer 的**前置條件**，各自獨立 commit，不與 LittleExplorer 的新增程式碼混雜。
 
 ### 7.1 里程碑 clean cutover
 
 #### 動機
 
-在「嚴格互補」前提下，同一件發展事項不得同時出現在兩個 app。`milestones.ts:319-353` 的 4 筆 `'12+'` 記錄（`m12-physical-1`、`m12-motor-1`、`m12-cognitive-1`、`m12-social-1`）內容與 LittleLeap 的 12-15 個月檢核項高度重疊。
+在「嚴格互補」前提下，同一件發展事項不得同時出現在兩個 app。`milestones.ts:319-353` 的 4 筆 `'12+'` 記錄（`m12-physical-1`、`m12-motor-1`、`m12-cognitive-1`、`m12-social-1`）內容與 LittleExplorer 的 12-15 個月檢核項高度重疊。
 
 #### 觸點（已逐一驗證，共 4 處）
 
@@ -333,17 +344,17 @@ A 肝自 114/1/1 起調整為滿 18、27 個月接種第 1、2 劑。現有兩�
 
 `calculateVaccineSummary`（`summaryCalculator.ts:79-89`）以 `totalDoses += vaccine.doses` 累加，但 `doses` 欄位在同一支疫苗的每筆劑次記錄上都重複宣告該疫苗的總劑數（例：`pentavalent-2m`/`4m`/`6m`/`18m` 各宣告 `doses: 4`，加總得 16 而非 4）。`totalDoses` 與 `administrationRate` 因此系統性膨脹。
 
-此缺陷不影響 LittleLeap（提醒引擎讀 `doses[n].administered`，不讀 summary），修正需重新定義整個資料集的 `doses` 語意，屬 LittleSteps 獨立議題。此處記錄以免遺失。
+此缺陷不影響 LittleExplorer（提醒引擎讀 `doses[n].administered`，不讀 summary），修正需重新定義整個資料集的 `doses` 語意，屬 LittleSteps 獨立議題。此處記錄以免遺失。
 
 ---
 
 ## 8. 新增與修改檔案清單
 
-### 8.1 新增（`src/littleleap/`）
+### 8.1 新增（`src/littleexplorer/`）
 
 | 檔案 | 內容 |
 |---|---|
-| `pages/LittleLeapPage.tsx` | Hub：年齡、到期清單、逾期警示、匯出、跨 app 深連結 |
+| `pages/LittleExplorerPage.tsx` | Hub：年齡、到期清單、逾期警示、匯出、跨 app 深連結 |
 | `pages/DevelopmentCheckPage.tsx` | 年齡段 × 面向篩選的檢核清單＋紅旗警訊區 |
 | `pages/ToddlerWikiPage.tsx` | 搜尋＋分類篩選，渲染共用 `WikiArticleCard` |
 | `hooks/useCareTasks.ts` | 讀 `careTaskProgress`，結合 `vaccineProgress` 與 `birthday` 產出 `ResolvedCareTask[]` |
@@ -358,14 +369,14 @@ A 肝自 114/1/1 起調整為滿 18、27 個月接種第 1、2 劑。現有兩�
 
 | 檔案 | 變更 |
 |---|---|
-| `src/types/routes.ts` | `Page` union 新增 `'littleleap'`、`'littleleap/checkup'`、`'littleleap/wiki'`。**不加入** `LittleStepsPage`（該 union 專供 Sidebar） |
+| `src/types/routes.ts` | `Page` union 新增 `'littleexplorer'`、`'littleexplorer/checkup'`、`'littleexplorer/wiki'`。**不加入** `LittleStepsPage`（該 union 專供 Sidebar） |
 | `src/types/index.ts` | 新增 §4 全部型別；`Milestone.monthRange`（:3）與 `MonthRange`（:18）移除 `"12+"` |
-| `src/App.tsx` | 3 個 `lazy()` import；`pageMap` +3；`hashMap` +3；`isStandaloneSubApp`（:196）加 `\|\| currentPage.startsWith('littleleap')`；`getPageTitle` 早退分支；`<Suspense>` 內 +3 個渲染分支 |
-| `src/common/pages/MainLandingPage.tsx` | `onNavigate` 型別 union（:11）新增 `'littleleap'`；新增第四張卡；時間軸「幼兒期」格（:341-350）接上 `onClick` |
-| `src/lib/firebase.ts` | `logPageView` 的 `getPageMetadata` 新增 `page.startsWith('littleleap')` 分支 |
+| `src/App.tsx` | 3 個 `lazy()` import；`pageMap` +3；`hashMap` +3；`isStandaloneSubApp`（:196）加 `\|\| currentPage.startsWith('littleexplorer')`；`getPageTitle` 早退分支；`<Suspense>` 內 +3 個渲染分支 |
+| `src/common/pages/MainLandingPage.tsx` | `onNavigate` 型別 union（:11）新增 `'littleexplorer'`；新增第四張卡；時間軸「幼兒期」格（:341-350）接上 `onClick` |
+| `src/lib/firebase.ts` | `logPageView` 的 `getPageMetadata` 新增 `page.startsWith('littleexplorer')` 分支 |
 | `src/common/hooks/useFirebaseChildren.ts` | 新增 `updateDevelopmentProgress`、`upsertCareTaskRecord` 兩個寫入器並納入回傳物件 |
 | `src/common/hooks/useChildStore.ts` | `ChildStore` 介面透出上述兩個 mutator |
-| `tailwind.config.js` | 新增 `leap` 色票 namespace |
+| `tailwind.config.js` | 新增 `explorer` 色票 namespace |
 | `src/littlesteps/data/milestones.ts` | §7.1 的刪除 |
 | `src/littlesteps/data/vaccines.ts` | §7.2／§7.3 的疫苗時程勘誤 |
 | `src/utils/summaryCalculator.ts` | §7.1 的孤兒鍵修正 |
@@ -437,10 +448,10 @@ A 肝自 114/1/1 起調整為滿 18、27 個月接種第 1、2 劑。現有兩�
 
 | 測試檔 | 涵蓋 |
 |---|---|
-| `littleleap/utils/careSchedule.test.ts` | 四種 status 的日界邊界（到期前一天／當天／window 末日／隔日）；`vaccineId`＋`vaccineDose` 連動使任務轉為 `done`；**僅其他劑次被勾選時不得判定 done**；閏年 2/29 生日；`ageMonths` 超出 12-36 範圍；空 birthday 回傳空陣列 |
-| `littleleap/utils/icsExport.test.ts` | `VCALENDAR`／`VEVENT` 結構完整；`DTSTART;VALUE=DATE` 格式；RFC 5545 跳脫（`;` `,` `\` 與換行）；`done` 任務被排除；Google URL 參數編碼 |
-| `littleleap/data/developmentChecks.test.ts` | id 唯一；5 段 × 5 面向無空格；每段皆有對應 `DevelopmentWarning` |
-| `littleleap/data/careTasks.test.ts` | id 唯一；`fromMonth <= dueMonth <= toMonth`；每筆 `vaccineId` 皆存在於 `vaccines.ts`，且其 `vaccineDose` 等於該筆記錄的 `currentDose` |
+| `littleexplorer/utils/careSchedule.test.ts` | 四種 status 的日界邊界（到期前一天／當天／window 末日／隔日）；`vaccineId`＋`vaccineDose` 連動使任務轉為 `done`；**僅其他劑次被勾選時不得判定 done**；閏年 2/29 生日；`ageMonths` 超出 12-36 範圍；空 birthday 回傳空陣列 |
+| `littleexplorer/utils/icsExport.test.ts` | `VCALENDAR`／`VEVENT` 結構完整；`DTSTART;VALUE=DATE` 格式；RFC 5545 跳脫（`;` `,` `\` 與換行）；`done` 任務被排除；Google URL 參數編碼 |
+| `littleexplorer/data/developmentChecks.test.ts` | id 唯一；5 段 × 5 面向無空格；每段皆有對應 `DevelopmentWarning` |
+| `littleexplorer/data/careTasks.test.ts` | id 唯一；`fromMonth <= dueMonth <= toMonth`；每筆 `vaccineId` 皆存在於 `vaccines.ts`，且其 `vaccineDose` 等於該筆記錄的 `currentDose` |
 | `utils/summaryCalculator.test.ts`（既有，擴充） | 孤兒 milestone 鍵不計入 `achievedCount`；`achievementRate` 不超過 100 |
 | `littlesteps/data/vaccines.test.ts`（新增） | 日本腦炎僅 2 劑且 `currentDose` 為 1、2；同一支疫苗的所有記錄 `doses` 值一致；`ageInMonths` 隨 `currentDose` 單調遞增 |
 
@@ -451,7 +462,7 @@ A 肝自 114/1/1 起調整為滿 18、27 個月接種第 1、2 劑。現有兩�
 ## 12. 交付順序
 
 0. **前置勘誤（阻塞後續）** — §7.2／§7.3 疫苗時程修正＋`vaccines.test.ts`。獨立 commit。提醒引擎的正確性完全建立在這份資料上，必須先做。
-1. **里程碑 cutover** — §7.1 全部（含 `summaryCalculator` 孤兒鍵修正與既有測試擴充）。獨立 commit，與 LittleLeap 解耦。
+1. **里程碑 cutover** — §7.1 全部（含 `summaryCalculator` 孤兒鍵修正與既有測試擴充）。獨立 commit，與 LittleExplorer 解耦。
 2. **型別與純函式層** — §4 型別、`careSchedule.ts`＋測試、`icsExport.ts`＋測試。無 UI 依賴，可獨立驗證。
 3. **內容資料** — `careTasks.ts`、`developmentChecks.ts`、`toddlerWiki.ts`＋資料完整性測試。
 4. **hooks 與寫入器** — `useCareTasks`、`useDevelopmentProgress`、`useFirebaseChildren` 兩個新方法、`useChildStore` 透出。

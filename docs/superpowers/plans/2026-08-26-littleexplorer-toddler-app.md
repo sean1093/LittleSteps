@@ -1,27 +1,27 @@
-# LittleLeap 幼兒期子應用 Implementation Plan
+# LittleExplorer 幼兒期子應用 Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 為 1-3 歲幼兒新增第四個子應用 LittleLeap，提供 12-36 個月發展檢核、幼兒知識庫，以及依出生日精算法定時程的照護提醒中心（含行事曆匯出）。
+**Goal:** 為 1-3 歲幼兒新增第四個子應用 LittleExplorer，提供 12-36 個月發展檢核、幼兒知識庫，以及依出生日精算法定時程的照護提醒中心（含行事曆匯出）。
 
 **Architecture:** 獨立子應用，自帶 chrome（比照 LittleBloom／BabyOasis），不使用 LittleSteps 的 Sidebar。三條 hash 路由。所有到期計算與行事曆序列化為零 I/O 純函式，可完整單元測試。資料存於既有 `children/{childId}` RTDB 子樹，不需修改安全規則。
 
 **Tech Stack:** React 18 + TypeScript 5.2、Vite 5、Tailwind 3.4、Framer Motion 10、Firebase RTDB 12、Vitest 4.1、lucide-react
 
-**Spec:** `docs/superpowers/specs/2026-08-26-littleleap-toddler-design.md`
+**Spec:** `docs/superpowers/specs/2026-08-26-littleexplorer-toddler-design.md`
 
 **Prerequisite plan:** `docs/superpowers/plans/2026-08-26-littlesteps-data-corrections.md` 必須先完成。Task 3 的 `careTasks.ts` 直接連動勘誤後的疫苗 id 與劑次；未修正前建立的對應表會指向錯誤劑次。
 
 ## Global Constraints
 
 - 語言：所有使用者可見字串為繁體中文。
-- **嚴格互補**：LittleLeap 只實作 LittleSteps 沒有的能力。成長曲線、睡眠分析、快速日誌一律以 `window.location.hash` 深連結跳回 LittleSteps 既有頁面，**不得**在 LittleLeap 內重建任何等價視圖。
+- **嚴格互補**：LittleExplorer 只實作 LittleSteps 沒有的能力。成長曲線、睡眠分析、快速日誌一律以 `window.location.hash` 深連結跳回 LittleSteps 既有頁面，**不得**在 LittleExplorer 內重建任何等價視圖。
 - 疫苗完成狀態的唯一真相來源是 `ChildProfile.vaccineProgress`。疫苗類提醒**不得**擁有自己的完成記錄。
 - 資料存取一律 Firebase RTDB，全站強制登入。**沒有** LocalStorage fallback（`.claude/CLAUDE.md` 描述的 dual-mode 已於 commit `f9d8031` 移除）。
 - 所有時間相依的純函式必須接受可注入的 `today?: Date` 參數，遵循 commit `a9c17ab` 建立的慣例。
 - 不新增任何 npm 依賴。
 - 不新增頁面級或 E2E 測試（本 repo 現況 11 個測試檔中 9 個為純邏輯、0 個頁面測試；不引入第二套慣例）。
-- 樣式沿用既有共用 token：`rounded-3xl`、`shadow-soft`、`shadow-soft-lg`；顏色使用本計畫 Task 8 新增的 `leap-*` namespace。
+- 樣式沿用既有共用 token：`rounded-3xl`、`shadow-soft`、`shadow-soft-lg`；顏色使用本計畫 Task 8 新增的 `explorer-*` namespace。
 - husky pre-commit hook 會執行 `npm run build`（`tsc && vite build`）。
 - 醫療與制度性內容不得憑記憶撰寫。每筆檢核題目與每篇文章都必須對照衛福部國健署「兒童健康手冊」、疾管署預防接種時程，或台灣兒科醫學會發布之指引，並在資料檔以註解標註出處。
 
@@ -36,9 +36,9 @@ Task 7-9（三個頁面元件）改以「指名要照抄的既有檔案 ＋ 逐�
 ### Task 1: 型別定義與提醒引擎純函式
 
 **Files:**
-- Modify: `src/types/index.ts`（於檔案末端、`PregnancyWikiArticle` 之後新增 LittleLeap 區塊）
-- Create: `src/littleleap/utils/careSchedule.ts`
-- Test: `src/littleleap/utils/careSchedule.test.ts`
+- Modify: `src/types/index.ts`（於檔案末端、`PregnancyWikiArticle` 之後新增 LittleExplorer 區塊）
+- Create: `src/littleexplorer/utils/careSchedule.ts`
+- Test: `src/littleexplorer/utils/careSchedule.test.ts`
 
 **Interfaces:**
 - Consumes: `VaccineProgress` from `src/types/index.ts:125-134`
@@ -56,7 +56,7 @@ Append to `src/types/index.ts`:
 
 ```ts
 // ============================================================
-// LittleLeap（幼兒期 1-3 歲）
+// LittleExplorer（幼兒期 1-3 歲）
 // ============================================================
 
 export type ToddlerAgeBand = '12-15' | '15-18' | '18-24' | '24-30' | '30-36';
@@ -150,7 +150,7 @@ export interface ResolvedCareTask {
 
 - [ ] **Step 2: 寫失敗測試**
 
-Create `src/littleleap/utils/careSchedule.test.ts`:
+Create `src/littleexplorer/utils/careSchedule.test.ts`:
 
 ```ts
 import { describe, it, expect } from 'vitest';
@@ -318,12 +318,12 @@ describe('resolveCareTasks', () => {
 
 - [ ] **Step 3: 執行測試確認失敗**
 
-Run: `npx vitest run src/littleleap/utils/careSchedule.test.ts`
+Run: `npx vitest run src/littleexplorer/utils/careSchedule.test.ts`
 Expected: FAIL —「Failed to resolve import "./careSchedule"」。
 
 - [ ] **Step 4: 實作 `careSchedule.ts`**
 
-Create `src/littleleap/utils/careSchedule.ts`:
+Create `src/littleexplorer/utils/careSchedule.ts`:
 
 ```ts
 import type {
@@ -442,14 +442,14 @@ export function resolveCareTasks(
 
 - [ ] **Step 5: 執行測試確認通過**
 
-Run: `npx vitest run src/littleleap/utils/careSchedule.test.ts`
+Run: `npx vitest run src/littleexplorer/utils/careSchedule.test.ts`
 Expected: PASS，全部 15 個測試。
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/types/index.ts src/littleleap/utils/careSchedule.ts src/littleleap/utils/careSchedule.test.ts
-git commit -m "feat: add LittleLeap care-task types and schedule resolver
+git add src/types/index.ts src/littleexplorer/utils/careSchedule.ts src/littleexplorer/utils/careSchedule.test.ts
+git commit -m "feat: add LittleExplorer care-task types and schedule resolver
 
 Pure, I/O-free engine that expands a static care schedule into
 dated tasks from a child's birthday. Vaccine tasks carry no
@@ -458,7 +458,7 @@ vaccineProgress subtree, keyed by both id and dose number so a
 neighbouring dose cannot mark them done.
 
 Month arithmetic clamps to the last day of the target month so
-leap-day birthdays and month-end dates stay valid.
+explorer-day birthdays and month-end dates stay valid.
 
 Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 ```
@@ -468,8 +468,8 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 ### Task 2: 行事曆匯出
 
 **Files:**
-- Create: `src/littleleap/utils/icsExport.ts`
-- Test: `src/littleleap/utils/icsExport.test.ts`
+- Create: `src/littleexplorer/utils/icsExport.ts`
+- Test: `src/littleexplorer/utils/icsExport.test.ts`
 
 **Interfaces:**
 - Consumes: `ResolvedCareTask` from Task 1
@@ -480,7 +480,7 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 
 - [ ] **Step 1: 寫失敗測試**
 
-Create `src/littleleap/utils/icsExport.test.ts`:
+Create `src/littleexplorer/utils/icsExport.test.ts`:
 
 ```ts
 import { describe, it, expect } from 'vitest';
@@ -595,12 +595,12 @@ describe('buildGoogleCalendarUrl', () => {
 
 - [ ] **Step 2: 執行測試確認失敗**
 
-Run: `npx vitest run src/littleleap/utils/icsExport.test.ts`
+Run: `npx vitest run src/littleexplorer/utils/icsExport.test.ts`
 Expected: FAIL —「Failed to resolve import "./icsExport"」。
 
 - [ ] **Step 3: 實作 `icsExport.ts`**
 
-Create `src/littleleap/utils/icsExport.ts`:
+Create `src/littleexplorer/utils/icsExport.ts`:
 
 ```ts
 import type { ResolvedCareTask } from '../../types';
@@ -644,7 +644,7 @@ function eventDetails(task: ResolvedCareTask): string {
 function buildEvent(task: ResolvedCareTask, childName: string): string[] {
   return [
     'BEGIN:VEVENT',
-    `UID:${task.template.id}-${toIcsDate(task.dueDate)}@littleleap`,
+    `UID:${task.template.id}-${toIcsDate(task.dueDate)}@littleexplorer`,
     `DTSTART;VALUE=DATE:${toIcsDate(task.dueDate)}`,
     `DTEND;VALUE=DATE:${toIcsDate(nextDay(task.dueDate))}`,
     `SUMMARY:${escapeText(eventTitle(task, childName))}`,
@@ -666,7 +666,7 @@ export function buildIcs(tasks: ResolvedCareTask[], childName: string): string {
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//LittleLeap//幼兒照護時程//ZH-TW',
+    'PRODID:-//LittleExplorer//幼兒照護時程//ZH-TW',
     'CALSCALE:GREGORIAN',
     ...tasks
       .filter((task) => task.status !== 'done')
@@ -709,13 +709,13 @@ export function downloadIcs(
 
 - [ ] **Step 4: 執行測試確認通過**
 
-Run: `npx vitest run src/littleleap/utils/icsExport.test.ts`
+Run: `npx vitest run src/littleexplorer/utils/icsExport.test.ts`
 Expected: PASS，全部 10 個測試。
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/littleleap/utils/icsExport.ts src/littleleap/utils/icsExport.test.ts
+git add src/littleexplorer/utils/icsExport.ts src/littleexplorer/utils/icsExport.test.ts
 git commit -m "feat: add ics and Google Calendar export for care tasks
 
 Zero-dependency RFC 5545 serialiser. Outstanding tasks become
@@ -731,8 +731,8 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 ### Task 3: 照護提醒時程資料
 
 **Files:**
-- Create: `src/littleleap/data/careTasks.ts`
-- Test: `src/littleleap/data/careTasks.test.ts`
+- Create: `src/littleexplorer/data/careTasks.ts`
+- Test: `src/littleexplorer/data/careTasks.test.ts`
 
 **Interfaces:**
 - Consumes: `CareTaskTemplate` from Task 1；`vaccineSchedules` from `src/littlesteps/data/vaccines.ts`（**必須為前置計畫勘誤後的版本**）
@@ -740,7 +740,7 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 
 - [ ] **Step 1: 寫失敗測試**
 
-Create `src/littleleap/data/careTasks.test.ts`:
+Create `src/littleexplorer/data/careTasks.test.ts`:
 
 ```ts
 import { describe, it, expect } from 'vitest';
@@ -820,12 +820,12 @@ describe('careTaskTemplates', () => {
 
 - [ ] **Step 2: 執行測試確認失敗**
 
-Run: `npx vitest run src/littleleap/data/careTasks.test.ts`
+Run: `npx vitest run src/littleexplorer/data/careTasks.test.ts`
 Expected: FAIL —「Failed to resolve import "./careTasks"」。
 
 - [ ] **Step 3: 實作 `careTasks.ts`**
 
-Create `src/littleleap/data/careTasks.ts`。逐筆內容如下；`description` 需簡述家長要做什麼與需攜帶的證件，撰寫前對照 `source` 欄位所指之官方頁面確認文字無誤。
+Create `src/littleexplorer/data/careTasks.ts`。逐筆內容如下；`description` 需簡述家長要做什麼與需攜帶的證件，撰寫前對照 `source` 欄位所指之官方頁面確認文字無誤。
 
 ```ts
 import type { CareTaskKind, CareTaskTemplate } from '../../types';
@@ -1079,7 +1079,7 @@ export const careTaskTemplates: CareTaskTemplate[] = [
 
 - [ ] **Step 4: 執行測試確認通過**
 
-Run: `npx vitest run src/littleleap/data/careTasks.test.ts`
+Run: `npx vitest run src/littleexplorer/data/careTasks.test.ts`
 Expected: PASS，全部 9 個測試。
 
 若「疫苗任務的 dueMonth 與疫苗資料的 ageInMonths 一致」失敗，代表前置計畫（`2026-08-26-littlesteps-data-corrections.md`）尚未完成。停止本任務，先完成前置計畫。
@@ -1087,7 +1087,7 @@ Expected: PASS，全部 9 個測試。
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/littleleap/data/careTasks.ts src/littleleap/data/careTasks.test.ts
+git add src/littleexplorer/data/careTasks.ts src/littleexplorer/data/careTasks.test.ts
 git commit -m "feat: add 1-3y care schedule templates
 
 Twenty statutory checkpoints computable from a birthday: three
@@ -1107,8 +1107,8 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 ### Task 4: 發展檢核資料
 
 **Files:**
-- Create: `src/littleleap/data/developmentChecks.ts`
-- Test: `src/littleleap/data/developmentChecks.test.ts`
+- Create: `src/littleexplorer/data/developmentChecks.ts`
+- Test: `src/littleexplorer/data/developmentChecks.test.ts`
 
 **Interfaces:**
 - Consumes: `DevelopmentCheckItem`, `DevelopmentWarning`, `ToddlerAgeBand`, `DevelopmentDomain` from Task 1
@@ -1116,7 +1116,7 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 
 - [ ] **Step 1: 寫失敗測試**
 
-Create `src/littleleap/data/developmentChecks.test.ts`:
+Create `src/littleexplorer/data/developmentChecks.test.ts`:
 
 ```ts
 import { describe, it, expect } from 'vitest';
@@ -1209,12 +1209,12 @@ describe('顯示標籤', () => {
 
 - [ ] **Step 2: 執行測試確認失敗**
 
-Run: `npx vitest run src/littleleap/data/developmentChecks.test.ts`
+Run: `npx vitest run src/littleexplorer/data/developmentChecks.test.ts`
 Expected: FAIL —「Failed to resolve import "./developmentChecks"」。
 
 - [ ] **Step 3: 建立資料檔骨架與標籤**
 
-Create `src/littleleap/data/developmentChecks.ts` starting with:
+Create `src/littleexplorer/data/developmentChecks.ts` starting with:
 
 ```ts
 import type {
@@ -1371,13 +1371,13 @@ export const developmentWarnings: DevelopmentWarning[] = [
 
 - [ ] **Step 7: 執行測試確認通過**
 
-Run: `npx vitest run src/littleleap/data/developmentChecks.test.ts`
+Run: `npx vitest run src/littleexplorer/data/developmentChecks.test.ts`
 Expected: PASS，全部 8 個測試。
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/littleleap/data/developmentChecks.ts src/littleleap/data/developmentChecks.test.ts src/common/lucideIcons.ts
+git add src/littleexplorer/data/developmentChecks.ts src/littleexplorer/data/developmentChecks.test.ts src/common/lucideIcons.ts
 git commit -m "feat: add 12-36 month development checklist and red flags
 
 Thirty items across five age bands and five developmental
@@ -1400,8 +1400,8 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 ### Task 5: 幼兒知識庫資料
 
 **Files:**
-- Create: `src/littleleap/data/toddlerWiki.ts`
-- Test: `src/littleleap/data/toddlerWiki.test.ts`
+- Create: `src/littleexplorer/data/toddlerWiki.ts`
+- Test: `src/littleexplorer/data/toddlerWiki.test.ts`
 - Modify: `src/types/index.ts`（新增 `ToddlerWikiCategory` 與 `ToddlerWikiArticle`）
 
 **Interfaces:**
@@ -1410,7 +1410,7 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 
 - [ ] **Step 1: 新增型別**
 
-Append to the LittleLeap block in `src/types/index.ts`:
+Append to the LittleExplorer block in `src/types/index.ts`:
 
 ```ts
 export type ToddlerWikiCategory =
@@ -1427,7 +1427,7 @@ export type ToddlerWikiArticle = WikiArticle<ToddlerWikiCategory>;
 
 - [ ] **Step 2: 寫失敗測試**
 
-Create `src/littleleap/data/toddlerWiki.test.ts`:
+Create `src/littleexplorer/data/toddlerWiki.test.ts`:
 
 ```ts
 import { describe, it, expect } from 'vitest';
@@ -1516,12 +1516,12 @@ describe('分類顯示設定', () => {
 
 - [ ] **Step 3: 執行測試確認失敗**
 
-Run: `npx vitest run src/littleleap/data/toddlerWiki.test.ts`
+Run: `npx vitest run src/littleexplorer/data/toddlerWiki.test.ts`
 Expected: FAIL —「Failed to resolve import "./toddlerWiki"」。
 
 - [ ] **Step 4: 建立分類標籤與配色**
 
-Create `src/littleleap/data/toddlerWiki.ts` starting with:
+Create `src/littleexplorer/data/toddlerWiki.ts` starting with:
 
 ```ts
 import type {
@@ -1554,7 +1554,7 @@ export const toddlerWikiCategoryColors: Record<
 };
 ```
 
-配色沿用 `src/littlebloom/data/wiki.ts` 的 `{bg, text, pill}` 三欄慣例與 Tailwind 預設色階，不使用 `leap-*` 品牌色——分類色需要 7 種可區分的色相，品牌色只有 3 種。
+配色沿用 `src/littlebloom/data/wiki.ts` 的 `{bg, text, pill}` 三欄慣例與 Tailwind 預設色階，不使用 `explorer-*` 品牌色——分類色需要 7 種可區分的色相，品牌色只有 3 種。
 
 - [ ] **Step 5: 撰寫 20 篇文章**
 
@@ -1616,13 +1616,13 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
 
 - [ ] **Step 6: 執行測試確認通過**
 
-Run: `npx vitest run src/littleleap/data/toddlerWiki.test.ts`
+Run: `npx vitest run src/littleexplorer/data/toddlerWiki.test.ts`
 Expected: PASS，全部 6 個測試。
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/types/index.ts src/littleleap/data/toddlerWiki.ts src/littleleap/data/toddlerWiki.test.ts src/common/lucideIcons.ts
+git add src/types/index.ts src/littleexplorer/data/toddlerWiki.ts src/littleexplorer/data/toddlerWiki.test.ts src/common/lucideIcons.ts
 git commit -m "feat: add toddler knowledge base content
 
 Twenty articles across toilet training, language, behaviour,
@@ -1630,7 +1630,7 @@ eating, sleep transitions, safety, and starting preschool -
 the 1-3y topics with no coverage anywhere in the existing apps.
 
 Reuses the shared WikiArticle<Category> generic, so the same
-WikiArticleCard renders LittleSteps, LittleBloom, and LittleLeap
+WikiArticleCard renders LittleSteps, LittleBloom, and LittleExplorer
 articles with each app owning only its own categories.
 
 Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
@@ -1643,8 +1643,8 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 **Files:**
 - Modify: `src/common/hooks/useFirebaseChildren.ts`
 - Modify: `src/common/hooks/useChildStore.ts`
-- Create: `src/littleleap/hooks/useDevelopmentProgress.ts`
-- Create: `src/littleleap/hooks/useCareTasks.ts`
+- Create: `src/littleexplorer/hooks/useDevelopmentProgress.ts`
+- Create: `src/littleexplorer/hooks/useCareTasks.ts`
 
 **Interfaces:**
 - Consumes: `useFirebaseCollection<T>(childId, user, { firebasePath, empty, fromFirebase, errorLabel })` from `src/common/hooks/useFirebaseCollection.ts`；`removeUndefined` from `src/utils/firebaseData.ts`；`resolveCareTasks` from Task 1；`careTaskTemplates` from Task 3
@@ -1705,7 +1705,7 @@ and add the corresponding wrappers in the hook body, binding `currentChildId` an
 
 - [ ] **Step 3: 建立 `useDevelopmentProgress`**
 
-Create `src/littleleap/hooks/useDevelopmentProgress.ts`, following `src/littlebloom/hooks/usePregnancyData.ts` exactly:
+Create `src/littleexplorer/hooks/useDevelopmentProgress.ts`, following `src/littlebloom/hooks/usePregnancyData.ts` exactly:
 
 ```ts
 import type { User } from 'firebase/auth';
@@ -1732,7 +1732,7 @@ export function useDevelopmentProgress(childId: string | null, user: User | null
 
 - [ ] **Step 4: 建立 `useCareTasks`**
 
-Create `src/littleleap/hooks/useCareTasks.ts`:
+Create `src/littleexplorer/hooks/useCareTasks.ts`:
 
 ```ts
 import { useMemo } from 'react';
@@ -1791,8 +1791,8 @@ Expected: build 成功；`useChildStore.test.ts` PASS。該測試斷言 `useChil
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/common/hooks/useFirebaseChildren.ts src/common/hooks/useChildStore.ts src/littleleap/hooks/
-git commit -m "feat: add LittleLeap data hooks and RTDB writers
+git add src/common/hooks/useFirebaseChildren.ts src/common/hooks/useChildStore.ts src/littleexplorer/hooks/
+git commit -m "feat: add LittleExplorer data hooks and RTDB writers
 
 Development-check progress and care-task completion live under
 the existing children/{childId} subtree, so the current security
@@ -1810,19 +1810,19 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 
 **Files:**
 - Modify: `tailwind.config.js`
-- Create: `src/littleleap/pages/LittleLeapPage.tsx`
+- Create: `src/littleexplorer/pages/LittleExplorerPage.tsx`
 
 **Interfaces:**
 - Consumes: `useCareTasks` from Task 6；`careTaskKindLabels` from Task 3；`downloadIcs`、`buildGoogleCalendarUrl` from Task 2；`calculateAgeDisplay` from `src/utils/summaryCalculator.ts`
-- Produces: `LittleLeapPage` default export，props `{ currentChild?: ChildProfile | null; user: User | null; onUpsertCareTask: (record: CareTaskRecord) => Promise<void> }`
+- Produces: `LittleExplorerPage` default export，props `{ currentChild?: ChildProfile | null; user: User | null; onUpsertCareTask: (record: CareTaskRecord) => Promise<void> }`
 
-- [ ] **Step 1: 新增 `leap` 色票**
+- [ ] **Step 1: 新增 `explorer` 色票**
 
 In `tailwind.config.js`, add to `theme.extend.colors` after the `bloom` object:
 
 ```js
-        // LittleLeap（幼兒期）Palette
-        leap: {
+        // LittleExplorer（幼兒期）Palette
+        explorer: {
           'sunbeam': '#F5B843',
           'sunbeam-light': '#FBE0A6',
           'sunbeam-dark': '#D99A22',
@@ -1839,20 +1839,20 @@ In `tailwind.config.js`, add to `theme.extend.colors` after the `bloom` object:
 
 - [ ] **Step 2: 建立 Hub 頁**
 
-Create `src/littleleap/pages/LittleLeapPage.tsx`. 結構比照 `src/littlebloom/pages/LittleBloomPage.tsx`：module 層級的 `containerVariants`（`staggerChildren: 0.1`）與 `itemVariants`（`y: 20 → 0`），外層 `min-h-screen bg-leap-sand px-4 py-8`，內容欄 `max-w-4xl mx-auto`，各區塊為 `bg-white rounded-3xl shadow-soft` 卡片。
+Create `src/littleexplorer/pages/LittleExplorerPage.tsx`. 結構比照 `src/littlebloom/pages/LittleBloomPage.tsx`：module 層級的 `containerVariants`（`staggerChildren: 0.1`）與 `itemVariants`（`y: 20 → 0`），外層 `min-h-screen bg-explorer-sand px-4 py-8`，內容欄 `max-w-4xl mx-auto`，各區塊為 `bg-white rounded-3xl shadow-soft` 卡片。
 
 必要區塊，由上而下：
 
-1. **頁首** — `Sun` icon、標題「LittleLeap」、副標顯示 `calculateAgeDisplay(currentChild.birthday)`。
+1. **頁首** — `Sun` icon、標題「LittleExplorer」、副標「小小探險家 · {`calculateAgeDisplay(currentChild.birthday)`}」。這是中文名在 UI 唯一露出的地方；首頁卡片的副標維持功能描述「幼兒期陪伴」，與 LittleBloom 的「孕期陪伴」一致。
 2. **年齡守門** — 依 `currentChild.birthday` 算出月齡：
    - `< 12`：顯示引導卡「寶寶還不到 1 歲，先到 LittleSteps 追蹤里程碑與副食品」，按鈕 `onClick={() => { window.location.hash = '#/littlesteps'; }}`。不渲染下方任何區塊。
    - `>= 36`：顯示畢業卡「已經滿 3 歲了，幼兒期的追蹤告一段落」，仍渲染逾期任務區塊。
    - 無 `currentChild`：顯示「請先於 LittleSteps 新增寶寶」引導卡。
-3. **逾期任務**（`status === 'overdue'`）— 以 `bg-leap-clay/10 border-leap-clay` 強調，置於清單最上方。清單為空時整區不渲染。
+3. **逾期任務**（`status === 'overdue'`）— 以 `bg-explorer-clay/10 border-explorer-clay` 強調，置於清單最上方。清單為空時整區不渲染。
 4. **待辦任務**（`status === 'due'`，以及 `upcoming` 中 `daysUntilDue <= 90` 者）— 每列顯示 `careTaskKindLabels[kind]` 標籤、標題、`dueDate`、以及「還有 N 天」或「已逾期 N 天」。每列一個「標記完成」按鈕；`kind === 'vaccine'` 的任務**不顯示**該按鈕，改顯示深連結「到疫苗追蹤勾選」→ `window.location.hash = '#/littlesteps/vaccine-tracking'`，因為疫苗完成狀態的唯一真相來源是 `vaccineProgress`。
 5. **標記完成互動** — 點擊後呼叫 `onUpsertCareTask({ taskId, completedDate: <今天 YYYY-MM-DD>, location, notes })`。院所與備註為選填，以同一張卡片內展開的簡易表單輸入，不另開 modal。
 6. **匯出行事曆** — 兩個按鈕：「匯出全部時程（.ics）」呼叫 `downloadIcs(tasks, currentChild.name)`；每個任務列上一個小的「加入 Google 日曆」連結，`href={buildGoogleCalendarUrl(task, currentChild.name)}`、`target="_blank"`、`rel="noopener noreferrer"`。
-7. **快速導覽** — 三個按鈕：「發展檢核」→ `#/littleleap/checkup`、「幼兒百科」→ `#/littleleap/wiki`、「成長曲線」→ `#/littlesteps/growth-charts`（深連結，不重建）。
+7. **快速導覽** — 三個按鈕：「發展檢核」→ `#/littleexplorer/checkup`、「幼兒百科」→ `#/littleexplorer/wiki`、「成長曲線」→ `#/littlesteps/growth-charts`（深連結，不重建）。
 
 `已完成` 任務不在 Hub 顯示，避免清單被歷史記錄淹沒。
 
@@ -1864,8 +1864,8 @@ Expected: 成功。此時頁面尚未被任何路由引用，僅驗證型別正�
 - [ ] **Step 4: Commit**
 
 ```bash
-git add tailwind.config.js src/littleleap/pages/LittleLeapPage.tsx
-git commit -m "feat: add LittleLeap hub page and brand palette
+git add tailwind.config.js src/littleexplorer/pages/LittleExplorerPage.tsx
+git commit -m "feat: add LittleExplorer hub page and brand palette
 
 The hub is the reminder centre: a parent opening this app always
 asks the same first question, so overdue and due-soon tasks are
@@ -1883,7 +1883,7 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 ### Task 8: 發展檢核頁
 
 **Files:**
-- Create: `src/littleleap/pages/DevelopmentCheckPage.tsx`
+- Create: `src/littleexplorer/pages/DevelopmentCheckPage.tsx`
 
 **Interfaces:**
 - Consumes: `useDevelopmentProgress` from Task 6；`developmentCheckItems`、`developmentWarnings`、`ageBandLabels`、`domainLabels`、`domainIcons` from Task 4；`getLucideIcon` from `src/common/lucideIcons.ts`
@@ -1891,13 +1891,13 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 
 - [ ] **Step 1: 建立頁面**
 
-Create `src/littleleap/pages/DevelopmentCheckPage.tsx`。結構：
+Create `src/littleexplorer/pages/DevelopmentCheckPage.tsx`。結構：
 
-1. **自帶頁首** — `bg-leap-sunbeam` header，`ChevronLeft` 返回鍵 `onClick={() => { window.location.hash = '#/littleleap'; }}`，標題「發展檢核」。比照 `src/littlebloom/pages/LittleBloomWikiPage.tsx:18-30`。
+1. **自帶頁首** — `bg-explorer-sunbeam` header，`ChevronLeft` 返回鍵 `onClick={() => { window.location.hash = '#/littleexplorer'; }}`，標題「發展檢核」。比照 `src/littlebloom/pages/LittleBloomWikiPage.tsx:18-30`。
 2. **年齡段選擇器** — 橫向可捲動的 chip 列，選項來自 `ageBandLabels`。**預設選中孩子目前月齡所屬的年齡段**（月齡 < 12 選 `'12-15'`，>= 36 選 `'30-36'`），而非固定第一段——這是 `MilestonesPage.tsx:20` 固定預設 `'0-2'` 的已知體驗缺陷，此處不重蹈。
 3. **檢核清單** — 依 `domain` 分組，每組一個小標（`domainLabels` ＋ `getLucideIcon(domainIcons[domain])`）。每題一列，含勾選框、`title`、可展開的 `detail` 與 `tips`。勾選呼叫 `onToggleCheckItem(item.id, !achieved)`。
-4. **進度摘要** — 該年齡段「已達成 N／6」，以 `bg-leap-meadow` 進度條呈現。
-5. **紅旗警訊區** — 置於清單下方，`bg-leap-clay/10` 卡片，標題「這些情況建議諮詢醫師」，列出該年齡段 `developmentWarnings` 的 `signals` 與 `action`。**永遠顯示**，不依勾選狀態隱藏——警訊的價值在於家長主動辨識，而非系統判定。
+4. **進度摘要** — 該年齡段「已達成 N／6」，以 `bg-explorer-meadow` 進度條呈現。
+5. **紅旗警訊區** — 置於清單下方，`bg-explorer-clay/10` 卡片，標題「這些情況建議諮詢醫師」，列出該年齡段 `developmentWarnings` 的 `signals` 與 `action`。**永遠顯示**，不依勾選狀態隱藏——警訊的價值在於家長主動辨識，而非系統判定。
 6. **免責說明** — 頁尾一行小字：發展有個別差異，本檢核表僅供參考，正式評估請至兒童發展聯合評估中心。
 
 - [ ] **Step 2: 型別檢查**
@@ -1908,7 +1908,7 @@ Expected: 成功。
 - [ ] **Step 3: Commit**
 
 ```bash
-git add src/littleleap/pages/DevelopmentCheckPage.tsx
+git add src/littleexplorer/pages/DevelopmentCheckPage.tsx
 git commit -m "feat: add development checklist page
 
 Defaults the age-band picker to the child's actual age rather
@@ -1927,7 +1927,7 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 ### Task 9: 幼兒百科頁
 
 **Files:**
-- Create: `src/littleleap/pages/ToddlerWikiPage.tsx`
+- Create: `src/littleexplorer/pages/ToddlerWikiPage.tsx`
 
 **Interfaces:**
 - Consumes: `toddlerWikiArticles`、`toddlerWikiCategoryLabels`、`toddlerWikiCategoryColors` from Task 5；`WikiArticleCard` from `src/common/components/wiki/WikiArticleCard.tsx`
@@ -1935,10 +1935,10 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 
 - [ ] **Step 1: 建立頁面**
 
-Create `src/littleleap/pages/ToddlerWikiPage.tsx`, following `src/littlebloom/pages/LittleBloomWikiPage.tsx` closely:
+Create `src/littleexplorer/pages/ToddlerWikiPage.tsx`, following `src/littlebloom/pages/LittleBloomWikiPage.tsx` closely:
 
-- 自帶 `bg-leap-sunbeam` header ＋ `ChevronLeft` 返回鍵 → `#/littleleap`，標題「幼兒百科」；頁面根 `bg-leap-sand`。
-- 搜尋輸入框，`focus:ring-leap-sunbeam`。過濾以 `useMemo` ＋ `.toLowerCase().includes()` 比對 `title` 與 `summary`，與既有兩個 wiki 頁一致。
+- 自帶 `bg-explorer-sunbeam` header ＋ `ChevronLeft` 返回鍵 → `#/littleexplorer`，標題「幼兒百科」；頁面根 `bg-explorer-sand`。
+- 搜尋輸入框，`focus:ring-explorer-sunbeam`。過濾以 `useMemo` ＋ `.toLowerCase().includes()` 比對 `title` 與 `summary`，與既有兩個 wiki 頁一致。
 - **加上分類 chip 列**（`toddlerWikiCategoryLabels`，含「全部」選項）。LittleBloom 的 wiki 沒有分類篩選，但它只有 1 篇文章；20 篇沒有分類篩選會難以瀏覽。分類與搜尋為 AND 關係。
 - 單一展開的手風琴（`expandedId: string | null`），渲染共用 `<WikiArticleCard>`，傳入 `article`、`isExpanded`、`onToggle`、`categoryLabel={toddlerWikiCategoryLabels[article.category]}`、`categoryColors={toddlerWikiCategoryColors[article.category]}`。
 - 過濾後為空時顯示空狀態文案「找不到符合的文章，換個關鍵字試試」。
@@ -1951,7 +1951,7 @@ Expected: 成功。
 - [ ] **Step 3: Commit**
 
 ```bash
-git add src/littleleap/pages/ToddlerWikiPage.tsx
+git add src/littleexplorer/pages/ToddlerWikiPage.tsx
 git commit -m "feat: add toddler wiki page
 
 Adds a category filter on top of the LittleBloom wiki pattern:
@@ -1973,16 +1973,16 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: 全部三個頁面元件、`useChildStore` 的兩個新 mutator
-- Produces: 三條可用路由 `#/littleleap`、`#/littleleap/checkup`、`#/littleleap/wiki`
+- Produces: 三條可用路由 `#/littleexplorer`、`#/littleexplorer/checkup`、`#/littleexplorer/wiki`
 
 - [ ] **Step 1: 擴充 `Page` union**
 
 In `src/types/routes.ts`, add to the `Page` union（**不要**加入 `LittleStepsPage`，該 union 專供 Sidebar，結構上排除其他子 app）:
 
 ```ts
-  | 'littleleap'
-  | 'littleleap/checkup'
-  | 'littleleap/wiki'
+  | 'littleexplorer'
+  | 'littleexplorer/checkup'
+  | 'littleexplorer/wiki'
 ```
 
 Also update the file's leading doc comment（`:1-9`）to mention the fourth sub-app.
@@ -1994,32 +1994,32 @@ Six edits in `src/App.tsx`:
 1. 於 lazy import 區塊末端加入：
 
 ```ts
-const LittleLeapPage = lazy(() => import('./littleleap/pages/LittleLeapPage'));
-const DevelopmentCheckPage = lazy(() => import('./littleleap/pages/DevelopmentCheckPage'));
-const ToddlerWikiPage = lazy(() => import('./littleleap/pages/ToddlerWikiPage'));
+const LittleExplorerPage = lazy(() => import('./littleexplorer/pages/LittleExplorerPage'));
+const DevelopmentCheckPage = lazy(() => import('./littleexplorer/pages/DevelopmentCheckPage'));
+const ToddlerWikiPage = lazy(() => import('./littleexplorer/pages/ToddlerWikiPage'));
 ```
 
 2. 於 `getPageFromHash()` 的 `pageMap` 加入：
 
 ```ts
-      '#/littleleap': 'littleleap',
-      '#/littleleap/checkup': 'littleleap/checkup',
-      '#/littleleap/wiki': 'littleleap/wiki',
+      '#/littleexplorer': 'littleexplorer',
+      '#/littleexplorer/checkup': 'littleexplorer/checkup',
+      '#/littleexplorer/wiki': 'littleexplorer/wiki',
 ```
 
 3. 於 `navigateToPage()` 的 `hashMap` 加入（`Record<Page, string>` 為窮舉型別，漏一個 `tsc` 就會擋下）：
 
 ```ts
-      'littleleap': '#/littleleap',
-      'littleleap/checkup': '#/littleleap/checkup',
-      'littleleap/wiki': '#/littleleap/wiki',
+      'littleexplorer': '#/littleexplorer',
+      'littleexplorer/checkup': '#/littleexplorer/checkup',
+      'littleexplorer/wiki': '#/littleexplorer/wiki',
 ```
 
 4. 於 `getPageTitle()` 開頭、既有 `littlebloom` 早退分支旁加入：
 
 ```ts
-    if (currentPage.startsWith('littleleap')) {
-      return 'LittleLeap';
+    if (currentPage.startsWith('littleexplorer')) {
+      return 'LittleExplorer';
     }
 ```
 
@@ -2028,46 +2028,46 @@ const ToddlerWikiPage = lazy(() => import('./littleleap/pages/ToddlerWikiPage'))
 ```ts
   const isStandaloneSubApp =
     currentPage.startsWith('littlebloom') ||
-    currentPage.startsWith('littleleap') ||
+    currentPage.startsWith('littleexplorer') ||
     currentPage === 'babyoasis';
 ```
 
 6. 於 `<Suspense>` 內、BabyOasis 分支之前加入三個渲染分支。`onUpsertCareTask` 與 `onToggleCheckItem` 由 `useChildStore` 解構而來（Task 6 Step 2 已透出）：
 
 ```tsx
-        {/* LittleLeap Routes */}
-        {currentPage === 'littleleap' && (
-          <LittleLeapPage
+        {/* LittleExplorer Routes */}
+        {currentPage === 'littleexplorer' && (
+          <LittleExplorerPage
             currentChild={currentChild}
             user={user}
             onUpsertCareTask={upsertCareTaskRecord}
           />
         )}
-        {currentPage === 'littleleap/checkup' && (
+        {currentPage === 'littleexplorer/checkup' && (
           <DevelopmentCheckPage
             currentChild={currentChild}
             user={user}
             onToggleCheckItem={updateDevelopmentProgress}
           />
         )}
-        {currentPage === 'littleleap/wiki' && <ToddlerWikiPage />}
+        {currentPage === 'littleexplorer/wiki' && <ToddlerWikiPage />}
 ```
 
 Add `upsertCareTaskRecord` and `updateDevelopmentProgress` to the existing `useChildStore(user)` destructuring at the top of `AppContent`.
 
 - [ ] **Step 3: 修正並擴充 analytics 分頁標記**
 
-In `src/lib/firebase.ts`, inside `logPageView`'s `getPageMetadata`, add a LittleLeap branch and **fix the existing LittleBloom bug**: it uses `page === 'littlebloom'`, so `'littlebloom/wiki'` silently falls through to the `app: 'main'` default. Change it to `startsWith`, matching the LittleSteps branch:
+In `src/lib/firebase.ts`, inside `logPageView`'s `getPageMetadata`, add a LittleExplorer branch and **fix the existing LittleBloom bug**: it uses `page === 'littlebloom'`, so `'littlebloom/wiki'` silently falls through to the `app: 'main'` default. Change it to `startsWith`, matching the LittleSteps branch:
 
 ```ts
   } else if (page.startsWith('littlebloom')) {
     return { app: 'littlebloom', section: 'wip', feature: 'pregnancy-companion' };
-  } else if (page.startsWith('littleleap')) {
-    return { app: 'littleleap', section: 'toddler', feature: 'development-and-reminders' };
+  } else if (page.startsWith('littleexplorer')) {
+    return { app: 'littleexplorer', section: 'toddler', feature: 'development-and-reminders' };
   } else if (page.startsWith('littlesteps')) {
 ```
 
-Also update the `app_name` enumeration comment（`:90`）to include `littleleap`.
+Also update the `app_name` enumeration comment（`:90`）to include `littleexplorer`.
 
 - [ ] **Step 4: 首頁新增第四張卡並接上時間軸**
 
@@ -2076,14 +2076,14 @@ In `src/common/pages/MainLandingPage.tsx`:
 1. Widen the props union（`:11`）:
 
 ```ts
-  onNavigate: (page: 'littlesteps' | 'littlebloom' | 'babyoasis' | 'littleleap') => void;
+  onNavigate: (page: 'littlesteps' | 'littlebloom' | 'babyoasis' | 'littleexplorer') => void;
 ```
 
-2. Add a LittleLeap card. Place it in the same 2-column grid as LittleSteps/LittleBloom so the three life-stage apps read as one progression（BabyOasis stays separate below as a standalone utility）。The grid becomes `grid-cols-1 md:grid-cols-3`. Copy the LittleSteps card block verbatim and change: icon `Sun`, icon background `from-leap-sunbeam/20 to-leap-meadow/20`, icon colour `text-leap-sunbeam-dark`, title `LittleLeap`, subtitle 「幼兒期陪伴」, hover border `hover:border-leap-sunbeam/30`, CTA gradient `from-leap-sunbeam to-leap-meadow`, CTA text 「進入幼兒期」, `onClick={() => onNavigate('littleleap')}`, status badge 「立即可用」（綠色脈動點，同 LittleSteps）。Three feature bullets: 「12-36 個月發展檢核」、「健檢與疫苗提醒」、「幼兒照顧知識庫」。
+2. Add a LittleExplorer card. Place it in the same 2-column grid as LittleSteps/LittleBloom so the three life-stage apps read as one progression（BabyOasis stays separate below as a standalone utility）。The grid becomes `grid-cols-1 md:grid-cols-3`. Copy the LittleSteps card block verbatim and change: icon `Sun`, icon background `from-explorer-sunbeam/20 to-explorer-meadow/20`, icon colour `text-explorer-sunbeam-dark`, title `LittleExplorer`, subtitle 「幼兒期陪伴」, hover border `hover:border-explorer-sunbeam/30`, CTA gradient `from-explorer-sunbeam to-explorer-meadow`, CTA text 「進入幼兒期」, `onClick={() => onNavigate('littleexplorer')}`, status badge 「立即可用」（綠色脈動點，同 LittleSteps）。Three feature bullets: 「12-36 個月發展檢核」、「健檢與疫苗提醒」、「幼兒照顧知識庫」。
 
-3. Wire the Journey Timeline's 「幼兒期 / 1-3 歲」 marker（`:341-350`）— add `onClick={() => onNavigate('littleleap')}` and `className` additions `cursor-pointer` to its `motion.div`. This slot has been decorative since it was written; it now has a destination.
+3. Wire the Journey Timeline's 「幼兒期 / 1-3 歲」 marker（`:341-350`）— add `onClick={() => onNavigate('littleexplorer')}` and `className` additions `cursor-pointer` to its `motion.div`. This slot has been decorative since it was written; it now has a destination.
 
-4. Update the footer copyright literal（`:365`）to include LittleLeap.
+4. Update the footer copyright literal（`:365`）to include LittleExplorer.
 
 - [ ] **Step 5: 型別檢查與完整測試**
 
@@ -2096,23 +2096,23 @@ Run: `npm run dev`
 
 逐項確認：
 
-1. 首頁 `#/` 顯示四張卡，LittleLeap 卡片可點。
-2. 首頁時間軸的「幼兒期 1-3 歲」可點且導向 `#/littleleap`。
-3. `#/littleleap` 不顯示 LittleSteps 的 header 與 Sidebar（`isStandaloneSubApp` 生效）。
+1. 首頁 `#/` 顯示四張卡，LittleExplorer 卡片可點。
+2. 首頁時間軸的「幼兒期 1-3 歲」可點且導向 `#/littleexplorer`。
+3. `#/littleexplorer` 不顯示 LittleSteps 的 header 與 Sidebar（`isStandaloneSubApp` 生效）。
 4. 選一個 1-3 歲的寶寶：Hub 顯示到期與逾期任務，日期與該寶寶生日相符。
 5. 選一個未滿 1 歲的寶寶：Hub 顯示引導卡並可跳回 LittleSteps。
 6. 疫苗任務**沒有**「標記完成」按鈕，只有跳往疫苗追蹤的連結；到疫苗追蹤勾選該劑次後回到 Hub，該任務消失（已 done 不顯示）。
 7. 非疫苗任務點「標記完成」後消失；重新整理後仍維持完成狀態（確認已寫入 RTDB）。
 8. 「匯出全部時程」下載 `.ics`，以行事曆 App 開啟可見全天事件與提前 7 天提醒。
-9. `#/littleleap/checkup` 預設選中的年齡段與寶寶實際月齡相符；勾選後重新整理仍保持。
-10. `#/littleleap/wiki` 搜尋與分類篩選皆生效，文章可展開。
+9. `#/littleexplorer/checkup` 預設選中的年齡段與寶寶實際月齡相符；勾選後重新整理仍保持。
+10. `#/littleexplorer/wiki` 搜尋與分類篩選皆生效，文章可展開。
 11. 瀏覽器上一頁／下一頁在三條路由間正常運作（`hashchange` 監聽器）。
 
 - [ ] **Step 7: Commit**
 
 ```bash
 git add src/types/routes.ts src/App.tsx src/lib/firebase.ts src/common/pages/MainLandingPage.tsx
-git commit -m "feat: register LittleLeap routes and landing entry
+git commit -m "feat: register LittleExplorer routes and landing entry
 
 Wires the fourth sub-app into the hash router, the landing page,
 and analytics. The journey timeline's '幼兒期 1-3 歲' marker has

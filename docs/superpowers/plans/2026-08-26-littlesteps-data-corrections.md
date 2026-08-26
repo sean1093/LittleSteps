@@ -2,13 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 修正 LittleSteps 兩處過期的疫苗時程資料與一個里程碑完成率計算漏洞，並把里程碑資料集收斂至 0-12 個月，為後續的 LittleLeap 幼兒期子應用清出正確的資料基礎。
+**Goal:** 修正 LittleSteps 兩處過期的疫苗時程資料與一個里程碑完成率計算漏洞，並把里程碑資料集收斂至 0-12 個月，為後續的 LittleExplorer 幼兒期子應用清出正確的資料基礎。
 
 **Architecture:** 純資料與純函式層的修正，不動任何 UI 元件。四個任務彼此獨立，各自一個 commit；Task 3 必須先於 Task 4，因為 Task 4 的刪除會引爆 Task 3 修的漏洞。
 
 **Tech Stack:** TypeScript 5.2、Vitest 4.1（happy-dom、globals: true）、co-located `*.test.ts`
 
-**Spec:** `docs/superpowers/specs/2026-08-26-littleleap-toddler-design.md` §7
+**Spec:** `docs/superpowers/specs/2026-08-26-littleexplorer-toddler-design.md` §7
 
 ## Global Constraints
 
@@ -31,7 +31,7 @@
 
 **Interfaces:**
 - Consumes: `vaccineSchedules: VaccineSchedule[]` from `src/littlesteps/data/vaccines.ts`；`VaccineSchedule` from `src/types/index.ts:37-53`
-- Produces: `je-15m`（`currentDose: 1`, `ageInMonths: 15`, `doses: 2`）與 `je-27m`（`currentDose: 2`, `ageInMonths: 27`, `doses: 2`）為日本腦炎僅存的兩筆記錄。Task 4（LittleLeap 計畫的 `careTasks.ts`）以這兩個 id ＋ dose 編號連動。
+- Produces: `je-15m`（`currentDose: 1`, `ageInMonths: 15`, `doses: 2`）與 `je-27m`（`currentDose: 2`, `ageInMonths: 27`, `doses: 2`）為日本腦炎僅存的兩筆記錄。Task 4（LittleExplorer 計畫的 `careTasks.ts`）以這兩個 id ＋ dose 編號連動。
 
 - [ ] **Step 1: 建立資料完整性測試檔（此時應失敗）**
 
@@ -190,7 +190,7 @@ A 肝自 114/1/1 起調整為滿 18、27 個月接種第 1、2 劑。現有兩�
 
 **Interfaces:**
 - Consumes: Task 1 建立的 `VACCINE_FAMILIES` / `byId` 測試輔助結構
-- Produces: `hepa-12m`（`currentDose: 1`, `ageInMonths: 18`）與 `hepa-18m`（`currentDose: 2`, `ageInMonths: 27`）。id 字面月齡與實際時程不符為**刻意保留**，LittleLeap 的 `careTasks.ts` 依此對應。
+- Produces: `hepa-12m`（`currentDose: 1`, `ageInMonths: 18`）與 `hepa-18m`（`currentDose: 2`, `ageInMonths: 27`）。id 字面月齡與實際時程不符為**刻意保留**，LittleExplorer 的 `careTasks.ts` 依此對應。
 
 - [ ] **Step 1: 擴充測試（此時應失敗）**
 
@@ -385,7 +385,7 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 
 ### Task 4: 里程碑資料集收斂至 0-12 個月
 
-移除單一無差別大桶 `'12+'`（37 筆中僅 4 筆）。12 個月以後的發展追蹤改由 LittleLeap 的發展檢核承接，避免同一件事同時出現在兩個 app。
+移除單一無差別大桶 `'12+'`（37 筆中僅 4 筆）。12 個月以後的發展追蹤改由 LittleExplorer 的發展檢核承接，避免同一件事同時出現在兩個 app。
 
 **Files:**
 - Modify: `src/types/index.ts:1-19`
@@ -393,7 +393,7 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: Task 3 修好的 `calculateMilestoneSummary`（沒有它，本任務會讓既有使用者看到 >100% 完成率）
-- Produces: `MonthRange = "0-2" | "3-4" | "5-6" | "7-9" | "10-12"`；`milestones` 縮為 33 筆；`monthRanges` 縮為 5 項。LittleLeap 的 `ToddlerAgeBand` 從 `'12-15'` 起接續。
+- Produces: `MonthRange = "0-2" | "3-4" | "5-6" | "7-9" | "10-12"`；`milestones` 縮為 33 筆；`monthRanges` 縮為 5 項。LittleExplorer 的 `ToddlerAgeBand` 從 `'12-15'` 起接續。
 
 - [ ] **Step 1: 寫失敗測試**
 
@@ -504,7 +504,7 @@ git add src/types/index.ts src/littlesteps/data/milestones.ts src/littlesteps/da
 git commit -m "refactor: narrow milestones to 0-12 months
 
 The '12+' bucket held 4 of 37 records in a single undifferentiated
-catch-all. Toddler development tracking moves to the LittleLeap
+catch-all. Toddler development tracking moves to the LittleExplorer
 sub-app, so the same item never appears in two places.
 
 MonthRange moves above Milestone so the union is declared once
