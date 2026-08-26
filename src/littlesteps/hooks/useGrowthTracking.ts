@@ -3,18 +3,7 @@ import { ref, set, onValue, remove } from 'firebase/database';
 import { database } from '../../lib/firebase';
 import type { GrowthRecord, Gender } from '../../types';
 import { calculateZScore, calculatePercentile } from '../../utils/growthCalculator';
-
-// Helper function to remove undefined values from objects
-// Firebase does not allow undefined values - they must be null or omitted
-function removeUndefined<T extends Record<string, any>>(obj: T): Partial<T> {
-  const cleaned: any = {};
-  for (const key in obj) {
-    if (obj[key] !== undefined) {
-      cleaned[key] = obj[key];
-    }
-  }
-  return cleaned;
-}
+import { removeUndefined } from '../../utils/firebaseData';
 
 interface UseGrowthTrackingResult {
   records: GrowthRecord[];

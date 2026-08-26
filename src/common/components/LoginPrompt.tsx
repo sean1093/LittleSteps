@@ -19,26 +19,13 @@ export default function LoginPrompt({
   onSignIn,
   compact = false
 }: LoginPromptProps) {
-  const handleSignIn = async () => {
-    try {
-      await onSignIn();
-    } catch (error: any) {
-      // User cancelled the login popup - ignore the error
-      if (error?.code === 'auth/popup-closed-by-user') {
-        return;
-      }
-      // Log other errors
-      console.error('登入失敗:', error);
-    }
-  };
-
   if (compact) {
     return (
       <div className="inline-flex items-center gap-2 px-3 py-2 bg-[#E8F4F8]/50 rounded-lg border border-[#7EC8E3]/30">
         <Lock className="w-4 h-4 text-[#7EC8E3]" />
         <span className="text-sm text-gray-700">{message}</span>
         <button
-          onClick={handleSignIn}
+          onClick={onSignIn}
           className="text-sm font-medium text-[#7EC8E3] hover:text-[#6BB8D3] underline"
         >
           立即登入
@@ -69,7 +56,7 @@ export default function LoginPrompt({
         <motion.button
           whileHover={{ scale: 1.05, y: -2 }}
           whileTap={{ scale: 0.98 }}
-          onClick={handleSignIn}
+          onClick={onSignIn}
           className="flex items-center gap-3 px-6 py-3 rounded-full bg-[#7EC8E3] text-white shadow-soft hover:shadow-soft-lg hover:bg-[#6BB8D3] transition-all"
         >
           <img

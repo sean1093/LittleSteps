@@ -235,18 +235,7 @@ export default function Sidebar({
                     </div>
                   </div>
                   <button
-                    onClick={async () => {
-                      try {
-                        await onSignIn();
-                      } catch (error: any) {
-                        // User cancelled the login popup - ignore the error
-                        if (error?.code === 'auth/popup-closed-by-user') {
-                          return;
-                        }
-                        // Log other errors
-                        console.error('登入失敗:', error);
-                      }
-                    }}
+                    onClick={onSignIn}
                     className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full bg-white border-2 border-gray-200 hover:border-[#7EC8E3] hover:bg-[#E8F4F8]/30 transition-all shadow-sm"
                   >
                     <img

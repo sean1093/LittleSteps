@@ -85,16 +85,7 @@ export default function LandingPage({ onNavigate, user, onSignIn }: LandingPageP
               <motion.button
                 whileHover={{ scale: 1.03, y: -2 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={async () => {
-                  try {
-                    await onSignIn();
-                  } catch (error: any) {
-                    if (error?.code === 'auth/popup-closed-by-user') {
-                      return;
-                    }
-                    console.error('登入失敗:', error);
-                  }
-                }}
+                onClick={onSignIn}
                 className="flex items-center gap-3 px-8 py-4 rounded-full bg-[#FF9B9B] text-white shadow-lg hover:shadow-xl transition-all"
               >
                 <img

@@ -1,6 +1,7 @@
 import { ref, set, update, remove, get } from 'firebase/database';
 import { database } from '../../lib/firebase';
 import { ChildProfile, DailyLog, FoodTrialRecord, Gender } from '../../types';
+import { removeUndefined } from '../../utils/firebaseData';
 
 // Helper function to generate UUID v4
 function generateUUID(): string {
@@ -9,24 +10,6 @@ function generateUUID(): string {
     const v = c === 'x' ? r : (r & 0x3 | 0x8);
     return v.toString(16);
   });
-}
-
-// Helper function to recursively remove undefined values from objects
-// Firebase does not allow undefined values - they must be null or omitted
-function removeUndefined<T extends Record<string, any>>(obj: T): Partial<T> {
-  const cleaned: any = {};
-  for (const key in obj) {
-    const value = obj[key];
-    if (value !== undefined) {
-      // Recursively clean nested objects
-      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-        cleaned[key] = removeUndefined(value);
-      } else {
-        cleaned[key] = value;
-      }
-    }
-  }
-  return cleaned;
 }
 
 export function useFirebaseChildren(userId: string | null) {
