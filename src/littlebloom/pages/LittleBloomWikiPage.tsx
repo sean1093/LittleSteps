@@ -1,10 +1,13 @@
+import { motion } from 'framer-motion';
 import type { PregnancyWikiCategory } from '../../types';
 import {
   pregnancyWikiArticles,
   pregnancyWikiCategoryLabels,
   pregnancyWikiCategoryColors,
 } from '../data/wiki';
-import WikiBrowser, { WikiTheme } from '../../common/components/wiki/WikiBrowser';
+import WikiBrowser from '../../common/components/wiki/WikiBrowser';
+import { SERVICE_THEME } from '../../common/ui/serviceTheme';
+import { fadeInUp } from '../../common/ui/motion';
 import BloomShell from '../components/BloomShell';
 
 const CATEGORY_ORDER: PregnancyWikiCategory[] = [
@@ -23,25 +26,20 @@ const CATEGORY_ICONS: Record<PregnancyWikiCategory, string> = {
   lifestyle: 'Sun',
 };
 
-const THEME: WikiTheme = {
-  focusRing: 'focus:ring-bloom-dusty-rose/40',
-  chipActive: 'bg-bloom-dusty-rose text-white shadow-soft',
-  chipInactive: 'bg-white text-gray-600 hover:bg-bloom-blush/40',
-  mutedText: 'text-gray-500',
-};
-
 export default function LittleBloomWikiPage() {
   return (
     <BloomShell title="孕期知識庫" subtitle="常見孕期疑問與處理方式" backTo="#/littlebloom">
-      <WikiBrowser
-        articles={pregnancyWikiArticles}
-        categoryLabels={pregnancyWikiCategoryLabels}
-        categoryColors={pregnancyWikiCategoryColors}
-        categoryOrder={CATEGORY_ORDER}
-        categoryIcons={CATEGORY_ICONS}
-        searchPlaceholder="搜尋孕期症狀、關鍵字..."
-        theme={THEME}
-      />
+      <motion.div variants={fadeInUp} initial="hidden" animate="visible">
+        <WikiBrowser
+          articles={pregnancyWikiArticles}
+          categoryLabels={pregnancyWikiCategoryLabels}
+          categoryColors={pregnancyWikiCategoryColors}
+          categoryOrder={CATEGORY_ORDER}
+          categoryIcons={CATEGORY_ICONS}
+          searchPlaceholder="搜尋孕期症狀、關鍵字..."
+          theme={SERVICE_THEME.littlebloom}
+        />
+      </motion.div>
     </BloomShell>
   );
 }

@@ -1,7 +1,10 @@
 import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, SearchX, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { getLucideIcon } from '../../lucideIcons';
+import EmptyState from '../../ui/EmptyState';
+import { listItem, stagger } from '../../ui/motion';
+import type { ServiceTheme } from '../../ui/serviceTheme';
 import type { WikiArticle, WikiCategoryColors } from '../../../types';
 import WikiArticleCard from './WikiArticleCard';
 
@@ -13,20 +16,13 @@ import WikiArticleCard from './WikiArticleCard';
  * 也沒有空狀態，搜尋不到東西時畫面直接空白。三份分歧的複本就是這樣長出
  * 缺陷的，所以行為集中在這裡，各服務只帶入自己的資料與配色。
  *
+ * 配色以 ServiceTheme 帶入。這裡原本另有一份 WikiTheme（focusRing、
+ * chipActive、chipInactive、mutedText），但 focus ring 現在是全域的、chip 有
+ * 共用的 .chip/.chip-on，於是那份等於是第二套並行的配色詞彙。
+ *
  * 搜尋涵蓋成因、處理步驟與警訊，不只標題與摘要：使用者記得的往往是症狀
  * 描述而不是文章標題。
  */
-
-export interface WikiTheme {
-  /** 搜尋框 focus 樣式，例：'focus:ring-primary/30' */
-  focusRing: string;
-  /** 選中的分類 chip */
-  chipActive: string;
-  /** 未選中的分類 chip */
-  chipInactive: string;
-  /** 篇數與空狀態文字 */
-  mutedText: string;
-}
 
 interface WikiBrowserProps<Category extends string> {
   articles: readonly WikiArticle<Category>[];
@@ -37,7 +33,7 @@ interface WikiBrowserProps<Category extends string> {
   /** 各分類的 lucide 圖示名稱；省略時 chip 只顯示文字 */
   categoryIcons?: Record<Category, string>;
   searchPlaceholder: string;
-  theme: WikiTheme;
+  theme: ServiceTheme;
 }
 
 function matchesKeyword(article: WikiArticle<string>, keyword: string) {
@@ -81,28 +77,29 @@ export default function WikiBrowser<Category extends string>({
   return (
     <div className="space-y-4">
       <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-faint" />
         <input
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder={searchPlaceholder}
-          className={`w-full pl-11 pr-10 py-3 bg-white rounded-2xl shadow-soft text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition-all ${theme.focusRing}`}
+          // 原生的 search 清除鍵會和右邊那顆 44px 清除鍵並排出現兩個叉。
+          className="w-full min-h-tap pl-11 pr-14 py-3 bg-white rounded-2xl shadow-soft text-sm text-ink placeholder-ink-faint [&::-webkit-search-cancel-button]:appearance-none"
         />
         {query && (
           <button
             type="button"
             onClick={() => setQuery('')}
             aria-label="清除搜尋"
-            className="absolute right-3 top-1/2 -translate-y-1/2"
+            className="btn-icon absolute right-1 top-1/2 -translate-y-1/2"
           >
-            <X className="w-4 h-4 text-gray-400" />
+            <X className="w-4 h-4" />
           </button>
         )}
       </div>
 
       {categories.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+        <div className="row-bleed flex gap-2 pb-1">
           {(['all', ...categories] as const).map((value) => {
             const isActive = category === value;
             const iconName = value === 'all' ? 'LayoutGrid' : categoryIcons?.[value as Category];
@@ -116,9 +113,7 @@ export default function WikiBrowser<Category extends string>({
                   setExpandedId(null);
                 }}
                 aria-pressed={isActive}
-                className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-2xl text-sm font-medium whitespace-nowrap transition-colors ${
-                  isActive ? theme.chipActive : theme.chipInactive
-                }`}
+                className={`chip shrink-0 ${isActive ? `chip-on ${theme.fill} border-transparent` : ''}`}
               >
                 {Icon && <Icon className="w-4 h-4" />}
                 <span>{value === 'all' ? '全部' : categoryLabels[value as Category]}</span>
@@ -128,28 +123,24 @@ export default function WikiBrowser<Category extends string>({
         </div>
       )}
 
-      <p className={`text-xs ${theme.mutedText}`}>共 {filtered.length} 篇文章</p>
+      <p className={`text-xs ${theme.muted}`}>共 {filtered.length} 篇文章</p>
 
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-            <SearchX className="w-8 h-8 text-gray-300" />
-          </div>
-          <p className="text-gray-500 font-medium mb-1">找不到相關文章</p>
-          <p className={`text-sm ${theme.mutedText}`}>請嘗試其他關鍵字或清除篩選條件</p>
-        </div>
+        <EmptyState
+          theme={theme}
+          title="找不到相關文章"
+          description="請嘗試其他關鍵字或清除篩選條件"
+        />
       ) : (
-        <div className="space-y-3">
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          animate="visible"
+          className="space-y-3"
+        >
           <AnimatePresence mode="popLayout">
-            {filtered.map((article, index) => (
-              <motion.div
-                key={article.id}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.2, delay: index * 0.04 }}
-              >
+            {filtered.map((article) => (
+              <motion.div key={article.id} layout variants={listItem} exit="hidden">
                 <WikiArticleCard
                   article={article}
                   isExpanded={expandedId === article.id}
@@ -162,7 +153,7 @@ export default function WikiBrowser<Category extends string>({
               </motion.div>
             ))}
           </AnimatePresence>
-        </div>
+        </motion.div>
       )}
     </div>
   );
