@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, Calendar, CheckCircle2, Filter } from 'lucide-react';
 import { getLucideIcon } from '../../common/lucideIcons';
 import { generalSafetyItems, monthlyCareGuides, careCategories } from '../data/careGuides';
+import { stagger, listItem, tap } from '../../common/ui/motion';
 
 export default function CareGuidePage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -17,13 +17,13 @@ export default function CareGuidePage() {
   const getCategoryBadgeColor = (category: string) => {
     switch (category) {
       case 'physiological':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-secondary-light text-secondary-dark';
       case 'feeding':
-        return 'bg-green-100 text-green-700';
+        return 'bg-mint-light text-mint-dark';
       case 'safety':
-        return 'bg-red-100 text-red-700';
+        return 'bg-primary-light text-primary-dark';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-ink/5 text-ink-muted';
     }
   };
 
@@ -33,121 +33,97 @@ export default function CareGuidePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] pb-6 relative overflow-hidden">
-      {/* General Safety Section */}
-      <div className="relative z-10 bg-[#FFF3E0]/30 px-4 py-6 mb-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-10 h-10 rounded-full bg-[#FFE5E5] flex items-center justify-center">
-            <AlertTriangle className="w-5 h-5 text-[#FF9B9B]" />
-          </div>
-          <h2 className="text-xl font-bold text-gray-800">重點注意事項</h2>
-        </div>
-        <p className="text-sm text-gray-600 mb-4">適用於所有階段的核心照顧原則</p>
+    <div className="screen">
+      <div className="screen-body">
+        {/* General Safety Section */}
+        <h2 className="mb-1">重點注意事項</h2>
+        <p className="text-sm text-ink-muted mb-4">適用於所有階段的核心照顧原則</p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8"
+          variants={stagger}
+          initial="hidden"
+          animate="visible"
+        >
           {generalSafetyItems.map((item) => {
             const IconComponent = getLucideIcon(item.icon);
 
             return (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-2xl p-4 shadow-soft"
-              >
+              <motion.div key={item.id} variants={listItem} className="card">
                 <div className="flex items-start gap-3">
                   {IconComponent && (
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <IconComponent className="w-5 h-5 text-primary" />
-                    </div>
+                    <IconComponent className="w-5 h-5 text-primary-dark shrink-0 mt-0.5" />
                   )}
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-800 mb-1">{item.title}</h3>
-                    <p className="text-sm text-gray-600">{item.description}</p>
+                    <h3 className="mb-1">{item.title}</h3>
+                    <p className="text-sm text-ink-muted">{item.description}</p>
                   </div>
                 </div>
               </motion.div>
             );
           })}
-        </div>
-      </div>
+        </motion.div>
 
-      {/* Category Filter */}
-      <div className="px-4 mb-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Filter className="w-5 h-5 text-gray-600" />
-          <h3 className="font-semibold text-gray-800">篩選照顧類別</h3>
-        </div>
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-4 pl-4 pr-8">
+        {/* Category Filter */}
+        <h3 className="mb-3">篩選照顧類別</h3>
+        <div className="row-bleed flex gap-2 pb-2 mb-4">
           {careCategories.map((category) => {
             const IconComponent = getLucideIcon(category.icon);
 
             return (
-              <button
+              <motion.button
                 key={category.value}
                 onClick={() => setSelectedCategory(category.value)}
-                className={`
-                  flex items-center gap-2 px-4 py-2 rounded-2xl font-medium whitespace-nowrap transition-all
-                  ${selectedCategory === category.value
-                    ? 'bg-secondary text-white shadow-soft'
-                    : 'bg-white text-gray-600 hover:bg-gray-50'
-                  }
-                `}
+                whileTap={tap}
+                className={`chip ${selectedCategory === category.value ? 'chip-on' : ''}`}
               >
                 {IconComponent && <IconComponent className="w-4 h-4" />}
                 <span>{category.label}</span>
-              </button>
+              </motion.button>
             );
           })}
         </div>
-      </div>
 
-      {/* Monthly Care Guides */}
-      <div className="px-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Calendar className="w-5 h-5 text-gray-600" />
-          <h3 className="font-semibold text-gray-800">按月齡照顧重點</h3>
-          <span className="text-sm text-gray-500">（共 {filteredGuides.length} 項）</span>
+        {/* Monthly Care Guides */}
+        <div className="flex items-baseline gap-2 mb-4">
+          <h2>按月齡照顧重點</h2>
+          <span className="text-sm text-ink-muted">（共 {filteredGuides.length} 項）</span>
         </div>
 
-        <div className="space-y-3">
-          <AnimatePresence mode="popLayout">
-            {filteredGuides.map((guide, index) => (
-              <motion.div
-                key={guide.month}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.2, delay: index * 0.05 }}
-                className="card"
-              >
+        <AnimatePresence mode="popLayout">
+          {/* Re-keying on the filter replays the stagger instead of silently
+              swapping rows under the chip that was just tapped. */}
+          <motion.div
+            key={selectedCategory}
+            className="space-y-3"
+            variants={stagger}
+            initial="hidden"
+            animate="visible"
+            exit={{ opacity: 0 }}
+          >
+            {filteredGuides.map((guide) => (
+              <motion.div key={guide.month} layout variants={listItem} className="card">
                 <div className="flex items-start gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-full bg-[#7EC8E3] flex items-center justify-center flex-shrink-0 text-white font-bold">
+                  <div className="w-12 h-12 rounded-full bg-secondary-dark flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">
                     {guide.month}月
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-semibold text-gray-800">{guide.title}</h4>
-                      <span className={`text-xs px-2 py-1 rounded-full ${getCategoryBadgeColor(guide.category)}`}>
-                        {getCategoryLabel(guide.category)}
-                      </span>
-                    </div>
+                  <div className="flex-1 flex flex-wrap items-center gap-2">
+                    <h3>{guide.title}</h3>
+                    <span className={`tag ${getCategoryBadgeColor(guide.category)}`}>
+                      {getCategoryLabel(guide.category)}
+                    </span>
                   </div>
                 </div>
 
-                <ul className="space-y-2">
+                <ul className="space-y-1.5 list-disc pl-5 marker:text-primary">
                   {guide.highlights.map((highlight, idx) => (
-                    <li key={idx} className="flex gap-2 text-sm text-gray-700">
-                      <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                      <span>{highlight}</span>
-                    </li>
+                    <li key={idx} className="text-sm text-ink">{highlight}</li>
                   ))}
                 </ul>
               </motion.div>
             ))}
-          </AnimatePresence>
-        </div>
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );

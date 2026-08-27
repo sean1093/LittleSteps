@@ -1,23 +1,15 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { User } from 'firebase/auth';
-import {
-  FileBarChart,
-  Baby,
-  Moon,
-  Droplets,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  Ruler,
-  Weight,
-  Lightbulb,
-} from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { ChildProfile, DailyLog } from '../../types';
 import { useReport, ReportPeriod } from '../hooks/useReport';
 import ScoreCircle from '../components/shared/ScoreCircle';
 import ReportChart from '../components/report/ReportChart';
 import { TrendDirection } from '../utils/trendCalculator';
+import EmptyState from '../../common/ui/EmptyState';
+import { SERVICE_THEME } from '../../common/ui/serviceTheme';
+import { stagger, listItem } from '../../common/ui/motion';
 
 interface ReportPageProps {
   currentChild?: ChildProfile;
@@ -50,16 +42,17 @@ function generateDateLabels(days: number): string[] {
 }
 
 /**
- * Helper: render trend icon
+ * Helper: render trend icon. Colour and shape together encode the value, so
+ * this one stays.
  */
 function TrendIcon({ direction }: { direction: TrendDirection }) {
   if (direction === 'increasing') {
-    return <TrendingUp className="w-4 h-4 text-red-400" />;
+    return <TrendingUp className="w-4 h-4 text-primary-dark" />;
   }
   if (direction === 'decreasing') {
-    return <TrendingDown className="w-4 h-4 text-green-500" />;
+    return <TrendingDown className="w-4 h-4 text-mint-dark" />;
   }
-  return <Minus className="w-4 h-4 text-gray-400" />;
+  return <Minus className="w-4 h-4 text-ink-faint" />;
 }
 
 /**
@@ -83,20 +76,6 @@ function consistencyLabel(key: string): string {
   return map[key] || key;
 }
 
-// Animation variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
-};
-
 export default function ReportPage({
   currentChild,
   dailyLogs,
@@ -114,15 +93,14 @@ export default function ReportPage({
   // No child selected
   if (!currentChild) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl shadow-soft p-8 text-center max-w-md"
-        >
-          <Baby className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-600">請先在側邊欄選擇或新增寶寶</p>
-        </motion.div>
+      <div className="screen">
+        <div className="screen-body-wide">
+          <EmptyState
+            theme={SERVICE_THEME.littlesteps}
+            title="還沒有選擇寶寶"
+            description="請先在側邊欄選擇或新增寶寶"
+          />
+        </div>
       </div>
     );
   }
@@ -130,10 +108,12 @@ export default function ReportPage({
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#7EC8E3] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">載入中...</p>
+      <div className="screen">
+        <div className="screen-body-wide flex justify-center py-16">
+          <div className="w-40 h-1 rounded-full bg-primary-light overflow-hidden" role="status">
+            <div className="h-full w-1/3 rounded-full bg-primary-dark animate-[loading_1.2s_ease-in-out_infinite]" />
+            <span className="sr-only">載入中</span>
+          </div>
         </div>
       </div>
     );
@@ -149,70 +129,39 @@ export default function ReportPage({
   // Empty state
   if (!hasData) {
     return (
-      <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl shadow-soft p-8 text-center max-w-md"
-        >
-          <FileBarChart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">
-            還沒有足夠的記錄
-          </h2>
-          <p className="text-gray-600 mb-4">
-            開始記錄寶寶的日常，就能看到分析報告囉！
-          </p>
-          <p className="text-sm text-gray-500">
-            前往「快速日誌」頁面記錄餵奶、睡眠與換尿布
-          </p>
-        </motion.div>
+      <div className="screen">
+        <div className="screen-body-wide">
+          <EmptyState
+            theme={SERVICE_THEME.littlesteps}
+            title="還沒有足夠的記錄"
+            description={'開始記錄寶寶的日常，就能看到分析報告囉！\n前往「快速日誌」頁面記錄餵奶、睡眠與換尿布'}
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] pb-6">
+    <div className="screen">
       <motion.div
-        className="max-w-2xl mx-auto px-4 py-6"
-        variants={containerVariants}
+        className="screen-body-wide"
+        variants={stagger}
         initial="hidden"
         animate="visible"
       >
-        {/* Header */}
-        <motion.div variants={itemVariants} className="mb-6">
-          <div className="flex items-center gap-3 mb-1">
-            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
-              <FileBarChart className="w-5 h-5 text-[#7EC8E3]" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-800">週報月報</h1>
-          </div>
-          <p className="text-sm text-gray-500 ml-[52px]">
-            {currentChild.name}
-            的照護數據總覽
-          </p>
-        </motion.div>
-
         {/* Period Toggle */}
-        <motion.div variants={itemVariants} className="mb-6">
-          <div className="flex justify-center gap-3 mb-2">
+        <motion.div variants={listItem} className="mb-6">
+          <div className="flex justify-center gap-2 mb-2">
             {(['7days', '30days'] as ReportPeriod[]).map((p) => {
               const labels: Record<ReportPeriod, string> = {
                 '7days': '近 7 天',
                 '30days': '近 30 天',
               };
-              const isActive = period === p;
               return (
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
-                  className={`
-                    px-6 py-2 rounded-xl font-medium transition-all
-                    ${
-                      isActive
-                        ? 'bg-gradient-to-r from-[#7EC8E3] to-[#FF9B9B] text-white shadow-soft'
-                        : 'bg-white text-gray-700 hover:bg-gray-50 shadow-soft'
-                    }
-                  `}
+                  className={`chip ${period === p ? 'chip-on' : ''}`}
                 >
                   {labels[p]}
                 </button>
@@ -220,7 +169,7 @@ export default function ReportPage({
             })}
           </div>
           {report && (
-            <p className="text-center text-xs text-gray-400">
+            <p className="text-center text-sm text-ink-muted">
               {formatDateShort(report.period.start)} ~{' '}
               {formatDateShort(report.period.end)}
             </p>
@@ -230,13 +179,8 @@ export default function ReportPage({
         {report && (
           <>
             {/* Section 1: Score Overview */}
-            <motion.div
-              variants={itemVariants}
-              className="bg-white rounded-2xl shadow-soft p-6 mb-6"
-            >
-              <h2 className="text-lg font-bold text-gray-800 mb-5">
-                總覽評分
-              </h2>
+            <motion.div variants={listItem} className="panel mb-4">
+              <h2 className="mb-5">總覽評分</h2>
               <div className="flex justify-around">
                 <ScoreCircle
                   score={report.scores.feeding.score}
@@ -260,50 +204,43 @@ export default function ReportPage({
             </motion.div>
 
             {/* Section 2: Feeding Report */}
-            <motion.div
-              variants={itemVariants}
-              className="bg-white rounded-2xl shadow-soft p-6 mb-6"
-            >
-              <div className="flex items-center gap-2 mb-4">
-                <Baby className="w-5 h-5 text-[#FF9B9B]" />
-                <h2 className="text-lg font-bold text-gray-800">餵奶報告</h2>
-              </div>
+            <motion.div variants={listItem} className="panel mb-4">
+              <h2 className="mb-4">餵奶報告</h2>
               <ReportChart
                 data={report.feeding.dailyAmounts}
                 labels={dateLabels}
                 type="line"
-                color="#FF9B9B"
                 unit="ml"
               />
               <div className="grid grid-cols-2 gap-3 mt-4">
-                <div className="bg-pink-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-pink-600">
+                <div className="bg-primary-soft rounded-xl p-3 text-center">
+                  <div className="text-lg font-bold text-primary-dark">
                     {report.feeding.avgDailyCount}
                   </div>
-                  <div className="text-xs text-gray-600">平均每日次數</div>
+                  <div className="text-sm text-ink-muted">平均每日次數</div>
                 </div>
-                <div className="bg-pink-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-pink-600">
+                <div className="bg-primary-soft rounded-xl p-3 text-center">
+                  <div className="text-lg font-bold text-primary-dark">
                     {report.feeding.avgDailyAmount}
                     <span className="text-sm font-normal ml-0.5">ml</span>
                   </div>
-                  <div className="text-xs text-gray-600">平均每日總量</div>
+                  <div className="text-sm text-ink-muted">平均每日總量</div>
                 </div>
-                <div className="bg-gray-50 rounded-xl p-3 text-center">
-                  <div className="text-sm font-bold text-gray-700">
+                <div className="bg-warm-white rounded-xl p-3 text-center">
+                  <div className="text-sm font-bold text-ink">
                     {report.feeding.maxDay.amount}
                     <span className="text-xs font-normal ml-0.5">ml</span>
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-sm text-ink-muted">
                     最高日 ({formatDateShort(report.feeding.maxDay.date)})
                   </div>
                 </div>
-                <div className="bg-gray-50 rounded-xl p-3 text-center">
-                  <div className="text-sm font-bold text-gray-700">
+                <div className="bg-warm-white rounded-xl p-3 text-center">
+                  <div className="text-sm font-bold text-ink">
                     {report.feeding.minDay.amount}
                     <span className="text-xs font-normal ml-0.5">ml</span>
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-sm text-ink-muted">
                     最低日 ({formatDateShort(report.feeding.minDay.date)})
                   </div>
                 </div>
@@ -311,76 +248,62 @@ export default function ReportPage({
             </motion.div>
 
             {/* Section 3: Sleep Report */}
-            <motion.div
-              variants={itemVariants}
-              className="bg-white rounded-2xl shadow-soft p-6 mb-6"
-            >
-              <div className="flex items-center gap-2 mb-4">
-                <Moon className="w-5 h-5 text-indigo-500" />
-                <h2 className="text-lg font-bold text-gray-800">睡眠報告</h2>
-              </div>
+            <motion.div variants={listItem} className="panel mb-4">
+              <h2 className="mb-4">睡眠報告</h2>
               <ReportChart
                 data={report.sleep.dailyDurations}
                 labels={dateLabels}
                 type="line"
-                color="#818cf8"
                 unit="小時"
                 recommendedValue={report.sleep.recommendedHours}
               />
               <div className="grid grid-cols-3 gap-3 mt-4">
-                <div className="bg-indigo-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-indigo-600">
+                <div className="bg-secondary-soft rounded-xl p-3 text-center">
+                  <div className="text-lg font-bold text-secondary-dark">
                     {report.sleep.avgDailyHours}
                     <span className="text-xs font-normal ml-0.5">h</span>
                   </div>
-                  <div className="text-xs text-gray-600">平均每日時數</div>
+                  <div className="text-sm text-ink-muted">平均每日時數</div>
                 </div>
-                <div className="bg-indigo-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-indigo-600">
+                <div className="bg-secondary-soft rounded-xl p-3 text-center">
+                  <div className="text-lg font-bold text-secondary-dark">
                     {report.sleep.longestContinuous > 0
                       ? `${(report.sleep.longestContinuous / 60).toFixed(1)}`
                       : '0'}
                     <span className="text-xs font-normal ml-0.5">h</span>
                   </div>
-                  <div className="text-xs text-gray-600">最長連續睡眠</div>
+                  <div className="text-sm text-ink-muted">最長連續睡眠</div>
                 </div>
-                <div className="bg-indigo-50 rounded-xl p-3 text-center">
+                <div className="bg-secondary-soft rounded-xl p-3 text-center">
                   <div className="flex items-center justify-center gap-1">
                     <TrendIcon direction={report.sleep.nightWakingsTrend} />
-                    <span className="text-sm font-bold text-indigo-600">
+                    <span className="text-sm font-bold text-secondary-dark">
                       {trendLabel(report.sleep.nightWakingsTrend)}
                     </span>
                   </div>
-                  <div className="text-xs text-gray-600">夜醒趨勢</div>
+                  <div className="text-sm text-ink-muted">夜醒趨勢</div>
                 </div>
               </div>
             </motion.div>
 
             {/* Section 4: Poop Report */}
-            <motion.div
-              variants={itemVariants}
-              className="bg-white rounded-2xl shadow-soft p-6 mb-6"
-            >
-              <div className="flex items-center gap-2 mb-4">
-                <Droplets className="w-5 h-5 text-amber-500" />
-                <h2 className="text-lg font-bold text-gray-800">排便報告</h2>
-              </div>
+            <motion.div variants={listItem} className="panel mb-4">
+              <h2 className="mb-4">排便報告</h2>
               <ReportChart
                 data={report.poop.dailyCounts}
                 labels={dateLabels}
                 type="bar"
-                color="#f59e0b"
                 unit="次"
               />
               <div className="grid grid-cols-3 gap-3 mt-4">
-                <div className="bg-amber-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-amber-600">
+                <div className="bg-butter-soft rounded-xl p-3 text-center">
+                  <div className="text-lg font-bold text-butter-dark">
                     {report.poop.avgDailyCount}
                   </div>
-                  <div className="text-xs text-gray-600">平均每日次數</div>
+                  <div className="text-sm text-ink-muted">平均每日次數</div>
                 </div>
-                <div className="bg-amber-50 rounded-xl p-3 text-center">
-                  <div className="text-lg font-bold text-amber-600">
+                <div className="bg-butter-soft rounded-xl p-3 text-center">
+                  <div className="text-lg font-bold text-butter-dark">
                     {report.poop.longestGap > 0
                       ? `${report.poop.longestGap}`
                       : '-'}
@@ -388,10 +311,10 @@ export default function ReportPage({
                       {report.poop.longestGap > 0 ? 'h' : ''}
                     </span>
                   </div>
-                  <div className="text-xs text-gray-600">最長間隔</div>
+                  <div className="text-sm text-ink-muted">最長間隔</div>
                 </div>
-                <div className="bg-amber-50 rounded-xl p-3 text-center">
-                  <div className="text-xs text-gray-700 space-y-0.5">
+                <div className="bg-butter-soft rounded-xl p-3 text-center">
+                  <div className="text-sm text-ink space-y-0.5">
                     {Object.keys(report.poop.consistencyDistribution).length >
                     0 ? (
                       Object.entries(report.poop.consistencyDistribution).map(
@@ -402,51 +325,41 @@ export default function ReportPage({
                         )
                       )
                     ) : (
-                      <span className="text-gray-400">-</span>
+                      <span className="text-ink-faint">-</span>
                     )}
                   </div>
-                  <div className="text-xs text-gray-600 mt-1">型態分布</div>
+                  <div className="text-sm text-ink-muted mt-1">型態分布</div>
                 </div>
               </div>
             </motion.div>
 
             {/* Section 5: Growth Record (30-day only) */}
             {period === '30days' && report.growth && (
-              <motion.div
-                variants={itemVariants}
-                className="bg-white rounded-2xl shadow-soft p-6 mb-6"
-              >
-                <div className="flex items-center gap-2 mb-4">
-                  <Ruler className="w-5 h-5 text-green-500" />
-                  <h2 className="text-lg font-bold text-gray-800">
-                    成長紀錄
-                  </h2>
-                </div>
+              <motion.div variants={listItem} className="panel mb-4">
+                <h2 className="mb-4">成長紀錄</h2>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-green-50 rounded-xl p-4 text-center">
-                    <Weight className="w-5 h-5 text-green-500 mx-auto mb-1" />
-                    <div className="text-lg font-bold text-green-600">
+                  <div className="bg-mint-soft rounded-xl p-4 text-center">
+                    <div className="text-lg font-bold text-mint-dark">
                       {report.growth.weightChange > 0 ? '+' : ''}
                       {report.growth.weightChange}
                       <span className="text-xs font-normal ml-0.5">kg</span>
                     </div>
-                    <div className="text-xs text-gray-600">體重變化</div>
+                    <div className="text-sm text-ink-muted">體重變化</div>
                     {report.growth.latestPercentiles.weight !== undefined && (
-                      <div className="text-xs text-gray-400 mt-1">
+                      <div className="text-sm text-ink-muted mt-1">
                         百分位: {report.growth.latestPercentiles.weight}%
                       </div>
                     )}
                   </div>
-                  <div className="bg-green-50 rounded-xl p-4 text-center">
-                    <Ruler className="w-5 h-5 text-green-500 mx-auto mb-1" />
-                    <div className="text-lg font-bold text-green-600">
+                  <div className="bg-mint-soft rounded-xl p-4 text-center">
+                    <div className="text-lg font-bold text-mint-dark">
                       {report.growth.heightChange > 0 ? '+' : ''}
                       {report.growth.heightChange}
                       <span className="text-xs font-normal ml-0.5">cm</span>
                     </div>
-                    <div className="text-xs text-gray-600">身高變化</div>
+                    <div className="text-sm text-ink-muted">身高變化</div>
                     {report.growth.latestPercentiles.height !== undefined && (
-                      <div className="text-xs text-gray-400 mt-1">
+                      <div className="text-sm text-ink-muted mt-1">
                         百分位: {report.growth.latestPercentiles.height}%
                       </div>
                     )}
@@ -454,7 +367,7 @@ export default function ReportPage({
                 </div>
                 {report.growth.latestPercentiles.headCircumference !==
                   undefined && (
-                  <div className="mt-3 text-center text-sm text-gray-500">
+                  <div className="mt-3 text-center text-sm text-ink-muted">
                     頭圍百分位:{' '}
                     {report.growth.latestPercentiles.headCircumference}%
                   </div>
@@ -463,17 +376,9 @@ export default function ReportPage({
             )}
 
             {/* Section 6: Summary */}
-            <motion.div
-              variants={itemVariants}
-              className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-2xl shadow-soft p-6"
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <Lightbulb className="w-5 h-5 text-amber-500" />
-                <h2 className="text-lg font-bold text-gray-800">
-                  本期重點摘要
-                </h2>
-              </div>
-              <p className="text-sm text-gray-700 leading-relaxed">
+            <motion.div variants={listItem} className="panel bg-butter-soft">
+              <h2 className="mb-3">本期重點摘要</h2>
+              <p className="text-sm text-ink leading-relaxed">
                 {report.summaryText}
               </p>
             </motion.div>

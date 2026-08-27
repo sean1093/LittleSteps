@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Baby } from 'lucide-react';
 
 import { MonthRange, Category, MilestoneProgress } from '../../types';
 import { milestones, monthRanges, categories } from '../data/milestones';
@@ -8,6 +7,9 @@ import MonthPicker from '../components/shared/MonthPicker';
 import CategoryFilter from '../components/food/CategoryFilter';
 import MilestoneCard from '../components/milestone/MilestoneCard';
 import MilestoneModal from '../components/milestone/MilestoneModal';
+import EmptyState from '../../common/ui/EmptyState';
+import { SERVICE_THEME } from '../../common/ui/serviceTheme';
+import { stagger, listItem, fadeInUp } from '../../common/ui/motion';
 
 interface MilestonesPageProps {
   progress: MilestoneProgress;
@@ -32,78 +34,63 @@ export default function MilestonesPage({ progress, onToggleMilestone }: Mileston
   }, [selectedMilestoneId]);
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] pb-6 relative overflow-hidden">
-      {/* Header Info */}
-      <div className="relative z-10 bg-[#E8F4F8]/30 px-4 py-6 mb-6">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-10 h-10 rounded-full bg-[#FFE5E5] flex items-center justify-center">
-            <Baby className="w-5 h-5 text-[#FF9B9B]" />
-          </div>
-          <h2 className="text-xl font-bold text-gray-800">寶寶成長里程碑</h2>
+    <div className="screen">
+      <div className="screen-body">
+        <div className="mb-4">
+          <MonthPicker
+            ranges={monthRanges}
+            selected={selectedMonth}
+            onChange={setSelectedMonth}
+          />
         </div>
-        <p className="text-sm text-gray-600">
-          記錄寶寶每個珍貴的成長時刻，從第一個微笑到第一步
-        </p>
-      </div>
 
-      {/* Month Picker */}
-      <div className="px-4 mb-4">
-        <MonthPicker
-          ranges={monthRanges}
-          selected={selectedMonth}
-          onChange={setSelectedMonth}
-        />
-      </div>
+        <div className="mb-4">
+          <CategoryFilter
+            categories={categories}
+            selected={selectedCategory}
+            onChange={setSelectedCategory}
+          />
+        </div>
 
-      {/* Category Filter */}
-      <div className="px-4 mb-4">
-        <CategoryFilter
-          categories={categories}
-          selected={selectedCategory}
-          onChange={setSelectedCategory}
-        />
-      </div>
-
-      {/* Milestones List */}
-      <div className="px-4 space-y-3">
         <AnimatePresence mode="popLayout">
           {filteredMilestones.length > 0 ? (
-            filteredMilestones.map((milestone, index) => (
-              <motion.div
-                key={milestone.id}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.2, delay: index * 0.05 }}
-              >
-                <MilestoneCard
-                  milestone={milestone}
-                  isCompleted={progress[milestone.id]?.achieved || false}
-                  achievedDate={progress[milestone.id]?.achievedDate}
-                  onToggle={() => onToggleMilestone(milestone.id)}
-                  onClick={() => setSelectedMilestoneId(milestone.id)}
-                />
-              </motion.div>
-            ))
-          ) : (
+            /* Re-keying on the filter replays the stagger, so a chip tap reads
+               as a new list arriving rather than rows silently swapping. */
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-12"
+              key={`${selectedMonth}-${selectedCategory}`}
+              className="space-y-3"
+              variants={stagger}
+              initial="hidden"
+              animate="visible"
+              exit={{ opacity: 0 }}
             >
-              <div className="text-6xl mb-4">👶</div>
-              <p className="text-gray-500">
-                {selectedCategory === "all"
-                  ? "這個月齡階段沒有里程碑資料"
-                  : "這個分類沒有里程碑資料"}
-              </p>
+              {filteredMilestones.map((milestone) => (
+                <motion.div key={milestone.id} layout variants={listItem}>
+                  <MilestoneCard
+                    milestone={milestone}
+                    isCompleted={progress[milestone.id]?.achieved || false}
+                    achievedDate={progress[milestone.id]?.achievedDate}
+                    onToggle={() => onToggleMilestone(milestone.id)}
+                    onClick={() => setSelectedMilestoneId(milestone.id)}
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+          ) : (
+            <motion.div key="empty" variants={fadeInUp} initial="hidden" animate="visible">
+              <EmptyState
+                theme={SERVICE_THEME.littlesteps}
+                title={
+                  selectedCategory === "all"
+                    ? "這個月齡階段沒有里程碑資料"
+                    : "這個分類沒有里程碑資料"
+                }
+              />
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Modal */}
       <MilestoneModal
         milestone={selectedMilestone}
         isOpen={!!selectedMilestone}

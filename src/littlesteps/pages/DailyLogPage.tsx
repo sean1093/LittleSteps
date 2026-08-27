@@ -8,6 +8,9 @@ import { isSameDay } from '../../common/utils/dateHelpers';
 import QuickLogButtons from '../components/dailylog/QuickLogButtons';
 import LogEntryModal from '../components/dailylog/LogEntryModal';
 import LogTimeline from '../components/dailylog/LogTimeline';
+import EmptyState from '../../common/ui/EmptyState';
+import { SERVICE_THEME } from '../../common/ui/serviceTheme';
+import { stagger, listItem } from '../../common/ui/motion';
 
 interface DailyLogPageProps {
   currentChild?: ChildProfile | null;
@@ -82,14 +85,14 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
   // No child selected
   if (!currentChild) {
     return (
-      <div className="min-h-screen bg-warm-white flex items-center justify-center px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="card text-center max-w-md"
-        >
-          <p className="text-gray-600">請先在側邊欄選擇或新增寶寶</p>
-        </motion.div>
+      <div className="screen">
+        <div className="screen-body">
+          <EmptyState
+            theme={SERVICE_THEME.littlesteps}
+            title="還沒有選擇寶寶"
+            description="請先在側邊欄選擇或新增寶寶"
+          />
+        </div>
       </div>
     );
   }
@@ -97,76 +100,53 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-warm-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">載入中...</p>
+      <div className="screen">
+        <div className="screen-body flex justify-center py-16">
+          <div className="w-40 h-1 rounded-full bg-primary-light overflow-hidden" role="status">
+            <div className="h-full w-1/3 rounded-full bg-primary-dark animate-[loading_1.2s_ease-in-out_infinite]" />
+            <span className="sr-only">載入中</span>
+          </div>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-warm-white pb-24">
-      <div className="max-w-2xl mx-auto px-4 py-6">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
-        >
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">
-            {currentChild.name}的快速日誌
-          </h1>
-          <p className="text-sm text-gray-600">今日記錄</p>
-        </motion.div>
+  const stats = [
+    { label: '餵奶', count: feedingCount },
+    { label: '睡眠', count: sleepCount },
+    { label: '尿布', count: diaperCount },
+  ];
 
-        {/* Today's Statistics */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white rounded-2xl shadow-soft p-4 mb-6"
-        >
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">今日統計</h2>
+  return (
+    <div className="screen">
+      <motion.div
+        className="screen-body"
+        variants={stagger}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div variants={listItem} className="card mb-6">
+          <h2 className="mb-3">今日統計</h2>
           <div className="flex justify-around">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{feedingCount}</div>
-              <div className="text-xs text-gray-600">🍼 餵奶</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">{sleepCount}</div>
-              <div className="text-xs text-gray-600">💤 睡眠</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-pink-600">{diaperCount}</div>
-              <div className="text-xs text-gray-600">💩 尿布</div>
-            </div>
+            {stats.map((stat) => (
+              <div key={stat.label} className="text-center">
+                <div className="text-2xl font-bold text-primary-dark">{stat.count}</div>
+                <div className="text-sm text-ink-muted">{stat.label}</div>
+              </div>
+            ))}
           </div>
         </motion.div>
 
-        {/* Quick Log Buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mb-6"
-        >
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">快速記錄</h2>
+        <motion.div variants={listItem} className="mb-6">
+          <h2 className="mb-3">快速記錄</h2>
           <QuickLogButtons onLogClick={handleQuickLog} />
         </motion.div>
 
-        {/* Log Timeline */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">今日記錄</h2>
+        <motion.div variants={listItem}>
+          <h2 className="mb-3">今日記錄</h2>
           <LogTimeline logs={logs} onEdit={handleEdit} onDelete={handleDelete} />
         </motion.div>
 
-        {/* Log Entry Modal */}
         {modalType && (
           <LogEntryModal
             isOpen={showModal}
@@ -179,7 +159,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
             editingLog={editingLog}
           />
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }

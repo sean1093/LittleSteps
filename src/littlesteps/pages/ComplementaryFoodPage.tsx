@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, AlertTriangle, Apple, Ban, BookOpen, Calendar, Carrot, Check, CheckCircle2, ChefHat, ChevronDown, ChevronLeft, Clock, Dot, Hand, HelpCircle, Layers, Lightbulb, List, MessageCircle, PlayCircle, Shield, TestTube, TrendingUp, Utensils, UtensilsCrossed, X, XCircle } from 'lucide-react';
+import { Calendar, CheckCircle2, ChevronDown, ChevronLeft, Hand, List, TestTube, X, XCircle } from 'lucide-react';
 import { getLucideIcon } from '../../common/lucideIcons';
 import { User } from 'firebase/auth';
 import {
@@ -29,6 +29,7 @@ import FoodTrackingTab from '../components/food/FoodTrackingTab';
 import FoodTrialModal from '../components/food/FoodTrialModal';
 import FourByThreeTracker from '../components/food/FourByThreeTracker';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
+import { stagger, listItem, fadeInUp, sheet, backdrop, collapse, tap, hoverLift } from '../../common/ui/motion';
 
 type ViewMode = 'home' | 'my-tracking' | 'guide-overview' | 'guide-stages' | 'guide-menu' | 'guide-safety';
 type TrackingTab = 'foods' | 'tracker';
@@ -36,6 +37,42 @@ type TrackingTab = 'foods' | 'tracker';
 interface ComplementaryFoodPageProps {
   currentChild?: ChildProfile | null;
   user: User | null;
+}
+
+const GUIDE_CARDS: { view: ViewMode; title: string; description: string }[] = [
+  { view: 'guide-overview', title: '開始使用指南', description: '副食品添加原則與時機' },
+  { view: 'guide-stages', title: '發展階段', description: '奶量與副食品轉換' },
+  { view: 'guide-menu', title: '菜單建議', description: '月份推薦與過敏等級' },
+  { view: 'guide-safety', title: '安全須知', description: '禁忌食物與注意事項' },
+];
+
+/** Same bottom sheet as the vaccine page's reference sheets. */
+function Sheet({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <>
+      <motion.div {...backdrop} onClick={onClose} className="fixed inset-0 bg-black/50 z-40" />
+      <motion.div
+        {...sheet}
+        className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl z-50 max-h-[85vh] overflow-y-auto"
+      >
+        <div className="sticky top-0 bg-white border-b border-ink/10 px-4 py-3 flex items-center justify-between gap-3">
+          <h2>{title}</h2>
+          <button onClick={onClose} aria-label="關閉" className="btn-icon bg-ink/5 hover:bg-ink/10">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-4 space-y-4">{children}</div>
+      </motion.div>
+    </>
+  );
 }
 
 export default function ComplementaryFoodPage({
@@ -60,26 +97,26 @@ export default function ComplementaryFoodPage({
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'danger':
-        return 'bg-red-50 border-red-200 text-red-800';
+        return 'bg-primary-light text-primary-dark';
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+        return 'bg-butter-light text-butter-dark';
       case 'info':
-        return 'bg-blue-50 border-blue-200 text-blue-800';
+        return 'bg-secondary-light text-secondary-dark';
       default:
-        return 'bg-gray-50 border-gray-200 text-gray-800';
+        return 'bg-ink/5 text-ink';
     }
   };
 
   const getAllergyLevelColor = (level: string) => {
     switch (level) {
       case 'low':
-        return 'bg-green-100 text-green-700';
+        return 'bg-mint-light text-mint-dark';
       case 'medium':
-        return 'bg-yellow-100 text-yellow-700';
+        return 'bg-butter-light text-butter-dark';
       case 'high':
-        return 'bg-orange-100 text-orange-700';
+        return 'bg-primary-light text-primary-dark';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-ink/5 text-ink-muted';
     }
   };
 
@@ -144,589 +181,191 @@ export default function ComplementaryFoodPage({
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] pb-6 relative overflow-hidden">
-      {/* Header */}
-      <div className="relative z-10 bg-[#FFF3E0]/30 px-4 py-6 mb-6">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-10 h-10 rounded-full bg-[#FFF3E0] flex items-center justify-center">
-            <UtensilsCrossed className="w-5 h-5 text-[#FF9B9B]" />
-          </div>
-          <h2 className="text-xl font-bold text-gray-800">副食品指南</h2>
-        </div>
-        <p className="text-sm text-gray-600 mb-4">
+    <div className="screen">
+      <div className="screen-body">
+        <p className="text-sm text-ink-muted mb-4">
           4-12個月寶寶的副食品添加完整攻略
         </p>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={() => setShowAllergyTest(true)}
-            className="flex items-center gap-2 bg-purple-50 hover:bg-purple-100 text-purple-700 px-3 py-2 rounded-xl transition-colors text-sm font-medium"
-          >
+        <div className="grid grid-cols-2 gap-2 mb-6">
+          <button onClick={() => setShowAllergyTest(true)} className="btn-secondary w-full text-sm">
             <TestTube className="w-4 h-4" />
             <span>4x3 試敏法</span>
           </button>
-          <button
-            onClick={() => setShowFingerFood(true)}
-            className="flex items-center gap-2 bg-orange-50 hover:bg-orange-100 text-orange-700 px-3 py-2 rounded-xl transition-colors text-sm font-medium"
-          >
+          <button onClick={() => setShowFingerFood(true)} className="btn-secondary w-full text-sm">
             <Hand className="w-4 h-4" />
             <span>手指食物指南</span>
           </button>
         </div>
-      </div>
 
-      {/* Back Button (for sub-pages) */}
-      {viewMode !== 'home' && (
-        <div className="px-4 mb-4">
-          <button
-            onClick={() => setViewMode('home')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
-          >
+        {/* Back Button (for sub-pages) */}
+        {viewMode !== 'home' && (
+          <button onClick={() => setViewMode('home')} className="btn-ghost -ml-4 mb-2">
             <ChevronLeft className="w-5 h-5" />
             <span className="font-medium">返回主頁</span>
           </button>
-        </div>
-      )}
+        )}
 
-      {/* Home Page */}
-      {viewMode === 'home' && (
-        <div className="px-4 space-y-6">
-          {/* My Food Tracking Section */}
+        {/* viewMode 是這一頁的主要導航（六個檢視），原本硬切換，
+            其他小 modal 卻都有動畫。 */}
+        <AnimatePresence mode="wait">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="card bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200"
+            key={viewMode}
+            variants={fadeInUp}
+            initial="hidden"
+            animate="visible"
+            exit={{ opacity: 0, transition: { duration: 0.12 } }}
           >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-green-600 flex items-center justify-center">
-                <Apple className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-800">我的副食品追蹤</h3>
-                <p className="text-sm text-gray-600">記錄寶寶的食物嘗試與過敏反應</p>
-              </div>
-            </div>
+            {/* Home Page */}
+            {viewMode === 'home' && (
+              <div className="space-y-6">
+                {/* My Food Tracking Section */}
+                <div className="panel bg-mint-soft">
+                  <h2 className="mb-1">我的副食品追蹤</h2>
+                  <p className="text-sm text-ink-muted mb-4">記錄寶寶的食物嘗試與過敏反應</p>
 
-            {/* Stats Preview */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="bg-white rounded-xl p-3 text-center">
-                <div className="text-2xl font-bold text-green-600">{stats.total}</div>
-                <div className="text-xs text-gray-600 mt-1">已試食物</div>
-              </div>
-              <div className="bg-white rounded-xl p-3 text-center">
-                <div className="text-2xl font-bold text-blue-600">{stats.noAllergy}</div>
-                <div className="text-xs text-gray-600 mt-1">無過敏</div>
-              </div>
-              <div className="bg-white rounded-xl p-3 text-center">
-                <div className="text-2xl font-bold text-orange-600">{stats.withAllergy}</div>
-                <div className="text-xs text-gray-600 mt-1">有過敏</div>
-              </div>
-            </div>
+                  {/* Stats Preview */}
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="bg-white rounded-xl p-3 text-center">
+                      <div className="text-2xl font-bold text-ink">{stats.total}</div>
+                      <div className="text-sm text-ink-muted mt-1">已試食物</div>
+                    </div>
+                    <div className="bg-white rounded-xl p-3 text-center">
+                      <div className="text-2xl font-bold text-mint-dark">{stats.noAllergy}</div>
+                      <div className="text-sm text-ink-muted mt-1">無過敏</div>
+                    </div>
+                    <div className="bg-white rounded-xl p-3 text-center">
+                      <div className="text-2xl font-bold text-butter-dark">{stats.withAllergy}</div>
+                      <div className="text-sm text-ink-muted mt-1">有過敏</div>
+                    </div>
+                  </div>
 
-            {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-3">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  setTrackingTab('foods');
-                  setViewMode('my-tracking');
-                }}
-                className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-xl font-medium transition-colors shadow-soft"
-              >
-                <List className="w-5 h-5" />
-                <span>我的食物清單</span>
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  setTrackingTab('tracker');
-                  setViewMode('my-tracking');
-                }}
-                className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-xl font-medium transition-colors shadow-soft"
-              >
-                <Calendar className="w-5 h-5" />
-                <span>4×3 追蹤</span>
-              </motion.button>
-            </div>
-          </motion.div>
-
-          {/* Knowledge Base Section */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <BookOpen className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-bold text-gray-800">副食品知識庫</h3>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              {/* Starting Guide */}
-              <motion.button
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setViewMode('guide-overview')}
-                className="card text-left bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 hover:border-blue-300 transition-all"
-              >
-                <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center mb-3">
-                  <Lightbulb className="w-5 h-5 text-white" />
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => {
+                        setTrackingTab('foods');
+                        setViewMode('my-tracking');
+                      }}
+                      className="btn-primary w-full text-sm"
+                    >
+                      <List className="w-5 h-5" />
+                      <span>我的食物清單</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setTrackingTab('tracker');
+                        setViewMode('my-tracking');
+                      }}
+                      className="btn-secondary w-full text-sm"
+                    >
+                      <Calendar className="w-5 h-5" />
+                      <span>4×3 追蹤</span>
+                    </button>
+                  </div>
                 </div>
-                <h4 className="font-bold text-gray-800 mb-1">開始使用指南</h4>
-                <p className="text-xs text-gray-600">副食品添加原則與時機</p>
-              </motion.button>
 
-              {/* Development Stages */}
-              <motion.button
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setViewMode('guide-stages')}
-                className="card text-left bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 hover:border-green-300 transition-all"
-              >
-                <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center mb-3">
-                  <Layers className="w-5 h-5 text-white" />
-                </div>
-                <h4 className="font-bold text-gray-800 mb-1">發展階段</h4>
-                <p className="text-xs text-gray-600">奶量與副食品轉換</p>
-              </motion.button>
+                {/* Knowledge Base Section */}
+                <div>
+                  <h2 className="mb-3">副食品知識庫</h2>
 
-              {/* Menu Suggestions */}
-              <motion.button
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setViewMode('guide-menu')}
-                className="card text-left bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 hover:border-orange-300 transition-all"
-              >
-                <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center mb-3">
-                  <UtensilsCrossed className="w-5 h-5 text-white" />
-                </div>
-                <h4 className="font-bold text-gray-800 mb-1">菜單建議</h4>
-                <p className="text-xs text-gray-600">月份推薦與過敏等級</p>
-              </motion.button>
-
-              {/* Safety Guidelines */}
-              <motion.button
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setViewMode('guide-safety')}
-                className="card text-left bg-gradient-to-br from-red-50 to-rose-50 border border-red-200 hover:border-red-300 transition-all"
-              >
-                <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center mb-3">
-                  <Shield className="w-5 h-5 text-white" />
-                </div>
-                <h4 className="font-bold text-gray-800 mb-1">安全須知</h4>
-                <p className="text-xs text-gray-600">禁忌食物與注意事項</p>
-              </motion.button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Guide: Overview (Starting Guide) */}
-      {viewMode === 'guide-overview' && (
-        <div className="px-4 space-y-6">
-          {/* Principles */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Lightbulb className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold text-gray-800">副食品添加三大原則</h3>
-            </div>
-            <div className="space-y-3">
-              {foodPrinciples.map((principle) => {
-                const IconComponent = getLucideIcon(principle.icon);
-                return (
                   <motion.div
-                    key={principle.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="card"
+                    className="grid grid-cols-2 gap-3"
+                    variants={stagger}
+                    initial="hidden"
+                    animate="visible"
                   >
-                    <div className="flex gap-3">
-                      {IconComponent && (
-                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <IconComponent className="w-5 h-5 text-primary" />
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-800 mb-1">{principle.title}</h4>
-                        <p className="text-sm text-gray-600">{principle.description}</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Starting Signals */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <PlayCircle className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold text-gray-800">開始副食品的時機</h3>
-            </div>
-            <div className="card">
-              <ul className="space-y-2">
-                {startingSignals.map((signal, idx) => (
-                  <li key={idx} className="flex gap-2 text-sm text-gray-700">
-                    <Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                    <span>{signal}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          {/* Feeding Methods */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Utensils className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold text-gray-800">常見副食品餵食法</h3>
-            </div>
-            <div className="space-y-2">
-              {feedingMethods.map((method) => (
-                <div key={method.id} className="card">
-                  <h4 className="font-semibold text-gray-800 mb-1">{method.name}</h4>
-                  <p className="text-sm text-gray-600">{method.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Food Progression */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold text-gray-800">質地與頻率轉變</h3>
-            </div>
-            <div className="space-y-3">
-              {foodProgression.map((progression, idx) => (
-                <div key={idx} className="card bg-[#FFF3E0]/20">
-                  <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-secondary/20 flex items-center justify-center flex-shrink-0 font-bold text-secondary">
-                      {idx + 1}
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-800 mb-1">{progression.ageRange}</div>
-                      <div className="text-sm text-gray-600 space-y-1">
-                        <div><span className="font-medium">質地：</span>{progression.texture}</div>
-                        <div><span className="font-medium">頻率：</span>{progression.frequency}</div>
-                        <div><span className="font-medium">目的：</span>{progression.purpose}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Feeding Principles */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <CheckCircle2 className="w-5 h-5 text-green-600" />
-              <h3 className="font-semibold text-gray-800">副食品添加基本原則</h3>
-            </div>
-            <div className="space-y-2">
-              {feedingPrinciples.map((principle, idx) => (
-                <div key={idx} className="card">
-                  <h4 className="font-semibold text-gray-800 mb-1">{principle.title}</h4>
-                  <p className="text-sm text-gray-600">{principle.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Food QA */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <HelpCircle className="w-5 h-5 text-blue-600" />
-              <h3 className="font-semibold text-gray-800">副食品常見問答</h3>
-            </div>
-            <div className="space-y-3">
-              {foodQA.map((qa, idx) => (
-                <div key={idx} className="card bg-blue-50/50">
-                  <h4 className="font-semibold text-gray-800 mb-2 flex items-start gap-2">
-                    <MessageCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <span>{qa.question}</span>
-                  </h4>
-                  <p className="text-sm text-gray-700 ml-6">{qa.answer}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Guide: Stages */}
-      {viewMode === 'guide-stages' && (
-        <div className="px-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Layers className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold text-gray-800">副食品與奶量轉換三階段</h3>
-          </div>
-          <div className="space-y-3">
-            {foodStages.map((stage) => {
-              const isExpanded = expandedStage === stage.level;
-              return (
-                <motion.div
-                  key={stage.level}
-                  layout
-                  className="card cursor-pointer"
-                  onClick={() => setExpandedStage(isExpanded ? null : stage.level)}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="w-16 h-16 rounded-full bg-[#FFF3E0] flex flex-col items-center justify-center text-[#FF9B9B] font-bold flex-shrink-0">
-                      <div className="text-xs opacity-90">Level</div>
-                      <div className="text-2xl">{stage.level}</div>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div>
-                          <h4 className="font-bold text-gray-800">{stage.name}</h4>
-                          <p className="text-sm text-gray-600">{stage.ageRange}</p>
-                        </div>
-                        <motion.div
-                          animate={{ rotate: isExpanded ? 180 : 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <ChevronDown className="w-5 h-5 text-gray-400" />
-                        </motion.div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2 text-xs mb-2">
-                        <div className="bg-blue-50 px-2 py-1 rounded">
-                          <span className="text-blue-600">奶：</span>
-                          <span className="font-medium text-blue-800">{stage.milkRatio}</span>
-                        </div>
-                        <div className="bg-green-50 px-2 py-1 rounded">
-                          <span className="text-green-600">副食品：</span>
-                          <span className="font-medium text-green-800">{stage.foodRatio}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 text-xs text-gray-600">
-                        <Clock className="w-3 h-3" />
-                        <span>{stage.mealsPerDay}</span>
-                        <span className="mx-1">•</span>
-                        <span>{stage.texture}</span>
-                      </div>
-
-                      <AnimatePresence>
-                        {isExpanded && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="mt-3 pt-3 border-t border-gray-100 space-y-3"
-                          >
-                            <div>
-                              <div className="text-sm font-medium text-gray-700 mb-2">重點提示</div>
-                              <ul className="space-y-1">
-                                {stage.keyPoints.map((point, idx) => (
-                                  <li key={idx} className="text-sm text-gray-600 flex gap-2">
-                                    <Dot className="w-4 h-4 text-primary flex-shrink-0" />
-                                    <span>{point}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-
-                            {stage.warnings && stage.warnings.length > 0 && (
-                              <div className="bg-red-50 border border-red-200 rounded-xl p-3">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <AlertTriangle className="w-4 h-4 text-red-600" />
-                                  <span className="text-sm font-medium text-red-800">特別注意</span>
-                                </div>
-                                <ul className="space-y-1">
-                                  {stage.warnings.map((warning, idx) => (
-                                    <li key={idx} className="text-sm text-red-700">• {warning}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Guide: Menu */}
-      {viewMode === 'guide-menu' && (
-        <div className="px-4 space-y-6">
-          {/* Monthly Menu */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <BookOpen className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold text-gray-800">試敏菜單與月份推薦</h3>
-            </div>
-            <div className="space-y-3">
-              {monthlyFoodMenus.map((menu, idx) => (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                  className="card"
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Calendar className="w-4 h-4 text-primary" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-800">{menu.month}</h4>
-                      <p className="text-xs text-gray-600">重點：{menu.focus}</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {menu.foods.map((food, foodIdx) => (
-                      <span
-                        key={foodIdx}
-                        className="px-2 py-1 bg-secondary/10 text-secondary rounded-lg text-xs font-medium"
+                    {GUIDE_CARDS.map((guide) => (
+                      <motion.button
+                        key={guide.view}
+                        variants={listItem}
+                        whileHover={hoverLift}
+                        whileTap={tap}
+                        onClick={() => setViewMode(guide.view)}
+                        className="card-tap text-left"
                       >
-                        {food}
-                      </span>
+                        <h3 className="mb-1">{guide.title}</h3>
+                        <p className="text-sm text-ink-muted">{guide.description}</p>
+                      </motion.button>
                     ))}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
+                  </motion.div>
+                </div>
+              </div>
+            )}
 
-          {/* Vegetable Allergy Levels */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Carrot className="w-5 h-5 text-green-600" />
-              <h3 className="font-semibold text-gray-800">蔬菜類過敏等級</h3>
-            </div>
-            <div className="space-y-3">
-              {vegetableAllergyLevels.map((level) => (
-                <div key={level.level} className="card">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${getAllergyLevelColor(level.level)}`}>
-                      {level.level === 'low' ? '低敏' : level.level === 'medium' ? '中敏' : '高敏'}
-                    </span>
-                    <span className="text-sm text-gray-600">{level.ageRange}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {level.foods.map((food: string, idx: number) => (
-                      <span key={idx} className="text-sm text-gray-700 bg-gray-50 px-2 py-1 rounded">
-                        {food}
-                      </span>
-                    ))}
+            {/* Guide: Overview (Starting Guide) */}
+            {viewMode === 'guide-overview' && (
+              <div className="space-y-6">
+                {/* Principles */}
+                <div>
+                  <h2 className="mb-3">副食品添加三大原則</h2>
+                  <motion.div
+                    className="space-y-3"
+                    variants={stagger}
+                    initial="hidden"
+                    animate="visible"
+                  >
+                    {foodPrinciples.map((principle) => {
+                      const IconComponent = getLucideIcon(principle.icon);
+                      return (
+                        <motion.div key={principle.id} variants={listItem} className="card">
+                          <div className="flex gap-3">
+                            {IconComponent && (
+                              <IconComponent className="w-5 h-5 text-primary-dark shrink-0 mt-0.5" />
+                            )}
+                            <div className="flex-1">
+                              <h3 className="mb-1">{principle.title}</h3>
+                              <p className="text-sm text-ink-muted">{principle.description}</p>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </motion.div>
+                </div>
+
+                {/* Starting Signals */}
+                <div>
+                  <h2 className="mb-3">開始副食品的時機</h2>
+                  <div className="card">
+                    <ul className="space-y-1.5 list-disc pl-5 marker:text-primary">
+                      {startingSignals.map((signal, idx) => (
+                        <li key={idx} className="text-sm text-ink">{signal}</li>
+                      ))}
+                    </ul>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Fruit Allergy Levels */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Apple className="w-5 h-5 text-red-600" />
-              <h3 className="font-semibold text-gray-800">水果類過敏等級</h3>
-            </div>
-            <div className="space-y-3">
-              {fruitAllergyLevels.map((level) => (
-                <div key={level.level} className="card">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${getAllergyLevelColor(level.level)}`}>
-                      {level.level === 'low' ? '低敏' : level.level === 'medium' ? '中敏' : '高敏'}
-                    </span>
-                    <span className="text-sm text-gray-600">{level.ageRange}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {level.foods.map((food: string, idx: number) => (
-                      <span key={idx} className="text-sm text-gray-700 bg-gray-50 px-2 py-1 rounded">
-                        {food}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Finger Food */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Hand className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold text-gray-800">手指食物推薦（7-8個月起）</h3>
-            </div>
-            <div className="space-y-2">
-              {fingerFoodGuidelines.map((guideline) => (
-                <div key={guideline.category} className="card">
-                  <h4 className="font-semibold text-gray-800 mb-2">{guideline.category}</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {guideline.examples.map((example, idx) => (
-                      <span key={idx} className="text-sm text-gray-700 bg-orange-50 px-2 py-1 rounded">
-                        {example}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Guide: Safety */}
-      {viewMode === 'guide-safety' && (
-        <div className="px-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Shield className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold text-gray-800">專業提醒與禁忌</h3>
-          </div>
-          <div className="space-y-3">
-            {foodWarnings.map((warning) => {
-              const IconComponent = getLucideIcon(warning.icon);
-              return (
-                <motion.div
-                  key={warning.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className={`card border-2 ${getSeverityColor(warning.severity)}`}
-                >
-                  <div className="flex gap-3">
-                    {IconComponent && (
-                      <div className="flex-shrink-0">
-                        <IconComponent className="w-6 h-6" />
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <h4 className="font-bold mb-1">{warning.title}</h4>
-                      <p className="text-sm">{warning.description}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-
-          {/* Infant Food Restrictions */}
-          <div className="mt-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Ban className="w-5 h-5 text-red-600" />
-              <h3 className="font-semibold text-gray-800">嬰幼兒飲食禁忌</h3>
-            </div>
-            <div className="space-y-4">
-              {infantFoodRestrictions.map((category, idx) => (
-                <div key={idx}>
-                  <h4 className="font-semibold text-gray-800 mb-2">{category.category}</h4>
+                {/* Feeding Methods */}
+                <div>
+                  <h2 className="mb-3">常見副食品餵食法</h2>
                   <div className="space-y-2">
-                    {category.items.map((item, itemIdx) => (
-                      <div key={itemIdx} className="card bg-red-50 border border-red-200">
-                        <div className="flex items-start gap-2">
-                          <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                    {feedingMethods.map((method) => (
+                      <div key={method.id} className="card">
+                        <h3 className="mb-1">{method.name}</h3>
+                        <p className="text-sm text-ink-muted">{method.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Food Progression */}
+                <div>
+                  <h2 className="mb-3">質地與頻率轉變</h2>
+                  <div className="space-y-3">
+                    {foodProgression.map((progression, idx) => (
+                      <div key={idx} className="card bg-butter-soft">
+                        <div className="flex items-start gap-3">
+                          <div className="w-12 h-12 rounded-xl bg-secondary-light flex items-center justify-center flex-shrink-0 font-bold text-secondary-dark">
+                            {idx + 1}
+                          </div>
                           <div className="flex-1">
-                            <div className="font-medium text-red-900">{item.food}</div>
-                            <div className="text-sm text-red-700 mt-1">
-                              <span className="font-medium">{item.ageLimit}</span> - {item.reason}
+                            <h3 className="mb-1">{progression.ageRange}</h3>
+                            <div className="text-sm text-ink-muted space-y-1">
+                              <div><span className="font-medium">質地：</span>{progression.texture}</div>
+                              <div><span className="font-medium">頻率：</span>{progression.frequency}</div>
+                              <div><span className="font-medium">目的：</span>{progression.purpose}</div>
                             </div>
                           </div>
                         </div>
@@ -734,130 +373,402 @@ export default function ComplementaryFoodPage({
                     ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Cooking Tips */}
-          <div className="mt-6">
-            <div className="flex items-center gap-2 mb-4">
-              <ChefHat className="w-5 h-5 text-orange-600" />
-              <h3 className="font-semibold text-gray-800">烹調與保存技巧</h3>
-            </div>
-            <div className="space-y-4">
-              {cookingTips.map((category, idx) => (
-                <div key={idx}>
-                  <h4 className="font-semibold text-gray-800 mb-2">{category.category}</h4>
+                {/* Feeding Principles */}
+                <div>
+                  <h2 className="mb-3">副食品添加基本原則</h2>
                   <div className="space-y-2">
-                    {category.tips.map((tip, tipIdx) => (
-                      <div key={tipIdx} className="card bg-orange-50">
-                        <h5 className="font-medium text-gray-800 mb-1">{tip.title}</h5>
-                        <p className="text-sm text-gray-700">{tip.description}</p>
+                    {feedingPrinciples.map((principle, idx) => (
+                      <div key={idx} className="card">
+                        <h3 className="mb-1">{principle.title}</h3>
+                        <p className="text-sm text-ink-muted">{principle.description}</p>
                       </div>
                     ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Food Handling Tips */}
-          <div className="mt-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Lightbulb className="w-5 h-5 text-yellow-600" />
-              <h3 className="font-semibold text-gray-800">食材特殊處理</h3>
-            </div>
-            <div className="space-y-4">
-              {foodHandlingTips.map((category, idx) => (
-                <div key={idx}>
-                  <h4 className="font-semibold text-gray-800 mb-2">{category.category}</h4>
-                  <div className="space-y-2">
-                    {category.items.map((item, itemIdx) => (
-                      <div key={itemIdx} className={`card ${item.canEat ? 'bg-green-50' : 'bg-red-50'}`}>
-                        <div className="flex items-start gap-2">
-                          {item.canEat ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                          ) : (
-                            <XCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-                          )}
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-800">{item.food}</div>
-                            <p className="text-sm text-gray-700 mt-1">{item.note}</p>
+                {/* Food QA */}
+                <div>
+                  <h2 className="mb-3">副食品常見問答</h2>
+                  <div className="space-y-3">
+                    {foodQA.map((qa, idx) => (
+                      <div key={idx} className="card bg-secondary-soft">
+                        <h3 className="mb-2">{qa.question}</h3>
+                        <p className="text-sm text-ink">{qa.answer}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Guide: Stages */}
+            {viewMode === 'guide-stages' && (
+              <div>
+                <h2 className="mb-3">副食品與奶量轉換三階段</h2>
+                <motion.div
+                  className="space-y-3"
+                  variants={stagger}
+                  initial="hidden"
+                  animate="visible"
+                >
+                  {foodStages.map((stage) => {
+                    const isExpanded = expandedStage === stage.level;
+                    return (
+                      <motion.div
+                        key={stage.level}
+                        layout
+                        variants={listItem}
+                        className="card-tap"
+                        onClick={() => setExpandedStage(isExpanded ? null : stage.level)}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-16 h-16 rounded-full bg-primary-light flex flex-col items-center justify-center text-primary-dark font-bold flex-shrink-0">
+                            <div className="text-xs">Level</div>
+                            <div className="text-2xl leading-none">{stage.level}</div>
                           </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <div>
+                                <h3>{stage.name}</h3>
+                                <p className="text-sm text-ink-muted">{stage.ageRange}</p>
+                              </div>
+                              <motion.div
+                                animate={{ rotate: isExpanded ? 180 : 0 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                <ChevronDown className="w-5 h-5 text-ink-faint" />
+                              </motion.div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-sm mb-2">
+                              <div className="bg-secondary-light px-2 py-1 rounded">
+                                <span className="text-secondary-dark">奶：</span>
+                                <span className="font-medium text-secondary-dark">{stage.milkRatio}</span>
+                              </div>
+                              <div className="bg-mint-light px-2 py-1 rounded">
+                                <span className="text-mint-dark">副食品：</span>
+                                <span className="font-medium text-mint-dark">{stage.foodRatio}</span>
+                              </div>
+                            </div>
+
+                            {/* 兩段文字在 390px 上並排會擠成兩欄，所以直接分行 */}
+                            <div className="text-sm text-ink-muted space-y-0.5">
+                              <div>{stage.mealsPerDay}</div>
+                              <div>{stage.texture}</div>
+                            </div>
+
+                            <AnimatePresence>
+                              {isExpanded && (
+                                <motion.div {...collapse} className="overflow-hidden">
+                                  <div className="mt-3 pt-3 border-t border-ink/10 space-y-3">
+                                    <div>
+                                      <h4 className="mb-2">重點提示</h4>
+                                      <ul className="space-y-1 list-disc pl-5 marker:text-primary">
+                                        {stage.keyPoints.map((point, idx) => (
+                                          <li key={idx} className="text-sm text-ink-muted">{point}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+
+                                    {stage.warnings && stage.warnings.length > 0 && (
+                                      <div className="bg-primary-light rounded-xl p-3">
+                                        <h4 className="text-primary-dark mb-2">特別注意</h4>
+                                        <ul className="space-y-1 list-disc pl-5 marker:text-primary-dark">
+                                          {stage.warnings.map((warning, idx) => (
+                                            <li key={idx} className="text-sm text-ink">{warning}</li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+              </div>
+            )}
+
+            {/* Guide: Menu */}
+            {viewMode === 'guide-menu' && (
+              <div className="space-y-6">
+                {/* Monthly Menu */}
+                <div>
+                  <h2 className="mb-3">試敏菜單與月份推薦</h2>
+                  <motion.div
+                    className="space-y-3"
+                    variants={stagger}
+                    initial="hidden"
+                    animate="visible"
+                  >
+                    {monthlyFoodMenus.map((menu, idx) => (
+                      <motion.div key={idx} variants={listItem} className="card">
+                        <h3>{menu.month}</h3>
+                        <p className="text-sm text-ink-muted mb-2">重點：{menu.focus}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {menu.foods.map((food, foodIdx) => (
+                            <span
+                              key={foodIdx}
+                              className="px-2 py-1 bg-secondary-light text-secondary-dark rounded-lg text-sm font-medium"
+                            >
+                              {food}
+                            </span>
+                          ))}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                </div>
+
+                {/* Vegetable Allergy Levels */}
+                <div>
+                  <h2 className="mb-3">蔬菜類過敏等級</h2>
+                  <div className="space-y-3">
+                    {vegetableAllergyLevels.map((level) => (
+                      <div key={level.level} className="card">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className={`px-3 py-1 rounded-full text-sm font-bold ${getAllergyLevelColor(level.level)}`}>
+                            {level.level === 'low' ? '低敏' : level.level === 'medium' ? '中敏' : '高敏'}
+                          </span>
+                          <span className="text-sm text-ink-muted">{level.ageRange}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {level.foods.map((food: string, idx: number) => (
+                            <span key={idx} className="text-sm text-ink bg-ink/5 px-2 py-1 rounded">
+                              {food}
+                            </span>
+                          ))}
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* My Food Tracking (with tabs) */}
-      {viewMode === 'my-tracking' && (
-        <div className="space-y-4">
-          {/* Tracking Tabs */}
-          <div className="px-4">
-            <div className="flex gap-2 bg-gray-100 rounded-2xl p-1">
-              <button
-                onClick={() => setTrackingTab('foods')}
-                className={`
-                  flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all text-sm
-                  ${trackingTab === 'foods'
-                    ? 'bg-white text-gray-800 shadow-soft'
-                    : 'text-gray-600 hover:text-gray-800'
-                  }
-                `}
-              >
-                <List className="w-4 h-4" />
-                <span>我的食物清單</span>
-                {stats.total > 0 && (
-                  <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
-                    trackingTab === 'foods' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
-                  }`}>
-                    {stats.total}
-                  </span>
+                {/* Fruit Allergy Levels */}
+                <div>
+                  <h2 className="mb-3">水果類過敏等級</h2>
+                  <div className="space-y-3">
+                    {fruitAllergyLevels.map((level) => (
+                      <div key={level.level} className="card">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className={`px-3 py-1 rounded-full text-sm font-bold ${getAllergyLevelColor(level.level)}`}>
+                            {level.level === 'low' ? '低敏' : level.level === 'medium' ? '中敏' : '高敏'}
+                          </span>
+                          <span className="text-sm text-ink-muted">{level.ageRange}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {level.foods.map((food: string, idx: number) => (
+                            <span key={idx} className="text-sm text-ink bg-ink/5 px-2 py-1 rounded">
+                              {food}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Finger Food */}
+                <div>
+                  <h2 className="mb-3">手指食物推薦（7-8個月起）</h2>
+                  <div className="space-y-2">
+                    {fingerFoodGuidelines.map((guideline) => (
+                      <div key={guideline.category} className="card">
+                        <h3 className="mb-2">{guideline.category}</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {guideline.examples.map((example, idx) => (
+                            <span key={idx} className="text-sm text-ink bg-butter-light px-2 py-1 rounded">
+                              {example}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Guide: Safety */}
+            {viewMode === 'guide-safety' && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="mb-3">專業提醒與禁忌</h2>
+                  <motion.div
+                    className="space-y-3"
+                    variants={stagger}
+                    initial="hidden"
+                    animate="visible"
+                  >
+                    {foodWarnings.map((warning) => {
+                      const IconComponent = getLucideIcon(warning.icon);
+                      return (
+                        <motion.div
+                          key={warning.id}
+                          variants={listItem}
+                          className={`card ${getSeverityColor(warning.severity)}`}
+                        >
+                          <div className="flex gap-3">
+                            {IconComponent && (
+                              <IconComponent className="w-5 h-5 shrink-0 mt-0.5" />
+                            )}
+                            <div className="flex-1">
+                              <h3 className="mb-1">{warning.title}</h3>
+                              <p className="text-sm">{warning.description}</p>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </motion.div>
+                </div>
+
+                {/* Infant Food Restrictions */}
+                <div>
+                  <h2 className="mb-3">嬰幼兒飲食禁忌</h2>
+                  <div className="space-y-4">
+                    {infantFoodRestrictions.map((category, idx) => (
+                      <div key={idx}>
+                        <h3 className="mb-2">{category.category}</h3>
+                        <div className="space-y-2">
+                          {category.items.map((item, itemIdx) => (
+                            <div key={itemIdx} className="card bg-primary-soft">
+                              <h4 className="text-primary-dark">{item.food}</h4>
+                              <p className="text-sm text-ink mt-1">
+                                <span className="font-medium">{item.ageLimit}</span> - {item.reason}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Cooking Tips */}
+                <div>
+                  <h2 className="mb-3">烹調與保存技巧</h2>
+                  <div className="space-y-4">
+                    {cookingTips.map((category, idx) => (
+                      <div key={idx}>
+                        <h3 className="mb-2">{category.category}</h3>
+                        <div className="space-y-2">
+                          {category.tips.map((tip, tipIdx) => (
+                            <div key={tipIdx} className="card bg-butter-soft">
+                              <h4 className="mb-1">{tip.title}</h4>
+                              <p className="text-sm text-ink">{tip.description}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Food Handling Tips */}
+                <div>
+                  <h2 className="mb-3">食材特殊處理</h2>
+                  <div className="space-y-4">
+                    {foodHandlingTips.map((category, idx) => (
+                      <div key={idx}>
+                        <h3 className="mb-2">{category.category}</h3>
+                        <div className="space-y-2">
+                          {category.items.map((item, itemIdx) => (
+                            <div
+                              key={itemIdx}
+                              className={`card ${item.canEat ? 'bg-mint-soft' : 'bg-primary-soft'}`}
+                            >
+                              <div className="flex items-start gap-2">
+                                {/* 能吃／不能吃只靠這個符號區分 */}
+                                {item.canEat ? (
+                                  <CheckCircle2 className="w-4 h-4 text-mint-dark flex-shrink-0 mt-1" />
+                                ) : (
+                                  <XCircle className="w-4 h-4 text-primary-dark flex-shrink-0 mt-1" />
+                                )}
+                                <div className="flex-1">
+                                  <h4>{item.food}</h4>
+                                  <p className="text-sm text-ink mt-1">{item.note}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* My Food Tracking (with tabs) */}
+            {viewMode === 'my-tracking' && (
+              <div className="space-y-4">
+                {/* Tracking Tabs */}
+                <div className="flex gap-2 bg-ink/5 rounded-2xl p-1">
+                  <button
+                    onClick={() => setTrackingTab('foods')}
+                    className={`
+                      flex-1 flex items-center justify-center gap-2 min-h-tap px-4 rounded-xl font-medium transition-all text-sm
+                      ${trackingTab === 'foods'
+                        ? 'bg-white text-ink shadow-soft'
+                        : 'text-ink-muted hover:text-ink'
+                      }
+                    `}
+                  >
+                    <List className="w-4 h-4" />
+                    <span>我的食物清單</span>
+                    {stats.total > 0 && (
+                      <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
+                        trackingTab === 'foods' ? 'bg-mint-light text-mint-dark' : 'bg-ink/10 text-ink-muted'
+                      }`}>
+                        {stats.total}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setTrackingTab('tracker')}
+                    className={`
+                      flex-1 flex items-center justify-center gap-2 min-h-tap px-4 rounded-xl font-medium transition-all text-sm
+                      ${trackingTab === 'tracker'
+                        ? 'bg-white text-ink shadow-soft'
+                        : 'text-ink-muted hover:text-ink'
+                      }
+                    `}
+                  >
+                    <Calendar className="w-4 h-4" />
+                    <span>4×3 追蹤</span>
+                  </button>
+                </div>
+
+                {/* Tab Content */}
+                {trackingTab === 'foods' && (
+                  <FoodTrackingTab
+                    foodTrials={foodTrials}
+                    stats={stats}
+                    onAddFood={handleAddFood}
+                    onEditFood={handleEditFood}
+                    onDeleteFood={handleDeleteFood}
+                    user={user}
+                  />
                 )}
-              </button>
-              <button
-                onClick={() => setTrackingTab('tracker')}
-                className={`
-                  flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all text-sm
-                  ${trackingTab === 'tracker'
-                    ? 'bg-white text-gray-800 shadow-soft'
-                    : 'text-gray-600 hover:text-gray-800'
-                  }
-                `}
-              >
-                <Calendar className="w-4 h-4" />
-                <span>4×3 追蹤</span>
-              </button>
-            </div>
-          </div>
 
-          {/* Tab Content */}
-          {trackingTab === 'foods' && (
-            <FoodTrackingTab
-              foodTrials={foodTrials}
-              stats={stats}
-              onAddFood={handleAddFood}
-              onEditFood={handleEditFood}
-              onDeleteFood={handleDeleteFood}
-              user={user}
-            />
-          )}
-
-          {trackingTab === 'tracker' && (
-            <FourByThreeTracker
-              foodTrials={foodTrials}
-              onAddTrialDate={handleAddTrialDate}
-              onViewFood={handleEditFood}
-            />
-          )}
-        </div>
-      )}
+                {trackingTab === 'tracker' && (
+                  <FourByThreeTracker
+                    foodTrials={foodTrials}
+                    onAddTrialDate={handleAddTrialDate}
+                    onViewFood={handleEditFood}
+                  />
+                )}
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
 
       {/* Food Trial Modal */}
       <FoodTrialModal
@@ -870,120 +781,52 @@ export default function ComplementaryFoodPage({
         editingFood={editingFood}
       />
 
-      {/* 4x3 Allergy Testing Modal */}
+      {/* 4x3 Allergy Testing Sheet */}
       <AnimatePresence>
         {showAllergyTest && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowAllergyTest(false)}
-              className="fixed inset-0 bg-black/50 z-40"
-            />
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl z-50 max-h-[85vh] overflow-y-auto"
-            >
-              <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <TestTube className="w-6 h-6 text-purple-600" />
-                  <h3 className="text-lg font-bold text-gray-800">{allergyTestingMethod.name}</h3>
-                </div>
-                <button
-                  onClick={() => setShowAllergyTest(false)}
-                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-600" />
-                </button>
-              </div>
+          <Sheet title={allergyTestingMethod.name} onClose={() => setShowAllergyTest(false)}>
+            <div className="bg-secondary-soft rounded-2xl p-4">
+              <p className="text-sm text-ink">{allergyTestingMethod.description}</p>
+            </div>
 
-              <div className="p-4 space-y-4">
-                <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4">
-                  <p className="text-sm text-purple-800">{allergyTestingMethod.description}</p>
-                </div>
-
-                {allergyTestingMethod.steps.map((step) => (
-                  <div key={step.step} className="card">
-                    <div className="flex gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0 font-bold text-purple-700">
-                        {step.step}
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-800 mb-1">{step.title}</h4>
-                        <p className="text-sm text-gray-600">{step.description}</p>
-                      </div>
-                    </div>
+            {allergyTestingMethod.steps.map((step) => (
+              <div key={step.step} className="card">
+                <div className="flex gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-secondary-light flex items-center justify-center flex-shrink-0 font-bold text-secondary-dark">
+                    {step.step}
                   </div>
-                ))}
-
-                <div className="bg-yellow-50 border-2 border-yellow-200 rounded-2xl p-4">
-                  <div className="flex items-start gap-2">
-                    <Lightbulb className="w-5 h-5 text-yellow-600 flex-shrink-0" />
-                    <p className="text-sm text-yellow-800 font-medium">{allergyTestingMethod.principle}</p>
+                  <div className="flex-1">
+                    <h3 className="mb-1">{step.title}</h3>
+                    <p className="text-sm text-ink-muted">{step.description}</p>
                   </div>
                 </div>
               </div>
-            </motion.div>
-          </>
+            ))}
+
+            <div className="bg-butter-light rounded-2xl p-4">
+              <p className="text-sm text-butter-dark font-medium">{allergyTestingMethod.principle}</p>
+            </div>
+          </Sheet>
         )}
       </AnimatePresence>
 
-      {/* Finger Food Modal */}
+      {/* Finger Food Sheet */}
       <AnimatePresence>
         {showFingerFood && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowFingerFood(false)}
-              className="fixed inset-0 bg-black/50 z-40"
-            />
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl z-50 max-h-[85vh] overflow-y-auto"
-            >
-              <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Hand className="w-6 h-6 text-orange-600" />
-                  <h3 className="text-lg font-bold text-gray-800">{fingerFoodPrinciples.title}</h3>
-                </div>
-                <button
-                  onClick={() => setShowFingerFood(false)}
-                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-600" />
-                </button>
-              </div>
+          <Sheet title={fingerFoodPrinciples.title} onClose={() => setShowFingerFood(false)}>
+            <div className="bg-butter-light rounded-2xl p-4">
+              <p className="text-sm text-butter-dark font-medium">
+                適用年齡：{fingerFoodPrinciples.ageRange}
+              </p>
+            </div>
 
-              <div className="p-4 space-y-4">
-                <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4">
-                  <p className="text-sm text-orange-800 font-medium">適用年齡：{fingerFoodPrinciples.ageRange}</p>
-                </div>
-
-                {fingerFoodPrinciples.principles.map((principle, idx) => (
-                  <div key={idx} className="card">
-                    <div className="flex gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
-                        <CheckCircle2 className="w-5 h-5 text-orange-600" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-800 mb-1">{principle.name}</h4>
-                        <p className="text-sm text-gray-600">{principle.description}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+            {fingerFoodPrinciples.principles.map((principle, idx) => (
+              <div key={idx} className="card">
+                <h3 className="mb-1">{principle.name}</h3>
+                <p className="text-sm text-ink-muted">{principle.description}</p>
               </div>
-            </motion.div>
-          </>
+            ))}
+          </Sheet>
         )}
       </AnimatePresence>
     </div>

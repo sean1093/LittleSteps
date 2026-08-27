@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { User } from 'firebase/auth';
-import { Star, TrendingUp, Moon, Sun, Clock } from 'lucide-react';
+import { Star } from 'lucide-react';
 import { ChildProfile } from '../../types';
 import { useDailyLogs } from '../hooks/useDailyLogs';
 import { calculateAge } from '../../common/utils/dateHelpers';
@@ -14,6 +14,9 @@ import {
 import { getSleepRequirementForAge } from '../data/sleep';
 import SimpleBarChart from '../components/sleep/SimpleBarChart';
 import SleepTimelineChart from '../components/sleep/SleepTimelineChart';
+import EmptyState from '../../common/ui/EmptyState';
+import { SERVICE_THEME } from '../../common/ui/serviceTheme';
+import { stagger, listItem } from '../../common/ui/motion';
 
 interface SleepAnalysisPageProps {
   currentChild?: ChildProfile | null;
@@ -60,19 +63,20 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
   const dailyNightSleep = (stats.nightSleep / stats.daysInPeriod) / 60;
   const dailyDaytimeNaps = (stats.daytimeNaps / stats.daysInPeriod) / 60;
 
-  // Chart data for actual vs recommended
+  // Chart data for actual vs recommended. Bars carry no text, so the DEFAULT
+  // token fills are the right shades here.
   const comparisonData = [
     {
       label: period === 'today' ? '今日睡眠' : '每日平均',
       value: actualHours,
       max: maxHours,
-      color: 'bg-gradient-to-r from-blue-400 to-blue-500',
+      color: 'bg-primary',
     },
     {
       label: '建議睡眠',
       value: maxHours,
       max: maxHours,
-      color: 'bg-gradient-to-r from-gray-300 to-gray-400',
+      color: 'bg-ink/20',
     },
   ];
 
@@ -82,13 +86,13 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
       label: '夜間睡眠',
       value: dailyNightSleep,
       max: actualHours > 0 ? actualHours : 1,
-      color: 'bg-gradient-to-r from-purple-400 to-purple-500',
+      color: 'bg-secondary',
     },
     {
       label: '白天小睡',
       value: dailyDaytimeNaps,
       max: actualHours > 0 ? actualHours : 1,
-      color: 'bg-gradient-to-r from-blue-300 to-blue-400',
+      color: 'bg-butter',
     },
   ];
 
@@ -99,14 +103,14 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
   // No child selected
   if (!currentChild) {
     return (
-      <div className="min-h-screen bg-warm-white flex items-center justify-center px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="card text-center max-w-md"
-        >
-          <p className="text-gray-600">請先在側邊欄選擇或新增寶寶</p>
-        </motion.div>
+      <div className="screen">
+        <div className="screen-body">
+          <EmptyState
+            theme={SERVICE_THEME.littlesteps}
+            title="還沒有選擇寶寶"
+            description="請先在側邊欄選擇或新增寶寶"
+          />
+        </div>
       </div>
     );
   }
@@ -114,10 +118,12 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-warm-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">載入中...</p>
+      <div className="screen">
+        <div className="screen-body flex justify-center py-16">
+          <div className="w-40 h-1 rounded-full bg-primary-light overflow-hidden" role="status">
+            <div className="h-full w-1/3 rounded-full bg-primary-dark animate-[loading_1.2s_ease-in-out_infinite]" />
+            <span className="sr-only">載入中</span>
+          </div>
         </div>
       </div>
     );
@@ -126,17 +132,14 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
   // Empty state - no sleep records
   if (sleepLogs.length === 0) {
     return (
-      <div className="min-h-screen bg-warm-white flex items-center justify-center px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="card text-center max-w-md"
-        >
-          <Moon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">還沒有睡眠記錄</h2>
-          <p className="text-gray-600 mb-4">開始記錄寶寶的睡眠，就能看到分析與建議囉！</p>
-          <p className="text-sm text-gray-500">前往「快速日誌」頁面記錄睡眠</p>
-        </motion.div>
+      <div className="screen">
+        <div className="screen-body">
+          <EmptyState
+            theme={SERVICE_THEME.littlesteps}
+            title="還沒有睡眠記錄"
+            description={'開始記錄寶寶的睡眠，就能看到分析與建議囉！\n前往「快速日誌」頁面記錄睡眠'}
+          />
+        </div>
       </div>
     );
   }
@@ -145,58 +148,31 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
   const showInsufficientDataWarning = sleepLogs.length < 3;
 
   return (
-    <div className="min-h-screen bg-warm-white pb-6">
-      <div className="max-w-2xl mx-auto px-4 py-6">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
-        >
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">
-            {currentChild.name}的睡眠分析
-          </h1>
-          <p className="text-sm text-gray-600">
-            根據睡眠記錄分析寶寶的作息規律，並提供改善建議
-          </p>
-        </motion.div>
-
-        {/* Insufficient Data Warning */}
+    <div className="screen">
+      <motion.div
+        className="screen-body"
+        variants={stagger}
+        initial="hidden"
+        animate="visible"
+      >
         {showInsufficientDataWarning && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 mb-6"
-          >
-            <p className="text-sm text-yellow-800">
-              ⚠️ 睡眠記錄較少（共 {sleepLogs.length} 筆），分析結果可能不夠準確。建議累積更多記錄後再查看。
+          <motion.div variants={listItem} className="card bg-butter-light mb-4">
+            <p className="text-sm text-butter-dark">
+              睡眠記錄較少（共 {sleepLogs.length} 筆），分析結果可能不夠準確。建議累積更多記錄後再查看。
             </p>
           </motion.div>
         )}
 
         {/* Period Selection */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="flex justify-center gap-3 mb-6"
-        >
+        <motion.div variants={listItem} className="flex justify-center gap-2 mb-6">
           {(['today', 'week', 'month'] as const).map((p) => {
             const labels = { today: '今日', week: '本週', month: '本月' };
-            const isActive = period === p;
 
             return (
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
-                className={`
-                  px-6 py-2 rounded-xl font-medium transition-all
-                  ${
-                    isActive
-                      ? 'bg-gradient-to-r from-primary to-secondary text-white shadow-soft'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }
-                `}
+                className={`chip ${period === p ? 'chip-on' : ''}`}
               >
                 {labels[p]}
               </button>
@@ -205,69 +181,48 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
         </motion.div>
 
         {/* Statistics Cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="grid grid-cols-3 gap-3 mb-6"
-        >
-          <div className="bg-white rounded-2xl p-4 shadow-soft text-center">
-            <div className="text-2xl font-bold text-blue-600">
+        <motion.div variants={listItem} className="grid grid-cols-3 gap-3 mb-4">
+          <div className="card text-center">
+            <div className="text-2xl font-bold text-primary-dark">
               {(stats.dailyAverage / 60).toFixed(1)}h
             </div>
-            <div className="text-xs text-gray-600 mt-1">
+            <div className="text-sm text-ink-muted mt-1">
               {period === 'today' ? '今日總時長' : '每日平均'}
             </div>
           </div>
-          <div className="bg-white rounded-2xl p-4 shadow-soft text-center">
-            <div className="text-2xl font-bold text-purple-600">
+          <div className="card text-center">
+            <div className="text-2xl font-bold text-primary-dark">
               {period === 'today'
                 ? `${stats.sleepCount}次`
                 : `${(stats.sleepCount / stats.daysInPeriod).toFixed(1)}次`
               }
             </div>
-            <div className="text-xs text-gray-600 mt-1">
+            <div className="text-sm text-ink-muted mt-1">
               {period === 'today' ? '睡眠次數' : '每日次數'}
             </div>
           </div>
-          <div className="bg-white rounded-2xl p-4 shadow-soft text-center">
-            <div className="text-2xl font-bold text-pink-600">
+          <div className="card text-center">
+            <div className="text-2xl font-bold text-primary-dark">
               {(stats.averageDuration / 60).toFixed(1)}h
             </div>
-            <div className="text-xs text-gray-600 mt-1">每次平均</div>
+            <div className="text-sm text-ink-muted mt-1">每次平均</div>
           </div>
         </motion.div>
 
         {/* Sleep Duration Comparison */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white rounded-2xl p-6 shadow-soft mb-6"
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-bold text-gray-800">睡眠時長對比</h2>
-          </div>
-          <p className="text-sm text-gray-600 mb-4">
+        <motion.div variants={listItem} className="panel mb-4">
+          <h2 className="mb-2">睡眠時長對比</h2>
+          <p className="text-sm text-ink-muted mb-4">
             {ageInMonths} 個月大寶寶建議：{recommendation.totalHours}
           </p>
           <SimpleBarChart data={comparisonData} />
         </motion.div>
 
         {/* Night vs Day */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-white rounded-2xl p-6 shadow-soft mb-6"
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <Moon className="w-5 h-5 text-purple-600" />
-            <h2 className="text-lg font-bold text-gray-800">夜間 vs 白天</h2>
-          </div>
+        <motion.div variants={listItem} className="panel mb-4">
+          <h2 className="mb-4">夜間 vs 白天</h2>
           <SimpleBarChart data={nightDayData} height={32} />
-          <div className="mt-3 text-sm text-gray-600">
+          <div className="mt-3 text-sm text-ink-muted">
             夜間佔比：
             {stats.totalDuration > 0
               ? `${((stats.nightSleep / stats.totalDuration) * 100).toFixed(0)}%`
@@ -277,49 +232,33 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
 
         {/* Week Timeline */}
         {sleepLogs.length >= 2 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="mb-6"
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <Sun className="w-5 h-5 text-orange-500" />
-              <h2 className="text-lg font-bold text-gray-800">本週睡眠時間軸</h2>
-            </div>
+          <motion.div variants={listItem} className="mb-4">
+            <h2 className="mb-3">本週睡眠時間軸</h2>
             <SleepTimelineChart weekLogs={sleepLogs} />
           </motion.div>
         )}
 
         {/* Sleep Regularity */}
         {sleepLogs.length >= 3 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="bg-white rounded-2xl p-6 shadow-soft mb-6"
-          >
-            <div className="flex items-center gap-2 mb-4">
-              <Clock className="w-5 h-5 text-primary" />
-              <h2 className="text-lg font-bold text-gray-800">睡眠規律性</h2>
-            </div>
+          <motion.div variants={listItem} className="panel mb-4">
+            <h2 className="mb-4">睡眠規律性</h2>
 
             {/* Bedtime Regularity */}
             <div className="mb-4">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-gray-700">入睡時間規律性</span>
+                <span className="text-sm font-medium text-ink">入睡時間規律性</span>
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((i) => (
                     <Star
                       key={i}
                       className={`w-4 h-4 ${
-                        i <= bedtimeStars ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
+                        i <= bedtimeStars ? 'text-butter fill-butter' : 'text-ink/20'
                       }`}
                     />
                   ))}
                 </div>
               </div>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-ink-muted">
                 平均入睡時間：{regularity.averageBedtime}
               </p>
             </div>
@@ -327,19 +266,19 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
             {/* Wake Time Regularity */}
             <div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-gray-700">清醒時間規律性</span>
+                <span className="text-sm font-medium text-ink">清醒時間規律性</span>
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((i) => (
                     <Star
                       key={i}
                       className={`w-4 h-4 ${
-                        i <= wakeTimeStars ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
+                        i <= wakeTimeStars ? 'text-butter fill-butter' : 'text-ink/20'
                       }`}
                     />
                   ))}
                 </div>
               </div>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-ink-muted">
                 平均清醒時間：{regularity.averageWakeTime}
               </p>
             </div>
@@ -347,55 +286,46 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
         )}
 
         {/* Sleep Advice */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-        >
-          <h2 className="text-lg font-bold text-gray-800 mb-3">💡 改善建議</h2>
+        <motion.div variants={listItem}>
+          <h2 className="mb-3">改善建議</h2>
 
-          <div className="space-y-3">
+          <motion.div className="space-y-3" variants={stagger}>
             {advice.map((item, index) => {
-              const bgColor =
+              const tint =
                 item.category === 'good'
-                  ? 'bg-green-50 border-green-200'
+                  ? 'bg-mint-light'
                   : item.category === 'attention'
-                  ? 'bg-yellow-50 border-yellow-200'
-                  : 'bg-red-50 border-red-200';
+                  ? 'bg-butter-light'
+                  : 'bg-primary-light';
 
               const textColor =
                 item.category === 'good'
-                  ? 'text-green-800'
+                  ? 'text-mint-dark'
                   : item.category === 'attention'
-                  ? 'text-yellow-800'
-                  : 'text-red-800';
+                  ? 'text-butter-dark'
+                  : 'text-primary-dark';
 
               return (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.7 + index * 0.1 }}
-                  className={`${bgColor} border rounded-2xl p-4`}
+                  variants={listItem}
+                  className={`card ${tint}`}
                 >
-                  <h3 className={`font-bold mb-2 ${textColor}`}>{item.title}</h3>
+                  <h3 className={`mb-2 ${textColor}`}>{item.title}</h3>
                   <p className={`text-sm mb-3 ${textColor}`}>{item.description}</p>
                   {item.suggestions.length > 0 && (
-                    <ul className={`text-sm space-y-1 ${textColor}`}>
+                    <ul className={`text-sm space-y-1 list-disc pl-5 ${textColor}`}>
                       {item.suggestions.map((suggestion, i) => (
-                        <li key={i} className="flex items-start gap-2">
-                          <span className="mt-1">•</span>
-                          <span>{suggestion}</span>
-                        </li>
+                        <li key={i}>{suggestion}</li>
                       ))}
                     </ul>
                   )}
                 </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         </motion.div>
-      </div>
+      </motion.div>
     </div>
   );
 }
