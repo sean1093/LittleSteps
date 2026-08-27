@@ -1,14 +1,28 @@
 import type { WHOStandard, MeasurementType, Gender } from '../../types';
 
 /**
- * WHO Child Growth Standards (0-24 months)
- * Using LMS method: L (Box-Cox transformation), M (Median), S (Coefficient of variation)
+ * WHO Child Growth Standards (2006) — LMS parameters, 0-36 months.
  *
- * Data source: WHO Child Growth Standards (2006)
- * https://www.who.int/tools/child-growth-standards
+ * LMS method: L (Box-Cox power), M (median), S (coefficient of variation).
+ * Every row below is transcribed verbatim from the WHO published month-by-month
+ * z-score tables (the "Month / L / M / S" columns). Rows exist for months 0-12
+ * monthly, then every 3 months to 36; `getWHOStandard` interpolates in between.
+ *
+ * Sources (WHO Child Growth Standards, https://www.who.int/tools/child-growth-standards):
+ *   weight-for-age BOYS  birth to 5 years  — wfa-boys-0-5-zscores.pdf
+ *   weight-for-age GIRLS birth to 5 years  — wfa-girls-0-5-zscores.pdf
+ *   length-for-age BOYS  birth to 2 years  — lfa_boys_0_2_zscores.pdf
+ *   length-for-age GIRLS birth to 2 years  — lfa_girls_0_2_zscores.pdf
+ *   height-for-age BOYS  2 to 5 years      — hfa_boys_2_5_zscores.pdf
+ *   height-for-age GIRLS 2 to 5 years      — hfa_girls_2_5_zscores.pdf
+ *   head circumference-for-age BOYS  birth to 5 years — hcfa_boys_0_5_zscores.pdf
+ *   head circumference-for-age GIRLS birth to 5 years — hcfa_girls_0_5_zscores.pdf
+ *
+ * Do not adjust a value to make a curve look smoother. If a number looks wrong,
+ * check it against the PDF above; the tables are not smooth by construction.
  */
 
-// Male Weight Standards (kg)
+// Male Weight Standards (kg) — WHO weight-for-age BOYS, birth to 5 years (z-scores)
 const maleWeightStandards: WHOStandard[] = [
   { ageMonths: 0, L: 0.3487, M: 3.3464, S: 0.14602 },
   { ageMonths: 1, L: 0.2297, M: 4.4709, S: 0.13395 },
@@ -16,20 +30,24 @@ const maleWeightStandards: WHOStandard[] = [
   { ageMonths: 3, L: 0.1738, M: 6.3762, S: 0.11727 },
   { ageMonths: 4, L: 0.1553, M: 7.0023, S: 0.11316 },
   { ageMonths: 5, L: 0.1395, M: 7.5105, S: 0.11080 },
-  { ageMonths: 6, L: 0.1257, M: 7.9341, S: 0.10958 },
+  { ageMonths: 6, L: 0.1257, M: 7.9340, S: 0.10958 },
   { ageMonths: 7, L: 0.1134, M: 8.2970, S: 0.10902 },
   { ageMonths: 8, L: 0.1021, M: 8.6151, S: 0.10882 },
   { ageMonths: 9, L: 0.0917, M: 8.9014, S: 0.10881 },
   { ageMonths: 10, L: 0.0820, M: 9.1649, S: 0.10891 },
   { ageMonths: 11, L: 0.0730, M: 9.4122, S: 0.10906 },
   { ageMonths: 12, L: 0.0644, M: 9.6479, S: 0.10925 },
-  { ageMonths: 15, L: 0.0425, M: 10.3002, S: 0.10987 },
-  { ageMonths: 18, L: 0.0215, M: 10.8852, S: 0.11066 },
-  { ageMonths: 21, L: 0.0011, M: 11.4183, S: 0.11160 },
-  { ageMonths: 24, L: -0.0187, M: 11.9045, S: 0.11268 },
+  { ageMonths: 15, L: 0.0413, M: 10.3108, S: 0.11007 },
+  { ageMonths: 18, L: 0.0211, M: 10.9385, S: 0.11119 },
+  { ageMonths: 21, L: 0.0029, M: 11.5486, S: 0.11261 },
+  { ageMonths: 24, L: -0.0137, M: 12.1515, S: 0.11426 },
+  { ageMonths: 27, L: -0.0289, M: 12.7401, S: 0.11604 },
+  { ageMonths: 30, L: -0.0431, M: 13.3000, S: 0.11781 },
+  { ageMonths: 33, L: -0.0564, M: 13.8309, S: 0.11953 },
+  { ageMonths: 36, L: -0.0689, M: 14.3429, S: 0.12116 },
 ];
 
-// Female Weight Standards (kg)
+// Female Weight Standards (kg) — WHO weight-for-age GIRLS, birth to 5 years (z-scores)
 const femaleWeightStandards: WHOStandard[] = [
   { ageMonths: 0, L: 0.3809, M: 3.2322, S: 0.14171 },
   { ageMonths: 1, L: 0.1714, M: 4.1873, S: 0.13724 },
@@ -44,19 +62,50 @@ const femaleWeightStandards: WHOStandard[] = [
   { ageMonths: 10, L: -0.1700, M: 8.4800, S: 0.12223 },
   { ageMonths: 11, L: -0.1872, M: 8.7192, S: 0.12247 },
   { ageMonths: 12, L: -0.2024, M: 8.9481, S: 0.12268 },
-  { ageMonths: 15, L: -0.2438, M: 9.6004, S: 0.12342 },
-  { ageMonths: 18, L: -0.2812, M: 10.1851, S: 0.12422 },
-  { ageMonths: 21, L: -0.3154, M: 10.7142, S: 0.12511 },
-  { ageMonths: 24, L: -0.3469, M: 11.1990, S: 0.12607 },
+  { ageMonths: 15, L: -0.2384, M: 9.6008, S: 0.12299 },
+  { ageMonths: 18, L: -0.2637, M: 10.2315, S: 0.12309 },
+  { ageMonths: 21, L: -0.2815, M: 10.8534, S: 0.12335 },
+  { ageMonths: 24, L: -0.2941, M: 11.4775, S: 0.12390 },
+  { ageMonths: 27, L: -0.3032, M: 12.1015, S: 0.12472 },
+  { ageMonths: 30, L: -0.3101, M: 12.7055, S: 0.12587 },
+  { ageMonths: 33, L: -0.3155, M: 13.2837, S: 0.12737 },
+  { ageMonths: 36, L: -0.3201, M: 13.8503, S: 0.12919 },
 ];
 
-// Male Height Standards (cm)
+/**
+ * HEIGHT TABLES — two different WHO indicators spliced at 24 months.
+ *
+ *   ageMonths 0-24  : length-for-age, measured RECUMBENT (lying down).
+ *   ageMonths 27-36 : height-for-age, measured STANDING.
+ *
+ * WHO publishes these as separate standards, and they deliberately disagree at
+ * the join, because standing height measures shorter than recumbent length:
+ *
+ *              length-for-age @24mo   height-for-age @24mo   difference
+ *   BOYS       M = 87.8161 cm         M = 87.1161 cm         -0.70 cm
+ *   GIRLS      M = 86.4153 cm         M = 85.7153 cm         -0.70 cm
+ *
+ * The step is a REAL MEASUREMENT-METHOD CHANGE, NOT A DATA ERROR. WHO applies
+ * exactly this 0.7 cm offset when it switches tables at 2 years.
+ *
+ * We keep the length value at 24 months, so months 0-24 remain pure
+ * length-for-age (the range LittleSteps already served) and the method change
+ * falls inside the 24->27 interpolation gap. Consequence: `getWHOStandard`
+ * blends a length row with a height row for 24 < age < 27, so months 25-26 read
+ * up to ~0.45 cm above the true standing-height median.
+ *
+ * DO NOT "fix" this by nudging the 24- or 27-month row, and do not extend the
+ * 0-24 length table past 24 months. Either would replace a documented 0.45 cm
+ * interpolation artefact with an undocumented 0.70 cm systematic error.
+ */
+
+// Male Height Standards (cm) — WHO length-for-age BOYS 0-2y (0-24), height-for-age BOYS 2-5y (27-36)
 const maleHeightStandards: WHOStandard[] = [
   { ageMonths: 0, L: 1, M: 49.8842, S: 0.03795 },
   { ageMonths: 1, L: 1, M: 54.7244, S: 0.03557 },
   { ageMonths: 2, L: 1, M: 58.4249, S: 0.03424 },
   { ageMonths: 3, L: 1, M: 61.4292, S: 0.03328 },
-  { ageMonths: 4, L: 1, M: 63.8861, S: 0.03257 },
+  { ageMonths: 4, L: 1, M: 63.8860, S: 0.03257 },
   { ageMonths: 5, L: 1, M: 65.9026, S: 0.03204 },
   { ageMonths: 6, L: 1, M: 67.6236, S: 0.03165 },
   { ageMonths: 7, L: 1, M: 69.1645, S: 0.03139 },
@@ -65,77 +114,103 @@ const maleHeightStandards: WHOStandard[] = [
   { ageMonths: 10, L: 1, M: 73.2812, S: 0.03118 },
   { ageMonths: 11, L: 1, M: 74.5388, S: 0.03125 },
   { ageMonths: 12, L: 1, M: 75.7488, S: 0.03137 },
-  { ageMonths: 15, L: 1, M: 79.1711, S: 0.03182 },
-  { ageMonths: 18, L: 1, M: 82.2857, S: 0.03241 },
-  { ageMonths: 21, L: 1, M: 85.1133, S: 0.03306 },
-  { ageMonths: 24, L: 1, M: 87.7647, S: 0.03370 },
+  { ageMonths: 15, L: 1, M: 79.1458, S: 0.03197 },
+  { ageMonths: 18, L: 1, M: 82.2587, S: 0.03279 },
+  { ageMonths: 21, L: 1, M: 85.1348, S: 0.03376 },
+  // --- end of length-for-age (recumbent) ---
+  { ageMonths: 24, L: 1, M: 87.8161, S: 0.03479 },
+  // --- start of height-for-age (standing); see note above, -0.70 cm step is correct ---
+  { ageMonths: 27, L: 1, M: 89.6197, S: 0.03610 },
+  { ageMonths: 30, L: 1, M: 91.9327, S: 0.03704 },
+  { ageMonths: 33, L: 1, M: 94.0711, S: 0.03787 },
+  { ageMonths: 36, L: 1, M: 96.0835, S: 0.03858 },
 ];
 
-// Female Height Standards (cm)
+// Female Height Standards (cm) — WHO length-for-age GIRLS 0-2y (0-24), height-for-age GIRLS 2-5y (27-36)
 const femaleHeightStandards: WHOStandard[] = [
   { ageMonths: 0, L: 1, M: 49.1477, S: 0.03790 },
-  { ageMonths: 1, L: 1, M: 53.6872, S: 0.03486 },
-  { ageMonths: 2, L: 1, M: 57.0673, S: 0.03344 },
-  { ageMonths: 3, L: 1, M: 59.8029, S: 0.03276 },
-  { ageMonths: 4, L: 1, M: 62.0899, S: 0.03246 },
-  { ageMonths: 5, L: 1, M: 64.0301, S: 0.03238 },
-  { ageMonths: 6, L: 1, M: 65.7311, S: 0.03244 },
-  { ageMonths: 7, L: 1, M: 67.2873, S: 0.03260 },
-  { ageMonths: 8, L: 1, M: 68.7498, S: 0.03283 },
-  { ageMonths: 9, L: 1, M: 70.1435, S: 0.03311 },
-  { ageMonths: 10, L: 1, M: 71.4818, S: 0.03342 },
-  { ageMonths: 11, L: 1, M: 72.7713, S: 0.03375 },
-  { ageMonths: 12, L: 1, M: 74.0151, S: 0.03410 },
-  { ageMonths: 15, L: 1, M: 77.4760, S: 0.03517 },
-  { ageMonths: 18, L: 1, M: 80.7244, S: 0.03632 },
-  { ageMonths: 21, L: 1, M: 83.7788, S: 0.03749 },
-  { ageMonths: 24, L: 1, M: 86.6901, S: 0.03864 },
+  { ageMonths: 1, L: 1, M: 53.6872, S: 0.03640 },
+  { ageMonths: 2, L: 1, M: 57.0673, S: 0.03568 },
+  { ageMonths: 3, L: 1, M: 59.8029, S: 0.03520 },
+  { ageMonths: 4, L: 1, M: 62.0899, S: 0.03486 },
+  { ageMonths: 5, L: 1, M: 64.0301, S: 0.03463 },
+  { ageMonths: 6, L: 1, M: 65.7311, S: 0.03448 },
+  { ageMonths: 7, L: 1, M: 67.2873, S: 0.03441 },
+  { ageMonths: 8, L: 1, M: 68.7498, S: 0.03440 },
+  { ageMonths: 9, L: 1, M: 70.1435, S: 0.03444 },
+  { ageMonths: 10, L: 1, M: 71.4818, S: 0.03452 },
+  { ageMonths: 11, L: 1, M: 72.7710, S: 0.03464 },
+  { ageMonths: 12, L: 1, M: 74.0150, S: 0.03479 },
+  { ageMonths: 15, L: 1, M: 77.5099, S: 0.03534 },
+  { ageMonths: 18, L: 1, M: 80.7079, S: 0.03598 },
+  { ageMonths: 21, L: 1, M: 83.6654, S: 0.03666 },
+  // --- end of length-for-age (recumbent) ---
+  { ageMonths: 24, L: 1, M: 86.4153, S: 0.03734 },
+  // --- start of height-for-age (standing); see note above, -0.70 cm step is correct ---
+  { ageMonths: 27, L: 1, M: 88.2830, S: 0.03830 },
+  { ageMonths: 30, L: 1, M: 90.6797, S: 0.03893 },
+  { ageMonths: 33, L: 1, M: 92.9239, S: 0.03952 },
+  { ageMonths: 36, L: 1, M: 95.0515, S: 0.04006 },
 ];
 
-// Male Head Circumference Standards (cm)
+// Male Head Circumference Standards (cm) — WHO head circumference-for-age BOYS, birth to 5 years
 const maleHeadCircumferenceStandards: WHOStandard[] = [
-  { ageMonths: 0, L: 1, M: 34.4618, S: 0.03496 },
-  { ageMonths: 1, L: 1, M: 37.2759, S: 0.03270 },
-  { ageMonths: 2, L: 1, M: 39.1285, S: 0.03139 },
-  { ageMonths: 3, L: 1, M: 40.5135, S: 0.03058 },
-  { ageMonths: 4, L: 1, M: 41.6317, S: 0.03007 },
-  { ageMonths: 5, L: 1, M: 42.5576, S: 0.02975 },
-  { ageMonths: 6, L: 1, M: 43.3306, S: 0.02955 },
-  { ageMonths: 7, L: 1, M: 43.9803, S: 0.02945 },
-  { ageMonths: 8, L: 1, M: 44.5302, S: 0.02941 },
-  { ageMonths: 9, L: 1, M: 44.9983, S: 0.02942 },
-  { ageMonths: 10, L: 1, M: 45.4000, S: 0.02946 },
-  { ageMonths: 11, L: 1, M: 45.7486, S: 0.02953 },
-  { ageMonths: 12, L: 1, M: 46.0551, S: 0.02962 },
-  { ageMonths: 15, L: 1, M: 46.8197, S: 0.02993 },
-  { ageMonths: 18, L: 1, M: 47.4668, S: 0.03031 },
-  { ageMonths: 21, L: 1, M: 48.0253, S: 0.03073 },
-  { ageMonths: 24, L: 1, M: 48.5158, S: 0.03117 },
+  { ageMonths: 0, L: 1, M: 34.4618, S: 0.03686 },
+  { ageMonths: 1, L: 1, M: 37.2759, S: 0.03133 },
+  { ageMonths: 2, L: 1, M: 39.1285, S: 0.02997 },
+  { ageMonths: 3, L: 1, M: 40.5135, S: 0.02918 },
+  { ageMonths: 4, L: 1, M: 41.6317, S: 0.02868 },
+  { ageMonths: 5, L: 1, M: 42.5576, S: 0.02837 },
+  { ageMonths: 6, L: 1, M: 43.3306, S: 0.02817 },
+  { ageMonths: 7, L: 1, M: 43.9803, S: 0.02804 },
+  { ageMonths: 8, L: 1, M: 44.5300, S: 0.02796 },
+  { ageMonths: 9, L: 1, M: 44.9998, S: 0.02792 },
+  { ageMonths: 10, L: 1, M: 45.4051, S: 0.02790 },
+  { ageMonths: 11, L: 1, M: 45.7573, S: 0.02789 },
+  { ageMonths: 12, L: 1, M: 46.0661, S: 0.02789 },
+  { ageMonths: 15, L: 1, M: 46.8060, S: 0.02792 },
+  { ageMonths: 18, L: 1, M: 47.3711, S: 0.02800 },
+  { ageMonths: 21, L: 1, M: 47.8408, S: 0.02810 },
+  { ageMonths: 24, L: 1, M: 48.2515, S: 0.02821 },
+  { ageMonths: 27, L: 1, M: 48.6151, S: 0.02834 },
+  { ageMonths: 30, L: 1, M: 48.9351, S: 0.02847 },
+  { ageMonths: 33, L: 1, M: 49.2153, S: 0.02859 },
+  { ageMonths: 36, L: 1, M: 49.4612, S: 0.02871 },
 ];
 
-// Female Head Circumference Standards (cm)
+// Female Head Circumference Standards (cm) — WHO head circumference-for-age GIRLS, birth to 5 years
 const femaleHeadCircumferenceStandards: WHOStandard[] = [
   { ageMonths: 0, L: 1, M: 33.8787, S: 0.03496 },
-  { ageMonths: 1, L: 1, M: 36.5463, S: 0.03234 },
-  { ageMonths: 2, L: 1, M: 38.2998, S: 0.03105 },
-  { ageMonths: 3, L: 1, M: 39.5328, S: 0.03033 },
-  { ageMonths: 4, L: 1, M: 40.5817, S: 0.02989 },
-  { ageMonths: 5, L: 1, M: 41.4598, S: 0.02962 },
-  { ageMonths: 6, L: 1, M: 42.2040, S: 0.02946 },
-  { ageMonths: 7, L: 1, M: 42.8403, S: 0.02938 },
-  { ageMonths: 8, L: 1, M: 43.3923, S: 0.02935 },
-  { ageMonths: 9, L: 1, M: 43.8758, S: 0.02936 },
-  { ageMonths: 10, L: 1, M: 44.3034, S: 0.02940 },
-  { ageMonths: 11, L: 1, M: 44.6841, S: 0.02946 },
-  { ageMonths: 12, L: 1, M: 45.0253, S: 0.02954 },
-  { ageMonths: 15, L: 1, M: 45.8162, S: 0.02983 },
-  { ageMonths: 18, L: 1, M: 46.4849, S: 0.03017 },
-  { ageMonths: 21, L: 1, M: 47.0589, S: 0.03055 },
-  { ageMonths: 24, L: 1, M: 47.5656, S: 0.03095 },
+  { ageMonths: 1, L: 1, M: 36.5463, S: 0.03210 },
+  { ageMonths: 2, L: 1, M: 38.2521, S: 0.03168 },
+  { ageMonths: 3, L: 1, M: 39.5328, S: 0.03140 },
+  { ageMonths: 4, L: 1, M: 40.5817, S: 0.03119 },
+  { ageMonths: 5, L: 1, M: 41.4590, S: 0.03102 },
+  { ageMonths: 6, L: 1, M: 42.1995, S: 0.03087 },
+  { ageMonths: 7, L: 1, M: 42.8290, S: 0.03075 },
+  { ageMonths: 8, L: 1, M: 43.3671, S: 0.03063 },
+  { ageMonths: 9, L: 1, M: 43.8300, S: 0.03053 },
+  { ageMonths: 10, L: 1, M: 44.2319, S: 0.03044 },
+  { ageMonths: 11, L: 1, M: 44.5844, S: 0.03035 },
+  { ageMonths: 12, L: 1, M: 44.8965, S: 0.03027 },
+  { ageMonths: 15, L: 1, M: 45.6551, S: 0.03006 },
+  { ageMonths: 18, L: 1, M: 46.2424, S: 0.02987 },
+  { ageMonths: 21, L: 1, M: 46.7384, S: 0.02972 },
+  { ageMonths: 24, L: 1, M: 47.1822, S: 0.02957 },
+  { ageMonths: 27, L: 1, M: 47.5817, S: 0.02945 },
+  { ageMonths: 30, L: 1, M: 47.9340, S: 0.02933 },
+  { ageMonths: 33, L: 1, M: 48.2408, S: 0.02922 },
+  { ageMonths: 36, L: 1, M: 48.5099, S: 0.02912 },
 ];
 
-// Mapping for easy access
-const standardsMap = {
+/** Highest age the tables above cover. Chart axes must clamp to this. */
+export const WHO_MAX_AGE_MONTHS = 36;
+
+/**
+ * The raw tables, keyed by gender then measurement type. Exported so the data
+ * itself can be validated; read a single standard via `getWHOStandard()`.
+ */
+export const WHO_STANDARDS = {
   male: {
     weight: maleWeightStandards,
     height: maleHeightStandards,
@@ -157,11 +232,13 @@ export function getWHOStandard(
   measurementType: MeasurementType,
   gender: Gender
 ): WHOStandard {
-  if (ageMonths < 0 || ageMonths > 24) {
-    throw new Error('Age out of range: WHO standards support 0-24 months');
+  if (ageMonths < 0 || ageMonths > WHO_MAX_AGE_MONTHS) {
+    throw new Error(
+      `Age out of range: WHO standards support 0-${WHO_MAX_AGE_MONTHS} months`
+    );
   }
 
-  const standards = standardsMap[gender][measurementType];
+  const standards = WHO_STANDARDS[gender][measurementType];
 
   // Find exact match
   const exact = standards.find((s) => s.ageMonths === ageMonths);

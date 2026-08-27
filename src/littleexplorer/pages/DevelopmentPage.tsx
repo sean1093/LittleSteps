@@ -6,6 +6,7 @@ import type {
   DevelopmentCheckProgress,
   DevelopmentDomain,
   ToddlerAgeBand,
+  ToothProgress,
 } from '../../types';
 import { getLucideIcon } from '../../common/lucideIcons';
 import { calculateAge } from '../../utils/dateHelpers';
@@ -20,6 +21,7 @@ import { TODDLER_MAX_MONTHS, TODDLER_MIN_MONTHS, bandForMonths } from '../utils/
 import ExplorerShell from '../components/ExplorerShell';
 import ExplorerNotice from '../components/ExplorerNotice';
 import AgeBandPicker from '../components/AgeBandPicker';
+import ToothChart from '../components/ToothChart';
 
 const DOMAIN_ORDER: DevelopmentDomain[] = [
   'gross-motor',
@@ -32,9 +34,11 @@ const DOMAIN_ORDER: DevelopmentDomain[] = [
 interface DevelopmentPageProps {
   currentChild?: ChildProfile | null;
   progress: DevelopmentCheckProgress;
+  toothProgress: ToothProgress;
   reminderBadge?: number;
   onToggleCheck: (checkItemId: string) => Promise<void>;
   onQuickDiary: (content: string, linkedCheckItemId: string) => Promise<void>;
+  onToggleTooth: (toothId: string) => Promise<void>;
 }
 
 /**
@@ -46,7 +50,9 @@ interface DevelopmentPageProps {
 export default function DevelopmentPage({
   currentChild,
   progress,
+  toothProgress,
   reminderBadge,
+  onToggleTooth,
   onToggleCheck,
   onQuickDiary,
 }: DevelopmentPageProps) {
@@ -245,6 +251,12 @@ export default function DevelopmentPage({
           </section>
         );
       })}
+
+      <ToothChart
+        progress={toothProgress}
+        ageMonths={ageMonths}
+        onToggleTooth={onToggleTooth}
+      />
 
       {warning && (
         <section className="bg-explorer-clay/10 rounded-3xl p-5">

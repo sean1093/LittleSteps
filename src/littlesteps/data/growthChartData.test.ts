@@ -1,6 +1,18 @@
 import { describe, it, expect } from 'vitest';
-import { getWHOStandard, getPercentileValue } from './growthChartData';
+import {
+  getWHOStandard,
+  getPercentileValue,
+  WHO_STANDARDS,
+  WHO_MAX_AGE_MONTHS,
+} from './growthChartData';
 import type { MeasurementType } from '../../types';
+
+const MEASUREMENT_TYPES: MeasurementType[] = [
+  'weight',
+  'height',
+  'headCircumference',
+];
+const GENDERS = ['male', 'female'] as const;
 
 describe('growthChartData', () => {
   describe('getWHOStandard', () => {
@@ -65,10 +77,44 @@ describe('growthChartData', () => {
       expect(standard.M).toBeLessThan(90); // But <90cm
     });
 
-    it('should throw error for unsupported age range', () => {
-      // WHO standards typically 0-24 months for infants
+    it('should handle age 36 months (3 years) for every table', () => {
+      for (const type of MEASUREMENT_TYPES) {
+        for (const gender of GENDERS) {
+          const standard = getWHOStandard(36, type, gender);
+
+          expect(standard.ageMonths).toBe(36);
+          expect(standard.M).toBeGreaterThan(0);
+          expect(standard.S).toBeGreaterThan(0);
+        }
+      }
+    });
+
+    it('should use standing height-for-age past 24 months', () => {
+      // WHO switches from recumbent length (0-24mo) to standing height (24-60mo),
+      // which is ~0.7cm shorter. The 24mo row is the last length value; 27mo is
+      // the first height value, so the 24->27 gain is smaller than 21->24.
+      const male21 = getWHOStandard(21, 'height', 'male');
+      const male24 = getWHOStandard(24, 'height', 'male');
+      const male27 = getWHOStandard(27, 'height', 'male');
+
+      expect(male24.M - male21.M).toBeGreaterThan(male27.M - male24.M);
+      // 3-year-old boy median standing height, WHO hfa 2-5y month 36
+      expect(getWHOStandard(36, 'height', 'male').M).toBeCloseTo(96.0835, 4);
+      expect(getWHOStandard(36, 'height', 'female').M).toBeCloseTo(95.0515, 4);
+    });
+
+    it('should throw error above 36 months', () => {
+      // WHO tables in this module stop at 36 months
       expect(() => {
-        getWHOStandard(36, 'weight', 'male');
+        getWHOStandard(37, 'weight', 'male');
+      }).toThrow('Age out of range');
+
+      expect(() => {
+        getWHOStandard(60, 'height', 'female');
+      }).toThrow('Age out of range');
+
+      expect(() => {
+        getWHOStandard(-1, 'weight', 'male');
       }).toThrow('Age out of range');
     });
   });
@@ -128,18 +174,17 @@ describe('growthChartData', () => {
   });
 
   describe('Data Integrity', () => {
-    it('should have complete data for all months 0-24', () => {
-      const measurementTypes: MeasurementType[] = ['weight', 'height', 'headCircumference'];
-      const genders: Array<'male' | 'female'> = ['male', 'female'];
+    it('should have complete data for all months 0-36', () => {
+      for (let age = 0; age <= WHO_MAX_AGE_MONTHS; age++) {
+        for (const type of MEASUREMENT_TYPES) {
+          for (const gender of GENDERS) {
+            const standard = getWHOStandard(age, type, gender);
 
-      for (let age = 0; age <= 24; age++) {
-        for (const type of measurementTypes) {
-          for (const gender of genders) {
-            expect(() => {
-              const standard = getWHOStandard(age, type, gender);
-              expect(standard).toBeDefined();
-              expect(standard.M).toBeGreaterThan(0);
-            }).not.toThrow();
+            // A table that stops early falls back to its closest row, which
+            // silently answers a different age than the one asked for.
+            expect(standard.ageMonths).toBe(age);
+            expect(standard.M).toBeGreaterThan(0);
+            expect(standard.S).toBeGreaterThan(0);
           }
         }
       }
@@ -184,6 +229,49 @@ describe('growthChartData', () => {
 
       expect(height24.M).toBeGreaterThan(height0.M);
       expect(height24.M - height0.M).toBeGreaterThan(30); // At least 30cm growth in 2 years
+    });
+
+    it('should tabulate the same ages in all six tables', () => {
+      const tables = Object.entries(WHO_STANDARDS).flatMap(([gender, byType]) =>
+        Object.entries(byType).map(([type, rows]) => ({
+          name: `${gender}/${type}`,
+          ages: rows.map((r) => r.ageMonths),
+        }))
+      );
+
+      expect(tables).toHaveLength(6);
+
+      const expectedAges = [
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 18, 21, 24, 27, 30, 33, 36,
+      ];
+      for (const table of tables) {
+        // Named per table so a failure says which indicator lags behind
+        expect({ [table.name]: table.ages }).toEqual({
+          [table.name]: expectedAges,
+        });
+      }
+
+      // The guard in getWHOStandard must not outrun the data
+      expect(expectedAges[expectedAges.length - 1]).toBe(WHO_MAX_AGE_MONTHS);
+    });
+
+    it('should have a strictly increasing median in every table', () => {
+      for (const [gender, byType] of Object.entries(WHO_STANDARDS)) {
+        for (const [type, rows] of Object.entries(byType)) {
+          for (let i = 1; i < rows.length; i++) {
+            const prev = rows[i - 1];
+            const curr = rows[i];
+            const where = `${gender}/${type} ${prev.ageMonths}->${curr.ageMonths}mo`;
+
+            // Ascending ages are required by the interpolation in getWHOStandard
+            expect({ [where]: curr.ageMonths > prev.ageMonths }).toEqual({
+              [where]: true,
+            });
+            // A mistyped M shows up here as a median that stops growing
+            expect({ [where]: curr.M > prev.M }).toEqual({ [where]: true });
+          }
+        }
+      }
     });
   });
 

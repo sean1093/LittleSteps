@@ -100,6 +100,8 @@ describe('DevelopmentPage', () => {
       <DevelopmentPage
         currentChild={child(overrides)}
         progress={{}}
+        toothProgress={{}}
+        onToggleTooth={noop}
         onToggleCheck={noop}
         onQuickDiary={noop}
       />,
@@ -116,6 +118,8 @@ describe('DevelopmentPage', () => {
     render(
       <DevelopmentPage
         currentChild={child()}
+        toothProgress={{}}
+        onToggleTooth={noop}
         progress={{ [developmentCheckItems.find((i) => i.ageBand === '24-30')!.id]: { achieved: true } }}
         onToggleCheck={noop}
         onQuickDiary={noop}
@@ -133,9 +137,56 @@ describe('DevelopmentPage', () => {
 
   it('沒有寶寶時顯示引導卡', () => {
     render(
-      <DevelopmentPage currentChild={null} progress={{}} onToggleCheck={noop} onQuickDiary={noop} />,
+      <DevelopmentPage
+        currentChild={null}
+        progress={{}}
+        toothProgress={{}}
+        onToggleCheck={noop}
+        onToggleTooth={noop}
+        onQuickDiary={noop}
+      />,
     );
     expect(screen.getByText('還沒有寶寶資料')).toBeInTheDocument();
+  });
+
+  it('乳牙記錄收合時仍顯示已長顆數', () => {
+    render(
+      <DevelopmentPage
+        currentChild={child()}
+        progress={{}}
+        toothProgress={{ 'lower-right-1': { erupted: true }, 'lower-left-1': { erupted: true } }}
+        onToggleCheck={noop}
+        onToggleTooth={noop}
+        onQuickDiary={noop}
+      />,
+    );
+    expect(screen.getByText('已長 2／20 顆')).toBeInTheDocument();
+  });
+
+  it('展開乳牙記錄後，點牙位會回報該牙的 id', async () => {
+    const user = userEvent.setup();
+    const onToggleTooth = vi.fn(async (_id: string) => {});
+
+    render(
+      <DevelopmentPage
+        currentChild={child()}
+        progress={{}}
+        toothProgress={{}}
+        onToggleCheck={noop}
+        onToggleTooth={onToggleTooth}
+        onQuickDiary={noop}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /乳牙萌發/ }));
+    // 牙位的 aria-label 形如「上正中門齒，約 4 至 8 個月」；年齡段 chip 也以
+    // 「個月」結尾，故必須比對完整的區間格式才不會誤抓。
+    const teeth = screen.getAllByRole('button', { name: /約 \d+ 至 \d+ 個月$/ });
+    expect(teeth).toHaveLength(20);
+
+    await user.click(teeth[0]);
+    expect(onToggleTooth).toHaveBeenCalledTimes(1);
+    expect(onToggleTooth.mock.calls[0][0]).toMatch(/^(upper|lower)-(left|right)-[1-5]$/);
   });
 
   it('滿 3 歲顯示畢業卡但仍可瀏覽', () => {
@@ -162,6 +213,8 @@ describe('DevelopmentPage', () => {
       <DevelopmentPage
         currentChild={child()}
         progress={{}}
+        toothProgress={{}}
+        onToggleTooth={noop}
         onToggleCheck={noop}
         onQuickDiary={onQuickDiary}
       />,
@@ -184,6 +237,8 @@ describe('DevelopmentPage', () => {
       <DevelopmentPage
         currentChild={child()}
         progress={{}}
+        toothProgress={{}}
+        onToggleTooth={noop}
         onToggleCheck={noop}
         onQuickDiary={onQuickDiary}
       />,

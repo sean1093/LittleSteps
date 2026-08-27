@@ -19,8 +19,8 @@ const CATEGORIES: ToddlerWikiCategory[] = [
 ];
 
 describe('toddlerWikiArticles', () => {
-  it('共 32 篇，且 id 唯一', () => {
-    expect(toddlerWikiArticles).toHaveLength(32);
+  it('共 44 篇，且 id 唯一', () => {
+    expect(toddlerWikiArticles).toHaveLength(44);
     const ids = toddlerWikiArticles.map((a) => a.id);
     expect(new Set(ids).size).toBe(ids.length);
   });

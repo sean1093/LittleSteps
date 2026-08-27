@@ -7,6 +7,7 @@ import type {
   DiaryEntry,
   Gender,
   MilestoneProgress,
+  ToothProgress,
   VaccineProgress,
 } from '../../types';
 import { useUserChildren } from './useUserChildren';
@@ -30,6 +31,7 @@ export interface ChildStore {
   currentChildMilestoneProgress: MilestoneProgress;
   currentChildVaccineProgress: VaccineProgress;
   currentChildDevelopmentProgress: DevelopmentCheckProgress;
+  currentChildToothProgress: ToothProgress;
   childrenLoading: boolean;
   toggleMilestone: (id: string) => Promise<void>;
   toggleVaccineDose: (vaccineId: string, doseNumber: number, customDate?: string) => Promise<void>;
@@ -39,6 +41,7 @@ export interface ChildStore {
   deleteChild: (id: string) => Promise<void>;
   setCurrentChild: (id: string) => Promise<void>;
   toggleDevelopmentCheck: (checkItemId: string) => Promise<void>;
+  toggleTooth: (toothId: string) => Promise<void>;
   upsertCareTaskRecord: (record: CareTaskRecord) => Promise<void>;
   addDiaryEntry: (
     entry: Omit<DiaryEntry, 'id' | 'childId' | 'createdAt'>,
@@ -77,6 +80,11 @@ export function useChildStore(user: User | null): ChildStore {
 
   const currentChildDevelopmentProgress: DevelopmentCheckProgress = useMemo(
     () => (currentChild ? currentChild.developmentProgress || {} : {}),
+    [currentChild],
+  );
+
+  const currentChildToothProgress: ToothProgress = useMemo(
+    () => (currentChild ? currentChild.toothProgress || {} : {}),
     [currentChild],
   );
 
@@ -176,6 +184,16 @@ export function useChildStore(user: User | null): ChildStore {
     }
   };
 
+  const toggleTooth = async (toothId: string) => {
+    if (!user || !currentChild) return;
+    try {
+      const erupted = !currentChildToothProgress[toothId]?.erupted;
+      await firebaseChildren.updateToothProgress(currentChild.id, toothId, erupted);
+    } catch (error) {
+      console.error('更新乳牙記錄失敗:', error);
+    }
+  };
+
   const upsertCareTaskRecord = async (record: CareTaskRecord) => {
     if (!user || !currentChild) return;
     try {
@@ -225,6 +243,7 @@ export function useChildStore(user: User | null): ChildStore {
     currentChildMilestoneProgress,
     currentChildVaccineProgress,
     currentChildDevelopmentProgress,
+    currentChildToothProgress,
     childrenLoading,
     toggleMilestone,
     toggleVaccineDose,
@@ -234,6 +253,7 @@ export function useChildStore(user: User | null): ChildStore {
     deleteChild,
     setCurrentChild,
     toggleDevelopmentCheck,
+    toggleTooth,
     upsertCareTaskRecord,
     addDiaryEntry,
     updateDiaryEntry,

@@ -187,6 +187,16 @@ export function useFirebaseChildren(userId: string | null) {
     }));
   };
 
+  const updateToothProgress = async (childId: string, toothId: string, erupted: boolean, customDate?: string) => {
+    if (!userId) throw new Error('User not authenticated');
+
+    const toothRef = ref(database, `children/${childId}/toothProgress/${toothId}`);
+    await set(toothRef, removeUndefined({
+      erupted,
+      eruptedDate: erupted ? (customDate || new Date().toISOString().split('T')[0]) : undefined,
+    }));
+  };
+
   const upsertCareTaskRecord = async (childId: string, record: CareTaskRecord) => {
     if (!userId) throw new Error('User not authenticated');
 
@@ -331,6 +341,7 @@ export function useFirebaseChildren(userId: string | null) {
     deleteFoodTrial,
     submitFeedback,
     updateDevelopmentProgress,
+    updateToothProgress,
     upsertCareTaskRecord,
     addDiaryEntry,
     updateDiaryEntry,

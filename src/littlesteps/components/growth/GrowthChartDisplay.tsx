@@ -1,6 +1,10 @@
 import { useMemo } from 'react';
 import { GrowthRecord, MeasurementType, Gender } from '../../../types';
-import { getWHOStandard, getPercentileValue } from '../../data/growthChartData';
+import {
+  getWHOStandard,
+  getPercentileValue,
+  WHO_MAX_AGE_MONTHS,
+} from '../../data/growthChartData';
 import { TrendingUp, AlertTriangle } from 'lucide-react';
 
 interface GrowthChartDisplayProps {
@@ -58,8 +62,12 @@ export default function GrowthChartDisplay({
       };
     });
 
-    // Generate WHO percentile curves (3rd, 15th, 50th, 85th, 97th)
-    const maxAge = Math.min(24, Math.max(...recordsWithAge.map((r) => r.ageMonths)) + 2);
+    // Generate WHO percentile curves (3rd, 15th, 50th, 85th, 97th).
+    // Clamping to the tables' ceiling is what keeps getWHOStandard() in range.
+    const maxAge = Math.min(
+      WHO_MAX_AGE_MONTHS,
+      Math.max(...recordsWithAge.map((r) => r.ageMonths)) + 2
+    );
     const percentileCurves = [3, 15, 50, 85, 97].map((percentile) => {
       const points: { ageMonths: number; value: number }[] = [];
       for (let age = 0; age <= maxAge; age += 1) {

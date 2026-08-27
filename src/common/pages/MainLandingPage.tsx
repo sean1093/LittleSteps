@@ -1,17 +1,21 @@
 import { motion } from 'framer-motion';
-import { Baby, Flower2, Heart, Sparkles, ArrowRight, Sun, MapPin } from 'lucide-react';
+import { Baby, Flower2, Heart, Sparkles, ArrowRight, Sun, MapPin, LogIn } from 'lucide-react';
+import type { User } from 'firebase/auth';
 
 /**
- * MainLandingPage - Entry point for LittleSteps, LittleBloom, and BabyOasis apps
+ * MainLandingPage - Entry point for all four services
  *
- * Provides warm, inviting introduction to all applications
+ * Public: reachable without signing in, so a first-time visitor can see what
+ * the collection offers before deciding to hand over an account.
  */
 
 interface MainLandingPageProps {
   onNavigate: (page: 'littlesteps' | 'littlebloom' | 'babyoasis' | 'littleexplorer') => void;
+  user?: User | null;
+  onSignIn?: () => Promise<void>;
 }
 
-export default function MainLandingPage({ onNavigate }: MainLandingPageProps) {
+export default function MainLandingPage({ onNavigate, user, onSignIn }: MainLandingPageProps) {
   const fadeInUp = {
     hidden: { opacity: 0, y: 30 },
     visible: {
@@ -103,6 +107,24 @@ export default function MainLandingPage({ onNavigate }: MainLandingPageProps) {
             <p className="text-sm">為台灣新手爸媽與準媽媽量身打造</p>
             <Sparkles className="w-5 h-5" />
           </motion.div>
+
+          {/* 未登入時，進入點本身就要給得出登入；否則訪客得先挑一個服務才找得到入口。 */}
+          {!user && onSignIn && (
+            <motion.div variants={fadeInUp} className="mt-8">
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={onSignIn}
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-primary to-bloom-dusty-rose text-white font-semibold shadow-soft hover:shadow-soft-lg transition-all"
+              >
+                <LogIn className="w-5 h-5" />
+                使用 Google 登入
+              </motion.button>
+              <p className="text-xs text-gray-400 mt-3">
+                知識內容不需登入即可閱讀；記錄功能登入後才能跨裝置同步
+              </p>
+            </motion.div>
+          )}
         </motion.div>
 
         {/* Two App Cards */}

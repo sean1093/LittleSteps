@@ -145,6 +145,7 @@ export interface ChildProfile {
   // LittleExplorer (幼兒期 1-3 歲) fields
   developmentProgress?: DevelopmentCheckProgress;
   careTaskProgress?: CareTaskProgress;
+  toothProgress?: ToothProgress;
   // Pregnancy specific fields
   isPregnancy?: boolean;
   pregnancyData?: PregnancyData;
@@ -575,6 +576,28 @@ export interface DiaryEntry {
   linkedCheckItemId?: string;
   createdAt: string; // ISO 8601
   updatedAt?: string;
+}
+
+export type ToothJaw = 'upper' | 'lower';
+
+export interface PrimaryTooth {
+  id: string;
+  /** 牙位名稱，例：上正中門齒 */
+  name: string;
+  jaw: ToothJaw;
+  /** 由中線往外的順位 1-5，用於排出牙弓；左右各一顆共用同一個順位 */
+  position: number;
+  side: 'left' | 'right';
+  /** 典型萌發月齡區間（含），僅供參考，個別差異大 */
+  eruptFromMonth: number;
+  eruptToMonth: number;
+}
+
+export interface ToothProgress {
+  [toothId: string]: {
+    erupted: boolean;
+    eruptedDate?: string; // YYYY-MM-DD
+  };
 }
 
 // Toddler Wiki (幼兒百科) — LittleExplorer

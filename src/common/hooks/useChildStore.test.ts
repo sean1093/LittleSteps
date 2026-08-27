@@ -17,6 +17,7 @@ const h = vi.hoisted(() => ({
     updateMilestoneProgress: vi.fn().mockResolvedValue(undefined),
     updateVaccineProgress: vi.fn().mockResolvedValue(undefined),
     updateDevelopmentProgress: vi.fn().mockResolvedValue(undefined),
+    updateToothProgress: vi.fn().mockResolvedValue(undefined),
     upsertCareTaskRecord: vi.fn().mockResolvedValue(undefined),
     addDiaryEntry: vi.fn().mockResolvedValue('diary_1'),
     updateDiaryEntry: vi.fn().mockResolvedValue(undefined),

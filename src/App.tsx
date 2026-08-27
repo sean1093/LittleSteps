@@ -11,6 +11,8 @@ import Sidebar from './common/components/Sidebar';
 import MainLandingPage from './common/pages/MainLandingPage';
 import AppHomeButton from './common/components/AppHomeButton';
 import LandingPage from './common/pages/LandingPage';
+import ServiceLandingPage from './common/pages/ServiceLandingPage';
+import { requiresAuth, serviceOf } from './common/routePolicy';
 const DashboardPage = lazy(() => import('./littlesteps/pages/DashboardPage'));
 const MilestonesPage = lazy(() => import('./littlesteps/pages/MilestonesPage'));
 const CareGuidePage = lazy(() => import('./littlesteps/pages/CareGuidePage'));
@@ -49,7 +51,9 @@ function AppContent() {
     updateChild,
     deleteChild,
     currentChildDevelopmentProgress,
+    currentChildToothProgress,
     toggleDevelopmentCheck,
+    toggleTooth,
     upsertCareTaskRecord,
     addDiaryEntry,
     updateDiaryEntry,
@@ -106,13 +110,8 @@ function AppContent() {
     }
   }, [user, childProfiles.length]);
 
-  // Redirect to littlesteps home if accessing protected pages without login
-  useEffect(() => {
-    const protectedPages: Page[] = ['littlesteps/dashboard', 'littlesteps/daily-log', 'littlesteps/growth-charts', 'littlesteps/clinic-summary', 'littlesteps/report'];
-    if (!user && protectedPages.includes(currentPage)) {
-      navigateToPage('littlesteps');
-    }
-  }, [user, currentPage]);
+  // 未登入時不再把使用者踢走。requiresAuth 會在 render 時擋下需要登入的頁面
+  // 並改渲染該服務的介紹頁，hash 保持不變，登入後就直接抵達原本要去的地方。
 
   // Handle hash changes (browser back/forward buttons)
   useEffect(() => {
@@ -243,9 +242,17 @@ function AppContent() {
     );
   }
 
-  // Login is required for the entire app — unauthenticated users only ever see
-  // the landing/login screen.
-  if (!user) {
+  // 未登入不再是整站一道牆。只有會讀孩子資料的頁面需要登入，其餘（服務集合
+  // 首頁、各服務的介紹頁、百科與哺乳室地圖）一律可看——擋住靜態內容只會讓還
+  // 沒有帳號的家長連認識這些服務的機會都沒有。
+  //
+  // 被擋下時渲染該服務自己的介紹頁，而不是改網址跳走：hash 保持原樣，登入後
+  // 同一個路由就會渲染出使用者原本想去的頁面。
+  if (!user && requiresAuth(currentPage)) {
+    const service = serviceOf(currentPage);
+    if (service === 'littlebloom' || service === 'littleexplorer') {
+      return <ServiceLandingPage service={service} onSignIn={signInWithGoogle} />;
+    }
     return <LandingPage onNavigate={navigateToPage} user={user} onSignIn={signInWithGoogle} />;
   }
 
@@ -310,12 +317,14 @@ function AppContent() {
         >
         {/* Main Landing Page */}
         {currentPage === 'home' && (
-          <MainLandingPage onNavigate={navigateToPage} />
+          <MainLandingPage onNavigate={navigateToPage} user={user} onSignIn={signInWithGoogle} />
         )}
 
         {/* LittleSteps Routes */}
         {currentPage === 'littlesteps' && (
-          childProfiles.length > 0 ? (
+          !user ? (
+            <LandingPage onNavigate={navigateToPage} user={user} onSignIn={signInWithGoogle} />
+          ) : childProfiles.length > 0 ? (
             <DashboardPage
               currentChild={currentChild}
               dailyLogs={dailyLogs}
@@ -417,8 +426,10 @@ function AppContent() {
           <DevelopmentPage
             currentChild={currentChild}
             progress={currentChildDevelopmentProgress}
+            toothProgress={currentChildToothProgress}
             reminderBadge={reminderBadge}
             onToggleCheck={toggleDevelopmentCheck}
+            onToggleTooth={toggleTooth}
             onQuickDiary={async (content, linkedCheckItemId) => {
               await addDiaryEntry({
                 date: new Date().toISOString().split('T')[0],

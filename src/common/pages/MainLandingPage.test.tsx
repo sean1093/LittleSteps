@@ -55,7 +55,27 @@ describe('MainLandingPage', () => {
     render(<MainLandingPage onNavigate={onNavigate} />);
 
     await user.click(screen.getByText('1-3 歲'));
-
     expect(onNavigate).toHaveBeenCalledWith('littleexplorer');
+  });
+
+  it('未登入時進入點自己就給得出登入', async () => {
+    const user = userEvent.setup();
+    const onSignIn = vi.fn(async () => {});
+    render(<MainLandingPage onNavigate={vi.fn()} user={null} onSignIn={onSignIn} />);
+
+    await user.click(screen.getByRole('button', { name: /使用 Google 登入/ }));
+
+    expect(onSignIn).toHaveBeenCalled();
+  });
+
+  it('已登入時不再顯示登入按鈕', () => {
+    render(
+      <MainLandingPage
+        onNavigate={vi.fn()}
+        user={{ uid: 'u1' } as never}
+        onSignIn={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: /使用 Google 登入/ })).not.toBeInTheDocument();
   });
 });
