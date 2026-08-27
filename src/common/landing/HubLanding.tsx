@@ -141,7 +141,7 @@ export default function HubLanding({ onNavigate, user, onSignIn }: HubLandingPro
                 </ul>
 
                 {/* 卡片本身就是點擊區；這顆按鈕靠冒泡觸發，同時讓鍵盤也進得去。 */}
-                <button type="button" className={`btn-primary w-full mt-auto ${theme.fill}`}>
+                <button type="button" className={`btn-primary w-full mt-auto ${theme.fill} ${theme.fillText}`}>
                   {card.cta}
                 </button>
               </motion.div>

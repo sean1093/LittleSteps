@@ -113,7 +113,7 @@ export default function WikiBrowser<Category extends string>({
                   setExpandedId(null);
                 }}
                 aria-pressed={isActive}
-                className={`chip shrink-0 ${isActive ? `chip-on ${theme.fill} border-transparent` : ''}`}
+                className={`chip shrink-0 ${isActive ? `chip-on ${theme.fill} ${theme.fillText} border-transparent` : ''}`}
               >
                 {Icon && <Icon className="w-4 h-4" />}
                 <span>{value === 'all' ? '全部' : categoryLabels[value as Category]}</span>

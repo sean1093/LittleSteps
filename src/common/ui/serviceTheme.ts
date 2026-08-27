@@ -37,8 +37,15 @@ export interface ServiceTheme {
   accent: string;
   /** Readable brand shade: headings, links, icon glyphs on white. */
   ink: string;
-  /** Solid bed for white text: primary buttons, active chips, header bands. */
+  /**
+   * Solid bed for a primary button or active chip. Pair it with `fillText` —
+   * a yellow brand cannot reach 4.5:1 under white text without going brown
+   * and losing the colour entirely, so LittleExplorer keeps its bright amber
+   * and puts dark ink on it (6.31:1) instead.
+   */
   fill: string;
+  /** Text colour that belongs on `fill`. */
+  fillText: string;
   /** Body copy. */
   body: string;
   /** Muted captions. */
@@ -56,6 +63,7 @@ export const SERVICE_THEME: Record<ServiceId, ServiceTheme> = {
     accent: 'bg-primary',
     ink: 'text-primary-dark',
     fill: 'bg-primary-dark',
+    fillText: 'text-white',
     body: 'text-ink',
     muted: 'text-ink-muted',
   },
@@ -69,6 +77,7 @@ export const SERVICE_THEME: Record<ServiceId, ServiceTheme> = {
     accent: 'bg-bloom-dusty-rose',
     ink: 'text-bloom-dusty-rose-ink',
     fill: 'bg-bloom-dusty-rose-deep',
+    fillText: 'text-white',
     body: 'text-bloom-stone-ink',
     muted: 'text-bloom-stone-ink/70',
   },
@@ -81,7 +90,8 @@ export const SERVICE_THEME: Record<ServiceId, ServiceTheme> = {
     tint: 'bg-explorer-sunbeam-light/30',
     accent: 'bg-explorer-sunbeam',
     ink: 'text-explorer-sunbeam-ink',
-    fill: 'bg-explorer-sunbeam-ink',
+    fill: 'bg-explorer-sunbeam',
+    fillText: 'text-ink',
     body: 'text-explorer-bark',
     muted: 'text-explorer-bark/70',
   },
@@ -95,6 +105,7 @@ export const SERVICE_THEME: Record<ServiceId, ServiceTheme> = {
     accent: 'bg-secondary',
     ink: 'text-secondary-dark',
     fill: 'bg-secondary-dark',
+    fillText: 'text-white',
     body: 'text-ink',
     muted: 'text-ink-muted',
   },

@@ -234,7 +234,7 @@ export default function RemindersPage({
                               <button
                                 type="button"
                                 onClick={() => submitForm(task.template.id)}
-                                className={`btn-primary w-full ${THEME.fill}`}
+                                className={`btn-primary w-full ${THEME.fill} ${THEME.fillText}`}
                               >
                                 儲存
                               </button>

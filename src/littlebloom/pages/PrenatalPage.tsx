@@ -236,7 +236,7 @@ export default function PrenatalPage({
                           <button
                             type="button"
                             onClick={() => submit(template.id)}
-                            className={`btn-primary w-full ${THEME.fill}`}
+                            className={`btn-primary w-full ${THEME.fill} ${THEME.fillText}`}
                           >
                             儲存
                           </button>

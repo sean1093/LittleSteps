@@ -236,7 +236,7 @@ const RoomDetailSheet = ({ room, onClose }: RoomDetailSheetProps) => {
           href={`https://www.google.com/maps/dir/?api=1&destination=${room.latitude},${room.longitude}`}
           target="_blank"
           rel="noopener noreferrer"
-          className={`btn-primary w-full mt-6 ${theme.fill}`}
+          className={`btn-primary w-full mt-6 ${theme.fill} ${theme.fillText}`}
         >
           開始導航
         </a>

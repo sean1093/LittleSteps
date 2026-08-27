@@ -245,7 +245,7 @@ export default function DevelopmentPage({
                               type="button"
                               onClick={() => handleQuickDiary(item)}
                               disabled={!diaryText.trim()}
-                              className={`btn-primary px-4 text-sm ${THEME.fill}`}
+                              className={`btn-primary px-4 text-sm ${THEME.fill} ${THEME.fillText}`}
                             >
                               記下來
                             </button>

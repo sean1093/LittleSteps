@@ -47,7 +47,7 @@ export default function EmptyState({
         <button
           type="button"
           onClick={action.onClick}
-          className={`btn-primary mt-5 ${theme.fill}`}
+          className={`btn-primary mt-5 ${theme.fill} ${theme.fillText}`}
         >
           {action.label}
         </button>

@@ -10,7 +10,7 @@ import {
   sleepTrainingMethods,
   trainingTips
 } from '../data/sleep';
-import { stagger, listItem, collapse } from '../../common/ui/motion';
+import { stagger, listItem, collapse, tap } from '../../common/ui/motion';
 
 export default function SleepTrainingPage() {
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
@@ -36,39 +36,40 @@ export default function SleepTrainingPage() {
           0-3 歲階段需求、安全守則與訓練技巧
         </p>
 
-        {/* 睡眠時間參考表 */}
+        {/*
+          睡眠時間參考表。原本是五欄表格：前四欄 whitespace-nowrap 把第五欄
+          擠成窄柱，於是「睡眠特性」在 390px 下折成七八行，每列高約 250px，
+          右側欄位還被切掉。手機上不該用表格排長句，改成一張張卡片。
+        */}
         <h2 className="mb-3">睡眠時間參考表</h2>
-        <div className="card overflow-hidden p-0 mb-8">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary-light/60">
-                <tr>
-                  <th className="px-3 py-3 text-left font-semibold text-ink whitespace-nowrap">年齡階段</th>
-                  <th className="px-3 py-3 text-left font-semibold text-ink whitespace-nowrap">總睡眠時數</th>
-                  <th className="px-3 py-3 text-left font-semibold text-ink whitespace-nowrap">白天睡眠</th>
-                  <th className="px-3 py-3 text-left font-semibold text-ink whitespace-nowrap">晚上睡眠</th>
-                  <th className="px-3 py-3 text-left font-semibold text-ink">睡眠特性</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sleepRequirements.map((req, index) => (
-                  <tr
-                    key={req.id}
-                    className={`border-t border-ink/10 ${
-                      index % 2 === 0 ? 'bg-white' : 'bg-warm-white'
-                    }`}
-                  >
-                    <td className="px-3 py-3 font-medium text-ink whitespace-nowrap">{req.ageRange}</td>
-                    <td className="px-3 py-3 text-ink whitespace-nowrap">{req.totalHours}</td>
-                    <td className="px-3 py-3 text-ink whitespace-nowrap">{req.daytimeHours}</td>
-                    <td className="px-3 py-3 text-ink whitespace-nowrap">{req.nighttimeHours}</td>
-                    <td className="px-3 py-3 text-ink-muted leading-relaxed">{req.characteristics}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <motion.div
+          className="space-y-3 mb-8"
+          variants={stagger}
+          initial="hidden"
+          animate="visible"
+        >
+          {sleepRequirements.map((req) => (
+            <motion.div key={req.id} variants={listItem} className="card">
+              <div className="flex items-baseline justify-between gap-3 mb-2">
+                <h3>{req.ageRange}</h3>
+                <span className="tag bg-secondary-light text-secondary-dark shrink-0">
+                  共 {req.totalHours}
+                </span>
+              </div>
+              <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm mb-2">
+                <div className="flex gap-1.5">
+                  <dt className="text-ink-muted">白天</dt>
+                  <dd className="text-ink font-medium">{req.daytimeHours}</dd>
+                </div>
+                <div className="flex gap-1.5">
+                  <dt className="text-ink-muted">晚上</dt>
+                  <dd className="text-ink font-medium">{req.nighttimeHours}</dd>
+                </div>
+              </dl>
+              <p className="text-sm text-ink-muted leading-relaxed">{req.characteristics}</p>
+            </motion.div>
+          ))}
+        </motion.div>
 
         {/* 睡眠知識 */}
         <h2 className="mb-3">睡眠狀況與相關知識</h2>
@@ -164,48 +165,48 @@ export default function SleepTrainingPage() {
               const isChecked = ritualChecklist[step.id] || false;
 
               return (
-                <motion.div
+                /*
+                  One tap target, not two. The row and the 24px checkbox inside
+                  it both called toggleRitualStep, so a small target sat on top
+                  of a large one doing the same thing. The box is now a
+                  indicator and the row carries the semantics.
+                */
+                <motion.button
                   key={step.id}
+                  type="button"
                   variants={listItem}
+                  whileTap={tap}
+                  role="checkbox"
+                  aria-checked={isChecked}
                   onClick={() => toggleRitualStep(step.id)}
-                  className={`card-tap flex items-center gap-4 ${isChecked ? 'bg-secondary-light' : ''}`}
+                  className={`card-tap w-full flex items-center gap-3 text-left ${isChecked ? 'bg-secondary-light' : ''}`}
                 >
-                  {/* Checkbox */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleRitualStep(step.id);
-                    }}
-                    aria-pressed={isChecked}
-                    aria-label={`${step.title}${isChecked ? '：已完成' : '：標記為完成'}`}
+                  <span
+                    aria-hidden="true"
                     className={`
-                      flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
-                      ${isChecked
-                        ? 'bg-secondary-dark border-secondary-dark'
-                        : 'border-ink/25'
-                      }
+                      shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors
+                      ${isChecked ? 'bg-secondary-dark border-secondary-dark' : 'border-ink/25'}
                     `}
                   >
                     {isChecked && <Check className="w-4 h-4 text-white" />}
-                  </button>
+                  </span>
 
-                  {/* Step Number */}
-                  <div className={`
-                    w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0
+                  <span className={`
+                    w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm shrink-0
                     ${isChecked ? 'bg-secondary-dark text-white' : 'bg-ink/5 text-ink-muted'}
                   `}>
                     {step.order}
-                  </div>
+                  </span>
 
-                  <div className="flex-1 min-w-0">
-                    <h3 className={`mb-0.5 ${isChecked ? 'text-secondary-dark' : 'text-ink'}`}>
+                  <span className="flex-1 min-w-0">
+                    <span className={`block font-semibold mb-0.5 ${isChecked ? 'text-secondary-dark' : 'text-ink'}`}>
                       {step.title}
-                    </h3>
-                    <p className={`text-sm ${isChecked ? 'text-secondary-dark' : 'text-ink-muted'}`}>
+                    </span>
+                    <span className={`block text-sm ${isChecked ? 'text-secondary-dark' : 'text-ink-muted'}`}>
                       {step.description}
-                    </p>
-                  </div>
-                </motion.div>
+                    </span>
+                  </span>
+                </motion.button>
               );
             })}
           </motion.div>

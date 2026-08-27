@@ -239,7 +239,7 @@ export default function LittleBloomPage({
                   type="button"
                   onClick={submitBirth}
                   disabled={birthSaving}
-                  className={`btn-primary flex-1 ${THEME.fill}`}
+                  className={`btn-primary flex-1 ${THEME.fill} ${THEME.fillText}`}
                 >
                   {birthSaving ? '儲存中…' : '確認出生'}
                 </button>
@@ -257,7 +257,7 @@ export default function LittleBloomPage({
             <button
               type="button"
               onClick={() => setBirthOpen(true)}
-              className={`btn-primary ${THEME.fill}`}
+              className={`btn-primary ${THEME.fill} ${THEME.fillText}`}
             >
               登記出生
             </button>

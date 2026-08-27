@@ -137,7 +137,7 @@ export default function DiaryPage({
           type="button"
           onClick={submit}
           disabled={!content.trim()}
-          className={`btn-primary flex-1 ${THEME.fill}`}
+          className={`btn-primary flex-1 ${THEME.fill} ${THEME.fillText}`}
         >
           {editingId ? '儲存修改' : '記下來'}
         </button>

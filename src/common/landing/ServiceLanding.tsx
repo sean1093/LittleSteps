@@ -83,7 +83,7 @@ export default function ServiceLanding({ service, onSignIn }: ServiceLandingProp
             type="button"
             whileTap={tap}
             onClick={onSignIn}
-            className={`btn-primary w-full ${theme.fill}`}
+            className={`btn-primary w-full ${theme.fill} ${theme.fillText}`}
           >
             使用 Google 登入開始使用
           </motion.button>
