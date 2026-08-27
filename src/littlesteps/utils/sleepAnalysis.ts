@@ -233,7 +233,7 @@ export function generateSleepAdvice(stats: SleepStats, ageInMonths: number): Sle
   if (actualHours >= minHours && actualHours <= maxHours) {
     advice.push({
       category: 'good',
-      title: '✅ 睡眠時長充足',
+      title: '睡眠時長充足',
       description: `寶寶每天平均睡 ${actualHours.toFixed(1)} 小時，符合 ${ageInMonths} 個月大寶寶的建議範圍（${minHours}-${maxHours} 小時）。`,
       suggestions: ['繼續維持目前的作息安排'],
     });
@@ -241,7 +241,7 @@ export function generateSleepAdvice(stats: SleepStats, ageInMonths: number): Sle
     const deficit = minHours - actualHours;
     advice.push({
       category: 'improve',
-      title: '🔧 睡眠時間不足',
+      title: '睡眠時間不足',
       description: `寶寶每天平均睡 ${actualHours.toFixed(1)} 小時，少於建議的 ${minHours}-${maxHours} 小時（不足約 ${deficit.toFixed(1)} 小時）。`,
       suggestions: [
         '提早 30 分鐘開始睡前儀式',
@@ -254,7 +254,7 @@ export function generateSleepAdvice(stats: SleepStats, ageInMonths: number): Sle
     const excess = actualHours - maxHours;
     advice.push({
       category: 'attention',
-      title: '⚠️ 睡眠時間較多',
+      title: '睡眠時間較多',
       description: `寶寶每天平均睡 ${actualHours.toFixed(1)} 小時，超過建議的 ${maxHours} 小時（多約 ${excess.toFixed(1)} 小時）。`,
       suggestions: [
         '如果寶寶清醒時精神良好，無需過度擔心',
@@ -270,7 +270,7 @@ export function generateSleepAdvice(stats: SleepStats, ageInMonths: number): Sle
     if (ageInMonths >= 3 && nightRatio < 0.65) {
       advice.push({
         category: 'attention',
-        title: '⚠️ 夜間睡眠比例偏低',
+        title: '夜間睡眠比例偏低',
         description: `目前夜間睡眠佔 ${(nightRatio * 100).toFixed(0)}%，建議 3 個月以上的寶寶夜間睡眠應佔總睡眠時間的 65-75%。`,
         suggestions: [
           '白天小睡不宜過長，避免影響夜間睡眠',
@@ -287,7 +287,7 @@ export function generateSleepAdvice(stats: SleepStats, ageInMonths: number): Sle
   if (ageInMonths >= 6 && dailySleepCount > 5) {
     advice.push({
       category: 'attention',
-      title: '⚠️ 睡眠次數較多',
+      title: '睡眠次數較多',
       description: `平均每天睡 ${dailySleepCount.toFixed(1)} 次。6 個月以上的寶寶通常一天睡 3-4 次（夜間長睡 + 2-3 次小睡）。`,
       suggestions: [
         '嘗試延長每次睡眠時長，減少睡醒頻率',
@@ -302,7 +302,7 @@ export function generateSleepAdvice(stats: SleepStats, ageInMonths: number): Sle
   if (stats.averageDuration > 0 && stats.averageDuration < 60) {
     advice.push({
       category: 'attention',
-      title: '⚠️ 單次睡眠時間較短',
+      title: '單次睡眠時間較短',
       description: `平均每次睡眠僅 ${Math.round(stats.averageDuration)} 分鐘，建議延長單次睡眠時長。`,
       suggestions: [
         '確保睡眠環境舒適，減少干擾',
