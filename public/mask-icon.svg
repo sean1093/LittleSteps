@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="LittleSteps">
+  <!-- Safari pinned tab: single flat colour, no background. Safari applies the
+       user's accent, so anything gradient or white would vanish. -->
+  <g fill="#000000">
+    <rect x="104" y="300" width="92" height="108" rx="30"/>
+    <rect x="210" y="240" width="92" height="168" rx="30"/>
+    <rect x="316" y="180" width="92" height="228" rx="30"/>
+    <circle cx="362" cy="118" r="34"/>
+  </g>
+</svg>

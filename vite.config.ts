@@ -8,20 +8,22 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      includeAssets: ['favicon.svg', 'favicon-32x32.png', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
         name: 'LittleSteps - 孕期到幼兒的育兒陪伴',
         short_name: 'LittleSteps',
         description: '從懷孕、新生兒到 1-3 歲幼兒，四個服務陪台灣爸媽走過每個階段',
-        theme_color: '#F472B6',
-        background_color: '#FAFAF9',
+        lang: 'zh-TW',
+        theme_color: '#FDFBF7',
+        background_color: '#FDFBF7',
         display: 'standalone',
         orientation: 'portrait',
         icons: [
           {
             src: 'pwa-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
           },
           {
             src: 'pwa-512x512.png',
@@ -30,7 +32,10 @@ export default defineConfig({
             purpose: 'any'
           },
           {
-            src: 'pwa-512x512.png',
+            // Separate art, not the same file tagged twice: a launcher crops
+            // maskable icons to a circle, which ate the corners of the `any`
+            // icon. This one keeps the mark inside the safe zone.
+            src: 'pwa-maskable-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable'

@@ -20,6 +20,9 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { NursingRoom } from '../../types';
 import AppHomeButton from '../../common/components/AppHomeButton';
+import AppBar from '../../common/ui/AppBar';
+import { SERVICE_THEME } from '../../common/ui/serviceTheme';
+import { sheet, tap } from '../../common/ui/motion';
 import { createSpatialIndex } from '../utils/spatialIndex';
 
 // Import leaflet CSS
@@ -35,9 +38,15 @@ L.Icon.Default.mergeOptions({
 
 // 兩種圖示都不隨資料變化，模組層建立一次即可。先前是每個 marker 各呼叫一次
 // createCustomIcon，全國資料下等於每次 render 產生近四千顆內容相同的 divIcon。
+//
+// Hex is unavoidable here — Leaflet builds these from an HTML string, outside
+// Tailwind's reach. The values are the `primary` and `secondary-dark` tokens.
+//
+// The glyph used to be a music note (`M9 18V5l12-2v13` plus two circles), which
+// had nothing to do with a nursing room. It is a droplet now.
 const ROOM_ICON = L.divIcon({
-  html: `<div style="background: linear-gradient(135deg, #EC4899, #F59E0B); width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;">
-         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+  html: `<div style="background: linear-gradient(135deg, #FFB3B3, #F08287); width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(63,58,56,0.28); display: flex; align-items: center; justify-content: center;">
+         <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"></path></svg>
        </div>`,
   className: 'custom-marker-icon',
   iconSize: [32, 32],
@@ -45,7 +54,7 @@ const ROOM_ICON = L.divIcon({
 });
 
 const USER_ICON = L.divIcon({
-  html: `<div style="background: #3B82F6; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>`,
+  html: `<div style="background: #2F7F9C; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(63,58,56,0.28);"></div>`,
   className: 'custom-marker-icon',
   iconSize: [24, 24],
   iconAnchor: [12, 12],
@@ -88,12 +97,12 @@ const LocateButton = ({ onLocate }: { onLocate: () => void }) => {
     <motion.button
       onClick={handleClick}
       disabled={isLocating}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      className="absolute bottom-32 right-4 z-[1000] bg-white rounded-full p-4 shadow-soft hover:shadow-soft-lg transition-all duration-200"
+      whileTap={tap}
+      aria-label="定位我的位置"
+      className="absolute bottom-32 right-4 z-[1000] w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-soft hover:shadow-soft-lg transition-shadow"
     >
       <Navigation
-        className={`w-6 h-6 text-primary ${isLocating ? 'animate-spin' : ''}`}
+        className={`w-6 h-6 text-secondary-dark ${isLocating ? 'animate-spin' : ''}`}
       />
     </motion.button>
   );
@@ -134,12 +143,17 @@ const getFacilityLabel = (facility: string): string => {
 
 // Bottom sheet for selected room
 interface RoomDetailSheetProps {
-  room: NursingRoom | null;
+  room: NursingRoom;
   onClose: () => void;
 }
 
+/**
+ * `AnimatePresence` lives at the call site, not in here. It used to sit inside
+ * this component above an early `return null`, so the whole subtree unmounted
+ * the instant `room` cleared and the exit animation never ran.
+ */
 const RoomDetailSheet = ({ room, onClose }: RoomDetailSheetProps) => {
-  if (!room) return null;
+  const theme = SERVICE_THEME.babyoasis;
 
   // 來源未提供設施細目時 facilities 是 undefined，與「十項設施都沒有」意義不同，
   // 必須分開呈現，否則會把資料闕漏講成場所簡陋。
@@ -148,100 +162,86 @@ const RoomDetailSheet = ({ room, onClose }: RoomDetailSheetProps) => {
     .map(([key]) => key);
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-        className="fixed bottom-0 left-0 right-0 z-[2000] bg-white rounded-t-3xl shadow-2xl max-h-[70vh] overflow-y-auto"
+    <motion.div
+      {...sheet}
+      className="fixed bottom-0 left-0 right-0 z-[2000] bg-white rounded-t-3xl shadow-soft-lg max-h-[70vh] overflow-y-auto"
+    >
+      <button
+        onClick={onClose}
+        aria-label="關閉"
+        className="btn-icon absolute top-3 right-3 bg-ink/5 hover:bg-ink/10"
       >
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        <X className="w-5 h-5" />
+      </button>
 
-        {/* Content */}
-        <div className="p-6 pb-8">
-          {/* Header */}
-          <div className="mb-4">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2 pr-10">{room.name}</h2>
-          </div>
+      <div className="p-5 pb-8">
+        <h2 className="text-xl font-bold text-ink mb-4 pr-12">{room.name}</h2>
 
-          {/* Location info */}
-          <div className="space-y-3 mb-6">
-            <div className="flex items-start gap-3">
-              <MapPin className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-gray-900">{room.address}</p>
-                {room.floor && <p className="text-sm text-gray-600">{room.floor}</p>}
-              </div>
+        {/* These three icons are the only thing distinguishing address from
+            hours from phone, so they carry meaning and stay. */}
+        <div className="space-y-3 mb-6">
+          <div className="flex items-start gap-3">
+            <MapPin className={`w-5 h-5 mt-0.5 shrink-0 ${theme.ink}`} />
+            <div>
+              <p className="text-ink">{room.address}</p>
+              {room.floor && <p className="text-sm text-ink-muted">{room.floor}</p>}
             </div>
-
-            {room.openingHours && (
-              <div className="flex items-start gap-3">
-                <Clock className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                <p className="text-gray-900">{room.openingHours}</p>
-              </div>
-            )}
-
-            {room.phone && (
-              <div className="flex items-start gap-3">
-                <Phone className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                <a
-                  href={`tel:${room.phone}`}
-                  className="text-primary hover:underline"
-                >
-                  {room.phone}
-                </a>
-              </div>
-            )}
           </div>
 
-          {/* Facilities */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">設施</h3>
-            {room.facilities ? (
-              <div className="grid grid-cols-2 gap-3">
-                {availableFacilities.map((facility) => (
-                  <div
-                    key={facility}
-                    className="flex items-center gap-2 p-3 bg-gradient-to-r from-pink-50 to-amber-50 rounded-xl"
-                  >
-                    <div className="text-primary">{getFacilityIcon(facility)}</div>
-                    <span className="text-sm text-gray-700">{getFacilityLabel(facility)}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500">
-                此場所未提供設施明細，建議出發前先電話確認。
-              </p>
-            )}
-          </div>
-
-          {/* Remarks */}
-          {room.remarks && (
-            <div className="p-4 bg-blue-50 rounded-xl">
-              <p className="text-sm text-gray-700">{room.remarks}</p>
+          {room.openingHours && (
+            <div className="flex items-start gap-3">
+              <Clock className={`w-5 h-5 mt-0.5 shrink-0 ${theme.ink}`} />
+              <p className="text-ink">{room.openingHours}</p>
             </div>
           )}
 
-          {/* Navigate button */}
-          <a
-            href={`https://www.google.com/maps/dir/?api=1&destination=${room.latitude},${room.longitude}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block mt-6 w-full bg-gradient-to-r from-primary to-secondary text-white text-center py-4 rounded-2xl font-semibold hover:shadow-soft-lg transition-all duration-200"
-          >
-            開始導航
-          </a>
+          {room.phone && (
+            <div className="flex items-start gap-3">
+              <Phone className={`w-5 h-5 mt-0.5 shrink-0 ${theme.ink}`} />
+              <a href={`tel:${room.phone}`} className={`underline ${theme.ink}`}>
+                {room.phone}
+              </a>
+            </div>
+          )}
         </div>
-      </motion.div>
-    </AnimatePresence>
+
+        <div className="mb-6">
+          <h3 className="mb-3">設施</h3>
+          {room.facilities ? (
+            <div className="grid grid-cols-2 gap-2">
+              {availableFacilities.map((facility) => (
+                <div
+                  key={facility}
+                  className="flex items-center gap-2 p-3 bg-secondary-light rounded-xl"
+                >
+                  <span className={theme.ink}>{getFacilityIcon(facility)}</span>
+                  <span className="text-sm text-ink">{getFacilityLabel(facility)}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-ink-muted">
+              此場所未提供設施明細，建議出發前先電話確認。
+            </p>
+          )}
+        </div>
+
+        {room.remarks && (
+          <div className="p-4 bg-secondary-soft rounded-xl">
+            <p className="text-sm text-ink">{room.remarks}</p>
+          </div>
+        )}
+
+        <a
+          href={`https://www.google.com/maps/dir/?api=1&destination=${room.latitude},${room.longitude}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`btn-primary w-full mt-6 ${theme.fill}`}
+        >
+          開始導航
+        </a>
+      </div>
+    </motion.div>
   );
 };
 
@@ -254,6 +254,7 @@ const TAIWAN_CENTER: [number, number] = [23.75, 120.95];
 const TAIWAN_ZOOM = 8;
 
 const BabyOasisPage = () => {
+  const theme = SERVICE_THEME.babyoasis;
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<NursingRoom | null>(null);
   const [nursingRooms, setNursingRooms] = useState<NursingRoom[]>([]);
@@ -305,20 +306,20 @@ const BabyOasisPage = () => {
   };
 
   return (
-    <div className="relative h-screen w-screen">
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-[1000] bg-white/95 backdrop-blur-sm shadow-sm">
-        <div className="p-4 flex items-center gap-3">
-          <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              BabyOasis
-            </h1>
-            <p className="text-sm text-gray-600 mt-1">
-              {nursingRooms.length ? `全台 ${nursingRooms.length} 處哺乳室` : '找到最近的哺乳室'}
-            </p>
-          </div>
-          <AppHomeButton />
-        </div>
+    /* h-dscreen, not h-screen: 100vh counts the browser chrome that is
+       physically covering the bottom of a phone screen, which pushed the
+       locate button and sheet handles under it. */
+    <div className="relative h-dscreen w-full overflow-hidden">
+      {/* Sits above Leaflet's panes, hence the z-[1000]. */}
+      <div className="absolute top-0 left-0 right-0 z-[1000]">
+        <AppBar
+          theme={theme}
+          title={theme.name}
+          subtitle={
+            nursingRooms.length ? `全台 ${nursingRooms.length} 處哺乳室` : '找到最近的哺乳室'
+          }
+          actions={<AppHomeButton />}
+        />
       </div>
 
       {/* Map */}
@@ -370,39 +371,36 @@ const BabyOasisPage = () => {
       <AnimatePresence>
         {showNearby && !selectedRoom && (
           <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-[1500] bg-white rounded-t-3xl shadow-2xl max-h-[45vh] overflow-y-auto"
+            {...sheet}
+            className="fixed bottom-0 left-0 right-0 z-[1500] bg-white rounded-t-3xl shadow-soft-lg max-h-[45vh] overflow-y-auto"
           >
-            <div className="sticky top-0 flex items-center justify-between bg-white px-6 pt-5 pb-3">
-              <h2 className="text-lg font-bold text-gray-900">附近的哺乳室</h2>
+            <div className="sticky top-0 flex items-center justify-between bg-white px-4 pt-4 pb-2">
+              <h2>附近的哺乳室</h2>
               <button
                 onClick={() => setShowNearby(false)}
-                className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                className="btn-icon bg-ink/5 hover:bg-ink/10"
                 aria-label="關閉附近清單"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
             {nearby.length === 0 ? (
-              <p className="px-6 pb-6 text-sm text-gray-500">
+              <p className="px-4 pb-6 text-sm text-ink-muted">
                 {NEARBY_RADIUS_KM} 公里內沒有已登記的哺乳室，可拖動地圖查看其他區域。
               </p>
             ) : (
-              <ul className="px-4 pb-6">
+              <ul className="px-2 pb-6">
                 {nearby.map(({ item, distanceKm }) => (
                   <li key={item.id}>
                     <button
                       onClick={() => setSelectedRoom(item)}
-                      className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-50 transition-colors text-left"
+                      className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-ink/5 active:bg-ink/10 transition-colors text-left"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-gray-900 truncate">{item.name}</p>
-                        <p className="text-xs text-gray-500 truncate">{item.address}</p>
+                        <p className="font-medium text-ink truncate">{item.name}</p>
+                        <p className="text-sm text-ink-muted truncate">{item.address}</p>
                       </div>
-                      <span className="text-sm font-semibold text-primary whitespace-nowrap">
+                      <span className={`text-sm font-semibold whitespace-nowrap ${theme.ink}`}>
                         {distanceKm < 1
                           ? `${Math.round(distanceKm * 1000)} 公尺`
                           : `${distanceKm.toFixed(1)} 公里`}
@@ -417,10 +415,11 @@ const BabyOasisPage = () => {
       </AnimatePresence>
 
       {/* Room detail bottom sheet */}
-      <RoomDetailSheet
-        room={selectedRoom}
-        onClose={() => setSelectedRoom(null)}
-      />
+      <AnimatePresence>
+        {selectedRoom && (
+          <RoomDetailSheet room={selectedRoom} onClose={() => setSelectedRoom(null)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
