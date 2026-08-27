@@ -9,13 +9,20 @@ export type ServiceId = 'littlesteps' | 'littlebloom' | 'littleexplorer' | 'baby
  * 新增一個頁面時忘了設定，預設應該是擋下來，而不是預設公開。反過來寫的話，
  * 每加一頁就多一次靜默外洩的機會。
  *
- * 公開的只有四個服務各自的知識內容與哺乳室地圖，加上服務集合首頁。這些是
- * 純靜態內容，擋住只會讓還沒有帳號的家長連認識這些服務的機會都沒有；其餘
- * 功能一律需要登入。
+ * 判準是「這一頁需不需要某個孩子的資料才有意義」。純知識內容不需要，擋住
+ * 只會讓還沒有帳號的家長連查都查不到；會讀或寫孩子紀錄的一律需要登入。
+ *
+ * 照這個判準，照顧重點與睡眠指南和三個百科是同一類：它們不收任何 prop，
+ * 只讀專案內的靜態資料，沒有 Firebase 也沒有 auth。
+ *
+ * 里程碑與疫苗追蹤刻意不在此列。它們的清單本身確實是參考資料，但整頁的
+ * 主體是逐項勾選的完成紀錄，離開孩子的資料就只剩一份空清單。
  */
 const PUBLIC_PAGES: Record<string, true> = {
   home: true,
   'littlesteps/baby-wiki': true,
+  'littlesteps/care-guide': true,
+  'littlesteps/sleep-training': true,
   'littlebloom/wiki': true,
   'littleexplorer/wiki': true,
   babyoasis: true,

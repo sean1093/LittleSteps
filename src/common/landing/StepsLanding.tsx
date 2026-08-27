@@ -4,8 +4,8 @@ import { User } from 'firebase/auth';
 import AppHomeButton from '../components/AppHomeButton';
 
 interface StepsLandingProps {
-  /** 未登入時唯一能去的 LittleSteps 內容；其餘功能都要先登入。 */
-  onNavigate: (page: 'littlesteps/baby-wiki') => void;
+  /** 只能指向 LittleSteps 免登入的內容；功能頁要先登入，導過去只會退回這一頁。 */
+  onNavigate: (page: 'littlesteps/baby-wiki' | 'littlesteps/care-guide' | 'littlesteps/sleep-training') => void;
   user: User | null;
   onSignIn: () => Promise<void>;
 }
@@ -190,11 +190,11 @@ export default function StepsLanding({ onNavigate, user, onSignIn }: StepsLandin
                 <motion.button
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => onNavigate('littlesteps/baby-wiki')}
+                  onClick={() => onNavigate('littlesteps/sleep-training')}
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#7EC8E3] text-white font-semibold hover:bg-[#6BB8D3] transition-colors"
                 >
                   <BookOpen className="w-5 h-5" />
-                  <span>先逛逛寶寶百科，不用登入</span>
+                  <span>查看 0-3 歲科學睡眠指南</span>
                 </motion.button>
               </div>
             </div>
@@ -223,17 +223,19 @@ export default function StepsLanding({ onNavigate, user, onSignIn }: StepsLandin
             className="grid md:grid-cols-2 gap-6"
           >
             {[
+              { title: '照顧重點', desc: '各階段專業照護建議', bg: 'bg-[#E8F4F8]', icon: '🛡️', open: 'littlesteps/care-guide' as const },
+              { title: '寶寶百科', desc: '常見照顧問題與處理方式', bg: 'bg-[#FDF2F8]', icon: '📖', open: 'littlesteps/baby-wiki' as const },
               { title: '里程碑追蹤', desc: '記錄寶寶每個珍貴的成長時刻', bg: 'bg-[#FFE5E5]', icon: '👶' },
               { title: '疫苗追蹤', desc: '完整的疫苗接種時程表', bg: 'bg-[#E8F5E9]', icon: '💉' },
               { title: '副食品指南', desc: '科學的副食品添加方法', bg: 'bg-[#FFF3E0]', icon: '🍽️' },
-              { title: '照顧重點', desc: '各階段專業照護建議', bg: 'bg-[#E8F4F8]', icon: '🛡️' },
             ].map((feature) => (
               <motion.button
                 key={feature.title}
                 type="button"
                 variants={fadeInUp}
                 whileHover={{ y: -4 }}
-                onClick={() => onSignIn()}
+                // 免登入的內容直接帶過去；需要孩子資料的才先請使用者登入。
+                onClick={() => (feature.open ? onNavigate(feature.open) : onSignIn())}
                 className={`${feature.bg} rounded-3xl p-6 text-left w-full transition-all hover:shadow-lg`}
               >
                 <div className="flex items-start gap-4">
@@ -242,7 +244,7 @@ export default function StepsLanding({ onNavigate, user, onSignIn }: StepsLandin
                     <h3 className="text-xl font-bold text-gray-800 mb-2">{feature.title}</h3>
                     <p className="text-gray-600 text-sm mb-4">{feature.desc}</p>
                     <div className="flex items-center gap-2 text-gray-700 font-medium text-sm">
-                      <span>登入後開始使用</span>
+                      <span>{feature.open ? '直接閱讀，不用登入' : '登入後開始使用'}</span>
                       <ArrowRight className="w-4 h-4" />
                     </div>
                   </div>

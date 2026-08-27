@@ -29,8 +29,8 @@ const ALL_PAGES: Page[] = [
 ];
 
 /**
- * 公開範圍是產品決定，不是實作細節：四個服務各自的知識內容、哺乳室地圖，
- * 加上服務集合首頁。其餘一律需要登入。
+ * 公開範圍是產品決定，不是實作細節。判準是「這一頁需不需要某個孩子的資料
+ * 才有意義」：純知識內容不需要，一律公開。
  *
  * 用窮舉表比對，而不是各挑幾個路由抽查：新增一條路由卻沒決定它公不公開時，
  * 這裡要失敗，而不是靜靜沿用預設值。
@@ -38,19 +38,24 @@ const ALL_PAGES: Page[] = [
 const PUBLIC: Page[] = [
   'home',
   'littlesteps/baby-wiki',
+  'littlesteps/care-guide',
+  'littlesteps/sleep-training',
   'littlebloom/wiki',
   'littleexplorer/wiki',
   'babyoasis',
 ];
 
 describe('requiresAuth', () => {
-  it('公開的就是這五條，一條不多', () => {
+  it('公開的就是宣告的那幾條，一條不多', () => {
     const actual = ALL_PAGES.filter((page) => !requiresAuth(page)).sort();
     expect(actual).toEqual([...PUBLIC].sort());
   });
 
-  it('四個服務的知識內容都不需登入', () => {
+  it('不需要孩子資料的知識頁都不需登入', () => {
+    // 這四頁不收任何 prop，只讀專案內的靜態資料。
     expect(requiresAuth('littlesteps/baby-wiki')).toBe(false);
+    expect(requiresAuth('littlesteps/care-guide')).toBe(false);
+    expect(requiresAuth('littlesteps/sleep-training')).toBe(false);
     expect(requiresAuth('littlebloom/wiki')).toBe(false);
     expect(requiresAuth('littleexplorer/wiki')).toBe(false);
     expect(requiresAuth('babyoasis')).toBe(false);
@@ -61,12 +66,10 @@ describe('requiresAuth', () => {
       'littlesteps',
       'littlesteps/dashboard',
       'littlesteps/milestones',
-      'littlesteps/care-guide',
       'littlesteps/vaccine-tracking',
       'littlesteps/complementary-food',
       'littlesteps/daily-log',
       'littlesteps/growth-charts',
-      'littlesteps/sleep-training',
       'littlesteps/sleep-analysis',
       'littlesteps/clinic-summary',
       'littlesteps/report',
