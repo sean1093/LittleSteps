@@ -64,7 +64,7 @@ export default function ScoreCircle({
             strokeDasharray={circumference}
             initial={{ strokeDashoffset: circumference }}
             animate={{ strokeDashoffset }}
-            transition={{ duration: 1, ease: 'easeOut', delay: 0.2 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
           />
         </svg>
         {/* Center text */}
@@ -72,16 +72,16 @@ export default function ScoreCircle({
           <motion.span
             className="text-2xl font-bold leading-none"
             style={{ color }}
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
           >
             {score}
           </motion.span>
-          <span className="text-[10px] text-gray-500 mt-0.5">{label}</span>
+          <span className="text-[10px] text-ink-faint mt-0.5">{label}</span>
         </div>
       </div>
-      <span className="text-xs font-medium text-gray-700 text-center leading-tight">
+      <span className="text-xs font-medium text-ink-muted text-center leading-tight">
         {title}
       </span>
     </div>

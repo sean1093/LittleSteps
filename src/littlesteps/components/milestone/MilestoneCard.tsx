@@ -18,45 +18,44 @@ export default function MilestoneCard({
 }: MilestoneCardProps) {
   return (
     <div className="card flex gap-3 items-start">
+      {/*
+        The visual mark stays 24px; the button around it is a full 44px so it can
+        actually be hit. The negative margin keeps the row's rhythm unchanged.
+      */}
       <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggle();
-        }}
-        className={`
-          flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
-          ${isCompleted
-            ? 'bg-primary border-primary'
-            : 'border-gray-300 hover:border-primary'
-          }
-        `}
+        onClick={onToggle}
+        aria-label={isCompleted ? '取消完成' : '標記完成'}
+        className="btn-icon -m-2.5 shrink-0"
       >
-        {isCompleted && <Check className="w-4 h-4 text-white" />}
+        <span
+          className={`
+            w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
+            ${isCompleted ? 'bg-primary-dark border-primary-dark' : 'border-ink/25'}
+          `}
+        >
+          {isCompleted && <Check className="w-4 h-4 text-white" />}
+        </span>
       </button>
 
-      {/* Content */}
-      <div
+      <button
         onClick={onClick}
-        className="flex-1 cursor-pointer"
+        className="flex-1 min-w-0 flex items-start gap-3 text-left"
       >
-        <h3 className={`font-semibold text-gray-800 mb-1 ${isCompleted ? 'line-through opacity-60' : ''}`}>
-          {milestone.title}
-        </h3>
-        {isCompleted && achievedDate && ( // Conditionally render achieved date
-          <p className="text-xs text-gray-500 mt-0.5">
-            完成日期: {achievedDate}
+        <div className="flex-1 min-w-0">
+          <h3 className={`mb-1 ${isCompleted ? 'line-through opacity-60' : ''}`}>
+            {milestone.title}
+          </h3>
+          {isCompleted && achievedDate && (
+            <p className="text-xs text-ink-faint mt-0.5">
+              完成日期: {achievedDate}
+            </p>
+          )}
+          <p className="text-sm text-ink-muted line-clamp-2">
+            {milestone.summary}
           </p>
-        )}
-        <p className="text-sm text-gray-600 line-clamp-2">
-          {milestone.summary}
-        </p>
-      </div>
-
-      {/* Arrow */}
-      <ChevronRight
-        onClick={onClick}
-        className="w-5 h-5 text-gray-400 flex-shrink-0 cursor-pointer"
-      />
+        </div>
+        <ChevronRight className="w-5 h-5 text-ink-faint shrink-0 mt-0.5" aria-hidden="true" />
+      </button>
     </div>
   );
 }

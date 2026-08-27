@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, Apple, Calendar, Plus, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
+import { backdrop, sheet } from '../../../common/ui/motion';
 import { FoodTrialRecord, AllergyReaction, AllergyReactionType, AllergySeverity, FoodPreference } from '../../../types';
 import { toLocalDateKey } from '../../../common/utils/dateHelpers';
 
@@ -10,6 +11,18 @@ interface FoodTrialModalProps {
   onSave: (foodData: Omit<FoodTrialRecord, 'id' | 'createdAt'>) => void;
   editingFood?: FoodTrialRecord | null;
 }
+
+/* Same recipe as the other two modals; every field here had its own border. */
+const FIELD = 'w-full px-4 py-3 rounded-xl border border-ink/15 focus:border-primary-dark transition-colors';
+const LABEL = 'block text-sm font-medium text-ink mb-2';
+
+const PREFERENCES: { value: FoodPreference; label: string }[] = [
+  { value: 'love', label: '超愛' },
+  { value: 'like', label: '喜歡' },
+  { value: 'neutral', label: '普通' },
+  { value: 'dislike', label: '不喜歡' },
+  { value: 'refuse', label: '拒絕' },
+];
 
 export default function FoodTrialModal({
   isOpen,
@@ -120,156 +133,123 @@ export default function FoodTrialModal({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            {...backdrop}
             onClick={onClose}
             className="fixed inset-0 bg-black/50 z-40"
           />
 
-          {/* Modal */}
           <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl z-50 max-h-[90vh] overflow-y-auto"
+            {...sheet}
+            className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl z-50 max-h-[85vh] overflow-y-auto"
           >
             {/* Header */}
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Apple className="w-6 h-6 text-primary" />
-                <h3 className="text-lg font-bold text-gray-800">
-                  {editingFood ? '編輯食物記錄' : '記錄新食物嘗試'}
-                </h3>
-              </div>
-              <button
-                onClick={onClose}
-                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-600" />
+            <div className="sticky top-0 bg-white border-b border-ink/10 px-4 py-3 flex items-center justify-between">
+              <h2>{editingFood ? '編輯食物記錄' : '記錄新食物嘗試'}</h2>
+              <button onClick={onClose} className="btn-icon" aria-label="關閉">
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Form */}
             <div className="p-4 space-y-4">
-              {/* Food Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  食物名稱 <span className="text-red-500">*</span>
+                <label className={LABEL}>
+                  食物名稱 <span className="text-red-600">*</span>
                 </label>
                 <input
                   type="text"
                   value={foodName}
                   onChange={(e) => setFoodName(e.target.value)}
                   placeholder="例如：高麗菜、香蕉、地瓜"
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary focus:ring-0 transition-colors"
+                  className={FIELD}
                 />
               </div>
 
-              {/* Category */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  食物分類
-                </label>
+                <label className={LABEL}>食物分類</label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary focus:ring-0 transition-colors"
+                  className={FIELD}
                 >
                   <option value="">選擇分類（選填）</option>
-                  <option value="蔬菜">🥬 蔬菜</option>
-                  <option value="水果">🍎 水果</option>
-                  <option value="穀類">🌾 穀類</option>
-                  <option value="蛋白質">🍖 蛋白質</option>
-                  <option value="豆類">🫘 豆類</option>
-                  <option value="奶製品">🥛 奶製品</option>
-                  <option value="其他">🍽️ 其他</option>
+                  <option value="蔬菜">蔬菜</option>
+                  <option value="水果">水果</option>
+                  <option value="穀類">穀類</option>
+                  <option value="蛋白質">蛋白質</option>
+                  <option value="豆類">豆類</option>
+                  <option value="奶製品">奶製品</option>
+                  <option value="其他">其他</option>
                 </select>
               </div>
 
-              {/* First Tried Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  首次嘗試日期 <span className="text-red-500">*</span>
+                <label className={LABEL}>
+                  首次嘗試日期 <span className="text-red-600">*</span>
                 </label>
                 <input
                   type="date"
                   value={firstTriedDate}
                   onChange={(e) => setFirstTriedDate(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary focus:ring-0 transition-colors"
+                  className={FIELD}
                 />
               </div>
 
-              {/* Preference */}
+              {/*
+                This was a row of five emoji faces. The preference itself is a real
+                choice, so the glyphs became labels — and chips wrap instead of
+                squeezing five cells into a 360px row.
+              */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  寶寶喜好度
-                </label>
-                <div className="grid grid-cols-5 gap-2">
-                  {[
-                    { value: 'love', emoji: '😍', label: '超愛' },
-                    { value: 'like', emoji: '😊', label: '喜歡' },
-                    { value: 'neutral', emoji: '😐', label: '普通' },
-                    { value: 'dislike', emoji: '😕', label: '不喜歡' },
-                    { value: 'refuse', emoji: '😣', label: '拒絕' },
-                  ].map((pref) => (
+                <label className={LABEL}>寶寶喜好度</label>
+                <div className="flex flex-wrap gap-2">
+                  {PREFERENCES.map((pref) => (
                     <button
                       key={pref.value}
                       type="button"
-                      onClick={() => setPreference(pref.value as FoodPreference)}
-                      className={`
-                        p-3 rounded-xl border-2 transition-all
-                        ${preference === pref.value
-                          ? 'border-primary bg-primary/10'
-                          : 'border-gray-200 hover:border-gray-300'
-                        }
-                      `}
+                      aria-pressed={preference === pref.value}
+                      onClick={() => setPreference(pref.value)}
+                      className={`chip ${preference === pref.value ? 'chip-on' : ''}`}
                     >
-                      <div className="text-2xl mb-1">{pref.emoji}</div>
-                      <div className="text-xs font-medium text-gray-700">{pref.label}</div>
+                      {pref.label}
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* Has Allergy Toggle */}
-              <div className="card bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className={`w-5 h-5 ${hasAllergy ? 'text-red-600' : 'text-gray-400'}`} />
-                    <span className="font-medium text-gray-800">有過敏反應</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setHasAllergy(!hasAllergy)}
-                    className={`
-                      w-12 h-6 rounded-full transition-colors
-                      ${hasAllergy ? 'bg-red-500' : 'bg-gray-300'}
-                    `}
+              <div className="card bg-warm-white flex items-center justify-between">
+                <span className="font-medium">有過敏反應</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={hasAllergy}
+                  aria-label="有過敏反應"
+                  onClick={() => setHasAllergy(!hasAllergy)}
+                  className="h-tap flex items-center shrink-0"
+                >
+                  <span
+                    className={`w-12 h-6 rounded-full flex items-center transition-colors ${
+                      hasAllergy ? 'bg-red-600' : 'bg-ink/25'
+                    }`}
                   >
-                    <div
-                      className={`
-                        w-5 h-5 bg-white rounded-full shadow-sm transition-transform
-                        ${hasAllergy ? 'translate-x-6' : 'translate-x-0.5'}
-                      `}
+                    <span
+                      className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${
+                        hasAllergy ? 'translate-x-6' : 'translate-x-0.5'
+                      }`}
                     />
-                  </button>
-                </div>
+                  </span>
+                </button>
               </div>
 
               {/* Allergy Reactions */}
               {hasAllergy && (
                 <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    過敏反應記錄
-                  </label>
+                  <label className={LABEL}>過敏反應記錄</label>
 
-                  {/* Existing Reactions */}
                   {allergyReactions.map((reaction, index) => (
-                    <div key={index} className="card bg-red-50 border-2 border-red-200">
+                    <div key={index} className="card bg-red-50 border border-red-200">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
                           <div className="font-medium text-red-900 mb-1">
@@ -294,23 +274,24 @@ export default function FoodTrialModal({
                         <button
                           type="button"
                           onClick={() => removeAllergyReaction(index)}
-                          className="flex-shrink-0 w-7 h-7 rounded-full hover:bg-red-200 flex items-center justify-center transition-colors"
+                          className="btn-icon -my-2.5 text-red-600 hover:bg-red-100"
+                          aria-label="移除這筆過敏反應"
                         >
-                          <X className="w-4 h-4 text-red-600" />
+                          <X className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
                   ))}
 
                   {/* Add New Reaction */}
-                  <div className="card bg-yellow-50 border border-yellow-200">
-                    <div className="text-sm font-medium text-gray-700 mb-3">新增過敏反應</div>
+                  <div className="card bg-butter-soft border border-butter/40">
+                    <div className="text-sm font-medium mb-3">新增過敏反應</div>
 
                     <div className="space-y-3">
                       <select
                         value={newReactionType}
                         onChange={(e) => setNewReactionType(e.target.value as AllergyReactionType)}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm"
+                        className={FIELD}
                       >
                         <option value="rash">紅疹</option>
                         <option value="diarrhea">腹瀉</option>
@@ -325,7 +306,7 @@ export default function FoodTrialModal({
                       <select
                         value={newReactionSeverity}
                         onChange={(e) => setNewReactionSeverity(e.target.value as AllergySeverity)}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm"
+                        className={FIELD}
                       >
                         <option value="mild">輕微</option>
                         <option value="moderate">中度</option>
@@ -336,7 +317,7 @@ export default function FoodTrialModal({
                         type="date"
                         value={newReactionDate}
                         onChange={(e) => setNewReactionDate(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm"
+                        className={FIELD}
                       />
 
                       <textarea
@@ -344,13 +325,13 @@ export default function FoodTrialModal({
                         onChange={(e) => setNewReactionDescription(e.target.value)}
                         placeholder="補充說明（選填）"
                         rows={2}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm"
+                        className={`${FIELD} resize-none`}
                       />
 
                       <button
                         type="button"
                         onClick={addAllergyReaction}
-                        className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition-colors"
+                        className="btn-secondary w-full"
                       >
                         <Plus className="w-4 h-4" />
                         新增反應記錄
@@ -362,17 +343,14 @@ export default function FoodTrialModal({
 
               {/* Trial Dates (4x3 Rule Tracking) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  嘗試日期記錄（4x3 法則）
-                </label>
-                <div className="card bg-purple-50 border border-purple-200">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Calendar className="w-4 h-4 text-purple-600" />
-                    <span className="text-sm text-purple-800">已記錄 {trialDates.length} 次嘗試</span>
-                  </div>
+                <label className={LABEL}>嘗試日期記錄（4x3 法則）</label>
+                <div className="card bg-secondary-soft border border-secondary/40">
+                  <p className="text-sm text-ink-muted mb-2">
+                    已記錄 {trialDates.length} 次嘗試
+                  </p>
                   <div className="flex flex-wrap gap-2 mb-3">
                     {trialDates.map((date, index) => (
-                      <span key={index} className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">
+                      <span key={index} className="tag bg-secondary-light text-secondary-dark">
                         {date}
                       </span>
                     ))}
@@ -380,7 +358,7 @@ export default function FoodTrialModal({
                   <button
                     type="button"
                     onClick={addTrialDate}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-purple-500 text-white text-sm font-medium hover:bg-purple-600 transition-colors"
+                    className="btn-secondary w-full"
                   >
                     <Plus className="w-4 h-4" />
                     記錄今天嘗試
@@ -388,32 +366,23 @@ export default function FoodTrialModal({
                 </div>
               </div>
 
-              {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  備註
-                </label>
+                <label className={LABEL}>備註</label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="記錄任何額外資訊..."
                   rows={3}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary focus:ring-0 transition-colors resize-none"
+                  className={`${FIELD} resize-none`}
                 />
               </div>
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-2">
-                <button
-                  onClick={onClose}
-                  className="flex-1 py-3 px-6 rounded-2xl bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition-colors"
-                >
+                <button onClick={onClose} className="btn-secondary flex-1">
                   取消
                 </button>
-                <button
-                  onClick={handleSave}
-                  className="flex-1 py-3 px-6 rounded-full bg-[#7EC8E3] hover:bg-[#6BB8D3] text-white font-semibold shadow-soft hover:shadow-soft-lg transition-all"
-                >
+                <button onClick={handleSave} className="btn-primary flex-1">
                   {editingFood ? '更新' : '儲存'}
                 </button>
               </div>

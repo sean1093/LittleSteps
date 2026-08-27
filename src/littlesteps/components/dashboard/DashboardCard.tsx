@@ -1,53 +1,48 @@
 import { motion } from 'framer-motion';
 import { ReactNode } from 'react';
-import { LucideIcon } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
+import { hoverLift, tap } from '../../../common/ui/motion';
 
 interface DashboardCardProps {
   title: string;
-  icon: LucideIcon;
-  iconColor: string;
-  iconBg: string;
+  /** One line under the title, where the title alone doesn't say what the card holds. */
+  subtitle?: string;
   children: ReactNode;
   onClick?: () => void;
+  /** Faint service tint. The panel is plain white without one. */
   bgColor?: string;
 }
 
 export default function DashboardCard({
   title,
-  icon: Icon,
-  iconColor,
-  iconBg,
+  subtitle,
   children,
   onClick,
-  bgColor = 'bg-white',
+  bgColor = '',
 }: DashboardCardProps) {
-  const cardClasses = onClick
-    ? `${bgColor} rounded-3xl p-6 shadow-soft hover:shadow-soft-lg transition-all cursor-pointer border-2 border-transparent hover:border-[#7EC8E3]/20`
-    : `${bgColor} rounded-3xl p-6 shadow-soft`;
-
   const CardWrapper = onClick ? motion.div : 'div';
-  const motionProps = onClick
-    ? {
-        whileHover: { y: -4 },
-        whileTap: { scale: 0.98 },
-      }
-    : {};
+  const motionProps = onClick ? { whileHover: hoverLift, whileTap: tap } : {};
 
   return (
     <CardWrapper
-      className={cardClasses}
+      className={`${onClick ? 'panel-tap' : 'panel'} ${bgColor}`}
       onClick={onClick}
       {...motionProps}
     >
-      <div className="flex items-center gap-3 mb-4">
-        <div className={`w-12 h-12 rounded-full ${iconBg} flex items-center justify-center shadow-soft`}>
-          <Icon className={`w-6 h-6 ${iconColor}`} />
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <div className="min-w-0">
+          <h3 className="text-ink">{title}</h3>
+          {subtitle && <p className="text-xs text-ink-faint mt-0.5">{subtitle}</p>}
         </div>
-        <h3 className="text-lg font-bold text-gray-800">{title}</h3>
+        {/*
+          The whole card is the tap target. Each summary card used to nest its own
+          "→" button in here with no handler of its own; this is the one affordance.
+        */}
+        {onClick && (
+          <ChevronRight className="w-5 h-5 text-ink-faint shrink-0" aria-hidden="true" />
+        )}
       </div>
-      <div className="space-y-3">
-        {children}
-      </div>
+      <div className="space-y-3">{children}</div>
     </CardWrapper>
   );
 }

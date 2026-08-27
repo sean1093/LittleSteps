@@ -1,7 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Weight, Ruler, CircleDot, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { GrowthRecord } from '../../../types';
 import { getPercentileCategory } from '../../utils/growthCalculator';
+import EmptyState from '../../../common/ui/EmptyState';
+import { SERVICE_THEME } from '../../../common/ui/serviceTheme';
+import { listItem, stagger, tap } from '../../../common/ui/motion';
 
 interface GrowthRecordListProps {
   records: GrowthRecord[];
@@ -10,12 +13,6 @@ interface GrowthRecordListProps {
   onDelete: (recordId: string) => Promise<void>;
   childId: string;
 }
-
-const listItemVariants = {
-  hidden: { opacity: 0, x: -20 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.3 } },
-  exit: { opacity: 0, x: 20, transition: { duration: 0.2 } }
-};
 
 export default function GrowthRecordList({
   records,
@@ -34,74 +31,72 @@ export default function GrowthRecordList({
   };
 
   const getPercentileColor = (percentile?: number): string => {
-    if (!percentile) return 'text-gray-500';
+    if (!percentile) return 'text-ink-faint';
     const category = getPercentileCategory(percentile);
-    if (category === 'low') return 'text-orange-600';
-    if (category === 'high') return 'text-blue-600';
-    return 'text-green-600';
+    if (category === 'low') return 'text-butter-dark';
+    if (category === 'high') return 'text-secondary-dark';
+    return 'text-mint-dark';
   };
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl p-8 shadow-soft text-center">
-        <div className="inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-gray-600 mt-4">載入中...</p>
+      <div className="panel text-center">
+        <div className="inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="text-ink-muted mt-4">載入中...</p>
       </div>
     );
   }
 
   if (records.length === 0) {
     return (
-      <div className="bg-white rounded-2xl p-8 shadow-soft text-center">
-        <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-        <p className="text-gray-600 mb-2">尚無記錄</p>
-        <p className="text-sm text-gray-500">點擊「新增記錄」開始追蹤成長數據</p>
-      </div>
+      <EmptyState
+        theme={SERVICE_THEME.littlesteps}
+        title="尚無記錄"
+        description="點擊「新增記錄」開始追蹤成長數據"
+      />
     );
   }
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-soft">
-      <h2 className="text-xl font-bold text-gray-800 mb-4">歷史記錄</h2>
-      <div className="space-y-3">
+    <div className="panel">
+      <h2 className="mb-4">歷史記錄</h2>
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        animate="visible"
+        className="space-y-3"
+      >
         <AnimatePresence mode="popLayout">
           {records.map((record) => (
             <motion.div
               key={record.id}
-              variants={listItemVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
+              variants={listItem}
+              exit="hidden"
               layout
-              className="border border-gray-200 rounded-xl p-4 hover:border-primary/50 transition-colors"
+              className="border border-ink/10 rounded-xl p-4"
             >
               <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-primary" />
-                  <span className="font-semibold text-gray-800">
-                    {record.date}
-                  </span>
-                </div>
+                <span className="font-semibold">{record.date}</span>
                 <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                  whileTap={tap}
                   onClick={() => handleDelete(record.id)}
-                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  className="btn-icon -my-2.5 text-red-600 hover:bg-red-50"
+                  aria-label="刪除記錄"
                 >
                   <Trash2 className="w-4 h-4" />
                 </motion.button>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              {/*
+                One wash for all three tiles: the label names the field, so a
+                different pastel per measurement was distinguishing nothing.
+                Values are `whitespace-nowrap` — `8.6 kg` wrapped at 360px.
+              */}
+              <div className="grid grid-cols-3 gap-2">
                 {record.weight !== undefined && (
-                  <div className="flex flex-col p-3 bg-blue-50 rounded-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Weight className="w-4 h-4 text-blue-600" />
-                      <span className="text-xs text-gray-600">體重</span>
-                    </div>
-                    <span className="text-lg font-bold text-gray-800">
-                      {record.weight} kg
-                    </span>
+                  <div className="flex flex-col p-2.5 bg-secondary-soft rounded-lg">
+                    <span className="text-xs text-ink-muted mb-1">體重</span>
+                    <span className="font-bold whitespace-nowrap">{record.weight} kg</span>
                     {record.percentile?.weight && (
                       <span className={`text-xs mt-1 font-medium ${getPercentileColor(record.percentile.weight)}`}>
                         P{record.percentile.weight.toFixed(0)}
@@ -111,14 +106,9 @@ export default function GrowthRecordList({
                 )}
 
                 {record.height !== undefined && (
-                  <div className="flex flex-col p-3 bg-green-50 rounded-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Ruler className="w-4 h-4 text-green-600" />
-                      <span className="text-xs text-gray-600">身高</span>
-                    </div>
-                    <span className="text-lg font-bold text-gray-800">
-                      {record.height} cm
-                    </span>
+                  <div className="flex flex-col p-2.5 bg-secondary-soft rounded-lg">
+                    <span className="text-xs text-ink-muted mb-1">身高</span>
+                    <span className="font-bold whitespace-nowrap">{record.height} cm</span>
                     {record.percentile?.height && (
                       <span className={`text-xs mt-1 font-medium ${getPercentileColor(record.percentile.height)}`}>
                         P{record.percentile.height.toFixed(0)}
@@ -128,14 +118,9 @@ export default function GrowthRecordList({
                 )}
 
                 {record.headCircumference !== undefined && (
-                  <div className="flex flex-col p-3 bg-purple-50 rounded-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                      <CircleDot className="w-4 h-4 text-purple-600" />
-                      <span className="text-xs text-gray-600">頭圍</span>
-                    </div>
-                    <span className="text-lg font-bold text-gray-800">
-                      {record.headCircumference} cm
-                    </span>
+                  <div className="flex flex-col p-2.5 bg-secondary-soft rounded-lg">
+                    <span className="text-xs text-ink-muted mb-1">頭圍</span>
+                    <span className="font-bold whitespace-nowrap">{record.headCircumference} cm</span>
                     {record.percentile?.headCircumference && (
                       <span className={`text-xs mt-1 font-medium ${getPercentileColor(record.percentile.headCircumference)}`}>
                         P{record.percentile.headCircumference.toFixed(0)}
@@ -146,14 +131,14 @@ export default function GrowthRecordList({
               </div>
 
               {record.notes && (
-                <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-700">{record.notes}</p>
-                </div>
+                <p className="mt-3 p-3 bg-warm-white rounded-lg text-sm text-ink-muted">
+                  {record.notes}
+                </p>
               )}
             </motion.div>
           ))}
         </AnimatePresence>
-      </div>
+      </motion.div>
     </div>
   );
 }

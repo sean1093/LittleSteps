@@ -1,5 +1,8 @@
 import { motion } from 'framer-motion';
-import { CheckCircle2, Clock, Info, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import EmptyState from '../../../common/ui/EmptyState';
+import { SERVICE_THEME } from '../../../common/ui/serviceTheme';
+import { listItem, stagger } from '../../../common/ui/motion';
 import { FoodTrialRecord } from '../../../types';
 import { toLocalDateKey } from '../../../common/utils/dateHelpers';
 
@@ -82,40 +85,35 @@ export default function FourByThreeTracker({
   });
 
   return (
-    <div className="px-4 space-y-4">
-      {/* Info Card */}
-      <div className="card bg-purple-50/50 border border-purple-200/30">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center flex-shrink-0">
-            <Info className="w-5 h-5 text-white" />
-          </div>
-          <div className="flex-1">
-            <h4 className="font-semibold text-purple-900 mb-1">4×3 試敏法則</h4>
-            <p className="text-sm text-purple-800 leading-relaxed">
-              每種新食物需連續嘗試 <strong>4 天</strong>，每次間隔 <strong>3 天</strong>，觀察是否有過敏反應。
-            </p>
-          </div>
-        </div>
+    <div className="space-y-4">
+      {/* What the 4×3 rule is */}
+      <div className="card bg-secondary-soft">
+        <h4 className="mb-1">4×3 試敏法則</h4>
+        <p className="text-sm text-ink-muted leading-relaxed">
+          每種新食物需連續嘗試 <strong>4 天</strong>，每次間隔 <strong>3 天</strong>，觀察是否有過敏反應。
+        </p>
       </div>
 
-      {/* Summary */}
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-gray-800">追蹤中的食物</h3>
-        <span className="text-sm text-gray-600">{activeFoods.length} 項</span>
+        <h3>追蹤中的食物</h3>
+        <span className="text-sm text-ink-muted">{activeFoods.length} 項</span>
       </div>
 
-      {/* No Active Tracking */}
       {activeFoods.length === 0 && (
-        <div className="card text-center py-12">
-          <CheckCircle2 className="w-16 h-16 text-green-300 mx-auto mb-4" />
-          <p className="text-gray-500 text-sm">目前沒有正在追蹤的食物</p>
-          <p className="text-gray-400 text-xs mt-1">新增食物記錄後會在這裡顯示追蹤進度</p>
-        </div>
+        <EmptyState
+          theme={SERVICE_THEME.littlesteps}
+          title="目前沒有正在追蹤的食物"
+          description="新增食物記錄後會在這裡顯示追蹤進度"
+        />
       )}
 
-      {/* Active Foods List */}
-      <div className="space-y-3">
-        {sortedFoods.map((food, index) => {
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        animate="visible"
+        className="space-y-3"
+      >
+        {sortedFoods.map((food) => {
           const canTry = canTryNow(food);
           const daysUntil = getDaysUntilNext(food);
           const progress = getTrialProgress(food);
@@ -124,122 +122,76 @@ export default function FourByThreeTracker({
           return (
             <motion.div
               key={food.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className={`
-                card cursor-pointer transition-all
-                ${canTry
-                  ? 'bg-[#E8F5E9]/50 border-2 border-[#81C784]/30 shadow-soft'
-                  : 'bg-white border border-gray-200'
-                }
-              `}
+              variants={listItem}
+              className={`card-tap border ${canTry ? 'bg-mint-light/50 border-mint' : 'border-ink/10'}`}
               onClick={() => onViewFood(food)}
             >
-              <div className="flex items-start gap-3">
-                {/* Food Icon */}
-                <div className={`
-                  w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl
-                  ${canTry ? 'bg-green-200' : 'bg-gray-100'}
-                `}>
-                  {food.category === '蔬菜' ? '🥬' :
-                   food.category === '水果' ? '🍎' :
-                   food.category === '穀類' ? '🌾' :
-                   food.category === '蛋白質' ? '🍖' :
-                   food.category === '豆類' ? '🫘' :
-                   '🍽️'}
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="min-w-0">
+                  <h4>{food.foodName}</h4>
+                  {food.category && (
+                    <p className="text-xs text-ink-faint">{food.category}</p>
+                  )}
                 </div>
 
-                {/* Food Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div className="flex-1">
-                      <h4 className="font-bold text-gray-800">{food.foodName}</h4>
-                      {food.category && (
-                        <p className="text-xs text-gray-500">{food.category}</p>
-                      )}
-                    </div>
+                {canTry ? (
+                  <span className="tag shrink-0 bg-mint-dark text-white">可嘗試</span>
+                ) : (
+                  <span className="tag shrink-0 bg-ink/10 text-ink-muted">
+                    {daysUntil} 天後
+                  </span>
+                )}
+              </div>
 
-                    {/* Status Badge */}
-                    {canTry ? (
-                      <span className="flex-shrink-0 px-2 py-1 rounded-full text-xs font-bold bg-green-500 text-white">
-                        可嘗試
-                      </span>
-                    ) : (
-                      <span className="flex-shrink-0 px-2 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
-                        {daysUntil} 天後
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div className="mb-2">
-                    <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-                      <span>進度：{progress.current} / {progress.total} 次</span>
-                      <span>{Math.round(progressPercent)}%</span>
-                    </div>
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${progressPercent}%` }}
-                        transition={{ duration: 0.5, delay: index * 0.1 }}
-                        className={`h-full rounded-full ${
-                          canTry ? 'bg-green-500' : 'bg-purple-500'
-                        }`}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Trial Dates */}
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {(food.trialDates || []).map((date, idx) => (
-                      <span
-                        key={idx}
-                        className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs"
-                      >
-                        Day {idx + 1}: {date}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Next Trial Info */}
-                  {!canTry && (
-                    <div className="flex items-center gap-1 text-xs text-gray-600">
-                      <Clock className="w-3 h-3" />
-                      <span>下次嘗試：{getNextTrialDate(food)}</span>
-                    </div>
-                  )}
-
-                  {/* Action Button */}
-                  {canTry && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onAddTrialDate(food.id);
-                      }}
-                      className="mt-2 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-green-500 text-white text-sm font-medium hover:bg-green-600 transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                      記錄今天嘗試
-                    </button>
-                  )}
+              {/* Progress */}
+              <div className="mb-2">
+                <div className="flex items-center justify-between text-xs text-ink-muted mb-1">
+                  <span>進度：{progress.current} / {progress.total} 次</span>
+                  <span>{Math.round(progressPercent)}%</span>
+                </div>
+                <div className="h-2 bg-ink/10 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progressPercent}%` }}
+                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    className={`h-full rounded-full ${canTry ? 'bg-mint' : 'bg-secondary'}`}
+                  />
                 </div>
               </div>
+
+              <div className="flex flex-wrap gap-1 mb-2">
+                {(food.trialDates || []).map((date, idx) => (
+                  <span key={idx} className="tag bg-secondary-light text-secondary-dark">
+                    Day {idx + 1}: {date}
+                  </span>
+                ))}
+              </div>
+
+              {!canTry && (
+                <p className="text-xs text-ink-muted">下次嘗試：{getNextTrialDate(food)}</p>
+              )}
+
+              {canTry && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddTrialDate(food.id);
+                  }}
+                  className="btn-primary w-full mt-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  記錄今天嘗試
+                </button>
+              )}
             </motion.div>
           );
         })}
-      </div>
+      </motion.div>
 
-      {/* Completed Foods Summary */}
       {foodTrials.length > activeFoods.length && (
-        <div className="card bg-gray-50">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <CheckCircle2 className="w-4 h-4 text-green-600" />
-            <span>
-              {foodTrials.length - activeFoods.length} 種食物已完成 4×3 試敏追蹤
-            </span>
-          </div>
-        </div>
+        <p className="card bg-warm-white text-sm text-ink-muted">
+          {foodTrials.length - activeFoods.length} 種食物已完成 4×3 試敏追蹤
+        </p>
       )}
     </div>
   );

@@ -1,33 +1,22 @@
 import { motion } from 'framer-motion';
 import { Milk, Moon, Baby } from 'lucide-react';
+import { tap } from '../../../common/ui/motion';
 
 interface QuickLogButtonsProps {
   onLogClick: (type: 'feeding' | 'sleep' | 'diaper') => void;
 }
 
 export default function QuickLogButtons({ onLogClick }: QuickLogButtonsProps) {
+  /*
+    Tint + readable ink rather than white on a saturated fill: the old
+    `from-blue-400 to-blue-500` gradients put white text at 3.7:1, and three
+    solid 80px blocks read heavier than the rest of the screen.
+    `hoverGradient` was declared here and never used.
+  */
   const buttons = [
-    {
-      type: 'feeding' as const,
-      icon: Milk,
-      label: '餵奶',
-      gradient: 'from-blue-400 to-blue-500',
-      hoverGradient: 'from-blue-500 to-blue-600',
-    },
-    {
-      type: 'sleep' as const,
-      icon: Moon,
-      label: '睡眠',
-      gradient: 'from-purple-400 to-purple-500',
-      hoverGradient: 'from-purple-500 to-purple-600',
-    },
-    {
-      type: 'diaper' as const,
-      icon: Baby,
-      label: '尿布',
-      gradient: 'from-pink-400 to-pink-500',
-      hoverGradient: 'from-pink-500 to-pink-600',
-    },
+    { type: 'feeding' as const, icon: Milk, label: '餵奶', skin: 'bg-butter-light text-butter-dark' },
+    { type: 'sleep' as const, icon: Moon, label: '睡眠', skin: 'bg-secondary-light text-secondary-dark' },
+    { type: 'diaper' as const, icon: Baby, label: '尿布', skin: 'bg-mint-light text-mint-dark' },
   ];
 
   return (
@@ -38,14 +27,11 @@ export default function QuickLogButtons({ onLogClick }: QuickLogButtonsProps) {
           <motion.button
             key={button.type}
             onClick={() => onLogClick(button.type)}
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.98 }}
+            whileTap={tap}
             className={`
-              w-20 h-20 rounded-2xl shadow-soft
-              bg-gradient-to-br ${button.gradient}
-              hover:shadow-soft-lg
+              w-20 h-20 rounded-2xl shadow-soft ${button.skin}
               flex flex-col items-center justify-center gap-1
-              text-white transition-all duration-200
+              transition-shadow duration-200 hover:shadow-soft-lg
             `}
           >
             <Icon className="w-8 h-8" />

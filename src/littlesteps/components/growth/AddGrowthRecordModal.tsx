@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Save, Weight, Ruler, CircleDot, Calendar } from 'lucide-react';
+import { Save, X } from 'lucide-react';
+import { backdrop, sheet, tap } from '../../../common/ui/motion';
 import { GrowthRecord } from '../../../types';
 import { toLocalDateKey } from '../../../common/utils/dateHelpers';
 
@@ -10,6 +11,10 @@ interface AddGrowthRecordModalProps {
   onAdd: (record: Omit<GrowthRecord, 'id'>) => Promise<void>;
   childId: string;
 }
+
+/* Same recipe as `LogEntryModal`; the four fields below were each styled apart. */
+const FIELD = 'w-full px-4 py-3 rounded-xl border border-ink/15 focus:border-primary-dark transition-colors';
+const LABEL = 'block text-sm font-semibold text-ink mb-2';
 
 export default function AddGrowthRecordModal({
   isOpen,
@@ -63,60 +68,40 @@ export default function AddGrowthRecordModal({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            {...backdrop}
             onClick={onClose}
             className="fixed inset-0 bg-black/50 z-40"
           />
 
-          {/* Modal - Slide up from bottom */}
           <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl z-50 max-h-[90vh] overflow-y-auto"
+            {...sheet}
+            className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl z-50 max-h-[85vh] overflow-y-auto"
           >
             {/* Header */}
-            <div className="sticky top-0 bg-white border-b border-gray-100 flex items-center justify-between p-6 rounded-t-3xl">
-              <h2 className="text-2xl font-bold text-gray-800">新增成長記錄</h2>
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={onClose}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </motion.button>
+            <div className="sticky top-0 bg-white border-b border-ink/10 flex items-center justify-between px-4 py-3 rounded-t-3xl">
+              <h2>新增成長記錄</h2>
+              <button onClick={onClose} className="btn-icon" aria-label="關閉">
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              {/* Date */}
+            <form onSubmit={handleSubmit} className="p-4 space-y-5">
               <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                  <Calendar className="w-4 h-4 text-primary" />
-                  測量日期
-                </label>
+                <label className={LABEL}>測量日期</label>
                 <input
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   max={toLocalDateKey()}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                  className={FIELD}
                 />
               </div>
 
-              {/* Weight */}
               <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                  <Weight className="w-4 h-4 text-blue-600" />
-                  體重 (kg)
-                </label>
+                <label className={LABEL}>體重 (kg)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -125,16 +110,12 @@ export default function AddGrowthRecordModal({
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
                   placeholder="例如: 8.5"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
+                  className={FIELD}
                 />
               </div>
 
-              {/* Height */}
               <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                  <Ruler className="w-4 h-4 text-green-600" />
-                  身高 (cm)
-                </label>
+                <label className={LABEL}>身高 (cm)</label>
                 <input
                   type="number"
                   step="0.1"
@@ -143,16 +124,12 @@ export default function AddGrowthRecordModal({
                   value={height}
                   onChange={(e) => setHeight(e.target.value)}
                   placeholder="例如: 72.5"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all"
+                  className={FIELD}
                 />
               </div>
 
-              {/* Head Circumference */}
               <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                  <CircleDot className="w-4 h-4 text-purple-600" />
-                  頭圍 (cm)
-                </label>
+                <label className={LABEL}>頭圍 (cm)</label>
                 <input
                   type="number"
                   step="0.1"
@@ -161,45 +138,39 @@ export default function AddGrowthRecordModal({
                   value={headCircumference}
                   onChange={(e) => setHeadCircumference(e.target.value)}
                   placeholder="例如: 43.5"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all"
+                  className={FIELD}
                 />
               </div>
 
-              {/* Notes */}
               <div>
-                <label className="text-sm font-semibold text-gray-700 mb-2 block">
-                  備註 (選填)
-                </label>
+                <label className={LABEL}>備註 (選填)</label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="例如: 在家量測"
                   rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all resize-none"
+                  className={`${FIELD} resize-none`}
                 />
               </div>
 
-              {/* Buttons */}
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-2">
                 <motion.button
                   type="button"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileTap={tap}
                   onClick={onClose}
-                  className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors"
+                  className="btn-secondary flex-1"
                 >
                   取消
                 </motion.button>
                 <motion.button
                   type="submit"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileTap={tap}
                   disabled={saving}
-                  className="flex-1 px-6 py-3 bg-[#7EC8E3] hover:bg-[#6BB8D3] text-white font-semibold rounded-full shadow-soft hover:shadow-soft-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="btn-primary flex-1"
                 >
                   {saving ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       <span>儲存中...</span>
                     </>
                   ) : (

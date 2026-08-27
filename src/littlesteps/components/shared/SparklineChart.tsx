@@ -6,11 +6,16 @@ interface SparklineChartProps {
   fillColor?: string;
 }
 
+/*
+  SVG `stroke`/`fill` take paint values, not Tailwind classes, so the token has
+  to arrive here as its literal. `#2F7F9C` is `secondary-dark`: the DEFAULT
+  `secondary` is a 2:1 fill and disappeared at 1.5px.
+*/
 export default function SparklineChart({
   data,
   width = 120,
   height = 32,
-  color = '#7EC8E3',
+  color = '#2F7F9C',
   fillColor,
 }: SparklineChartProps) {
   // Handle edge cases

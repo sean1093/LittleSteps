@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { listItem, stagger } from '../../../common/ui/motion';
 import { DailyLog, SleepData } from '../../../types';
 import { isNightSleep } from '../../utils/sleepAnalysis';
 import { toLocalDateKey } from '../../../common/utils/dateHelpers';
@@ -82,61 +83,62 @@ export default function SleepTimelineChart({ weekLogs }: SleepTimelineChartProps
   };
 
   return (
-    <div className="bg-white rounded-2xl p-4">
-      {/* Time axis (0-24 hours) */}
-      <div className="flex justify-between text-xs text-gray-500 mb-2 px-16">
-        <span>0:00</span>
-        <span>6:00</span>
-        <span>12:00</span>
-        <span>18:00</span>
-        <span>24:00</span>
+    <div className="card">
+      {/*
+        The axis shares the rows' flex structure below, so the hour marks stay
+        over the bars. It used to be a hand-guessed `px-16` and drifted.
+      */}
+      <div className="flex items-center gap-3 mb-2">
+        <div className="w-20 flex-shrink-0" />
+        <div className="flex-1 flex justify-between text-xs text-ink-faint">
+          <span>0:00</span>
+          <span>6:00</span>
+          <span>12:00</span>
+          <span>18:00</span>
+          <span>24:00</span>
+        </div>
       </div>
 
-      {/* Timeline grid */}
-      <div className="space-y-3">
-        {dates.map((date, index) => {
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        animate="visible"
+        className="space-y-3"
+      >
+        {dates.map((date) => {
           const periods = sleepPeriodsByDate[date] || [];
 
           return (
-            <motion.div
-              key={date}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="flex items-center gap-3"
-            >
-              {/* Date label */}
-              <div className="w-20 text-xs text-gray-600 flex-shrink-0">
+            <motion.div key={date} variants={listItem} className="flex items-center gap-3">
+              <div className="w-20 text-xs text-ink-muted flex-shrink-0">
                 {formatDateLabel(date)}
               </div>
 
-              {/* Timeline bar */}
-              <div className="flex-1 relative h-8 bg-gray-50 rounded-lg">
+              <div className="flex-1 relative h-8 bg-warm-white rounded-lg">
                 {/* Hour markers */}
                 <div className="absolute inset-0 flex">
                   {[0, 6, 12, 18, 24].map((hour) => (
                     <div
                       key={hour}
-                      className="absolute h-full border-l border-gray-200"
+                      className="absolute h-full border-l border-ink/10"
                       style={{ left: `${(hour / 24) * 100}%` }}
                     />
                   ))}
                 </div>
 
-                {/* Sleep periods */}
+                {/* Sleep periods: deeper blue reads as night, lighter as a nap. */}
                 {periods.map((period, periodIndex) => {
                   const { left, width } = calculatePosition(period.startHour, period.endHour);
-                  const bgColor = period.isNight
-                    ? 'bg-gradient-to-r from-purple-400 to-purple-500'
-                    : 'bg-gradient-to-r from-blue-300 to-blue-400';
 
                   return (
                     <motion.div
                       key={periodIndex}
                       initial={{ scaleX: 0 }}
                       animate={{ scaleX: 1 }}
-                      transition={{ duration: 0.5, delay: index * 0.05 + periodIndex * 0.1 }}
-                      className={`absolute top-1 bottom-1 ${bgColor} rounded-md shadow-sm`}
+                      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                      className={`absolute top-1 bottom-1 rounded-md ${
+                        period.isNight ? 'bg-secondary-dark' : 'bg-secondary'
+                      }`}
                       style={{ left, width, transformOrigin: 'left' }}
                       title={`${period.duration} 分鐘`}
                     />
@@ -146,16 +148,16 @@ export default function SleepTimelineChart({ weekLogs }: SleepTimelineChartProps
             </motion.div>
           );
         })}
-      </div>
+      </motion.div>
 
       {/* Legend */}
-      <div className="flex justify-center gap-6 mt-4 text-xs text-gray-600">
+      <div className="flex justify-center gap-6 mt-4 text-xs text-ink-muted">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-gradient-to-r from-purple-400 to-purple-500" />
+          <div className="w-4 h-4 rounded bg-secondary-dark" />
           <span>夜間睡眠</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-gradient-to-r from-blue-300 to-blue-400" />
+          <div className="w-4 h-4 rounded bg-secondary" />
           <span>白天小睡</span>
         </div>
       </div>

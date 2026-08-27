@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { listItem, stagger } from '../../../common/ui/motion';
 
 interface BarData {
   label: string;
@@ -14,45 +15,40 @@ interface SimpleBarChartProps {
 
 export default function SimpleBarChart({ data, height = 40 }: SimpleBarChartProps) {
   return (
-    <div className="space-y-4">
-      {data.map((item, index) => {
+    <motion.div
+      variants={stagger}
+      initial="hidden"
+      animate="visible"
+      className="space-y-4"
+    >
+      {data.map((item) => {
         const percentage = item.max > 0 ? Math.min((item.value / item.max) * 100, 100) : 0;
 
         return (
-          <motion.div
-            key={item.label}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
-            {/* Label and Value */}
+          <motion.div key={item.label} variants={listItem}>
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-700">{item.label}</span>
-              <span className="text-sm font-semibold text-gray-800">
-                {item.value.toFixed(1)}h
-              </span>
+              <span className="text-sm font-medium text-ink-muted">{item.label}</span>
+              <span className="text-sm font-semibold">{item.value.toFixed(1)}h</span>
             </div>
 
-            {/* Progress Bar */}
             <div
-              className="w-full bg-gray-100 rounded-full overflow-hidden"
+              className="w-full bg-ink/10 rounded-full overflow-hidden"
               style={{ height: `${height}px` }}
             >
               <motion.div
                 className={`h-full rounded-full ${item.color}`}
                 initial={{ width: 0 }}
                 animate={{ width: `${percentage}%` }}
-                transition={{ duration: 0.8, ease: 'easeOut', delay: index * 0.1 }}
+                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               />
             </div>
 
-            {/* Max Value Label */}
             <div className="flex justify-end mt-1">
-              <span className="text-xs text-gray-500">目標: {item.max}h</span>
+              <span className="text-xs text-ink-faint">目標: {item.max}h</span>
             </div>
           </motion.div>
         );
       })}
-    </div>
+    </motion.div>
   );
 }

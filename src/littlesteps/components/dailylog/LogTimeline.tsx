@@ -1,7 +1,10 @@
 import { motion } from 'framer-motion';
-import { Milk, Moon, Baby, Edit, Trash2, Clock } from 'lucide-react';
+import { Milk, Moon, Baby, Edit, Trash2 } from 'lucide-react';
 import { DailyLog, FeedingData, SleepData, DiaperData } from '../../../types';
 import { formatTime, formatDuration, isSameDay } from '../../../common/utils/dateHelpers';
+import EmptyState from '../../../common/ui/EmptyState';
+import { SERVICE_THEME } from '../../../common/ui/serviceTheme';
+import { listItem, stagger } from '../../../common/ui/motion';
 
 interface LogTimelineProps {
   logs: DailyLog[];
@@ -21,14 +24,18 @@ export default function LogTimeline({ logs, onEdit, onDelete }: LogTimelineProps
     }
   };
 
+  /*
+    The one place a per-row icon earns its keep: three log types interleave in a
+    long scroll, and the glyph is what lets you find "the feeds" at a glance.
+  */
   const getLogIcon = (type: DailyLog['type']) => {
     switch (type) {
       case 'feeding':
-        return <Milk className="w-5 h-5 text-blue-500" />;
+        return <Milk className="w-5 h-5 text-butter-dark" />;
       case 'sleep':
-        return <Moon className="w-5 h-5 text-purple-500" />;
+        return <Moon className="w-5 h-5 text-secondary-dark" />;
       case 'diaper':
-        return <Baby className="w-5 h-5 text-pink-500" />;
+        return <Baby className="w-5 h-5 text-mint-dark" />;
     }
   };
 
@@ -84,87 +91,54 @@ export default function LogTimeline({ logs, onEdit, onDelete }: LogTimelineProps
     }
   };
 
-  // Empty state
   if (todayLogs.length === 0) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center py-12 px-4"
-      >
-        <Clock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-        <p className="text-gray-500 text-lg">今天還沒有記錄</p>
-        <p className="text-gray-400 text-sm mt-2">點擊上方按鈕開始記錄吧！</p>
-      </motion.div>
+      <EmptyState
+        theme={SERVICE_THEME.littlesteps}
+        title="今天還沒有記錄"
+        description="點擊上方按鈕開始記錄吧！"
+      />
     );
   }
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.05 },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 10 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
-  };
-
   return (
     <motion.div
-      variants={containerVariants}
+      variants={stagger}
       initial="hidden"
       animate="visible"
       className="space-y-3"
     >
       {todayLogs.map((log) => (
-        <motion.div
-          key={log.id}
-          variants={itemVariants}
-          whileHover={{ y: -2 }}
-          className="bg-white rounded-2xl p-4 shadow-soft"
-        >
+        <motion.div key={log.id} variants={listItem} className="card">
           <div className="flex items-start gap-3">
-            {/* Icon */}
             <div className="flex-shrink-0 mt-1">{getLogIcon(log.type)}</div>
 
-            {/* Content */}
             <div className="flex-1 min-w-0">
-              {/* Time and Title */}
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm font-semibold text-gray-500">
+                <span className="text-sm font-semibold text-ink-faint">
                   {formatTime(log.timestamp)}
                 </span>
-                <span className="text-base font-bold text-gray-800">
-                  {getLogTitle(log.type)}
-                </span>
+                <span className="font-bold">{getLogTitle(log.type)}</span>
               </div>
 
-              {/* Details */}
-              <p className="text-sm text-gray-600">{getLogDetails(log)}</p>
+              <p className="text-sm text-ink-muted">{getLogDetails(log)}</p>
 
-              {/* Notes */}
               {log.data.notes && (
-                <p className="text-xs text-gray-500 mt-1 italic">
-                  備註：{log.data.notes}
-                </p>
+                <p className="text-xs text-ink-faint mt-1">備註：{log.data.notes}</p>
               )}
             </div>
 
-            {/* Actions */}
-            <div className="flex gap-2 flex-shrink-0">
+            <div className="flex gap-1 flex-shrink-0 -my-2.5">
               <button
                 onClick={() => onEdit(log)}
-                className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"
+                className="btn-icon text-secondary-dark hover:bg-secondary-soft"
                 aria-label="編輯"
               >
                 <Edit className="w-4 h-4" />
               </button>
               <button
                 onClick={() => handleDelete(log)}
-                className="p-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
+                className="btn-icon text-red-600 hover:bg-red-50"
                 aria-label="刪除"
               >
                 <Trash2 className="w-4 h-4" />

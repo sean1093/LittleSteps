@@ -17,7 +17,8 @@ export default function ReportChart({
   data,
   labels,
   type,
-  color = '#7EC8E3',
+  /* `#2F7F9C` is `secondary-dark`; SVG paint can't take a Tailwind class. */
+  color = '#2F7F9C',
   height = 200,
   unit = '',
   recommendedValue,
@@ -59,10 +60,10 @@ export default function ReportChart({
   if (!data || data.length === 0) {
     return (
       <div
-        className="flex items-center justify-center bg-gray-50 rounded-xl"
+        className="flex items-center justify-center bg-warm-white rounded-xl"
         style={{ height }}
       >
-        <p className="text-sm text-gray-400">尚無資料</p>
+        <p className="text-sm text-ink-faint">尚無資料</p>
       </div>
     );
   }
@@ -121,7 +122,7 @@ export default function ReportChart({
               x={PADDING.left - 6}
               y={y + 4}
               textAnchor="end"
-              className="fill-gray-400"
+              className="fill-ink-faint"
               fontSize={10}
             >
               {tick % 1 === 0 ? tick : tick.toFixed(1)}
@@ -138,7 +139,7 @@ export default function ReportChart({
             y1={getY(recommendedValue)}
             x2={VIEW_WIDTH - PADDING.right}
             y2={getY(recommendedValue)}
-            stroke="#f59e0b"
+            stroke="#9A6212"
             strokeWidth={1.5}
             strokeDasharray="6 4"
           />
@@ -146,7 +147,7 @@ export default function ReportChart({
             x={VIEW_WIDTH - PADDING.right + 2}
             y={getY(recommendedValue) + 3}
             fontSize={9}
-            className="fill-amber-500"
+            className="fill-butter-dark"
           >
             {recommendedValue}
             {unit}
@@ -217,7 +218,7 @@ export default function ReportChart({
             y={height - 6}
             textAnchor="middle"
             fontSize={9}
-            className="fill-gray-400"
+            className="fill-ink-faint"
           >
             {label}
           </text>
@@ -230,7 +231,7 @@ export default function ReportChart({
           x={PADDING.left}
           y={PADDING.top - 6}
           fontSize={9}
-          className="fill-gray-400"
+          className="fill-ink-faint"
         >
           ({unit})
         </text>

@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Milestone } from '../../../types';
-import { X, Check, Share2, Lightbulb } from 'lucide-react';
+import { X, Check, Share2 } from 'lucide-react';
+import { backdrop, sheet } from '../../../common/ui/motion';
 import { shareMilestone } from '../../utils/share';
 
 interface MilestoneModalProps {
@@ -42,72 +43,48 @@ export default function MilestoneModal({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            {...backdrop}
             onClick={onClose}
             className="fixed inset-0 bg-black/40 z-40"
           />
 
-          {/* Modal */}
           <motion.div
-            initial={{ opacity: 0, y: '100%' }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl z-50 max-h-[90vh] overflow-y-auto"
+            {...sheet}
+            className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl z-50 max-h-[85vh] overflow-y-auto"
           >
             {/* Header */}
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between">
+            <div className="sticky top-0 bg-white border-b border-ink/10 px-4 py-3 flex items-center justify-between">
               <div className="flex-1 pr-4">
-                <h2 className="text-xl font-bold text-gray-800">
-                  {milestone.title}
-                </h2>
+                <h2>{milestone.title}</h2>
                 {isCompleted && achievedDate && (
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-ink-faint mt-1">
                     完成日期: {achievedDate}
                   </p>
                 )}
               </div>
-              <button
-                onClick={onClose}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
-              >
+              <button onClick={onClose} className="btn-icon" aria-label="關閉">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Content */}
             <div className="px-4 py-6 space-y-6">
-              {/* Summary */}
+              <p className="leading-relaxed">{milestone.summary}</p>
+
               <div>
-                <p className="text-gray-700 leading-relaxed">
-                  {milestone.summary}
-                </p>
+                <h3 className="mb-2">詳細說明</h3>
+                <p className="text-ink-muted leading-relaxed">{milestone.details}</p>
               </div>
 
-              {/* Details */}
-              <div>
-                <h3 className="font-semibold text-gray-800 mb-2">詳細說明</h3>
-                <p className="text-gray-600 leading-relaxed">
-                  {milestone.details}
-                </p>
-              </div>
-
-              {/* Tips */}
               {milestone.tips && milestone.tips.length > 0 && (
                 <div>
-                  <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                    <Lightbulb className="w-5 h-5 text-primary" />
-                    練習小撇步
-                  </h3>
+                  <h3 className="mb-3">練習小撇步</h3>
                   <ul className="space-y-2">
                     {milestone.tips.map((tip, index) => (
                       <li key={index} className="flex gap-2">
-                        <span className="text-primary flex-shrink-0">•</span>
-                        <span className="text-gray-600">{tip}</span>
+                        <span className="text-primary-dark flex-shrink-0">•</span>
+                        <span className="text-ink-muted">{tip}</span>
                       </li>
                     ))}
                   </ul>
@@ -116,24 +93,15 @@ export default function MilestoneModal({
             </div>
 
             {/* Actions */}
-            <div className="sticky bottom-0 bg-white border-t border-gray-100 px-4 py-4 flex gap-3">
+            <div className="sticky bottom-0 bg-white border-t border-ink/10 px-4 py-4 flex gap-3">
               <button
                 onClick={onToggle}
-                className={`
-                  flex-1 py-3 px-6 rounded-2xl font-medium transition-all flex items-center justify-center gap-2
-                  ${isCompleted
-                    ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    : 'bg-primary text-white shadow-soft hover:bg-primary-dark'
-                  }
-                `}
+                className={`flex-1 ${isCompleted ? 'btn-secondary' : 'btn-primary'}`}
               >
                 <Check className="w-5 h-5" />
                 {isCompleted ? '已完成' : '標記完成'}
               </button>
-              <button
-                onClick={handleShare}
-                className="px-6 py-3 rounded-2xl bg-secondary text-white shadow-soft hover:bg-secondary-dark transition-all flex items-center gap-2"
-              >
+              <button onClick={handleShare} className="btn-secondary">
                 <Share2 className="w-5 h-5" />
                 分享
               </button>

@@ -1,4 +1,3 @@
-import { Baby } from 'lucide-react';
 import DashboardCard from '../dashboard/DashboardCard';
 import { MilestoneProgress } from '../../../types';
 import { calculateMilestoneSummary } from '../../../common/utils/summaryCalculator';
@@ -15,52 +14,40 @@ export default function MilestoneSummaryCard({
   const summary = calculateMilestoneSummary(milestoneProgress);
 
   return (
-    <DashboardCard
-      title="里程碑追蹤"
-      icon={Baby}
-      iconColor="text-[#FF9B9B]"
-      iconBg="bg-[#FFE5E5]"
-      onClick={onNavigate}
-      bgColor="bg-[#FFE5E5]/30"
-    >
-      {/* Progress Stats */}
+    <DashboardCard title="里程碑追蹤" onClick={onNavigate} bgColor="bg-primary-light/30">
       <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-bold text-[#FF9B9B]">
+        <span className="text-2xl font-bold text-primary-dark">
           {summary.achievedCount}
         </span>
-        <span className="text-gray-600">
+        <span className="text-ink-muted">
           / {summary.totalMilestones} 已達成
         </span>
       </div>
 
-      {/* Progress Bar */}
-      <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+      <div className="w-full h-2 bg-ink/10 rounded-full overflow-hidden">
         <div
-          className="h-full bg-[#FF9B9B] transition-all duration-500"
+          className="h-full bg-primary transition-all duration-500"
           style={{ width: `${summary.achievementRate}%` }}
         />
       </div>
 
-      {/* Recent Achievements */}
-      {summary.recentAchievements.length > 0 && (
-        <div className="pt-2 border-t border-gray-200">
-          <p className="text-xs font-medium text-gray-500 mb-2">最近達成</p>
+      {summary.recentAchievements.length > 0 ? (
+        <div className="pt-2 border-t border-ink/10">
+          <p className="text-xs font-medium text-ink-faint mb-2">最近達成</p>
           <div className="space-y-1">
             {summary.recentAchievements.map((achievement) => (
               <div
                 key={achievement.id}
-                className="text-sm text-gray-700 flex items-start gap-2"
+                className="text-sm text-ink flex items-start gap-2"
               >
-                <span className="text-[#FF9B9B]">•</span>
+                <span className="text-primary-dark">•</span>
                 <span className="flex-1">{achievement.title}</span>
               </div>
             ))}
           </div>
         </div>
-      )}
-
-      {summary.recentAchievements.length === 0 && (
-        <p className="text-sm text-gray-500 italic">尚無達成記錄</p>
+      ) : (
+        <p className="text-sm text-ink-faint">尚無達成記錄</p>
       )}
     </DashboardCard>
   );

@@ -9,13 +9,6 @@ interface PoopSummaryCardProps {
   onNavigate: () => void;
 }
 
-/**
- * Custom icon component using poop emoji for the DashboardCard header
- */
-function PoopIcon({ className }: { className?: string }) {
-  return <span className={className} style={{ fontSize: '1.5rem' }}>{'💩'}</span>;
-}
-
 export default function PoopSummaryCard({
   dailyLogs,
   onNavigate,
@@ -57,27 +50,19 @@ export default function PoopSummaryCard({
   const isWarning = hoursSinceLastPoop !== null && hoursSinceLastPoop > 48;
 
   return (
-    <DashboardCard
-      title="排便追蹤"
-      icon={PoopIcon as unknown as import('lucide-react').LucideIcon}
-      iconColor="text-amber-700"
-      iconBg="bg-[#FFF3E0]"
-      onClick={onNavigate}
-      bgColor="bg-[#FFF3E0]/30"
-    >
+    <DashboardCard title="排便追蹤" onClick={onNavigate} bgColor="bg-butter-light/30">
       {lastPoopTime ? (
         <>
-          {/* Last Poop Time */}
           <div className={`rounded-xl p-3 ${isWarning ? 'bg-red-50' : 'bg-white'}`}>
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xs text-gray-600 mb-1">上次排便</div>
-                <div className={`text-lg font-bold ${isWarning ? 'text-red-600' : 'text-amber-700'}`}>
+                <div className="text-xs text-ink-muted mb-1">上次排便</div>
+                <div className={`text-lg font-bold ${isWarning ? 'text-red-600' : 'text-butter-dark'}`}>
                   {formatRelativeTime(hoursSinceLastPoop!)}
                 </div>
               </div>
               {isWarning && (
-                <div className="flex items-center gap-1 text-red-500">
+                <div className="flex items-center gap-1 text-red-600">
                   <AlertTriangle className="w-5 h-5" />
                   <span className="text-xs font-medium">留意</span>
                 </div>
@@ -85,35 +70,23 @@ export default function PoopSummaryCard({
             </div>
           </div>
 
-          {/* 7-day Sparkline */}
           <div className="bg-white rounded-xl p-3">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-gray-600">近 7 天趨勢</span>
-              <span className="text-xs text-gray-500">共 {total7Days} 次</span>
+              <span className="text-xs text-ink-muted">近 7 天趨勢</span>
+              <span className="text-xs text-ink-faint">共 {total7Days} 次</span>
             </div>
+            {/* `#9A6212` is `butter-dark`; SVG paint can't take a Tailwind class. */}
             <SparklineChart
               data={sparklineData}
               width={200}
               height={36}
-              color="#D97706"
-              fillColor="#D97706"
+              color="#9A6212"
+              fillColor="#9A6212"
             />
-          </div>
-
-          {/* View Details Link */}
-          <div className="pt-3 border-t border-gray-200">
-            <button className="text-sm text-amber-600 hover:text-amber-700 font-medium transition-colors">
-              查看詳細記錄 →
-            </button>
           </div>
         </>
       ) : (
-        <div className="text-center py-4">
-          <p className="text-gray-500 mb-3">尚無排便記錄</p>
-          <button className="text-sm text-amber-600 hover:text-amber-700 font-medium transition-colors">
-            開始記錄 →
-          </button>
-        </div>
+        <p className="text-center py-4 text-ink-faint">尚無排便記錄</p>
       )}
     </DashboardCard>
   );

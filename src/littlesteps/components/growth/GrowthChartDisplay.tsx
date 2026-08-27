@@ -5,7 +5,8 @@ import {
   getPercentileValue,
   WHO_MAX_AGE_MONTHS,
 } from '../../data/growthChartData';
-import { TrendingUp, AlertTriangle } from 'lucide-react';
+import EmptyState from '../../../common/ui/EmptyState';
+import { SERVICE_THEME } from '../../../common/ui/serviceTheme';
 
 interface GrowthChartDisplayProps {
   records: GrowthRecord[];
@@ -95,26 +96,35 @@ export default function GrowthChartDisplay({
 
   if (!chartData) {
     return (
-      <div className="bg-white rounded-2xl p-8 shadow-soft text-center">
-        <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-        <p className="text-gray-600 mb-2">無法顯示圖表</p>
-        <p className="text-sm text-gray-500">
-          {!gender || !birthday
+      <EmptyState
+        theme={SERVICE_THEME.littlesteps}
+        title="無法顯示圖表"
+        description={
+          !gender || !birthday
             ? '需要設定寶寶的性別和生日'
-            : '尚無此項目的測量記錄'}
-        </p>
-      </div>
+            : '尚無此項目的測量記錄'
+        }
+      />
     );
   }
 
   const { recordsWithAge, percentileCurves, maxAge, minValue, maxValue } = chartData;
 
-  // Calculate chart dimensions
-  const width = 800;
-  const height = 500;
-  const padding = { top: 40, right: 80, bottom: 60, left: 60 };
+  /*
+    A phone-sized coordinate space, like `ReportChart`. This used to be 800x500
+    with no viewBox, so reading the curve meant scrolling sideways; scaling that
+    box down instead would have shrunk every label to ~5px.
+  */
+  const width = 360;
+  const height = 280;
+  const padding = { top: 24, right: 32, bottom: 40, left: 36 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
+
+  // Cap the x axis at ~8 labels so month ticks don't collide at 360px.
+  const monthStep = Math.max(3, Math.ceil(maxAge / 8 / 3) * 3);
+  const monthTicks: number[] = [];
+  for (let m = 0; m <= maxAge; m += monthStep) monthTicks.push(m);
 
   // Scales
   const xScale = (ageMonths: number) => {
@@ -151,166 +161,155 @@ export default function GrowthChartDisplay({
   const label = getLabel();
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-soft">
-      <div className="flex items-center gap-2 mb-4">
-        <TrendingUp className="w-5 h-5 text-primary" />
-        <h2 className="text-xl font-bold text-gray-800">
-          {label.name}成長曲線圖 (WHO 標準)
-        </h2>
-      </div>
+    <div className="panel">
+      <h2 className="mb-4">{label.name}成長曲線圖 (WHO 標準)</h2>
 
-      <div className="overflow-x-auto">
-        <svg width={width} height={height} className="mx-auto">
-          {/* Grid lines */}
-          {[...Array(5)].map((_, i) => {
-            const y = padding.top + (chartHeight / 4) * i;
-            return (
-              <line
-                key={`grid-${i}`}
-                x1={padding.left}
-                y1={y}
-                x2={width - padding.right}
-                y2={y}
-                stroke="#e5e7eb"
-                strokeWidth="1"
-              />
-            );
-          })}
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="xMidYMid meet"
+        className="w-full h-auto"
+      >
+        {/* Grid lines */}
+        {[...Array(5)].map((_, i) => {
+          const y = padding.top + (chartHeight / 4) * i;
+          return (
+            <line
+              key={`grid-${i}`}
+              x1={padding.left}
+              y1={y}
+              x2={width - padding.right}
+              y2={y}
+              stroke="#e5e7eb"
+              strokeWidth="1"
+            />
+          );
+        })}
 
-          {/* WHO Percentile curves */}
-          {percentileCurves.map((curve) => (
-            <g key={`curve-${curve.percentile}`}>
-              <path
-                d={generatePath(curve.points)}
-                fill="none"
-                stroke={
-                  curve.percentile === 50
-                    ? '#3b82f6'
-                    : curve.percentile === 3 || curve.percentile === 97
-                    ? '#ef4444'
-                    : '#94a3b8'
-                }
-                strokeWidth={curve.percentile === 50 ? 2 : 1}
-                strokeDasharray={curve.percentile === 50 ? '0' : '4,4'}
-              />
-              <text
-                x={width - padding.right + 5}
-                y={yScale(curve.points[curve.points.length - 1].value)}
-                fontSize="12"
-                fill="#6b7280"
-                dominantBaseline="middle"
-              >
-                P{curve.percentile}
-              </text>
-            </g>
-          ))}
-
-          {/* Baby's data points */}
-          {recordsWithAge.map((record, index) => (
-            <g key={`point-${index}`}>
-              <circle
-                cx={xScale(record.ageMonths)}
-                cy={yScale(record.value)}
-                r="6"
-                fill="#f472b6"
-                stroke="white"
-                strokeWidth="2"
-              />
-              {index === recordsWithAge.length - 1 && (
-                <text
-                  x={xScale(record.ageMonths)}
-                  y={yScale(record.value) - 15}
-                  fontSize="12"
-                  fill="#be185d"
-                  textAnchor="middle"
-                  fontWeight="bold"
-                >
-                  {record.value} {label.unit}
-                </text>
-              )}
-            </g>
-          ))}
-
-          {/* Connect baby's data points */}
-          {recordsWithAge.length > 1 && (
+        {/* WHO Percentile curves. `#2F7F9C` is `secondary-dark`. */}
+        {percentileCurves.map((curve) => (
+          <g key={`curve-${curve.percentile}`}>
             <path
-              d={generatePath(recordsWithAge)}
+              d={generatePath(curve.points)}
               fill="none"
-              stroke="#ec4899"
+              stroke={
+                curve.percentile === 50
+                  ? '#2F7F9C'
+                  : curve.percentile === 3 || curve.percentile === 97
+                  ? '#ef4444'
+                  : '#94a3b8'
+              }
+              strokeWidth={curve.percentile === 50 ? 2 : 1}
+              strokeDasharray={curve.percentile === 50 ? '0' : '4,4'}
+            />
+            <text
+              x={width - padding.right + 4}
+              y={yScale(curve.points[curve.points.length - 1].value)}
+              fontSize="10"
+              fill="#6b7280"
+              dominantBaseline="middle"
+            >
+              P{curve.percentile}
+            </text>
+          </g>
+        ))}
+
+        {/* Baby's data points. `#B84A50` is `primary-dark`. */}
+        {recordsWithAge.map((record, index) => (
+          <g key={`point-${index}`}>
+            <circle
+              cx={xScale(record.ageMonths)}
+              cy={yScale(record.value)}
+              r="4"
+              fill="#B84A50"
+              stroke="white"
               strokeWidth="2"
             />
-          )}
+            {index === recordsWithAge.length - 1 && (
+              <text
+                x={xScale(record.ageMonths)}
+                y={yScale(record.value) - 12}
+                fontSize="10"
+                fill="#B84A50"
+                textAnchor="middle"
+                fontWeight="bold"
+              >
+                {record.value} {label.unit}
+              </text>
+            )}
+          </g>
+        ))}
 
-          {/* X-axis */}
-          <line
-            x1={padding.left}
-            y1={height - padding.bottom}
-            x2={width - padding.right}
-            y2={height - padding.bottom}
-            stroke="#374151"
+        {/* Connect baby's data points */}
+        {recordsWithAge.length > 1 && (
+          <path
+            d={generatePath(recordsWithAge)}
+            fill="none"
+            stroke="#B84A50"
             strokeWidth="2"
           />
-          {[...Array(Math.ceil(maxAge / 3) + 1)].map((_, i) => {
-            const ageMonths = i * 3;
-            if (ageMonths > maxAge) return null;
-            const x = xScale(ageMonths);
-            return (
-              <g key={`x-label-${i}`}>
-                <line
-                  x1={x}
-                  y1={height - padding.bottom}
-                  x2={x}
-                  y2={height - padding.bottom + 6}
-                  stroke="#374151"
-                  strokeWidth="2"
-                />
-                <text
-                  x={x}
-                  y={height - padding.bottom + 20}
-                  fontSize="12"
-                  fill="#6b7280"
-                  textAnchor="middle"
-                >
-                  {ageMonths}月
-                </text>
-              </g>
-            );
-          })}
+        )}
 
-          {/* Y-axis */}
-          <line
-            x1={padding.left}
-            y1={padding.top}
-            x2={padding.left}
-            y2={height - padding.bottom}
-            stroke="#374151"
-            strokeWidth="2"
-          />
-          <text
-            x={padding.left - 40}
-            y={padding.top - 10}
-            fontSize="14"
-            fill="#374151"
-            fontWeight="bold"
-          >
-            {label.name} ({label.unit})
-          </text>
-        </svg>
-      </div>
+        {/* X-axis */}
+        <line
+          x1={padding.left}
+          y1={height - padding.bottom}
+          x2={width - padding.right}
+          y2={height - padding.bottom}
+          stroke="#374151"
+          strokeWidth="1.5"
+        />
+        {monthTicks.map((ageMonths) => {
+          const x = xScale(ageMonths);
+          return (
+            <g key={`x-label-${ageMonths}`}>
+              <line
+                x1={x}
+                y1={height - padding.bottom}
+                x2={x}
+                y2={height - padding.bottom + 5}
+                stroke="#374151"
+                strokeWidth="1.5"
+              />
+              <text
+                x={x}
+                y={height - padding.bottom + 17}
+                fontSize="10"
+                fill="#6b7280"
+                textAnchor="middle"
+              >
+                {ageMonths}月
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Y-axis */}
+        <line
+          x1={padding.left}
+          y1={padding.top}
+          x2={padding.left}
+          y2={height - padding.bottom}
+          stroke="#374151"
+          strokeWidth="1.5"
+        />
+        <text x={2} y={padding.top - 10} fontSize="11" fill="#374151" fontWeight="bold">
+          {label.name} ({label.unit})
+        </text>
+      </svg>
 
       {/* Legend */}
-      <div className="mt-6 flex flex-wrap gap-4 justify-center text-sm">
+      <div className="mt-5 flex flex-wrap gap-4 justify-center text-sm">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-0.5 bg-blue-500"></div>
-          <span className="text-gray-600">WHO 第50百分位</span>
+          <div className="w-8 h-0.5 bg-secondary-dark" />
+          <span className="text-ink-muted">WHO 第50百分位</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-8 h-0.5 bg-gray-400 border-dashed border-t-2"></div>
-          <span className="text-gray-600">WHO 其他百分位</span>
+          <div className="w-8 h-0.5 bg-ink-faint" />
+          <span className="text-ink-muted">WHO 其他百分位</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-pink-500 rounded-full"></div>
-          <span className="text-gray-600">寶寶數據</span>
+          <div className="w-3 h-3 bg-primary-dark rounded-full" />
+          <span className="text-ink-muted">寶寶數據</span>
         </div>
       </div>
     </div>

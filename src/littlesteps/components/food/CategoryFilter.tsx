@@ -8,7 +8,7 @@ interface CategoryFilterProps {
 
 export default function CategoryFilter({ categories, selected, onChange }: CategoryFilterProps) {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide pr-4">
+    <div className="row-bleed flex gap-2 pb-2">
       {categories.map((category) => {
         const IconComponent = getLucideIcon(category.icon);
 
@@ -16,13 +16,7 @@ export default function CategoryFilter({ categories, selected, onChange }: Categ
           <button
             key={category.value}
             onClick={() => onChange(category.value)}
-            className={`
-              flex items-center gap-2 px-4 py-2 rounded-2xl font-medium whitespace-nowrap transition-all
-              ${selected === category.value
-                ? 'bg-secondary text-white shadow-soft'
-                : 'bg-white text-gray-600 hover:bg-gray-50'
-              }
-            `}
+            className={`chip shrink-0 ${selected === category.value ? 'chip-on' : ''}`}
           >
             {IconComponent && <IconComponent className="w-4 h-4" />}
             <span>{category.label}</span>

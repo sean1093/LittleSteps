@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import { backdrop, sheet } from '../../../common/ui/motion';
 import { DailyLog, FeedingData, SleepData, DiaperData } from '../../../types';
 import { getCurrentDateTimeLocal, dateTimeLocalToISO, calculateDuration } from '../../../common/utils/dateHelpers';
 
@@ -11,6 +12,10 @@ interface LogEntryModalProps {
   logType: 'feeding' | 'sleep' | 'diaper';
   editingLog?: DailyLog | null;
 }
+
+/* Repeated verbatim on eight fields below. */
+const FIELD = 'w-full px-4 py-3 rounded-xl border border-ink/15 focus:border-primary-dark transition-colors';
+const LABEL = 'block text-sm font-medium text-ink mb-1';
 
 export default function LogEntryModal({
   isOpen,
@@ -139,8 +144,6 @@ export default function LogEntryModal({
     }
   };
 
-  if (!isOpen) return null;
-
   const getTitle = () => {
     const prefix = editingLog ? '編輯' : '新增';
     switch (logType) {
@@ -157,60 +160,48 @@ export default function LogEntryModal({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            {...backdrop}
             onClick={onClose}
-            className="fixed inset-0 bg-black/40 z-50"
+            className="fixed inset-0 bg-black/40 z-40"
           />
 
-          {/* Modal */}
+          {/*
+            A bottom sheet, like every other modal in the app. This one used to be
+            a centred dialog with no scroll, so on a phone with the keyboard up the
+            submit button was unreachable — and it is the most-used form here.
+          */}
           <motion.div
-            initial={{ opacity: 0, y: '-50%', x: '-50%' }}
-            animate={{ opacity: 1, y: '-50%', x: '-50%' }}
-            exit={{ opacity: 0, y: '-50%', x: '-50%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed top-1/2 left-1/2 w-11/12 max-w-md bg-white rounded-3xl shadow-xl z-50 p-6"
+            {...sheet}
+            className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl z-50 max-h-[85vh] overflow-y-auto"
           >
-            {/* Header */}
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-800">{getTitle()}</h2>
-              <button
-                onClick={onClose}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-600" />
+            <div className="sticky top-0 bg-white border-b border-ink/10 px-4 py-3 flex items-center justify-between">
+              <h2>{getTitle()}</h2>
+              <button onClick={onClose} className="btn-icon" aria-label="關閉">
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Feeding Form */}
+            <form onSubmit={handleSubmit} className="p-4 space-y-4">
               {logType === 'feeding' && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      時間 *
-                    </label>
+                    <label className={LABEL}>時間 *</label>
                     <input
                       type="datetime-local"
                       value={timestamp}
                       onChange={(e) => setTimestamp(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-primary focus:border-primary transition-colors"
+                      className={FIELD}
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      類型 *
-                    </label>
+                    <label className={LABEL}>類型 *</label>
                     <select
                       value={feedingType}
                       onChange={(e) => setFeedingType(e.target.value as FeedingData['feedingType'])}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-primary focus:border-primary transition-colors"
+                      className={FIELD}
                       required
                     >
                       <option value="breast_left">母乳左側</option>
@@ -222,28 +213,24 @@ export default function LogEntryModal({
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      時長（分鐘）
-                    </label>
+                    <label className={LABEL}>時長（分鐘）</label>
                     <input
                       type="number"
                       value={duration}
                       onChange={(e) => setDuration(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-primary focus:border-primary transition-colors"
+                      className={FIELD}
                       placeholder="例如: 15"
                       min="0"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      奶量（ml）
-                    </label>
+                    <label className={LABEL}>奶量（ml）</label>
                     <input
                       type="number"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-primary focus:border-primary transition-colors"
+                      className={FIELD}
                       placeholder="例如: 120"
                       min="0"
                     />
@@ -251,40 +238,33 @@ export default function LogEntryModal({
                 </>
               )}
 
-              {/* Sleep Form */}
               {logType === 'sleep' && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      開始時間 *
-                    </label>
+                    <label className={LABEL}>開始時間 *</label>
                     <input
                       type="datetime-local"
                       value={startTime}
                       onChange={(e) => setStartTime(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-primary focus:border-primary transition-colors"
+                      className={FIELD}
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      結束時間
-                    </label>
+                    <label className={LABEL}>結束時間</label>
                     <input
                       type="datetime-local"
                       value={endTime}
                       onChange={(e) => setEndTime(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-primary focus:border-primary transition-colors"
+                      className={FIELD}
                     />
-                    <p className="mt-1 text-xs text-gray-500">
-                      不填表示還在睡
-                    </p>
+                    <p className="mt-1 text-xs text-ink-faint">不填表示還在睡</p>
                   </div>
 
                   {endTime && (
-                    <div className="bg-blue-50 rounded-xl p-3">
-                      <p className="text-sm text-blue-800">
+                    <div className="bg-secondary-light rounded-xl p-3">
+                      <p className="text-sm text-secondary-dark">
                         時長：{calculateDuration(dateTimeLocalToISO(startTime), dateTimeLocalToISO(endTime))} 分鐘
                       </p>
                     </div>
@@ -292,30 +272,25 @@ export default function LogEntryModal({
                 </>
               )}
 
-              {/* Diaper Form */}
               {logType === 'diaper' && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      時間 *
-                    </label>
+                    <label className={LABEL}>時間 *</label>
                     <input
                       type="datetime-local"
                       value={timestamp}
                       onChange={(e) => setTimestamp(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-primary focus:border-primary transition-colors"
+                      className={FIELD}
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      類型 *
-                    </label>
+                    <label className={LABEL}>類型 *</label>
                     <select
                       value={diaperType}
                       onChange={(e) => setDiaperType(e.target.value as DiaperData['type'])}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-primary focus:border-primary transition-colors"
+                      className={FIELD}
                       required
                     >
                       <option value="pee">小便</option>
@@ -326,13 +301,11 @@ export default function LogEntryModal({
 
                   {(diaperType === 'poop' || diaperType === 'both') && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        性狀
-                      </label>
+                      <label className={LABEL}>性狀</label>
                       <select
                         value={consistency}
                         onChange={(e) => setConsistency(e.target.value as DiaperData['consistency'])}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-primary focus:border-primary transition-colors"
+                        className={FIELD}
                       >
                         <option value="normal">正常</option>
                         <option value="soft">軟便</option>
@@ -343,34 +316,25 @@ export default function LogEntryModal({
                 </>
               )}
 
-              {/* Common Notes Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  備註
-                </label>
+                <label className={LABEL}>備註</label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-primary focus:border-primary transition-colors resize-none"
+                  className={`${FIELD} resize-none`}
                   rows={3}
                   placeholder="選填"
                   disabled={isSubmitting}
                 />
               </div>
 
-              {/* Error Message */}
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-3">
                   <p className="text-sm text-red-800">{error}</p>
                 </div>
               )}
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-3 bg-gradient-to-r from-primary to-secondary text-white font-semibold rounded-xl shadow-soft hover:shadow-soft-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+              <button type="submit" disabled={isSubmitting} className="btn-primary w-full">
                 {isSubmitting ? '儲存中...' : (editingLog ? '更新' : '儲存')}
               </button>
             </form>
