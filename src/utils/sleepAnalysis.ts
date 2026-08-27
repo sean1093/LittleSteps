@@ -31,16 +31,6 @@ export interface SleepAdvice {
 }
 
 /**
- * 計算寶寶月齡
- */
-export function calculateAge(birthday: string): number {
-  const birth = new Date(birthday);
-  const now = new Date();
-  const months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
-  return Math.max(0, months);
-}
-
-/**
  * 判斷是否為夜間睡眠（18:00-06:00 之間開始）
  */
 export function isNightSleep(startTime: string): boolean {

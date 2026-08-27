@@ -5,6 +5,8 @@ import { logPageView } from './lib/firebase';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useDailyLogs } from './littlesteps/hooks/useDailyLogs';
 import { useChildStore } from './common/hooks/useChildStore';
+import { useCareTasks } from './littleexplorer/hooks/useCareTasks';
+import { useDiary } from './littleexplorer/hooks/useDiary';
 import Sidebar from './common/components/Sidebar';
 import MainLandingPage from './common/pages/MainLandingPage';
 import LandingPage from './common/pages/LandingPage';
@@ -23,6 +25,10 @@ const BabyOasisPage = lazy(() => import('./babyoasis/pages/BabyOasisPage'));
 const BabyWikiPage = lazy(() => import('./littlesteps/pages/BabyWikiPage'));
 const ClinicSummaryPage = lazy(() => import('./littlesteps/pages/ClinicSummaryPage'));
 const ReportPage = lazy(() => import('./littlesteps/pages/ReportPage'));
+const DevelopmentPage = lazy(() => import('./littleexplorer/pages/DevelopmentPage'));
+const RemindersPage = lazy(() => import('./littleexplorer/pages/RemindersPage'));
+const DiaryPage = lazy(() => import('./littleexplorer/pages/DiaryPage'));
+const ToddlerWikiPage = lazy(() => import('./littleexplorer/pages/ToddlerWikiPage'));
 import FeedbackButton from './common/components/FeedbackButton';
 
 function AppContent() {
@@ -41,6 +47,12 @@ function AppContent() {
     joinChild,
     updateChild,
     deleteChild,
+    currentChildDevelopmentProgress,
+    toggleDevelopmentCheck,
+    upsertCareTaskRecord,
+    addDiaryEntry,
+    updateDiaryEntry,
+    deleteDiaryEntry,
     setCurrentChild: handleSetCurrentChild,
   } = useChildStore(user);
 
@@ -64,6 +76,10 @@ function AppContent() {
       '#/littlesteps/report': 'littlesteps/report',
       '#/littlebloom': 'littlebloom',
       '#/littlebloom/wiki': 'littlebloom/wiki',
+      '#/littleexplorer': 'littleexplorer',
+      '#/littleexplorer/reminders': 'littleexplorer/reminders',
+      '#/littleexplorer/diary': 'littleexplorer/diary',
+      '#/littleexplorer/wiki': 'littleexplorer/wiki',
       '#/babyoasis': 'babyoasis'
     };
     return pageMap[hash] || 'home';
@@ -75,6 +91,11 @@ function AppContent() {
 
   // Get daily logs for current child
   const { logs: dailyLogs } = useDailyLogs(currentChildId, user);
+  const { tasks: careTasks } = useCareTasks(currentChild);
+  const { entries: diaryEntries } = useDiary(currentChildId, user);
+  const reminderBadge = careTasks.filter(
+    (task) => task.status === 'overdue' || task.status === 'due',
+  ).length;
 
 
   // Auto-redirect to dashboard when user logs in or adds first baby
@@ -124,6 +145,10 @@ function AppContent() {
       'littlesteps/report': '#/littlesteps/report',
       'littlebloom': '#/littlebloom',
       'littlebloom/wiki': '#/littlebloom/wiki',
+      'littleexplorer': '#/littleexplorer',
+      'littleexplorer/reminders': '#/littleexplorer/reminders',
+      'littleexplorer/diary': '#/littleexplorer/diary',
+      'littleexplorer/wiki': '#/littleexplorer/wiki',
       'babyoasis': '#/babyoasis'
     };
     window.location.hash = hashMap[page];
@@ -136,9 +161,12 @@ function AppContent() {
 
 
   const getPageTitle = () => {
-    // LittleBloom has its own title
+    // LittleBloom and LittleExplorer carry their own wordmark.
     if (currentPage === 'littlebloom') {
       return 'LittleBloom';
+    }
+    if (currentPage.startsWith('littleexplorer')) {
+      return 'LittleExplorer';
     }
 
     let title = 'LittleSteps';
@@ -193,7 +221,10 @@ function AppContent() {
 
   // LittleBloom (hub + wiki) and BabyOasis are standalone sub-apps that render
   // their own chrome, so the LittleSteps header/sidebar stays hidden for them.
-  const isStandaloneSubApp = currentPage.startsWith('littlebloom') || currentPage === 'babyoasis';
+  const isStandaloneSubApp =
+    currentPage.startsWith('littlebloom') ||
+    currentPage.startsWith('littleexplorer') ||
+    currentPage === 'babyoasis';
   // Login is mandatory, so every LittleSteps route shows the header (and thus the
   // sidebar/menu) once we reach the authenticated tree below.
   const showHeader = !(currentPage === 'home' || isStandaloneSubApp);
@@ -375,6 +406,44 @@ function AppContent() {
           />
         )}
         {currentPage === 'littlebloom/wiki' && <LittleBloomWikiPage />}
+
+        {/* LittleExplorer Routes */}
+        {currentPage === 'littleexplorer' && (
+          <DevelopmentPage
+            currentChild={currentChild}
+            progress={currentChildDevelopmentProgress}
+            reminderBadge={reminderBadge}
+            onToggleCheck={toggleDevelopmentCheck}
+            onQuickDiary={async (content, linkedCheckItemId) => {
+              await addDiaryEntry({
+                date: new Date().toISOString().split('T')[0],
+                content,
+                linkedCheckItemId,
+              });
+            }}
+          />
+        )}
+        {currentPage === 'littleexplorer/reminders' && (
+          <RemindersPage
+            currentChild={currentChild}
+            tasks={careTasks}
+            reminderBadge={reminderBadge}
+            onCompleteTask={upsertCareTaskRecord}
+          />
+        )}
+        {currentPage === 'littleexplorer/diary' && (
+          <DiaryPage
+            currentChild={currentChild}
+            entries={diaryEntries}
+            reminderBadge={reminderBadge}
+            onAdd={addDiaryEntry}
+            onUpdate={updateDiaryEntry}
+            onDelete={deleteDiaryEntry}
+          />
+        )}
+        {currentPage === 'littleexplorer/wiki' && (
+          <ToddlerWikiPage currentChild={currentChild} reminderBadge={reminderBadge} />
+        )}
 
         {/* BabyOasis Route */}
         {currentPage === 'babyoasis' && <BabyOasisPage />}

@@ -1,4 +1,4 @@
-import { Milestone } from '../../types';
+import { Milestone, MonthRange } from '../../types';
 
 export const milestones: Milestone[] = [
   // --- 0-1 個月：初生適應期 ---
@@ -314,52 +314,15 @@ export const milestones: Milestone[] = [
     summary: "能在容器堆疊積木，會用手指戳碰按鈕",
     details: "手指力量更集中，能單獨使用食指操作物體。",
     tips: ["提供有按鍵的聲光玩具或按鈕書"]
-  },
-  {
-    id: "m12-physical-1",
-    monthRange: "12+",
-    category: "physical",
-    title: "踏出第一步與配合穿衣",
-    summary: "能獨立行走幾步，換衣時會主動伸出手腳",
-    details: "重大里程碑！能運用自身力量配合大人的動作。",
-    tips: ["換衣時說：『手伸出來』觀察寶寶反應", "給予放手走路熱烈鼓勵"]
-  },
-  {
-    id: "m12-motor-1",
-    monthRange: "12+",
-    category: "motor",
-    title: "模仿工具正確用法",
-    summary: "學拿杯子喝水或拿梳子梳頭髮",
-    details: "手眼協調已可支持使用簡單工具，是自理教育的好時機。",
-    tips: ["給予學習杯練習自己喝水", "在鏡子前示範梳頭、刷牙"]
-  },
-  {
-    id: "m12-cognitive-1",
-    monthRange: "12+",
-    category: "cognitive",
-    title: "理解音調語法與圖畫識別",
-    summary: "能理解否定搖頭，能從多張圖中找出目標",
-    details: "雖然詞彙有限，但已能識別一整句話的組成意圖與音調。",
-    tips: ["問：『蘋果在哪裡？』看寶寶是否能從水果中指出"]
-  },
-  {
-    id: "m12-social-1",
-    monthRange: "12+",
-    category: "cognitive",
-    title: "表現個人喜好與求助",
-    summary: "有最愛的玩具，會主動拿書要求大人讀",
-    details: "自我意識與幽默感展現，會用聲音吸引注意力。",
-    tips: ["多讀故事書給寶寶聽，建立早期共讀習慣"]
   }
 ];
 
-export const monthRanges: { value: "0-2" | "3-4" | "5-6" | "7-9" | "10-12" | "12+"; label: string }[] = [
+export const monthRanges: { value: MonthRange; label: string }[] = [
   { value: "0-2", label: "0-2 個月" },
   { value: "3-4", label: "3-4 個月" },
   { value: "5-6", label: "5-6 個月" },
   { value: "7-9", label: "7-9 個月" },
-  { value: "10-12", label: "10-12 個月" },
-  { value: "12+", label: "1 歲以上" }
+  { value: "10-12", label: "10-12 個月" }
 ];
 
 export const categories: { value: "all" | "physical" | "motor" | "cognitive" | "feeding"; label: string; icon: string }[] = [

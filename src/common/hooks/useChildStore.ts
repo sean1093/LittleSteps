@@ -1,6 +1,14 @@
 import { useMemo } from 'react';
 import type { User } from 'firebase/auth';
-import type { ChildProfile, MilestoneProgress, VaccineProgress, Gender } from '../../types';
+import type {
+  CareTaskRecord,
+  ChildProfile,
+  DevelopmentCheckProgress,
+  DiaryEntry,
+  Gender,
+  MilestoneProgress,
+  VaccineProgress,
+} from '../../types';
 import { useUserChildren } from './useUserChildren';
 import { useFirebaseChildren } from './useFirebaseChildren';
 import {
@@ -21,6 +29,7 @@ export interface ChildStore {
   currentChild: ChildProfile | undefined;
   currentChildMilestoneProgress: MilestoneProgress;
   currentChildVaccineProgress: VaccineProgress;
+  currentChildDevelopmentProgress: DevelopmentCheckProgress;
   childrenLoading: boolean;
   toggleMilestone: (id: string) => Promise<void>;
   toggleVaccineDose: (vaccineId: string, doseNumber: number, customDate?: string) => Promise<void>;
@@ -29,6 +38,13 @@ export interface ChildStore {
   updateChild: (id: string, name: string, birthday: string, gender?: Gender) => Promise<void>;
   deleteChild: (id: string) => Promise<void>;
   setCurrentChild: (id: string) => Promise<void>;
+  toggleDevelopmentCheck: (checkItemId: string) => Promise<void>;
+  upsertCareTaskRecord: (record: CareTaskRecord) => Promise<void>;
+  addDiaryEntry: (
+    entry: Omit<DiaryEntry, 'id' | 'childId' | 'createdAt'>,
+  ) => Promise<string | undefined>;
+  updateDiaryEntry: (entryId: string, updates: Partial<DiaryEntry>) => Promise<void>;
+  deleteDiaryEntry: (entryId: string) => Promise<void>;
 }
 
 /**
@@ -56,6 +72,11 @@ export function useChildStore(user: User | null): ChildStore {
 
   const currentChildVaccineProgress: VaccineProgress = useMemo(
     () => (currentChild ? currentChild.vaccineProgress || {} : {}),
+    [currentChild],
+  );
+
+  const currentChildDevelopmentProgress: DevelopmentCheckProgress = useMemo(
+    () => (currentChild ? currentChild.developmentProgress || {} : {}),
     [currentChild],
   );
 
@@ -145,12 +166,65 @@ export function useChildStore(user: User | null): ChildStore {
     }
   };
 
+  const toggleDevelopmentCheck = async (checkItemId: string) => {
+    if (!user || !currentChild) return;
+    try {
+      const achieved = !currentChildDevelopmentProgress[checkItemId]?.achieved;
+      await firebaseChildren.updateDevelopmentProgress(currentChild.id, checkItemId, achieved);
+    } catch (error) {
+      console.error('更新發展檢核失敗:', error);
+    }
+  };
+
+  const upsertCareTaskRecord = async (record: CareTaskRecord) => {
+    if (!user || !currentChild) return;
+    try {
+      await firebaseChildren.upsertCareTaskRecord(currentChild.id, record);
+    } catch (error) {
+      console.error('更新照護記錄失敗:', error);
+    }
+  };
+
+  const addDiaryEntry = async (
+    entry: Omit<DiaryEntry, 'id' | 'childId' | 'createdAt'>,
+  ) => {
+    if (!user || !currentChild) return;
+    try {
+      return await firebaseChildren.addDiaryEntry(currentChild.id, {
+        ...entry,
+        childId: currentChild.id,
+        createdAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error('新增日記失敗:', error);
+    }
+  };
+
+  const updateDiaryEntry = async (entryId: string, updates: Partial<DiaryEntry>) => {
+    if (!user || !currentChild) return;
+    try {
+      await firebaseChildren.updateDiaryEntry(currentChild.id, entryId, updates);
+    } catch (error) {
+      console.error('更新日記失敗:', error);
+    }
+  };
+
+  const deleteDiaryEntry = async (entryId: string) => {
+    if (!user || !currentChild) return;
+    try {
+      await firebaseChildren.deleteDiaryEntry(currentChild.id, entryId);
+    } catch (error) {
+      console.error('刪除日記失敗:', error);
+    }
+  };
+
   return {
     childProfiles,
     currentChildId,
     currentChild,
     currentChildMilestoneProgress,
     currentChildVaccineProgress,
+    currentChildDevelopmentProgress,
     childrenLoading,
     toggleMilestone,
     toggleVaccineDose,
@@ -159,5 +233,10 @@ export function useChildStore(user: User | null): ChildStore {
     updateChild,
     deleteChild,
     setCurrentChild,
+    toggleDevelopmentCheck,
+    upsertCareTaskRecord,
+    addDiaryEntry,
+    updateDiaryEntry,
+    deleteDiaryEntry,
   };
 }

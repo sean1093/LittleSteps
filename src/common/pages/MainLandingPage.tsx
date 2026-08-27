@@ -8,7 +8,7 @@ import { Baby, Flower2, Heart, Sparkles, ArrowRight, Sun, MapPin } from 'lucide-
  */
 
 interface MainLandingPageProps {
-  onNavigate: (page: 'littlesteps' | 'littlebloom' | 'babyoasis') => void;
+  onNavigate: (page: 'littlesteps' | 'littlebloom' | 'babyoasis' | 'littleexplorer') => void;
 }
 
 export default function MainLandingPage({ onNavigate }: MainLandingPageProps) {
@@ -110,7 +110,7 @@ export default function MainLandingPage({ onNavigate }: MainLandingPageProps) {
           initial="hidden"
           animate="visible"
           variants={stagger}
-          className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16"
+          className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16"
         >
           {/* LittleBloom Card */}
           <motion.div variants={fadeInUp}>
@@ -233,6 +233,67 @@ export default function MainLandingPage({ onNavigate }: MainLandingPageProps) {
               </motion.button>
             </motion.div>
           </motion.div>
+
+          {/* LittleExplorer Card */}
+          <motion.div variants={fadeInUp}>
+            <motion.div
+              whileHover={{ y: -8, scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => onNavigate('littleexplorer')}
+              className="bg-white rounded-3xl p-8 shadow-soft hover:shadow-soft-lg transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-explorer-sunbeam/30 h-full"
+            >
+              {/* Icon Header */}
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-explorer-sunbeam/20 to-explorer-meadow/20 flex items-center justify-center">
+                  <Sun className="w-9 h-9 text-explorer-sunbeam-dark" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-explorer-bark mb-1">
+                    LittleExplorer
+                  </h2>
+                  <p className="text-sm text-gray-500">幼兒期陪伴</p>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="mb-6">
+                <p className="text-gray-700 leading-relaxed mb-4">
+                  1-3 歲什麼都想自己來，陪你看懂他的每一步
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="w-1.5 h-1.5 rounded-full bg-explorer-sunbeam" />
+                    <span>12-36 個月成長檢核</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="w-1.5 h-1.5 rounded-full bg-explorer-clay" />
+                    <span>健檢、疫苗與塗氟提醒</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="w-1.5 h-1.5 rounded-full bg-explorer-sky" />
+                    <span>幼兒百科與成長日記</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Badge */}
+              <div className="mb-6">
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  立即可用
+                </span>
+              </div>
+
+              {/* CTA Button */}
+              <motion.button
+                whileHover={{ x: 4 }}
+                className="w-full flex items-center justify-between px-6 py-4 rounded-2xl bg-gradient-to-r from-explorer-sunbeam to-explorer-meadow text-white font-medium shadow-soft hover:shadow-soft-lg transition-all"
+              >
+                <span>進入幼兒期</span>
+                <ArrowRight className="w-5 h-5" />
+              </motion.button>
+            </motion.div>
+          </motion.div>
         </motion.div>
 
         {/* BabyOasis Card - Standalone Feature */}
@@ -340,10 +401,11 @@ export default function MainLandingPage({ onNavigate }: MainLandingPageProps) {
 
             <motion.div
               whileHover={{ scale: 1.05 }}
-              className="flex flex-col items-center gap-2 p-4 rounded-2xl hover:bg-white/80 transition-colors"
+              onClick={() => onNavigate('littleexplorer')}
+              className="flex flex-col items-center gap-2 p-4 rounded-2xl hover:bg-white/80 transition-colors cursor-pointer"
             >
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-secondary/20 to-primary/20 flex items-center justify-center">
-                <Sun className="w-7 h-7 text-secondary" />
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-explorer-sunbeam/20 to-explorer-meadow/20 flex items-center justify-center">
+                <Sun className="w-7 h-7 text-explorer-sunbeam-dark" />
               </div>
               <span className="text-sm font-medium text-gray-800">幼兒期</span>
               <span className="text-xs text-gray-500">1-3 歲</span>

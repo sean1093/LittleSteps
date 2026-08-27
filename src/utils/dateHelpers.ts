@@ -4,6 +4,22 @@
  */
 
 /**
+ * 計算月齡。
+ *
+ * 以日為準：尚未過當月生日時不計入該月，因此 1/31 出生的孩子在 2/1
+ * 是 0 個月而非 1 個月。LittleExplorer 的年齡段判定與 careSchedule 的
+ * 到期日計算都依賴這個精度。
+ */
+export function calculateAge(birthday: string): number {
+  const birth = new Date(birthday);
+  const now = new Date();
+  let months =
+    (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+  if (now.getDate() < birth.getDate()) months -= 1;
+  return Math.max(0, months);
+}
+
+/**
  * 判斷兩個日期是否在同一天
  */
 export function isSameDay(date1: Date | string, date2: Date | string): boolean {

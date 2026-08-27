@@ -45,6 +45,20 @@ export default {
           'dusty-blue': '#A8B8C8',
           'dusty-blue-light': '#C4D0DD',
           'dusty-blue-dark': '#8A9AAD',
+        },
+        // LittleExplorer（幼兒期）Palette
+        explorer: {
+          'sunbeam': '#F5B843',
+          'sunbeam-light': '#FBE0A6',
+          'sunbeam-dark': '#D99A22',
+          'meadow': '#7FB77E',
+          'meadow-light': '#B7D9B6',
+          'meadow-dark': '#5C9159',
+          'sky': '#6FB3D2',
+          'sky-light': '#B3D8E8',
+          'clay': '#E08D6F',
+          'sand': '#FDF8EE',
+          'bark': '#6B5B4E',
         }
       },
       borderRadius: {

@@ -4,8 +4,8 @@ import { User } from 'firebase/auth';
 import { Star, TrendingUp, Moon, Sun, Clock } from 'lucide-react';
 import { ChildProfile } from '../../types';
 import { useDailyLogs } from '../hooks/useDailyLogs';
+import { calculateAge } from '../../utils/dateHelpers';
 import {
-  calculateAge,
   calculateSleepStats,
   calculateSleepRegularity,
   getSleepRecommendation,

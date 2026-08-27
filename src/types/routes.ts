@@ -1,10 +1,11 @@
 /**
  * Route types for the application
  *
- * Main landing page and three sub-apps:
+ * Main landing page and four sub-apps:
  * - Home: Main entry point for all apps
- * - LittleSteps: Baby tracking app (existing features)
+ * - LittleSteps: Baby tracking app (0-1y)
  * - LittleBloom: Pregnancy companion app (WIP)
+ * - LittleExplorer: Toddler companion app (1-3y)
  * - BabyOasis: Nursing room map (standalone)
  */
 
@@ -25,6 +26,10 @@ export type Page =
   | 'littlesteps/report'
   | 'littlebloom'
   | 'littlebloom/wiki'
+  | 'littleexplorer'
+  | 'littleexplorer/reminders'
+  | 'littleexplorer/diary'
+  | 'littleexplorer/wiki'
   | 'babyoasis';
 
 /**

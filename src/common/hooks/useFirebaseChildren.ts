@@ -1,6 +1,6 @@
 import { ref, set, update, remove, get } from 'firebase/database';
 import { database } from '../../lib/firebase';
-import { ChildProfile, DailyLog, FoodTrialRecord, Gender } from '../../types';
+import { CareTaskRecord, ChildProfile, DailyLog, DiaryEntry, FoodTrialRecord, Gender } from '../../types';
 import { removeUndefined } from '../../utils/firebaseData';
 
 // Helper function to generate UUID v4
@@ -176,6 +176,53 @@ export function useFirebaseChildren(userId: string | null) {
     }));
   };
 
+  // LittleExplorer methods
+  const updateDevelopmentProgress = async (childId: string, checkItemId: string, achieved: boolean) => {
+    if (!userId) throw new Error('User not authenticated');
+
+    const progressRef = ref(database, `children/${childId}/developmentProgress/${checkItemId}`);
+    await set(progressRef, removeUndefined({
+      achieved,
+      achievedDate: achieved ? new Date().toISOString().split('T')[0] : undefined,
+    }));
+  };
+
+  const upsertCareTaskRecord = async (childId: string, record: CareTaskRecord) => {
+    if (!userId) throw new Error('User not authenticated');
+
+    const taskRef = ref(database, `children/${childId}/careTaskProgress/${record.taskId}`);
+    await set(taskRef, removeUndefined(record));
+  };
+
+  const addDiaryEntry = async (childId: string, entry: Omit<DiaryEntry, 'id'>) => {
+    if (!userId) throw new Error('User not authenticated');
+
+    const entryId = `diary_${Date.now()}`;
+    const newEntry: DiaryEntry = { ...entry, id: entryId };
+
+    const entryRef = ref(database, `children/${childId}/diaryEntries/${entryId}`);
+    await set(entryRef, removeUndefined(newEntry));
+
+    return entryId;
+  };
+
+  const updateDiaryEntry = async (childId: string, entryId: string, updates: Partial<DiaryEntry>) => {
+    if (!userId) throw new Error('User not authenticated');
+
+    const entryRef = ref(database, `children/${childId}/diaryEntries/${entryId}`);
+    await update(entryRef, removeUndefined({
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    }));
+  };
+
+  const deleteDiaryEntry = async (childId: string, entryId: string) => {
+    if (!userId) throw new Error('User not authenticated');
+
+    const entryRef = ref(database, `children/${childId}/diaryEntries/${entryId}`);
+    await remove(entryRef);
+  };
+
   // Daily Log methods
   const addDailyLog = async (childId: string, log: Omit<DailyLog, 'id'>) => {
     if (!userId) throw new Error('User not authenticated');
@@ -283,5 +330,10 @@ export function useFirebaseChildren(userId: string | null) {
     updateFoodTrial,
     deleteFoodTrial,
     submitFeedback,
+    updateDevelopmentProgress,
+    upsertCareTaskRecord,
+    addDiaryEntry,
+    updateDiaryEntry,
+    deleteDiaryEntry,
   };
 }

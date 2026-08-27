@@ -53,10 +53,16 @@ export const logPageView = (pageName: string) => {
       app = 'main';
       section = 'landing';
       feature = 'main-entry';
-    } else if (page === 'littlebloom') {
+    } else if (page.startsWith('littlebloom')) {
+      // startsWith, not ===: an equality check dropped littlebloom/wiki into
+      // the generic 'main' bucket, so its page views were never attributed.
       app = 'littlebloom';
       section = 'wip';
       feature = 'pregnancy-companion';
+    } else if (page.startsWith('littleexplorer')) {
+      app = 'littleexplorer';
+      section = 'toddler';
+      feature = page.split('/')[1] || 'development';
     } else if (page.startsWith('littlesteps')) {
       app = 'littlesteps';
       const parts = page.split('/');
@@ -87,7 +93,7 @@ export const logPageView = (pageName: string) => {
     page_location: window.location.href,
     page_title: document.title,
     // Custom dimensions for better segmentation
-    app_name: metadata.app,           // main | littlesteps | littlebloom
+    app_name: metadata.app,           // main | littlesteps | littlebloom | littleexplorer
     app_section: metadata.section,    // landing | data-tracking | development | etc.
     app_feature: metadata.feature,    // specific feature name
   });

@@ -191,7 +191,7 @@ const BIRTHDAY = '2024-01-15';
 const healthCheck: CareTaskTemplate = {
   id: 'health-check-18m',
   kind: 'health-check',
-  title: '兒童預防保健第 5 次',
+  title: '兒童預防保健第 6 次',
   description: '1 歲 6 個月至未滿 2 歲',
   dueMonth: 18,
   fromMonth: 18,
@@ -518,7 +518,7 @@ const task = (
   template: {
     id: 'health-check-18m',
     kind: 'health-check',
-    title: '兒童預防保健第 5 次',
+    title: '兒童預防保健第 6 次',
     description: '1 歲 6 個月至未滿 2 歲，攜帶健保卡與兒童健康手冊',
     dueMonth: 18,
     fromMonth: 18,
@@ -870,11 +870,13 @@ export const careTaskKindLabels: Record<CareTaskKind, string> = {
  * LittleSteps 的 vaccineProgress，由該處作為唯一真相來源。
  */
 export const careTaskTemplates: CareTaskTemplate[] = [
-  // --- 兒童預防保健服務（未滿 7 歲共 7 次，1 歲後 3 次）---
+  // --- 兒童預防保健服務「7+2」（未滿 7 歲共 9 次，1 歲後 3 次）---
+  // 115/7/1 起由 7 次增為 9 次：4-10 個月拆成 4-6 與 6-12 個月，
+  // 3-7 歲拆成 3-5 與 5-7 歲。幼兒期的三次因此各往後移一個序號。
   {
     id: 'health-check-18m',
     kind: 'health-check',
-    title: '兒童預防保健 第 5 次',
+    title: '兒童預防保健 第 6 次',
     description: '1 歲 6 個月至未滿 2 歲的免費健檢，含身體檢查、發展診察與衛教指導。攜帶健保卡與兒童健康手冊。',
     dueMonth: 18,
     fromMonth: 18,
@@ -884,7 +886,7 @@ export const careTaskTemplates: CareTaskTemplate[] = [
   {
     id: 'health-check-24m',
     kind: 'health-check',
-    title: '兒童預防保健 第 6 次',
+    title: '兒童預防保健 第 7 次',
     description: '2 歲至未滿 3 歲的免費健檢。攜帶健保卡與兒童健康手冊。',
     dueMonth: 24,
     fromMonth: 24,
@@ -894,11 +896,11 @@ export const careTaskTemplates: CareTaskTemplate[] = [
   {
     id: 'health-check-36m',
     kind: 'health-check',
-    title: '兒童預防保健 第 7 次',
-    description: '3 歲至未滿 7 歲的免費健檢，本階段僅補助 1 次。攜帶健保卡與兒童健康手冊。',
+    title: '兒童預防保健 第 8 次',
+    description: '3 歲至未滿 5 歲的免費健檢。攜帶健保卡與兒童健康手冊。',
     dueMonth: 36,
     fromMonth: 36,
-    toMonth: 84,
+    toMonth: 60,
     source: '衛生福利部國民健康署 — 兒童預防保健服務',
   },
 

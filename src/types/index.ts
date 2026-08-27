@@ -1,6 +1,8 @@
+export type MonthRange = "0-2" | "3-4" | "5-6" | "7-9" | "10-12";
+
 export interface Milestone {
   id: string;
-  monthRange: "0-2" | "3-4" | "5-6" | "7-9" | "10-12" | "12+";
+  monthRange: MonthRange;
   category: "physical" | "motor" | "cognitive" | "feeding";
   title: string;
   summary: string;
@@ -15,7 +17,6 @@ export interface MilestoneProgress {
   };
 }
 
-export type MonthRange = "0-2" | "3-4" | "5-6" | "7-9" | "10-12" | "12+";
 export type Category = "physical" | "motor" | "cognitive" | "feeding" | "all";
 
 // Care Guidelines Types
@@ -141,6 +142,9 @@ export interface ChildProfile {
   milestoneProgress: MilestoneProgress;
   vaccineProgress: VaccineProgress;
   foodTrackingProgress?: FoodTrackingProgress; // Optional: complementary food tracking
+  // LittleExplorer (幼兒期 1-3 歲) fields
+  developmentProgress?: DevelopmentCheckProgress;
+  careTaskProgress?: CareTaskProgress;
   // Pregnancy specific fields
   isPregnancy?: boolean;
   pregnancyData?: PregnancyData;
@@ -455,3 +459,131 @@ export type BabyWikiArticle = WikiArticle<WikiCategory>;
 export type PregnancyWikiCategory = 'nutrition' | 'health' | 'symptoms' | 'checkup' | 'lifestyle';
 export type PregnancyWikiArticle = WikiArticle<PregnancyWikiCategory>;
 
+
+// ============================================================
+// LittleExplorer（幼兒期 1-3 歲）
+// ============================================================
+
+export type ToddlerAgeBand = '12-15' | '15-18' | '18-24' | '24-30' | '30-36';
+
+export type DevelopmentDomain =
+  | 'gross-motor'   // 粗動作
+  | 'fine-motor'    // 細動作
+  | 'language'      // 語言溝通
+  | 'cognitive'     // 認知
+  | 'social';       // 身邊處理與社會性
+
+export interface DevelopmentCheckItem {
+  id: string;
+  ageBand: ToddlerAgeBand;
+  domain: DevelopmentDomain;
+  /** 家長可直接判斷的題目 */
+  title: string;
+  /** 觀察情境與判準 */
+  detail: string;
+  /** 在家可以怎麼練 */
+  tips: string[];
+}
+
+export interface DevelopmentWarning {
+  ageBand: ToddlerAgeBand;
+  /** 以「缺席」描述的警訊，例：「18 個月仍不會獨立行走」 */
+  signals: string[];
+  /** 轉介建議 */
+  action: string;
+}
+
+export interface DevelopmentCheckProgress {
+  [checkItemId: string]: {
+    achieved: boolean;
+    achievedDate?: string; // YYYY-MM-DD
+  };
+}
+
+export type ToddlerTipCategory = 'safety' | 'feeding' | 'behavior' | 'health';
+
+export interface ToddlerCareTip {
+  ageBand: ToddlerAgeBand;
+  category: ToddlerTipCategory;
+  title: string;
+  /** 3-4 條具體重點 */
+  highlights: string[];
+}
+
+export type CareTaskKind =
+  | 'health-check'
+  | 'dev-screening'
+  | 'vaccine'
+  | 'dental'
+  | 'admin';
+
+export interface CareTaskTemplate {
+  id: string;
+  kind: CareTaskKind;
+  title: string;
+  description: string;
+  /** 建議施行月齡；到期日 = birthday + dueMonth */
+  dueMonth: number;
+  /** 可執行區間起（月齡） */
+  fromMonth: number;
+  /** 可執行區間迄（月齡），逾此即 overdue */
+  toMonth: number;
+  /** 法源／出處 */
+  source: string;
+  /**
+   * 若完成狀態已由 LittleSteps 的 vaccineProgress 承載，指向該筆記錄。
+   * 必須與 vaccineDose 成對出現。
+   */
+  vaccineId?: string;
+  /** 對應 VaccineSchedule.currentDose；單靠 vaccineId 無法分辨劑次 */
+  vaccineDose?: number;
+}
+
+export interface CareTaskRecord {
+  taskId: string;
+  completedDate: string; // YYYY-MM-DD
+  location?: string;     // 院所
+  notes?: string;
+}
+
+export interface CareTaskProgress {
+  [taskId: string]: CareTaskRecord;
+}
+
+export type CareTaskStatus = 'upcoming' | 'due' | 'overdue' | 'done';
+
+export interface ResolvedCareTask {
+  template: CareTaskTemplate;
+  dueDate: string;   // YYYY-MM-DD
+  windowEnd: string; // YYYY-MM-DD
+  status: CareTaskStatus;
+  /** 距建議日的天數；負數表示已過 */
+  daysUntilDue: number;
+  completedDate?: string;
+}
+
+export type DiaryMood = 'happy' | 'proud' | 'tired' | 'worried' | 'funny';
+
+export interface DiaryEntry {
+  id: string;
+  childId: string;
+  /** YYYY-MM-DD，家長可改，預設今天 */
+  date: string;
+  content: string;
+  mood?: DiaryMood;
+  /** 由成長分頁勾選時建立的條目會帶此欄，指向該檢核項目 */
+  linkedCheckItemId?: string;
+  createdAt: string; // ISO 8601
+  updatedAt?: string;
+}
+
+// Toddler Wiki (幼兒百科) — LittleExplorer
+export type ToddlerWikiCategory =
+  | 'toilet'      // 如廁訓練
+  | 'language'    // 語言發展
+  | 'emotion'     // 情緒與行為
+  | 'eating'      // 飲食與挑食
+  | 'sleep'       // 睡眠轉換
+  | 'safety'      // 學步期安全
+  | 'preschool';  // 入園與社交
+export type ToddlerWikiArticle = WikiArticle<ToddlerWikiCategory>;

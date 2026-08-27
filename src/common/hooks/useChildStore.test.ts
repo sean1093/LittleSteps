@@ -16,6 +16,11 @@ const h = vi.hoisted(() => ({
     setCurrentChild: vi.fn().mockResolvedValue(undefined),
     updateMilestoneProgress: vi.fn().mockResolvedValue(undefined),
     updateVaccineProgress: vi.fn().mockResolvedValue(undefined),
+    updateDevelopmentProgress: vi.fn().mockResolvedValue(undefined),
+    upsertCareTaskRecord: vi.fn().mockResolvedValue(undefined),
+    addDiaryEntry: vi.fn().mockResolvedValue('diary_1'),
+    updateDiaryEntry: vi.fn().mockResolvedValue(undefined),
+    deleteDiaryEntry: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -119,6 +124,86 @@ describe('useChildStore (Firebase mode)', () => {
 
     expect(h.firebaseChildren.setCurrentChild).toHaveBeenCalledWith('c1');
     expect(h.firebaseChildren.deleteChild).toHaveBeenCalledWith('c1');
+  });
+
+  it('toggles a development check, deriving the new achieved state', async () => {
+    h.userChildren = {
+      children: [child({ developmentProgress: { 'check-12-15-language': { achieved: true } } })],
+      currentChildId: 'c1',
+      loading: false,
+    };
+    const { result } = renderHook(() => useChildStore(user));
+
+    await act(async () => {
+      await result.current.toggleDevelopmentCheck('check-12-15-language');
+    });
+
+    expect(h.firebaseChildren.updateDevelopmentProgress).toHaveBeenCalledWith(
+      'c1',
+      'check-12-15-language',
+      false,
+    );
+  });
+
+  it('treats an unseen development check as not yet achieved', async () => {
+    h.userChildren = { children: [child()], currentChildId: 'c1', loading: false };
+    const { result } = renderHook(() => useChildStore(user));
+
+    await act(async () => {
+      await result.current.toggleDevelopmentCheck('check-30-36-social');
+    });
+
+    expect(h.firebaseChildren.updateDevelopmentProgress).toHaveBeenCalledWith(
+      'c1',
+      'check-30-36-social',
+      true,
+    );
+  });
+
+  it('stamps diary entries with the current child id and a creation time', async () => {
+    h.userChildren = { children: [child()], currentChildId: 'c1', loading: false };
+    const { result } = renderHook(() => useChildStore(user));
+
+    await act(async () => {
+      await result.current.addDiaryEntry({ date: '2026-08-27', content: '今天自己穿鞋' });
+    });
+
+    const [childId, entry] = h.firebaseChildren.addDiaryEntry.mock.calls[0];
+    expect(childId).toBe('c1');
+    expect(entry.childId).toBe('c1');
+    expect(entry.content).toBe('今天自己穿鞋');
+    expect(Date.parse(entry.createdAt)).not.toBeNaN();
+  });
+
+  it('delegates care-task, diary update and diary delete to Firebase', async () => {
+    h.userChildren = { children: [child()], currentChildId: 'c1', loading: false };
+    const { result } = renderHook(() => useChildStore(user));
+    const record = { taskId: 'fluoride-18m', completedDate: '2026-08-27' };
+
+    await act(async () => {
+      await result.current.upsertCareTaskRecord(record);
+      await result.current.updateDiaryEntry('diary_1', { content: '改過的內容' });
+      await result.current.deleteDiaryEntry('diary_1');
+    });
+
+    expect(h.firebaseChildren.upsertCareTaskRecord).toHaveBeenCalledWith('c1', record);
+    expect(h.firebaseChildren.updateDiaryEntry).toHaveBeenCalledWith('c1', 'diary_1', {
+      content: '改過的內容',
+    });
+    expect(h.firebaseChildren.deleteDiaryEntry).toHaveBeenCalledWith('c1', 'diary_1');
+  });
+
+  it('no-ops LittleExplorer mutators when no child is selected', async () => {
+    h.userChildren = { children: [], currentChildId: null, loading: false };
+    const { result } = renderHook(() => useChildStore(user));
+
+    await act(async () => {
+      await result.current.toggleDevelopmentCheck('check-12-15-language');
+      await result.current.addDiaryEntry({ date: '2026-08-27', content: 'x' });
+    });
+
+    expect(h.firebaseChildren.updateDevelopmentProgress).not.toHaveBeenCalled();
+    expect(h.firebaseChildren.addDiaryEntry).not.toHaveBeenCalled();
   });
 
   it('is a no-op for every mutator when there is no user', async () => {

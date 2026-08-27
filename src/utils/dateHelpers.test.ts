@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   isSameDay,
+  calculateAge,
   calculateDuration,
   formatTime,
   formatDuration,
@@ -25,6 +26,43 @@ const localDate = (
   seconds = 0,
   ms = 0
 ): Date => new Date(year, month - 1, day, hours, minutes, seconds, ms);
+
+describe('calculateAge', () => {
+  const at = (year: number, month: number, day: number) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(localDate(year, month, day, 12));
+  };
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('計算整月數', () => {
+    at(2026, 8, 27);
+    expect(calculateAge('2024-08-27')).toBe(24);
+    expect(calculateAge('2025-02-27')).toBe(18);
+  });
+
+  it('尚未過當月生日時不計入該月', () => {
+    at(2026, 8, 26);
+    expect(calculateAge('2024-08-27')).toBe(23);
+  });
+
+  it('月底出生的孩子不會在隔月一號就多一個月', () => {
+    at(2026, 2, 1);
+    expect(calculateAge('2026-01-31')).toBe(0);
+  });
+
+  it('尚未出生時回傳 0 而非負數', () => {
+    at(2026, 8, 27);
+    expect(calculateAge('2027-01-01')).toBe(0);
+  });
+
+  it('生日當天即進位', () => {
+    at(2026, 8, 27);
+    expect(calculateAge('2025-08-27')).toBe(12);
+  });
+});
 
 // Captured before any test installs fake timers, so these are real Date values.
 const JUN_15_0805 = localDate(2026, 6, 15, 8, 5);
