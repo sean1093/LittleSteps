@@ -310,7 +310,7 @@ const screenings: PrenatalCheckupTemplate[] = [
     id: 'prenatal-first-trimester-down',
     kind: 'screening',
     title: '第一孕期唐氏症篩檢（初唐）',
-    description: '自費，妊娠 11-13+6 週。合併頸部透明帶厚度、母血 PAPP-A 與 hCG，加上年齡、體重、週數計算風險，偵測率約 85-89%。風險值大於 1/270 時，建議進一步做羊膜穿刺等產前染色體檢查。',
+    description: '自費，妊娠 11-13+6 週。合併頸部透明帶厚度、母血 PAPP-A 與 hCG，加上年齡、體重、週數計算風險，可檢出 82-87% 的唐氏兒。風險值大於 1/270 時，建議進一步做羊膜穿刺等產前染色體檢查。',
     dueWeek: 11,
     fromWeek: 11,
     toWeek: 13,

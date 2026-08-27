@@ -24,8 +24,10 @@
  *   https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=N0030001&flno=50
  *   https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=N0030014&flno=15
  *   https://law.moj.gov.tw/LawClass/LawSingle.aspx?pcode=N0030006&flno=4
- * - 衛生福利部食品藥物管理署 孕婦用藥安全訊息（NSAIDs 懷孕 20 週以上風險）
- *   https://www.fda.gov.tw/tc/newsContent.aspx?cid=4&id=t623051
+ * - 衛生福利部食品藥物管理署 非類固醇抗發炎藥品（NSAIDs）中文仿單修訂內容
+ *   https://www.tma.tw/files/meeting/N202427152636_001.pdf
+ *   藥害救濟基金會 非類固醇消炎藥品安全資訊風險溝通表
+ *   https://www.tdrf.org.tw/2020/11/24/safety02-49/
  * - 衛生福利部疾病管制署 孕婦流感疫苗、Tdap 疫苗與弓形蟲（Toxoplasmosis）疾病介紹
  *   https://www.cdc.gov.tw/
  * - 臺北榮總、臺中榮總、中國醫藥大學附設醫院、三軍總醫院、新竹臺大分院 婦產部／營養室衛教單張
@@ -458,12 +460,17 @@ export const pregnancyWikiArticles: PregnancyWikiArticle[] = [
     icon: 'Heart',
   },
 
-  // 來源（2026-08-27 查閱）：衛生福利部食品藥物管理署 用藥安全訊息
-  // https://www.fda.gov.tw/tc/newsContent.aspx?cid=4&id=t623051
-  // ——食藥署逐字內容：「懷孕第 3 孕期使用 NSAIDs 應避免使用；懷孕 20 週或以上之孕婦使用 NSAIDs
-  //   可能導致胎兒腎功能不全、羊水過少。若必要於孕期 20 至 30 週時使用非類固醇抗發炎藥，應限制以
-  //   最低有效劑量治療。若治療時間超過 48 小時，醫療專業人員應考慮使用超音波監測羊水狀態。」
+  // 來源（2026-08-27 查閱）：食藥署公告之 NSAIDs 中文仿單修訂內容
+  // https://www.tma.tw/files/meeting/N202427152636_001.pdf
+  // 併同 藥害救濟基金會 非類固醇消炎藥品安全資訊風險溝通表
+  // https://www.tdrf.org.tw/2020/11/24/safety02-49/
+  // ——仿單逐字內容：「用於懷孕 20 週以上之孕婦可能導致胎兒腎臟功能不全、羊水過少，甚至新生兒
+  //   腎臟損傷；在懷孕早期使用則可能提高流產、心臟畸形之風險。懷孕 30 週以上之孕婦應避免使用；
+  //   懷孕 20 至 30 週之孕婦，用藥前須經醫師確認有使用必要，並以最低有效劑量及最短期間治療；
+  //   若治療時間超過 48 小時，可能需要以超音波監測羊水狀態。」
   //   另指出第 3 孕期使用可能導致胎兒心臟導管過早閉合與肺動脈高壓。
+  //   註：先前引用的 fda.gov.tw 新聞稿「懷孕『藥』注意」只有通則性提醒，不含上述條文，
+  //   逐字內容出自仿單修訂公告本身。
   // Acetaminophen 為孕期止痛退燒首選（pregnancy category B）——臺北榮總／臺中榮總婦產部衛教
   {
     id: 'health-medication-safety',
@@ -576,9 +583,13 @@ export const pregnancyWikiArticles: PregnancyWikiArticle[] = [
   // https://www.vghtc.gov.tw/UnitPage/UnitContentView?WebMenuID=e12c8104-4712-472b-a219-a868f09958f3&UnitID=adaf167e-fe3e-4956-8ba5-6571087eed85&UnitDefaultTemplate=1
   // 國民健康署 產前遺傳診斷補助（羊膜穿刺等補助 5,000 元；低收入戶或資源不足者另減免 3,500 元）
   // https://www.hpa.gov.tw/Pages/List.aspx?nodeid=194
-  // ——初唐 11-13 週（頸部透明帶＋PAPP-A、hCG）篩檢率約 85-89%，單做頸部透明帶或單抽血僅 64-78%，
-  //   合併可達 87-92%；二唐 15-20 週四指標（AFP、hCG、uE3、Inhibin A）約 80-83%；NIPT 懷孕 10 週
-  //   後可做、唐氏症偵測率 99% 以上；風險值大於 1/270 為陽性（篩檢約有 5% 偽陽性），羊膜穿刺才是確診工具。
+  // 國民健康署 孕期唐氏症篩檢介紹（孕媽咪健康手冊 2025 年 1 月版）
+  // https://mammy.hpa.gov.tw/Home/NewsKBContent/1936
+  // ——初唐 11-14 週（頸部透明帶＋PAPP-A、hCG）可檢出 82-87% 的唐氏兒；二唐 15-20 週四指標
+  //   （AFP、hCG、uE3、Inhibin A）約 80-83%；NIPT 懷孕 10 週後可做、唐氏症偵測率 99% 以上；
+  //   風險值大於 1/270 為陽性（篩檢約有 5% 偽陽性），羊膜穿刺才是確診工具。
+  //   偵測率一律採國健署公布數字：醫院衛教頁引用的研究各異（曾見 85-89%、87-92%），
+  //   對使用者而言以主管機關的版本為準，也才與本專案其他兩處一致。
   {
     id: 'checkup-down-screening',
     title: '唐氏症篩檢怎麼選',
@@ -590,8 +601,8 @@ export const pregnancyWikiArticles: PregnancyWikiArticle[] = [
       '價格與偵測率差距大，容易在資訊不足下倉促決定',
     ],
     solutions: [
-      { step: '11-13 週做初唐', detail: '第一孕期篩檢在懷孕 11-13 週進行，測胎兒頸部透明帶厚度加抽血看 PAPP-A 與 hCG，篩檢率約 85-89%。' },
-      { step: '兩項一定要合併做', detail: '只照頸部透明帶或只抽血，偵測率僅 64-78%；兩者合併才能提高到 87-92%，不要為了省錢只做一半。' },
+      { step: '11-14 週做初唐', detail: '第一孕期篩檢在懷孕 11-14 週進行，測胎兒頸部透明帶厚度加抽血看 PAPP-A 與 hCG，可檢出 82-87% 的唐氏兒。' },
+      { step: '兩項一定要合併做', detail: '超音波與抽血是互補的兩個指標，只做其中一項的偵測率明顯較低，不要為了省錢只做一半。' },
       { step: '錯過初唐就排二唐', detail: '第二孕期母血四指標（AFP、hCG、uE3、Inhibin A）在懷孕 15-20 週做，篩檢率約 80-83%。' },
       { step: '想要最高偵測率選 NIPT', detail: 'NIPT 是抽母血的非侵入性篩檢，懷孕 10 週後即可進行，對唐氏症偵測率可達 99% 以上，但仍屬篩檢、不是確診。' },
       { step: '看 1/270 這條線', detail: '風險值大於 1/270 即為陽性（高風險群），國健署建議直接進一步做羊膜穿刺確診。' },
