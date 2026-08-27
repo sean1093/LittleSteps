@@ -18,6 +18,8 @@ const h = vi.hoisted(() => ({
     updateVaccineProgress: vi.fn().mockResolvedValue(undefined),
     updateDevelopmentProgress: vi.fn().mockResolvedValue(undefined),
     updateToothProgress: vi.fn().mockResolvedValue(undefined),
+    upsertPrenatalRecord: vi.fn().mockResolvedValue(undefined),
+    clearPrenatalRecord: vi.fn().mockResolvedValue(undefined),
     upsertCareTaskRecord: vi.fn().mockResolvedValue(undefined),
     addDiaryEntry: vi.fn().mockResolvedValue('diary_1'),
     updateDiaryEntry: vi.fn().mockResolvedValue(undefined),
@@ -71,7 +73,7 @@ describe('useChildStore (Firebase mode)', () => {
       await result.current.addChild('小華', '2026-02-02', 'female');
     });
 
-    expect(h.firebaseChildren.addChild).toHaveBeenCalledWith('小華', '2026-02-02', 1, 'female');
+    expect(h.firebaseChildren.addChild).toHaveBeenCalledWith('小華', '2026-02-02', 1, 'female', undefined);
   });
 
   it('enforces the 2-child free-tier limit without calling Firebase', async () => {
@@ -86,6 +88,57 @@ describe('useChildStore (Firebase mode)', () => {
 
     expect(h.firebaseChildren.addChild).not.toHaveBeenCalled();
     expect(alertSpy).toHaveBeenCalled();
+  });
+
+  // 這是 LittleBloom 一直是空殼的根因：dueDate 從 AddChildModal 一路傳來，
+  // 但中途兩層都只宣告 3 個參數，於是被靜默丟棄，pregnancyData 永遠寫不進去。
+  it('forwards the due date so a pregnancy profile can actually be created', async () => {
+    h.userChildren = { children: [], currentChildId: null, loading: false };
+    const { result } = renderHook(() => useChildStore(user));
+
+    await act(async () => {
+      await result.current.addChild('小花', '2026-12-01', undefined, '2026-12-01');
+    });
+
+    expect(h.firebaseChildren.addChild).toHaveBeenCalledWith(
+      '小花',
+      '2026-12-01',
+      0,
+      undefined,
+      '2026-12-01',
+    );
+  });
+
+  it('omits the due date for a normal child profile', async () => {
+    h.userChildren = { children: [], currentChildId: null, loading: false };
+    const { result } = renderHook(() => useChildStore(user));
+
+    await act(async () => {
+      await result.current.addChild('小樹', '2024-08-27', 'male');
+    });
+
+    expect(h.firebaseChildren.addChild).toHaveBeenCalledWith(
+      '小樹',
+      '2024-08-27',
+      0,
+      'male',
+      undefined,
+    );
+  });
+
+  it('delegates prenatal record upsert and clear', async () => {
+    h.userChildren = { children: [child()], currentChildId: 'c1', loading: false };
+    const { result } = renderHook(() => useChildStore(user));
+
+    await act(async () => {
+      await result.current.upsertPrenatalRecord('visit-1', { completedDate: '2026-03-01' });
+      await result.current.clearPrenatalRecord('visit-1');
+    });
+
+    expect(h.firebaseChildren.upsertPrenatalRecord).toHaveBeenCalledWith('c1', 'visit-1', {
+      completedDate: '2026-03-01',
+    });
+    expect(h.firebaseChildren.clearPrenatalRecord).toHaveBeenCalledWith('c1', 'visit-1');
   });
 
   it('toggles a milestone, deriving the new achieved state', async () => {

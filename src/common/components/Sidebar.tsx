@@ -15,7 +15,7 @@ interface SidebarProps {
   childProfiles: ChildProfile[];
   currentChildId: string | null;
   setCurrentChildId: (id: string) => void;
-  addChild: (name: string, birthday: string, gender?: Gender) => void;
+  addChild: (name: string, birthday: string, gender?: Gender, dueDate?: string) => void;
   joinChild: (uuid: string) => void;
   updateChild: (id: string, name: string, birthday: string, gender?: Gender) => void;
   deleteChild: (id: string) => void;
@@ -168,11 +168,17 @@ export default function Sidebar({
     onClose();
   };
 
-  const handleSaveChild = (name: string, birthday: string, gender?: Gender) => {
+  const handleSaveChild = (
+    name: string,
+    birthday: string,
+    gender?: Gender,
+    _isPregnancy?: boolean,
+    dueDate?: string,
+  ) => {
     if (editingChild) {
       updateChild(editingChild.id, name, birthday, gender);
     } else {
-      addChild(name, birthday, gender);
+      addChild(name, birthday, gender, dueDate);
     }
     setEditingChild(null);
   };

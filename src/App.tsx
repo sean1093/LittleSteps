@@ -24,6 +24,7 @@ const DailyLogPage = lazy(() => import('./littlesteps/pages/DailyLogPage'));
 const SleepAnalysisPage = lazy(() => import('./littlesteps/pages/SleepAnalysisPage'));
 const LittleBloomPage = lazy(() => import('./littlebloom/pages/LittleBloomPage'));
 const LittleBloomWikiPage = lazy(() => import('./littlebloom/pages/LittleBloomWikiPage'));
+const PrenatalPage = lazy(() => import('./littlebloom/pages/PrenatalPage'));
 const BabyOasisPage = lazy(() => import('./babyoasis/pages/BabyOasisPage'));
 const BabyWikiPage = lazy(() => import('./littlesteps/pages/BabyWikiPage'));
 const ClinicSummaryPage = lazy(() => import('./littlesteps/pages/ClinicSummaryPage'));
@@ -54,6 +55,9 @@ function AppContent() {
     currentChildToothProgress,
     toggleDevelopmentCheck,
     toggleTooth,
+    currentChildPrenatalProgress,
+    upsertPrenatalRecord,
+    clearPrenatalRecord,
     upsertCareTaskRecord,
     addDiaryEntry,
     updateDiaryEntry,
@@ -80,6 +84,7 @@ function AppContent() {
       '#/littlesteps/clinic-summary': 'littlesteps/clinic-summary',
       '#/littlesteps/report': 'littlesteps/report',
       '#/littlebloom': 'littlebloom',
+      '#/littlebloom/prenatal': 'littlebloom/prenatal',
       '#/littlebloom/wiki': 'littlebloom/wiki',
       '#/littleexplorer': 'littleexplorer',
       '#/littleexplorer/reminders': 'littleexplorer/reminders',
@@ -144,6 +149,7 @@ function AppContent() {
       'littlesteps/clinic-summary': '#/littlesteps/clinic-summary',
       'littlesteps/report': '#/littlesteps/report',
       'littlebloom': '#/littlebloom',
+      'littlebloom/prenatal': '#/littlebloom/prenatal',
       'littlebloom/wiki': '#/littlebloom/wiki',
       'littleexplorer': '#/littleexplorer',
       'littleexplorer/reminders': '#/littleexplorer/reminders',
@@ -416,7 +422,15 @@ function AppContent() {
         {currentPage === 'littlebloom' && (
           <LittleBloomPage
             currentChild={currentChild}
-            user={user}
+            progress={currentChildPrenatalProgress}
+          />
+        )}
+        {currentPage === 'littlebloom/prenatal' && (
+          <PrenatalPage
+            currentChild={currentChild}
+            progress={currentChildPrenatalProgress}
+            onComplete={upsertPrenatalRecord}
+            onUndo={clearPrenatalRecord}
           />
         )}
         {currentPage === 'littlebloom/wiki' && <LittleBloomWikiPage />}

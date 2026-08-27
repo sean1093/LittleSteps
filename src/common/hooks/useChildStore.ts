@@ -7,6 +7,7 @@ import type {
   DiaryEntry,
   Gender,
   MilestoneProgress,
+  PrenatalCheckupProgress,
   ToothProgress,
   VaccineProgress,
 } from '../../types';
@@ -35,13 +36,19 @@ export interface ChildStore {
   childrenLoading: boolean;
   toggleMilestone: (id: string) => Promise<void>;
   toggleVaccineDose: (vaccineId: string, doseNumber: number, customDate?: string) => Promise<void>;
-  addChild: (name: string, birthday: string, gender?: Gender) => Promise<void>;
+  addChild: (name: string, birthday: string, gender?: Gender, dueDate?: string) => Promise<void>;
   joinChild: (childUuid: string) => Promise<void>;
   updateChild: (id: string, name: string, birthday: string, gender?: Gender) => Promise<void>;
   deleteChild: (id: string) => Promise<void>;
   setCurrentChild: (id: string) => Promise<void>;
   toggleDevelopmentCheck: (checkItemId: string) => Promise<void>;
   toggleTooth: (toothId: string) => Promise<void>;
+  currentChildPrenatalProgress: PrenatalCheckupProgress;
+  upsertPrenatalRecord: (
+    templateId: string,
+    record: { completedDate: string; clinicName?: string; notes?: string },
+  ) => Promise<void>;
+  clearPrenatalRecord: (templateId: string) => Promise<void>;
   upsertCareTaskRecord: (record: CareTaskRecord) => Promise<void>;
   addDiaryEntry: (
     entry: Omit<DiaryEntry, 'id' | 'childId' | 'createdAt'>,
@@ -88,6 +95,11 @@ export function useChildStore(user: User | null): ChildStore {
     [currentChild],
   );
 
+  const currentChildPrenatalProgress: PrenatalCheckupProgress = useMemo(
+    () => (currentChild ? currentChild.prenatalProgress || {} : {}),
+    [currentChild],
+  );
+
   const toggleMilestone = async (id: string) => {
     if (!user || !currentChild) return;
     try {
@@ -112,14 +124,19 @@ export function useChildStore(user: User | null): ChildStore {
     }
   };
 
-  const addChild = async (name: string, birthday: string, gender?: Gender) => {
+  const addChild = async (
+    name: string,
+    birthday: string,
+    gender?: Gender,
+    dueDate?: string,
+  ) => {
     if (!user) return;
     if (childProfiles.length >= MAX_FREE_CHILDREN) {
       alert('免費版最多只能新增 2 個寶寶，請升級付費會員');
       return;
     }
     try {
-      await firebaseChildren.addChild(name, birthday, childProfiles.length, gender);
+      await firebaseChildren.addChild(name, birthday, childProfiles.length, gender, dueDate);
       logChildProfileAction('create');
     } catch (error) {
       console.error('新增寶寶失敗:', error);
@@ -194,6 +211,27 @@ export function useChildStore(user: User | null): ChildStore {
     }
   };
 
+  const upsertPrenatalRecord = async (
+    templateId: string,
+    record: { completedDate: string; clinicName?: string; notes?: string },
+  ) => {
+    if (!user || !currentChild) return;
+    try {
+      await firebaseChildren.upsertPrenatalRecord(currentChild.id, templateId, record);
+    } catch (error) {
+      console.error('更新產檢記錄失敗:', error);
+    }
+  };
+
+  const clearPrenatalRecord = async (templateId: string) => {
+    if (!user || !currentChild) return;
+    try {
+      await firebaseChildren.clearPrenatalRecord(currentChild.id, templateId);
+    } catch (error) {
+      console.error('取消產檢記錄失敗:', error);
+    }
+  };
+
   const upsertCareTaskRecord = async (record: CareTaskRecord) => {
     if (!user || !currentChild) return;
     try {
@@ -254,6 +292,9 @@ export function useChildStore(user: User | null): ChildStore {
     setCurrentChild,
     toggleDevelopmentCheck,
     toggleTooth,
+    currentChildPrenatalProgress,
+    upsertPrenatalRecord,
+    clearPrenatalRecord,
     upsertCareTaskRecord,
     addDiaryEntry,
     updateDiaryEntry,

@@ -149,6 +149,7 @@ export interface ChildProfile {
   // Pregnancy specific fields
   isPregnancy?: boolean;
   pregnancyData?: PregnancyData;
+  prenatalProgress?: PrenatalCheckupProgress;
   createdAt: string; // ISO string
   createdBy: string; // User ID who created this child profile
 }
@@ -222,6 +223,16 @@ export interface PrenatalCheckup {
   notes: string;
   completed: boolean;
 }
+
+/** 產檢與篩檢項目的完成記錄，鍵為 prenatalCheckupSchedule 的 template id。 */
+export interface PrenatalCheckupProgress {
+  [templateId: string]: {
+    completedDate: string; // YYYY-MM-DD
+    clinicName?: string;
+    notes?: string;
+  };
+}
+
 export interface DailyLog {
   id: string;
   childId: string;

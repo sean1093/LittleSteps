@@ -178,9 +178,9 @@ export default function MainLandingPage({ onNavigate, user, onSignIn }: MainLand
 
               {/* Status Badge */}
               <div className="mb-6">
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-bloom-dusty-rose/10 text-bloom-dusty-rose text-xs font-medium">
-                  <Sparkles className="w-3 h-3" />
-                  即將推出
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  立即可用
                 </span>
               </div>
 

@@ -1,0 +1,160 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type { ChildProfile } from '../../types';
+import { pregnancyGuides } from '../data/pregnancyGuides';
+import LittleBloomPage from './LittleBloomPage';
+import PrenatalPage from './PrenatalPage';
+
+/**
+ * LittleBloom shipped as a shell: no code path wrote pregnancyData, so every
+ * user saw week 1 forever, the weekly guide only had weeks 1-4, and the
+ * prenatal card rendered a hardcoded fake appointment.
+ *
+ * These tests pin the behaviours that were broken, so a regression is loud.
+ */
+
+const NOW = new Date(2026, 7, 27, 12); // 2026-08-27
+
+/** 末次月經 2026-04-06 → 2026-08-27 已滿 20 整週，顯示為第 21 週。 */
+const LMP = '2026-04-06';
+const DUE = '2027-01-11';
+const EXPECTED_WEEK = 21;
+
+const pregnant = (overrides: Partial<ChildProfile> = {}): ChildProfile => ({
+  id: 'c1',
+  name: '小花',
+  birthday: DUE,
+  milestoneProgress: {},
+  vaccineProgress: {},
+  isPregnancy: true,
+  pregnancyData: { childId: 'c1', dueDate: DUE, lastPeriodDate: LMP, status: 'active' },
+  createdAt: '2026-04-06T00:00:00.000Z',
+  createdBy: 'u1',
+  ...overrides,
+});
+
+const noop = async () => {};
+
+beforeEach(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  vi.setSystemTime(NOW);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe('LittleBloomPage', () => {
+  it('依末次月經算出真正的週數，而不是永遠停在第 1 週', () => {
+    render(<LittleBloomPage currentChild={pregnant()} progress={{}} />);
+    expect(screen.getByText(`第 ${EXPECTED_WEEK} 週`)).toBeInTheDocument();
+  });
+
+  it('顯示該週的指南，而不是退回第 1 週的內容', () => {
+    render(<LittleBloomPage currentChild={pregnant()} progress={{}} />);
+
+    const guide = pregnancyGuides.find((g) => g.week === EXPECTED_WEEK)!;
+    expect(screen.getByRole('heading', { name: guide.title })).toBeInTheDocument();
+    expect(screen.queryByText(/懷孕第 1 週/)).not.toBeInTheDocument();
+  });
+
+  it('第 20 週以後顯示就醫警訊', () => {
+    render(<LittleBloomPage currentChild={pregnant()} progress={{}} />);
+    expect(screen.getByText('這些情況請盡快就醫')).toBeInTheDocument();
+  });
+
+  it('沒有孕期資料時說明原因，不假裝在第 1 週', () => {
+    render(
+      <LittleBloomPage
+        currentChild={{ ...pregnant(), isPregnancy: undefined, pregnancyData: undefined }}
+        progress={{}}
+      />,
+    );
+    expect(screen.getByText('還沒有孕期檔案')).toBeInTheDocument();
+    expect(screen.queryByText(/第 \d+ 週$/)).not.toBeInTheDocument();
+  });
+
+  it('下一項產檢來自真實時程，不是寫死的假資料', () => {
+    render(<LittleBloomPage currentChild={pregnant()} progress={{}} />);
+    // 舊版寫死「幸福婦產科 2026-04-15」給每一位使用者。
+    expect(screen.queryByText('幸福婦產科')).not.toBeInTheDocument();
+    expect(screen.getByText('下一項產檢')).toBeInTheDocument();
+  });
+
+  it('產檢時程按鈕真的會導航（原本是空的 onClick）', async () => {
+    const user = userEvent.setup();
+    window.location.hash = '#/littlebloom';
+    render(<LittleBloomPage currentChild={pregnant()} progress={{}} />);
+
+    await user.click(screen.getByRole('button', { name: /產檢時程/ }));
+
+    expect(window.location.hash).toBe('#/littlebloom/prenatal');
+  });
+});
+
+describe('PrenatalPage', () => {
+  it('列出依週數推算的產檢項目', () => {
+    render(
+      <PrenatalPage currentChild={pregnant()} progress={{}} onComplete={noop} onUndo={noop} />,
+    );
+    // 每一列都以「第 N 次 · 標題」開頭，故用 getAllBy。
+    expect(screen.getAllByText(/^第 \d+ 次 · /).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: '標記完成' }).length).toBeGreaterThan(0);
+  });
+
+  it('標記完成會帶出項目 id 與日期', async () => {
+    const user = userEvent.setup();
+    const onComplete = vi.fn(async (_id: string, _record: { completedDate: string }) => {});
+
+    render(
+      <PrenatalPage
+        currentChild={pregnant()}
+        progress={{}}
+        onComplete={onComplete}
+        onUndo={noop}
+      />,
+    );
+
+    await user.click(screen.getAllByRole('button', { name: '標記完成' })[0]);
+    await user.click(screen.getByRole('button', { name: '儲存' }));
+
+    expect(onComplete).toHaveBeenCalledTimes(1);
+    const [templateId, record] = onComplete.mock.calls[0];
+    expect(templateId).toBeTruthy();
+    expect(record.completedDate).toBe('2026-08-27');
+  });
+
+  it('已完成的項目移到已完成區並可取消', async () => {
+    const user = userEvent.setup();
+    const onUndo = vi.fn(async (_id: string) => {});
+
+    render(
+      <PrenatalPage
+        currentChild={pregnant()}
+        progress={{ 'prenatal-visit-1': { completedDate: '2026-05-25' } }}
+        onComplete={noop}
+        onUndo={onUndo}
+      />,
+    );
+
+    const doneHeading = screen.getByRole('heading', { name: /已完成/ });
+    const doneSection = doneHeading.closest('section')!;
+    expect(within(doneSection).getByText(/已於 2026-05-25 完成/)).toBeInTheDocument();
+
+    await user.click(within(doneSection).getByRole('button', { name: '取消完成' }));
+    expect(onUndo).toHaveBeenCalledWith('prenatal-visit-1');
+  });
+
+  it('沒有孕期資料時說明原因', () => {
+    render(
+      <PrenatalPage
+        currentChild={{ ...pregnant(), pregnancyData: undefined }}
+        progress={{}}
+        onComplete={noop}
+        onUndo={noop}
+      />,
+    );
+    expect(screen.getByText('還沒有孕期資料')).toBeInTheDocument();
+  });
+});

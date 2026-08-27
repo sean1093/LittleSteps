@@ -20,6 +20,7 @@ const AUTH_REQUIRED: Record<string, true> = {
   'littlesteps/clinic-summary': true,
   'littlesteps/report': true,
   littlebloom: true,
+  'littlebloom/prenatal': true,
   littleexplorer: true,
   'littleexplorer/reminders': true,
   'littleexplorer/diary': true,

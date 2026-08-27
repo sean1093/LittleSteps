@@ -19,6 +19,30 @@ export function calculateAge(birthday: string): number {
   return Math.max(0, months);
 }
 
+/** Naegele 法則：預產期為末次月經第一天起算 280 天。 */
+export const GESTATION_DAYS = 280;
+
+function shiftDays(isoDate: string, days: number): string {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  const date = new Date(year, month - 1, day, 12);
+  date.setDate(date.getDate() + days);
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
+/** 由末次月經第一天推預產期。 */
+export function dueDateFromLmp(lastPeriodDate: string): string {
+  return shiftDays(lastPeriodDate, GESTATION_DAYS);
+}
+
+/** 由預產期回推末次月經第一天。與 dueDateFromLmp 互為反函式。 */
+export function lmpFromDueDate(dueDate: string): string {
+  return shiftDays(dueDate, -GESTATION_DAYS);
+}
+
 /**
  * 判斷兩個日期是否在同一天
  */

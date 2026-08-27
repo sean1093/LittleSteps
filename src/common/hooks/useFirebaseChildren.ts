@@ -2,6 +2,7 @@ import { ref, set, update, remove, get } from 'firebase/database';
 import { database } from '../../lib/firebase';
 import { CareTaskRecord, ChildProfile, DailyLog, DiaryEntry, FoodTrialRecord, Gender } from '../../types';
 import { removeUndefined } from '../../utils/firebaseData';
+import { lmpFromDueDate } from '../../utils/dateHelpers';
 
 // Helper function to generate UUID v4
 function generateUUID(): string {
@@ -19,7 +20,14 @@ export function useFirebaseChildren(userId: string | null) {
    * - Stores child data in children/{uuid}
    * - Adds UUID to users/{userId}/childrenIds
    */
-  const addChild = async (name: string, birthday: string, currentChildCount: number, gender?: Gender) => {
+  const addChild = async (
+    name: string,
+    birthday: string,
+    currentChildCount: number,
+    gender?: Gender,
+    /** 建立孕期檔案時傳入預產期；末次月經由 Naegele 法則回推。 */
+    dueDate?: string,
+  ) => {
     if (!userId) throw new Error('User not authenticated');
 
     // 免費版限制：最多 2 個寶寶
@@ -35,6 +43,18 @@ export function useFirebaseChildren(userId: string | null) {
       gender,
       milestoneProgress: {},
       vaccineProgress: {},
+      // 孕期檔案在這裡就要把 pregnancyData 寫進去。先前這兩個參數在
+      // AddChildModal → Sidebar → useChildStore 的傳遞途中被靜默丟棄，
+      // 導致 LittleBloom 永遠讀不到資料、每個人都停在第 1 週。
+      isPregnancy: dueDate ? true : undefined,
+      pregnancyData: dueDate
+        ? {
+            childId,
+            dueDate,
+            lastPeriodDate: lmpFromDueDate(dueDate),
+            status: 'active',
+          }
+        : undefined,
       createdAt: new Date().toISOString(),
       createdBy: userId,
     };
@@ -197,6 +217,24 @@ export function useFirebaseChildren(userId: string | null) {
     }));
   };
 
+  const upsertPrenatalRecord = async (
+    childId: string,
+    templateId: string,
+    record: { completedDate: string; clinicName?: string; notes?: string },
+  ) => {
+    if (!userId) throw new Error('User not authenticated');
+
+    const recordRef = ref(database, `children/${childId}/prenatalProgress/${templateId}`);
+    await set(recordRef, removeUndefined(record));
+  };
+
+  const clearPrenatalRecord = async (childId: string, templateId: string) => {
+    if (!userId) throw new Error('User not authenticated');
+
+    const recordRef = ref(database, `children/${childId}/prenatalProgress/${templateId}`);
+    await remove(recordRef);
+  };
+
   const upsertCareTaskRecord = async (childId: string, record: CareTaskRecord) => {
     if (!userId) throw new Error('User not authenticated');
 
@@ -342,6 +380,8 @@ export function useFirebaseChildren(userId: string | null) {
     submitFeedback,
     updateDevelopmentProgress,
     updateToothProgress,
+    upsertPrenatalRecord,
+    clearPrenatalRecord,
     upsertCareTaskRecord,
     addDiaryEntry,
     updateDiaryEntry,

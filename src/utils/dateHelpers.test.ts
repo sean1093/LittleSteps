@@ -3,10 +3,12 @@ import {
   isSameDay,
   calculateAge,
   calculateDuration,
+  dueDateFromLmp,
   formatTime,
   formatDuration,
   getCurrentDateTimeLocal,
   dateTimeLocalToISO,
+  lmpFromDueDate,
 } from './dateHelpers';
 
 /**
@@ -61,6 +63,27 @@ describe('calculateAge', () => {
   it('生日當天即進位', () => {
     at(2026, 8, 27);
     expect(calculateAge('2025-08-27')).toBe(12);
+  });
+});
+
+describe('Naegele 預產期換算', () => {
+  it('末次月經加 280 天為預產期', () => {
+    expect(dueDateFromLmp('2026-01-01')).toBe('2026-10-08');
+  });
+
+  it('預產期回推 280 天為末次月經', () => {
+    expect(lmpFromDueDate('2026-10-08')).toBe('2026-01-01');
+  });
+
+  it('兩者互為反函式', () => {
+    for (const lmp of ['2026-01-31', '2026-02-28', '2024-02-29', '2026-12-15']) {
+      expect(lmpFromDueDate(dueDateFromLmp(lmp)), lmp).toBe(lmp);
+    }
+  });
+
+  it('跨月與跨年都正確，不會被月底天數影響', () => {
+    // 2024 是閏年，2/29 存在；加 280 天應落在同年 12 月。
+    expect(dueDateFromLmp('2024-02-29')).toBe('2024-12-05');
   });
 });
 

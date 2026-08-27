@@ -25,6 +25,7 @@ export type Page =
   | 'littlesteps/clinic-summary'
   | 'littlesteps/report'
   | 'littlebloom'
+  | 'littlebloom/prenatal'
   | 'littlebloom/wiki'
   | 'littleexplorer'
   | 'littleexplorer/reminders'
