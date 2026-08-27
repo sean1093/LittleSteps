@@ -368,7 +368,7 @@ export default function MainLandingPage({ onNavigate, user, onSignIn }: MainLand
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <div className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
-                  <span>評分與評論</span>
+                  <span>全台 22 縣市、3,852 處</span>
                 </div>
               </div>
             </div>
@@ -446,7 +446,7 @@ export default function MainLandingPage({ onNavigate, user, onSignIn }: MainLand
             ✨ 用心陪伴每個家庭的珍貴時光 ✨
           </p>
           <p className="text-gray-400 text-xs">
-            © 2026 LittleSteps & LittleBloom - Made with ❤️ in Taiwan
+            © 2026 LittleBloom · LittleSteps · LittleExplorer · BabyOasis — Made with ❤️ in Taiwan
           </p>
         </motion.div>
       </div>

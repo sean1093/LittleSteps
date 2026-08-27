@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 import { Baby, Heart, Sparkles, ArrowRight, Moon, TrendingUp, Shield, Lock, BookOpen, Camera } from 'lucide-react';
 import { User } from 'firebase/auth';
+import AppHomeButton from '../components/AppHomeButton';
 
 interface LandingPageProps {
   onNavigate: (page: 'littlesteps/milestones' | 'littlesteps/care-guide' | 'littlesteps/vaccine-tracking' | 'littlesteps/complementary-food' | 'littlesteps/sleep-training' | 'littlesteps/growth-charts') => void;
@@ -45,8 +46,18 @@ export default function LandingPage({ onNavigate, user, onSignIn }: LandingPageP
 
   return (
     <div className="min-h-screen bg-[#FDFBF7]">
+      {/*
+        沒登入時，任何需要登入的 LittleSteps 路由都會落到這一頁——登出後、
+        從書籤進入、瀏覽器還原分頁都算。少了這顆按鈕，這裡就是死路：頁面
+        完全沒提到另外三個服務，也沒有回服務集合首頁的路，只能手動改網址。
+        LittleBloom 與 LittleExplorer 的介紹頁一直都有（ServiceLandingPage）。
+      */}
+      <div className="max-w-4xl mx-auto px-4 pt-6 flex justify-end">
+        <AppHomeButton className="bg-white/70 hover:bg-white text-gray-700" />
+      </div>
+
       {/* Hero Section */}
-      <section className="relative px-4 py-20 md:py-28 overflow-hidden">
+      <section className="relative px-4 pt-10 pb-20 md:pt-14 md:pb-28 overflow-hidden">
         <div className="relative max-w-4xl mx-auto text-center">
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}

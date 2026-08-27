@@ -167,6 +167,14 @@ function AppContent() {
     logPageView(page);
   };
 
+  // 登出後 hash 會留在原本的路由上。若那是需要登入的 LittleSteps 頁，畫面會
+  // 換成 LittleSteps 的介紹頁——使用者看起來像是「登出後被丟回 LittleSteps」，
+  // 而不是回到四個服務的入口。所以登出一併把路由帶回服務集合首頁。
+  const handleSignOut = async () => {
+    await signOut();
+    navigateToPage('home');
+  };
+
 
   const getPageTitle = () => {
     // LittleBloom and LittleExplorer carry their own wordmark.
@@ -282,7 +290,7 @@ function AppContent() {
           deleteChild={deleteChild}
           user={user}
           onSignIn={signInWithGoogle}
-          onSignOut={signOut}
+          onSignOut={handleSignOut}
         />
       )}
 

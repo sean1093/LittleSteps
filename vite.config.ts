@@ -10,9 +10,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'LittleSteps - 育兒里程碑追蹤',
+        name: 'LittleSteps - 孕期到幼兒的育兒陪伴',
         short_name: 'LittleSteps',
-        description: '協助新手父母輕鬆掌握小孩各階段的發展重點',
+        description: '從懷孕、新生兒到 1-3 歲幼兒，四個服務陪台灣爸媽走過每個階段',
         theme_color: '#F472B6',
         background_color: '#FAFAF9',
         display: 'standalone',
