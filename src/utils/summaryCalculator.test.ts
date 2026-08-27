@@ -133,19 +133,55 @@ describe('summaryCalculator', () => {
       expect(summary.recentAchievements.map(entry => entry.id)).toEqual([d.id, b.id]);
     });
 
-    it('resolves titles from the catalogue and blanks unknown milestone ids', () => {
-      const known = milestones[0];
+    it('resolves titles from the catalogue', () => {
+      const [first, second] = milestones;
       const progress: MilestoneProgress = {
-        [known.id]: { achieved: true, achievedDate: '2026-02-01' },
-        'retired-milestone-id': { achieved: true, achievedDate: '2026-03-01' }
+        [first.id]: { achieved: true, achievedDate: '2026-02-01' },
+        [second.id]: { achieved: true, achievedDate: '2026-03-01' }
       };
 
       const summary = calculateMilestoneSummary(progress);
 
-      expect(known.title.length).toBeGreaterThan(0);
+      expect(first.title.length).toBeGreaterThan(0);
       expect(summary.recentAchievements).toEqual([
-        { id: 'retired-milestone-id', title: '', achievedDate: '2026-03-01' },
-        { id: known.id, title: known.title, achievedDate: '2026-02-01' }
+        { id: second.id, title: second.title, achievedDate: '2026-03-01' },
+        { id: first.id, title: first.title, achievedDate: '2026-02-01' }
+      ]);
+    });
+
+    it('ignores progress entries whose milestone no longer exists', () => {
+      const progress: MilestoneProgress = {
+        ...achieveFirst(TOTAL),
+        'removed-milestone-1': { achieved: true, achievedDate: '2026-01-01' },
+        'removed-milestone-2': { achieved: true },
+      };
+
+      const summary = calculateMilestoneSummary(progress);
+
+      expect(summary.achievedCount).toBe(TOTAL);
+      expect(summary.achievementRate).toBe(100);
+    });
+
+    it('never reports an achievement rate above 100 percent', () => {
+      const progress: MilestoneProgress = { ...achieveFirst(TOTAL) };
+      for (let i = 0; i < 10; i++) {
+        progress[`ghost-${i}`] = { achieved: true };
+      }
+
+      expect(calculateMilestoneSummary(progress).achievementRate).toBe(100);
+    });
+
+    it('omits orphaned entries from recentAchievements', () => {
+      const progress: MilestoneProgress = {
+        // 日期刻意設為最新，確保未被過濾時一定會排進前三名。
+        'removed-milestone-1': { achieved: true, achievedDate: '2099-01-01' },
+        [milestones[0].id]: { achieved: true, achievedDate: '2026-01-01' },
+      };
+
+      const summary = calculateMilestoneSummary(progress);
+
+      expect(summary.recentAchievements.map((a) => a.id)).toEqual([
+        milestones[0].id,
       ]);
     });
   });

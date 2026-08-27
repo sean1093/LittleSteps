@@ -16,12 +16,21 @@ export interface MilestoneSummary {
   }>;
 }
 
+/**
+ * 目錄中仍存在的里程碑 id。使用者進度可能殘留已從資料集移除的里程碑，
+ * 若一併計入分子而分母已縮小，完成率會超過 100%。
+ */
+const KNOWN_MILESTONE_IDS: Record<string, true> = Object.fromEntries(
+  milestones.map((m) => [m.id, true] as const)
+);
+
 export function calculateMilestoneSummary(
   milestoneProgress: MilestoneProgress
 ): MilestoneSummary {
   const totalMilestones = milestones.length;
+  // 只計入仍存在於目錄中的 id，孤兒鍵不得進入分子。
   const achieved = Object.entries(milestoneProgress).filter(
-    ([_, progress]) => progress.achieved
+    ([id, progress]) => progress.achieved && KNOWN_MILESTONE_IDS[id] === true
   );
   const achievedCount = achieved.length;
   const achievementRate = totalMilestones > 0
