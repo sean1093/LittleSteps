@@ -248,12 +248,14 @@ export const vaccineSchedules: VaccineSchedule[] = [
     notes: "保護力約85%"
   },
   {
+    // id 保留歷史命名，避免既有使用者的 vaccineProgress 鍵變成孤兒。
+    // 實際時程自 114/1/1 起已改為出生滿 18 個月，故 id 字面與月齡不符。
     id: "hepa-12m",
     name: "A型肝炎疫苗 第1劑",
-    timing: "出生滿12個月",
+    timing: "出生滿18個月",
     fundingType: "public",
-    ageInMonths: 12,
-    ageLabel: "12個月",
+    ageInMonths: 18,
+    ageLabel: "18個月",
     doses: 2,
     currentDose: 1,
     sideEffects: ["注射部位疼痛", "疲倦", "輕微發燒"]
@@ -297,16 +299,17 @@ export const vaccineSchedules: VaccineSchedule[] = [
     diseasesPrevented: ["白喉", "破傷風", "百日咳", "小兒麻痺", "b型嗜血桿菌", "B型肝炎"]
   },
   {
+    // id 保留歷史命名（同 hepa-12m）；實際時程自 114/1/1 起為出生滿 27 個月。
     id: "hepa-18m",
     name: "A型肝炎疫苗 第2劑",
-    timing: "出生滿18-21個月",
+    timing: "出生滿27個月",
     fundingType: "public",
-    ageInMonths: 18,
-    ageLabel: "18個月",
+    ageInMonths: 27,
+    ageLabel: "27個月",
     doses: 2,
     currentDose: 2,
     sideEffects: ["注射部位疼痛", "疲倦", "輕微發燒"],
-    notes: "與第一劑至少間隔6個月"
+    notes: "與第1劑至少間隔6個月"
   },
   {
     id: "je-15m",
@@ -315,34 +318,22 @@ export const vaccineSchedules: VaccineSchedule[] = [
     fundingType: "public",
     ageInMonths: 15,
     ageLabel: "15個月",
-    doses: 3,
+    doses: 2,
     currentDose: 1,
     sideEffects: ["發燒", "注射部位紅腫", "頭痛"],
-    notes: "間隔2週接種第2劑"
-  },
-  {
-    id: "je-15m-2",
-    name: "日本腦炎疫苗 第2劑",
-    timing: "第1劑後2週",
-    fundingType: "public",
-    ageInMonths: 15.5,
-    ageLabel: "15個月後2週",
-    doses: 3,
-    currentDose: 2,
-    sideEffects: ["發燒", "注射部位紅腫", "頭痛"],
-    notes: "間隔2週接種"
+    notes: "細胞培養活性減毒疫苗，間隔12個月接種第2劑"
   },
   {
     id: "je-27m",
-    name: "日本腦炎疫苗 第3劑",
+    name: "日本腦炎疫苗 第2劑",
     timing: "出生滿27個月",
     fundingType: "public",
     ageInMonths: 27,
     ageLabel: "27個月",
-    doses: 3,
-    currentDose: 3,
+    doses: 2,
+    currentDose: 2,
     sideEffects: ["發燒", "注射部位紅腫", "頭痛"],
-    notes: "與第一劑至少間隔12個月"
+    notes: "與第1劑間隔12個月；完成此劑即完成幼兒常規接種"
   },
   {
     id: "pneumococcal-2y",
@@ -394,17 +385,6 @@ export const vaccineSchedules: VaccineSchedule[] = [
     doses: 1,
     sideEffects: ["注射部位痠痛腫脹", "疲倦", "輕微發燒"],
     notes: "俗稱四合一疫苗"
-  },
-  {
-    id: "je-5y",
-    name: "日本腦炎疫苗 第4劑",
-    timing: "滿5歲至入小學前",
-    fundingType: "public",
-    ageInMonths: 60,
-    ageLabel: "5歲",
-    doses: 4,
-    currentDose: 4,
-    sideEffects: ["發燒", "注射部位紅腫", "頭痛"]
   },
   // 自費疫苗
   {
