@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Sun } from 'lucide-react';
 import ExplorerTabBar from './ExplorerTabBar';
-import HomeButton from '../../common/components/HomeButton';
+import AppHomeButton from '../../common/components/AppHomeButton';
 import type { ExplorerTab } from './ExplorerTabBar';
 
 interface ExplorerShellProps {
@@ -39,7 +39,7 @@ export default function ExplorerShell({
             <h1 className="text-xl font-bold text-explorer-bark leading-tight">LittleExplorer</h1>
             <p className="text-sm text-explorer-bark/60 truncate">{subtitle}</p>
           </div>
-          <HomeButton className="bg-explorer-sand hover:bg-explorer-sunbeam-light text-explorer-bark" />
+          <AppHomeButton className="bg-explorer-sand hover:bg-explorer-sunbeam-light text-explorer-bark" />
         </div>
       </header>
 

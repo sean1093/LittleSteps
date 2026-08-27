@@ -9,6 +9,7 @@ import { useCareTasks } from './littleexplorer/hooks/useCareTasks';
 import { useDiary } from './littleexplorer/hooks/useDiary';
 import Sidebar from './common/components/Sidebar';
 import MainLandingPage from './common/pages/MainLandingPage';
+import AppHomeButton from './common/components/AppHomeButton';
 import LandingPage from './common/pages/LandingPage';
 const DashboardPage = lazy(() => import('./littlesteps/pages/DashboardPage'));
 const MilestonesPage = lazy(() => import('./littlesteps/pages/MilestonesPage'));
@@ -273,7 +274,7 @@ function AppContent() {
       {/* Header */}
       {showHeader && (
         <header className="bg-white shadow-soft sticky top-0 z-30">
-          <div className="px-4 py-4 flex items-center gap-4">
+          <div className="px-4 py-4 flex items-center gap-2">
             <button
               onClick={() => setSidebarOpen(true)}
               className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center"
@@ -284,13 +285,14 @@ function AppContent() {
               {getPageTitle()}
             </h1>
             <button
-              onClick={() => navigateToPage('home')}
-              className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center"
-              title="回主頁"
-              aria-label="回主頁"
+              onClick={() => navigateToPage('littlesteps')}
+              className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center shrink-0"
+              title="LittleSteps 首頁"
+              aria-label="LittleSteps 首頁"
             >
               <Home className="w-5 h-5 text-gray-700" />
             </button>
+            <AppHomeButton />
           </div>
         </header>
       )}

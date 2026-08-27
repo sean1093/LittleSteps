@@ -5,7 +5,7 @@ import { User } from 'firebase/auth';
 import { pregnancyGuides } from '../../data/pregnancyGuides';
 import { ChildProfile, PrenatalCheckup } from '../../types';
 import { usePregnancyData } from '../hooks/usePregnancyData';
-import HomeButton from '../../common/components/HomeButton';
+import AppHomeButton from '../../common/components/AppHomeButton';
 
 interface LittleBloomPageProps {
   currentChild?: ChildProfile | null;
@@ -74,7 +74,7 @@ function LittleBloomPage({ currentChild, user }: LittleBloomPageProps) {
           className="bg-white rounded-3xl p-8 shadow-soft mb-6 relative"
         >
           <div className="absolute top-4 right-4">
-            <HomeButton />
+            <AppHomeButton />
           </div>
           <div className="text-center">
             <Flower2 className="w-12 h-12 text-[#FF9B9B] mx-auto mb-4" />

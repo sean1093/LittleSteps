@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NursingRoom } from '../../types';
-import HomeButton from '../../common/components/HomeButton';
+import AppHomeButton from '../../common/components/AppHomeButton';
 
 // Import leaflet CSS
 import 'leaflet/dist/leaflet.css';
@@ -307,7 +307,7 @@ const BabyOasisPage = () => {
             </h1>
             <p className="text-sm text-gray-600 mt-1">找到最近的哺乳室</p>
           </div>
-          <HomeButton />
+          <AppHomeButton />
         </div>
       </div>
 

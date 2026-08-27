@@ -71,12 +71,24 @@ describe('ExplorerShell 與 tab bar', () => {
     expect(screen.queryByLabelText(/項待處理/)).not.toBeInTheDocument();
   });
 
-  it('頁首提供回主頁的入口，點擊後導向主頁面', async () => {
+  // 導覽有兩級：tab bar 通往本服務的首頁（成長分頁即 #/littleexplorer），
+  // 頁首的「所有服務」再往上一級回到 app 進入點。兩者不可互相取代。
+  it('tab bar 通往本服務首頁', async () => {
     const user = userEvent.setup();
     window.location.hash = '#/littleexplorer/wiki';
 
     render(<ToddlerWikiPage currentChild={child()} />);
-    await user.click(screen.getByRole('button', { name: '回主頁' }));
+    await user.click(within(screen.getByRole('navigation')).getByText('成長'));
+
+    expect(window.location.hash).toBe('#/littleexplorer');
+  });
+
+  it('頁首通往所有服務的進入點', async () => {
+    const user = userEvent.setup();
+    window.location.hash = '#/littleexplorer/wiki';
+
+    render(<ToddlerWikiPage currentChild={child()} />);
+    await user.click(screen.getByRole('button', { name: '所有服務' }));
 
     expect(window.location.hash).toBe('#/');
   });
