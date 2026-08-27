@@ -47,12 +47,12 @@ afterEach(() => {
 
 describe('LittleBloomPage', () => {
   it('依末次月經算出真正的週數，而不是永遠停在第 1 週', () => {
-    render(<LittleBloomPage currentChild={pregnant()} progress={{}} />);
+    render(<LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} />);
     expect(screen.getByText(`第 ${EXPECTED_WEEK} 週`)).toBeInTheDocument();
   });
 
   it('顯示該週的指南，而不是退回第 1 週的內容', () => {
-    render(<LittleBloomPage currentChild={pregnant()} progress={{}} />);
+    render(<LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} />);
 
     const guide = pregnancyGuides.find((g) => g.week === EXPECTED_WEEK)!;
     expect(screen.getByRole('heading', { name: guide.title })).toBeInTheDocument();
@@ -60,7 +60,7 @@ describe('LittleBloomPage', () => {
   });
 
   it('第 20 週以後顯示就醫警訊', () => {
-    render(<LittleBloomPage currentChild={pregnant()} progress={{}} />);
+    render(<LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} />);
     expect(screen.getByText('這些情況請盡快就醫')).toBeInTheDocument();
   });
 
@@ -69,6 +69,7 @@ describe('LittleBloomPage', () => {
       <LittleBloomPage
         currentChild={{ ...pregnant(), isPregnancy: undefined, pregnancyData: undefined }}
         progress={{}}
+        onRecordBirth={noop}
       />,
     );
     expect(screen.getByText('還沒有孕期檔案')).toBeInTheDocument();
@@ -76,7 +77,7 @@ describe('LittleBloomPage', () => {
   });
 
   it('下一項產檢來自真實時程，不是寫死的假資料', () => {
-    render(<LittleBloomPage currentChild={pregnant()} progress={{}} />);
+    render(<LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} />);
     // 舊版寫死「幸福婦產科 2026-04-15」給每一位使用者。
     expect(screen.queryByText('幸福婦產科')).not.toBeInTheDocument();
     expect(screen.getByText('下一項產檢')).toBeInTheDocument();
@@ -85,11 +86,38 @@ describe('LittleBloomPage', () => {
   it('產檢時程按鈕真的會導航（原本是空的 onClick）', async () => {
     const user = userEvent.setup();
     window.location.hash = '#/littlebloom';
-    render(<LittleBloomPage currentChild={pregnant()} progress={{}} />);
+    render(<LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} />);
 
     await user.click(screen.getByRole('button', { name: /產檢時程/ }));
 
     expect(window.location.hash).toBe('#/littlebloom/prenatal');
+  });
+
+  // PregnancyData.status 從設計出來就存在，卻沒有任何流程會把它改成
+  // archived——孕期檔案永遠停在孕期，寶寶出生後無處可去。
+  it('可以登記出生，並把實際出生日期交出去', async () => {
+    const user = userEvent.setup();
+    const onRecordBirth = vi.fn(async (_birthday: string) => {});
+
+    render(
+      <LittleBloomPage
+        currentChild={pregnant()}
+        progress={{}}
+        onRecordBirth={onRecordBirth}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /登記出生/ }));
+    await user.click(screen.getByRole('button', { name: '確認出生' }));
+
+    expect(onRecordBirth).toHaveBeenCalledWith('2026-08-27');
+  });
+
+  it('說明出生後孕期紀錄會保留', () => {
+    render(
+      <LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} />,
+    );
+    expect(screen.getByText(/孕期與產檢紀錄都會保留/)).toBeInTheDocument();
   });
 });
 

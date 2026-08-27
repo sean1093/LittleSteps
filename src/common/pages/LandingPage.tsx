@@ -192,7 +192,7 @@ export default function LandingPage({ onNavigate, user, onSignIn }: LandingPageP
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#7EC8E3] text-white font-semibold hover:bg-[#6BB8D3] transition-colors"
                 >
                   <BookOpen className="w-5 h-5" />
-                  <span>查看 0-2 歲科學睡眠指南</span>
+                  <span>查看 0-3 歲科學睡眠指南</span>
                 </motion.button>
               </div>
             </div>

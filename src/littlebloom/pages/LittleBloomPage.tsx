@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Book, Calendar, Flower2, Sparkles } from 'lucide-react';
+import { AlertTriangle, Baby, Book, Calendar, Flower2, Sparkles } from 'lucide-react';
 import type { ChildProfile, PrenatalCheckupProgress } from '../../types';
 import { PREGNANCY_TOTAL_WEEKS, pregnancyGuides, trimesterOf } from '../data/pregnancyGuides';
 import { prenatalCheckupSchedule } from '../data/prenatalCheckups';
@@ -10,6 +10,7 @@ import BloomShell from '../components/BloomShell';
 interface LittleBloomPageProps {
   currentChild?: ChildProfile | null;
   progress: PrenatalCheckupProgress;
+  onRecordBirth: (birthday: string) => Promise<void>;
 }
 
 const containerVariants = {
@@ -28,9 +29,15 @@ const TRIMESTER_LABEL: Record<1 | 2 | 3, string> = {
   3: '第三孕期',
 };
 
-export default function LittleBloomPage({ currentChild, progress }: LittleBloomPageProps) {
+export default function LittleBloomPage({
+  currentChild,
+  progress,
+  onRecordBirth,
+}: LittleBloomPageProps) {
   const lmp = currentChild?.pregnancyData?.lastPeriodDate ?? '';
   const dueDate = currentChild?.pregnancyData?.dueDate ?? '';
+  const [birthOpen, setBirthOpen] = useState(false);
+  const [birthDate, setBirthDate] = useState(() => new Date().toISOString().split('T')[0]);
 
   // weeksPregnant 回傳已完成整週；顯示上習慣說「第 N 週」，故 +1。
   // 舊版用 Math.abs 算天數差，未來的末次月經日會被算成正的週數。
@@ -179,6 +186,60 @@ export default function LittleBloomPage({ currentChild, progress }: LittleBloomP
             hash="#/littlebloom/wiki"
             className="bg-bloom-dusty-blue/20 text-bloom-dusty-blue-dark"
           />
+        </motion.section>
+
+        {/* 出生登記：孕期檔案轉為寶寶檔案。PregnancyData.status 這個欄位
+            從設計出來就存在，卻一直沒有任何流程會把它改成 archived。 */}
+        <motion.section variants={itemVariants} className="bg-white rounded-3xl shadow-soft p-6">
+          <h3 className="font-bold text-bloom-stone flex items-center gap-2 mb-2">
+            <Baby className="w-5 h-5 text-bloom-dusty-rose" /> 寶寶出生了
+          </h3>
+          <p className="text-sm text-bloom-stone/70 leading-relaxed mb-4">
+            填入實際出生日期後，這份檔案會變成寶寶檔案，
+            LittleSteps 與 LittleExplorer 就會依實際月齡接手。孕期與產檢紀錄都會保留。
+          </p>
+
+          {birthOpen ? (
+            <div className="space-y-2">
+              <label className="block text-xs text-bloom-stone/60">
+                出生日期
+                <input
+                  type="date"
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(e.target.value)}
+                  className="mt-1 w-full px-3 py-2 rounded-xl border border-bloom-sand text-sm text-bloom-stone focus:outline-none focus:ring-2 focus:ring-bloom-dusty-rose"
+                />
+              </label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await onRecordBirth(birthDate);
+                    setBirthOpen(false);
+                  }}
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-bloom-dusty-rose to-bloom-mauve text-white font-semibold"
+                >
+                  確認出生
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBirthOpen(false)}
+                  className="px-4 rounded-xl text-bloom-stone/50 hover:bg-bloom-sand"
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setBirthOpen(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-bloom-dusty-rose/15 text-bloom-dusty-rose-dark font-medium"
+            >
+              <Baby className="w-4 h-4" />
+              登記出生
+            </button>
+          )}
         </motion.section>
       </motion.div>
     </BloomShell>

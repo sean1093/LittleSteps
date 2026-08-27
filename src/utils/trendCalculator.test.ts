@@ -249,6 +249,8 @@ describe('trendCalculator', () => {
       expect(getRecommendedSleepHours(9)).toEqual({ min: 13, max: 14 });
       expect(getRecommendedSleepHours(15)).toEqual({ min: 13, max: 14 });
       expect(getRecommendedSleepHours(20)).toEqual({ min: 12, max: 13 });
+      // 30 months must resolve to the 2-3 歲 band, not the 1.5-2 歲 one.
+      expect(getRecommendedSleepHours(30)).toEqual({ min: 11, max: 14 });
     });
 
     it('switches bands at the lower bound of each range', () => {
@@ -257,11 +259,13 @@ describe('trendCalculator', () => {
       expect(getRecommendedSleepHours(6)).toEqual({ min: 13, max: 14 });
       expect(getRecommendedSleepHours(12)).toEqual({ min: 13, max: 14 });
       expect(getRecommendedSleepHours(18)).toEqual({ min: 12, max: 13 });
+      expect(getRecommendedSleepHours(24)).toEqual({ min: 11, max: 14 });
+      expect(getRecommendedSleepHours(35.9)).toEqual({ min: 11, max: 14 });
     });
 
     it('clamps ages past the last band to the oldest requirement', () => {
-      expect(getRecommendedSleepHours(36)).toEqual({ min: 12, max: 13 });
-      expect(getRecommendedSleepHours(120)).toEqual({ min: 12, max: 13 });
+      expect(getRecommendedSleepHours(36)).toEqual({ min: 11, max: 14 });
+      expect(getRecommendedSleepHours(120)).toEqual({ min: 11, max: 14 });
     });
 
     it('never returns an inverted range', () => {

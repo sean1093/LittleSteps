@@ -58,6 +58,7 @@ function AppContent() {
     currentChildPrenatalProgress,
     upsertPrenatalRecord,
     clearPrenatalRecord,
+    recordBirth,
     upsertCareTaskRecord,
     addDiaryEntry,
     updateDiaryEntry,
@@ -423,6 +424,7 @@ function AppContent() {
           <LittleBloomPage
             currentChild={currentChild}
             progress={currentChildPrenatalProgress}
+            onRecordBirth={recordBirth}
           />
         )}
         {currentPage === 'littlebloom/prenatal' && (

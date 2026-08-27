@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
-import type { MilestoneProgress, VaccineProgress } from '../types';
+import type { MilestoneProgress, VaccineProgress, VaccineSchedule } from '../types';
 import { milestones } from '../littlesteps/data/milestones';
 import { vaccineSchedules } from '../littlesteps/data/vaccines';
 import {
@@ -187,55 +187,81 @@ describe('summaryCalculator', () => {
   });
 
   describe('calculateVaccineSummary', () => {
-    // The schedule holds one entry per dose appointment, each carrying the dose
-    // count of its whole series, so the denominator is that sum.
-    const TOTAL_DOSES = vaccineSchedules.reduce((sum, vaccine) => sum + vaccine.doses, 0);
-    const HEPB_BIRTH = vaccineSchedules.find(vaccine => vaccine.id === 'hepb-birth');
-    const RSV_BIRTH = vaccineSchedules.find(vaccine => vaccine.id === 'rsv-birth');
+    // 時程表的每一筆記錄就是「一劑」：`doses` 是整個系列的總劑數，同系列的每筆
+    // 記錄都重複帶著同一個值（五合一四筆全寫 doses: 4），所以分母是記錄數，
+    // 把 `doses` 加總會把 4 劑膨脹成 16 劑。
+    const TOTAL_DOSES = vaccineSchedules.length;
 
-    if (!HEPB_BIRTH || !RSV_BIRTH) {
-      throw new Error('vaccine schedule no longer contains the birth-slot fixtures');
-    }
-
-    /** Marks doses 1..count of a series as administered. */
-    const administer = (count: number): DoseProgress => {
-      const doses: DoseProgress = {};
-      for (let doseNumber = 1; doseNumber <= count; doseNumber++) {
-        doses[doseNumber] = { administered: true, administeredDate: '2026-01-01' };
+    const byId = (id: string): VaccineSchedule => {
+      const vaccine = vaccineSchedules.find(candidate => candidate.id === id);
+      if (!vaccine) {
+        throw new Error(`vaccine schedule no longer contains ${id}`);
       }
-      return doses;
+      return vaccine;
     };
 
-    it('derives the denominator from the published schedule', () => {
+    const HEPB_BIRTH = byId('hepb-birth');
+    const RSV_BIRTH = byId('rsv-birth');
+    const HEPB_1M = byId('hepb-1m');
+    const PENTAVALENT_18M = byId('pentavalent-18m');
+
+    /** 該筆記錄所代表的劑次，與接種頁寫入進度時使用的鍵一致。 */
+    const doseOf = (vaccine: VaccineSchedule): number => vaccine.currentDose ?? 1;
+
+    /** 將某筆記錄代表的那一劑標記為已接種。 */
+    const administer = (
+      vaccine: VaccineSchedule,
+      administeredDate = '2026-01-01'
+    ): VaccineProgress[string] => ({
+      doses: { [doseOf(vaccine)]: { administered: true, administeredDate } }
+    });
+
+    /** 整份時程表都完成接種的進度。 */
+    const administerAll = (): VaccineProgress =>
+      Object.fromEntries(vaccineSchedules.map(vaccine => [vaccine.id, administer(vaccine)]));
+
+    it('derives the denominator from the number of scheduled doses', () => {
       expect(TOTAL_DOSES).toBeGreaterThan(0);
-      expect(calculateVaccineSummary({}).totalDoses).toBe(TOTAL_DOSES);
+      expect(calculateVaccineSummary({}).totalDoses).toBe(vaccineSchedules.length);
+    });
+
+    it('does not inflate the denominator with the series length of every record', () => {
+      const summedSeriesLengths = vaccineSchedules.reduce((sum, vaccine) => sum + vaccine.doses, 0);
+      // 資料集真的含多劑疫苗，否則這個測試不具鑑別力。
+      expect(summedSeriesLengths).toBeGreaterThan(vaccineSchedules.length);
+      expect(calculateVaccineSummary({}).totalDoses).not.toBe(summedSeriesLengths);
     });
 
     it('reports nothing administered for empty progress', () => {
       const summary = calculateVaccineSummary({});
+      expect(summary.totalDoses).toBe(TOTAL_DOSES);
       expect(summary.administeredCount).toBe(0);
       expect(summary.administrationRate).toBe(0);
     });
 
-    it('aggregates administered doses across vaccines and ignores pending ones', () => {
+    it('aggregates administered doses across records and ignores pending ones', () => {
       const progress: VaccineProgress = {
-        [HEPB_BIRTH.id]: {
-          doses: {
-            1: { administered: true, administeredDate: '2026-01-02' },
-            2: { administered: true, administeredDate: '2026-02-02' },
-            3: { administered: false }
-          }
-        },
-        [RSV_BIRTH.id]: {
-          doses: { 1: { administered: true, administeredDate: '2026-01-03' } }
-        }
+        [HEPB_BIRTH.id]: administer(HEPB_BIRTH, '2026-01-02'),
+        [HEPB_1M.id]: administer(HEPB_1M, '2026-02-02'),
+        [RSV_BIRTH.id]: { doses: { [doseOf(RSV_BIRTH)]: { administered: false } } }
       };
 
       const summary = calculateVaccineSummary(progress);
 
-      expect(summary.administeredCount).toBe(3);
+      expect(summary.administeredCount).toBe(2);
       expect(summary.totalDoses).toBe(TOTAL_DOSES);
-      expect(summary.administrationRate).toBe(Math.round((3 / TOTAL_DOSES) * 100));
+      expect(summary.administrationRate).toBe(Math.round((2 / TOTAL_DOSES) * 100));
+    });
+
+    it('ignores dose numbers that belong to another record of the same series', () => {
+      // hepb-1m 只承載第 2 劑，第 1 劑記在 hepb-birth。
+      expect(doseOf(HEPB_1M)).toBe(2);
+      const strayDoses: DoseProgress = { 1: { administered: true, administeredDate: '2026-02-02' } };
+
+      const summary = calculateVaccineSummary({ [HEPB_1M.id]: { doses: strayDoses } });
+
+      expect(summary.administeredCount).toBe(0);
+      expect(summary.administrationRate).toBe(0);
     });
 
     it('ignores progress recorded against vaccines outside the schedule', () => {
@@ -253,17 +279,40 @@ describe('summaryCalculator', () => {
       expect(summary.administrationRate).toBe(0);
     });
 
-    it('reaches 100% with no next vaccine once the whole schedule is done', () => {
-      const progress: VaccineProgress = {};
-      for (const vaccine of vaccineSchedules) {
-        progress[vaccine.id] = { doses: administer(vaccine.doses) };
+    it('reaches 100% with no next vaccine once every scheduled dose is done', () => {
+      const summary = calculateVaccineSummary(administerAll());
+
+      expect(summary.administeredCount).toBe(TOTAL_DOSES);
+      expect(summary.administrationRate).toBe(100);
+      expect(summary.nextVaccine).toBeUndefined();
+    });
+
+    it('caps a record at one dose even when the whole series is logged under it', () => {
+      const progress = administerAll();
+      const seriesUnderOneRecord: DoseProgress = {};
+      for (let doseNumber = 1; doseNumber <= HEPB_BIRTH.doses + 2; doseNumber++) {
+        seriesUnderOneRecord[doseNumber] = { administered: true, administeredDate: '2026-01-01' };
       }
+      progress[HEPB_BIRTH.id] = { doses: seriesUnderOneRecord };
 
       const summary = calculateVaccineSummary(progress);
 
       expect(summary.administeredCount).toBe(TOTAL_DOSES);
       expect(summary.administrationRate).toBe(100);
-      expect(summary.nextVaccine).toBeUndefined();
+    });
+
+    it('always yields an integer rate between 0 and 100', () => {
+      for (let count = 0; count <= vaccineSchedules.length; count++) {
+        const progress: VaccineProgress = Object.fromEntries(
+          vaccineSchedules.slice(0, count).map(vaccine => [vaccine.id, administer(vaccine)])
+        );
+
+        const { administrationRate } = calculateVaccineSummary(progress);
+
+        expect(Number.isInteger(administrationRate)).toBe(true);
+        expect(administrationRate).toBeGreaterThanOrEqual(0);
+        expect(administrationRate).toBeLessThanOrEqual(100);
+      }
     });
 
     it('suggests the earliest first dose when nothing has been given', () => {
@@ -279,31 +328,46 @@ describe('summaryCalculator', () => {
       });
     });
 
-    it('advances to the next dose of the same vaccine series', () => {
+    it('moves on to the following record once the current dose is administered', () => {
       const progress: VaccineProgress = {
-        [HEPB_BIRTH.id]: { doses: administer(1) }
+        [HEPB_BIRTH.id]: administer(HEPB_BIRTH)
       };
 
-      expect(calculateVaccineSummary(progress).nextVaccine).toMatchObject({
-        id: HEPB_BIRTH.id,
-        doseNumber: 2
+      expect(calculateVaccineSummary(progress).nextVaccine).toEqual({
+        id: RSV_BIRTH.id,
+        name: RSV_BIRTH.name,
+        timing: RSV_BIRTH.timing,
+        doseNumber: 1
       });
-      expect(HEPB_BIRTH.doses).toBeGreaterThan(1);
     });
 
-    it('returns the lowest missing dose even when a later dose is already logged', () => {
+    it('continues a multi-dose series in the record that carries the next dose', () => {
       const progress: VaccineProgress = {
-        [HEPB_BIRTH.id]: {
-          doses: {
-            1: { administered: true, administeredDate: '2026-01-02' },
-            3: { administered: true, administeredDate: '2026-07-02' }
-          }
-        }
+        [HEPB_BIRTH.id]: administer(HEPB_BIRTH),
+        [RSV_BIRTH.id]: administer(RSV_BIRTH)
       };
 
-      expect(calculateVaccineSummary(progress).nextVaccine).toMatchObject({
-        id: HEPB_BIRTH.id,
+      expect(calculateVaccineSummary(progress).nextVaccine).toEqual({
+        id: HEPB_1M.id,
+        name: HEPB_1M.name,
+        timing: HEPB_1M.timing,
         doseNumber: 2
+      });
+    });
+
+    it('reports the dose number the pending record stands for, not dose 1', () => {
+      expect(doseOf(PENTAVALENT_18M)).toBeGreaterThan(1);
+      const progress: VaccineProgress = Object.fromEntries(
+        vaccineSchedules
+          .filter(vaccine => vaccine.id !== PENTAVALENT_18M.id)
+          .map(vaccine => [vaccine.id, administer(vaccine)])
+      );
+
+      expect(calculateVaccineSummary(progress).nextVaccine).toEqual({
+        id: PENTAVALENT_18M.id,
+        name: PENTAVALENT_18M.name,
+        timing: PENTAVALENT_18M.timing,
+        doseNumber: doseOf(PENTAVALENT_18M)
       });
     });
 
@@ -314,19 +378,6 @@ describe('summaryCalculator', () => {
 
       expect(calculateVaccineSummary(progress).nextVaccine).toMatchObject({
         id: HEPB_BIRTH.id,
-        doseNumber: 1
-      });
-    });
-
-    it('moves on to the following vaccine once a series is complete', () => {
-      const progress: VaccineProgress = {
-        [HEPB_BIRTH.id]: { doses: administer(HEPB_BIRTH.doses) }
-      };
-
-      expect(calculateVaccineSummary(progress).nextVaccine).toEqual({
-        id: RSV_BIRTH.id,
-        name: RSV_BIRTH.name,
-        timing: RSV_BIRTH.timing,
         doseNumber: 1
       });
     });

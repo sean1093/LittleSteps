@@ -33,7 +33,7 @@ export default function SleepTrainingPage() {
           <h2 className="text-xl font-bold text-gray-800">寶寶睡眠全攻略</h2>
         </div>
         <p className="text-sm text-gray-600">
-          0-2 歲階段需求、安全守則與訓練技巧
+          0-3 歲階段需求、安全守則與訓練技巧
         </p>
       </div>
 

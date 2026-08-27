@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { Baby, TrendingUp, Calendar, ArrowRight, Sparkles, Heart, LineChart, Syringe, BookOpen, UtensilsCrossed } from 'lucide-react';
+import { Baby, TrendingUp, Calendar, ArrowRight, Sparkles, Heart, LineChart, Syringe, BookOpen, UtensilsCrossed, Flower2 } from 'lucide-react';
+import { isPregnancyProfile } from '../../common/pregnancy';
 import { ChildProfile, DailyLog } from '../../types';
 import { User } from 'firebase/auth';
 import { useChildSummary } from '../hooks/useChildSummary';
@@ -226,6 +227,33 @@ export default function DashboardPage({
         animate="visible"
         className="max-w-6xl mx-auto relative z-10"
       >
+        {/* 孕期檔案的 birthday 是預產期，所以里程碑、疫苗、日誌一律是 0，
+            畫面看起來像個從未使用的帳號。直接說明並指路，勝過讓人以為壞了。 */}
+        {isPregnancyProfile(currentChild) && (
+          <motion.div
+            variants={itemVariants}
+            className="bg-bloom-cream border border-bloom-dusty-rose/30 rounded-3xl p-5 mb-6 flex items-start gap-3"
+          >
+            <Flower2 className="w-6 h-6 text-bloom-dusty-rose shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold text-bloom-stone mb-1">這是孕期檔案</p>
+              <p className="text-sm text-bloom-stone/70 leading-relaxed">
+                寶寶還沒出生，所以下面的里程碑、疫苗與日誌都還是空的。
+                每週指南與產檢時程在 LittleBloom；出生後在那裡登記出生日期，這裡就會開始有內容。
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.hash = '#/littlebloom';
+                }}
+                className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-bloom-dusty-rose text-white text-sm font-medium"
+              >
+                前往 LittleBloom
+              </button>
+            </div>
+          </motion.div>
+        )}
+
         {/* Baby Info Header */}
         <motion.div
           variants={itemVariants}

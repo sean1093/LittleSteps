@@ -1,4 +1,4 @@
-import { MilestoneProgress, VaccineProgress } from '../types';
+import { MilestoneProgress, VaccineProgress, VaccineSchedule } from '../types';
 import { milestones } from '../littlesteps/data/milestones';
 import { vaccineSchedules } from '../littlesteps/data/vaccines';
 
@@ -78,22 +78,29 @@ export interface VaccineSummary {
   };
 }
 
+/**
+ * 時程表的每一筆記錄就是「一劑」：`VaccineSchedule.doses` 是整個疫苗系列的總劑數，
+ * 同系列的每筆記錄都重複帶著同一個值（五合一的 4 筆全部寫 doses: 4），真正代表
+ * 「這筆是第幾劑」的是 `currentDose`，也是接種頁寫入進度時使用的鍵。
+ *
+ * 所以分母是記錄數，絕不可把 `doses` 加總：那會讓五合一的 4 劑膨脹成 16 劑，
+ * 每支多劑疫苗都同樣被放大，接種率被系統性低估。
+ */
+const scheduledDoseNumber = (vaccine: VaccineSchedule): number => vaccine.currentDose ?? 1;
+
 export function calculateVaccineSummary(
   vaccineProgress: VaccineProgress
 ): VaccineSummary {
-  // 計算總劑次和已接種劑次
-  let totalDoses = 0;
-  let administeredCount = 0;
+  // 分母＝時程表記錄數（每筆一劑）。
+  const totalDoses = vaccineSchedules.length;
 
+  // 分子只認每筆記錄自己那一劑：由目錄反查進度，孤兒 vaccineId 自然被忽略；
+  // 同一筆底下殘留的其他劑次鍵也不得重複計入，否則分子會超過分母、突破 100%。
+  let administeredCount = 0;
   vaccineSchedules.forEach(vaccine => {
-    totalDoses += vaccine.doses;
-    const progress = vaccineProgress[vaccine.id];
-    if (progress) {
-      Object.values(progress.doses).forEach(dose => {
-        if (dose.administered) {
-          administeredCount++;
-        }
-      });
+    const dose = vaccineProgress[vaccine.id]?.doses[scheduledDoseNumber(vaccine)];
+    if (dose?.administered) {
+      administeredCount++;
     }
   });
 
@@ -125,24 +132,21 @@ function findNextVaccine(
     return ageA - ageB;
   });
 
-  // 找出第一個尚未完全接種的疫苗
+  // 找出第一筆尚未接種的記錄。每筆記錄只承載一劑，系列的下一劑在下一筆記錄裡，
+  // 不能在同一筆裡從 1 數到 `doses`。
   for (const vaccine of sortedVaccines) {
-    const progress = vaccineProgress[vaccine.id];
-
-    for (let doseNumber = 1; doseNumber <= vaccine.doses; doseNumber++) {
-      const dose = progress?.doses[doseNumber];
-      if (!dose || !dose.administered) {
-        return {
-          id: vaccine.id,
-          name: vaccine.name,
-          timing: vaccine.timing,
-          doseNumber,
-        };
-      }
+    const doseNumber = scheduledDoseNumber(vaccine);
+    if (!vaccineProgress[vaccine.id]?.doses[doseNumber]?.administered) {
+      return {
+        id: vaccine.id,
+        name: vaccine.name,
+        timing: vaccine.timing,
+        doseNumber,
+      };
     }
   }
 
-  return undefined; // All vaccines have been administered
+  return undefined; // All scheduled doses have been administered
 }
 
 /**

@@ -1,6 +1,6 @@
 import { DailyLog, FeedingData, SleepData, DiaperData } from '../types';
 import { filterLogsByDate, calculateSleepDuration } from './logHelpers';
-import { sleepRequirements } from '../littlesteps/data/sleep';
+import { getSleepRequirementForAge } from '../littlesteps/data/sleep';
 
 export type TrendDirection = 'increasing' | 'decreasing' | 'stable';
 
@@ -163,23 +163,14 @@ function parseSleepHoursRange(totalHours: string): { min: number; max: number } 
 
 /**
  * Compare a value with age-recommended sleep hours.
- * Uses sleepRequirements from src/data/sleep.ts
+ *
+ * Band selection lives with the data in littlesteps/data/sleep: this used to
+ * be an if/else ladder indexing `sleepRequirements[0]`…`[5]` positionally,
+ * which silently mapped every child past 18 months onto the 1.5-2 歲 band and
+ * would have kept doing so after a new band was appended.
  */
 export function getRecommendedSleepHours(ageMonths: number): { min: number; max: number } {
-  // Map age in months to the correct sleep requirement entry
-  if (ageMonths < 1) {
-    return parseSleepHoursRange(sleepRequirements[0].totalHours); // 0-1 months
-  } else if (ageMonths < 3) {
-    return parseSleepHoursRange(sleepRequirements[1].totalHours); // 1-3 months
-  } else if (ageMonths < 6) {
-    return parseSleepHoursRange(sleepRequirements[2].totalHours); // 3-6 months
-  } else if (ageMonths < 12) {
-    return parseSleepHoursRange(sleepRequirements[3].totalHours); // 6-12 months
-  } else if (ageMonths < 18) {
-    return parseSleepHoursRange(sleepRequirements[4].totalHours); // 12-18 months
-  } else {
-    return parseSleepHoursRange(sleepRequirements[5].totalHours); // 18-24 months
-  }
+  return parseSleepHoursRange(getSleepRequirementForAge(ageMonths).totalHours);
 }
 
 /**

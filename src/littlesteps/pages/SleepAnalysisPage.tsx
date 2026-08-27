@@ -8,10 +8,10 @@ import { calculateAge } from '../../utils/dateHelpers';
 import {
   calculateSleepStats,
   calculateSleepRegularity,
-  getSleepRecommendation,
   generateSleepAdvice,
   parseHourRange,
 } from '../../utils/sleepAnalysis';
+import { getSleepRequirementForAge } from '../data/sleep';
 import SimpleBarChart from '../components/sleep/SimpleBarChart';
 import SleepTimelineChart from '../components/sleep/SleepTimelineChart';
 
@@ -45,7 +45,7 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
   }, [currentChild]);
 
   const recommendation = useMemo(() => {
-    return getSleepRecommendation(ageInMonths);
+    return getSleepRequirementForAge(ageInMonths);
   }, [ageInMonths]);
 
   const advice = useMemo(() => {

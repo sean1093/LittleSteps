@@ -235,6 +235,24 @@ export function useFirebaseChildren(userId: string | null) {
     await remove(recordRef);
   };
 
+  /**
+   * 孕期檔案轉為寶寶檔案。
+   *
+   * 保留 pregnancyData 當作孕期紀錄，只把 status 改成 archived —— 家長花了
+   * 十個月累積的產檢記錄不該在出生那天被清掉。birthday 由預產期換成實際
+   * 出生日，之後 LittleSteps 與 LittleExplorer 的月齡計算就會接手。
+   */
+  const recordBirth = async (childId: string, birthday: string) => {
+    if (!userId) throw new Error('User not authenticated');
+
+    const childRef = ref(database, `children/${childId}`);
+    await update(childRef, {
+      birthday,
+      isPregnancy: false,
+      'pregnancyData/status': 'archived',
+    });
+  };
+
   const upsertCareTaskRecord = async (childId: string, record: CareTaskRecord) => {
     if (!userId) throw new Error('User not authenticated');
 
@@ -382,6 +400,7 @@ export function useFirebaseChildren(userId: string | null) {
     updateToothProgress,
     upsertPrenatalRecord,
     clearPrenatalRecord,
+    recordBirth,
     upsertCareTaskRecord,
     addDiaryEntry,
     updateDiaryEntry,

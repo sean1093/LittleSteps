@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Baby, CalendarPlus, Check, Download, Syringe } from 'lucide-react';
+import { Baby, CalendarPlus, Check, Download, Flower2, Syringe } from 'lucide-react';
 import type {
   CareTaskRecord,
   ChildProfile,
@@ -8,6 +8,7 @@ import type {
   ToddlerTipCategory,
 } from '../../types';
 import { getLucideIcon } from '../../common/lucideIcons';
+import { isPregnancyProfile } from '../../common/pregnancy';
 import { calculateAge } from '../../utils/dateHelpers';
 import { calculateAgeDisplay } from '../../utils/summaryCalculator';
 import { careTaskKindLabels } from '../data/careTasks';
@@ -78,6 +79,13 @@ export default function RemindersPage({
       title="還沒有寶寶資料"
       description={'請先到 LittleSteps 新增寶寶，\n提醒會依出生日自動算出健檢、疫苗與塗氟的時程。'}
       action={{ label: '前往 LittleSteps', onClick: () => { window.location.hash = '#/littlesteps'; } }}
+    />
+  ) : isPregnancyProfile(currentChild) ? (
+    <ExplorerNotice
+      icon={Flower2}
+      title="這是孕期檔案"
+      description={'目前選擇的是還沒出生的寶寶。\n產檢時程在 LittleBloom；出生後在那裡登記出生日期，幼兒期的提醒就會接手。'}
+      action={{ label: '前往 LittleBloom 產檢時程', onClick: () => { window.location.hash = '#/littlebloom/prenatal'; } }}
     />
   ) : ageMonths < TODDLER_MIN_MONTHS ? (
     <ExplorerNotice

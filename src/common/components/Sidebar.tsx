@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Baby, AlertCircle, Home, Syringe, UtensilsCrossed, PlusCircle, Edit, Trash2, LogIn, LogOut, TrendingUp, Moon, Share2, BarChart3, ClipboardList, BookOpen, Stethoscope, FileBarChart } from 'lucide-react';
+import { X, Baby, AlertCircle, Home, Syringe, UtensilsCrossed, PlusCircle, Edit, Trash2, LogIn, LogOut, TrendingUp, Moon, Share2, BarChart3, ClipboardList, BookOpen, Stethoscope, FileBarChart, Flower2 } from 'lucide-react';
+import { isPregnancyProfile } from '../pregnancy';
 import { User } from 'firebase/auth';
 import { ChildProfile, Gender } from '../../types'; // Import ChildProfile and Gender
 import { LittleStepsPage } from '../../types/routes'; // Import route types
@@ -298,8 +299,19 @@ export default function Sidebar({
                       className="flex-1 flex items-center gap-2"
                       onClick={() => setCurrentChildId(child.id)}
                     >
-                      <Baby className={`w-5 h-5 ${child.id === currentChildId ? 'text-[#FF9B9B]' : 'text-[#7EC8E3]'}`} />
+                      {isPregnancyProfile(child) ? (
+                        <Flower2 className="w-5 h-5 text-bloom-dusty-rose" />
+                      ) : (
+                        <Baby className={`w-5 h-5 ${child.id === currentChildId ? 'text-[#FF9B9B]' : 'text-[#7EC8E3]'}`} />
+                      )}
                       <span className="font-medium">{child.name}</span>
+                      {/* 孕期檔案的 birthday 是預產期，外觀上與寶寶檔案無異；
+                          沒有這個標記，切換器裡兩者分不出來。 */}
+                      {isPregnancyProfile(child) && (
+                        <span className="px-2 py-0.5 rounded-full bg-bloom-dusty-rose/15 text-bloom-dusty-rose-dark text-[10px] font-medium shrink-0">
+                          孕期
+                        </span>
+                      )}
                     </div>
                     <div className="flex gap-1">
                       <button

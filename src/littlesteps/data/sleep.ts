@@ -2,6 +2,10 @@
 export interface SleepRequirement {
   id: string;
   ageRange: string;
+  /** 區段起始月齡（含） */
+  minMonths: number;
+  /** 區段結束月齡（不含） */
+  maxMonths: number;
   totalHours: string;
   daytimeHours: string;
   nighttimeHours: string;
@@ -12,6 +16,8 @@ export const sleepRequirements: SleepRequirement[] = [
   {
     id: 'sleep-0-1m',
     ageRange: '0-1 個月',
+    minMonths: 0,
+    maxMonths: 1,
     totalHours: '16-17 小時',
     daytimeHours: '約 8 小時',
     nighttimeHours: '8-9 小時',
@@ -20,6 +26,8 @@ export const sleepRequirements: SleepRequirement[] = [
   {
     id: 'sleep-1-3m',
     ageRange: '1-3 個月',
+    minMonths: 1,
+    maxMonths: 3,
     totalHours: '15-16 小時',
     daytimeHours: '4-7 小時',
     nighttimeHours: '8-10 小時',
@@ -28,6 +36,8 @@ export const sleepRequirements: SleepRequirement[] = [
   {
     id: 'sleep-3-6m',
     ageRange: '3-6 個月',
+    minMonths: 3,
+    maxMonths: 6,
     totalHours: '13-15 小時',
     daytimeHours: '4-5 小時',
     nighttimeHours: '9-10 小時',
@@ -36,6 +46,8 @@ export const sleepRequirements: SleepRequirement[] = [
   {
     id: 'sleep-6-12m',
     ageRange: '6-12 個月',
+    minMonths: 6,
+    maxMonths: 12,
     totalHours: '13-14 小時',
     daytimeHours: '3 小時 (2次)',
     nighttimeHours: '10-11 小時',
@@ -44,6 +56,8 @@ export const sleepRequirements: SleepRequirement[] = [
   {
     id: 'sleep-12-18m',
     ageRange: '1-1.5 歲',
+    minMonths: 12,
+    maxMonths: 18,
     totalHours: '13-14 小時',
     daytimeHours: '2-3 小時',
     nighttimeHours: '11 小時',
@@ -52,12 +66,54 @@ export const sleepRequirements: SleepRequirement[] = [
   {
     id: 'sleep-18-24m',
     ageRange: '1.5-2 歲',
+    minMonths: 18,
+    maxMonths: 24,
     totalHours: '12-13 小時',
     daytimeHours: '1.5-2 小時',
     nighttimeHours: '11 小時',
     characteristics: '注意活動量，養成早睡早起習慣'
+  },
+  // 2-3 歲時數來源（非由 1.5-2 歲區段外推）：
+  // - 衛生福利部嬰幼兒睡眠時數建議：1-3 歲每日 11-14 小時
+  //   （臺師大張鑑如「幼兒發展調查資料庫」2024 年發布時引述，並據此建議 1-3 歲
+  //     幼兒 21:30 前就寢、不宜超過 22:00）
+  // - American Academy of Sleep Medicine 2016 共識聲明
+  //   （J Clin Sleep Med 2016;12(6):785-786）：幼兒 1-2 歲 11-14 小時、
+  //   學齡前 3-5 歲 10-13 小時，時數含夜眠與日間小睡；中國醫藥大學附設醫院
+  //   兒少發展暨心智行為科衛教單張（HE-50122，2025/4/29）採同一組數字。
+  // - 日間／夜間分配依《0-6 歲好眠全指南》（好夢心理治療所 吳家碩臨床心理師）
+  //   【2-4 歲・午睡固定期】：大多已不需上午小睡，午睡建議下午 3 點前結束。
+  {
+    id: 'sleep-24-36m',
+    ageRange: '2-3 歲',
+    minMonths: 24,
+    maxMonths: 36,
+    totalHours: '11-14 小時',
+    daytimeHours: '1-2 小時 (1次午睡)',
+    nighttimeHours: '10-12 小時',
+    characteristics: '午睡固定 1 次，建議下午 3 點前結束，避免影響夜眠'
   }
 ];
+
+/**
+ * 依月齡取得對應的睡眠需求區段。
+ *
+ * 以月齡區間比對，而非用陣列索引取值（先前 sleepAnalysis 與 trendCalculator
+ * 各自寫死 sleepRequirements[0]…[5]）。索引寫法與資料順序耦合：只要插入或
+ * 重排任何一段，索引就會靜默指向錯誤的年齡層——新增「2-3 歲」後 [5] 仍是
+ * 1.5-2 歲即為一例。改以區間比對後，往後增修區段只需改這份資料。
+ *
+ * 超出兩端的月齡夾到最年幼／最年長的區段。
+ */
+export function getSleepRequirementForAge(ageMonths: number): SleepRequirement {
+  const band = sleepRequirements.find(
+    (candidate) => ageMonths >= candidate.minMonths && ageMonths < candidate.maxMonths
+  );
+  if (band) return band;
+  return ageMonths < sleepRequirements[0].minMonths
+    ? sleepRequirements[0]
+    : sleepRequirements[sleepRequirements.length - 1];
+}
 
 // 睡眠知識
 export interface SleepKnowledge {

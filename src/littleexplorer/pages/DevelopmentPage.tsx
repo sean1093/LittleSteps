@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { AlertTriangle, Baby, Check, ChevronDown, PartyPopper, Sprout } from 'lucide-react';
+import { AlertTriangle, Baby, Check, ChevronDown, Flower2, PartyPopper, Sprout } from 'lucide-react';
 import type {
   ChildProfile,
   DevelopmentCheckItem,
@@ -9,6 +9,7 @@ import type {
   ToothProgress,
 } from '../../types';
 import { getLucideIcon } from '../../common/lucideIcons';
+import { isPregnancyProfile } from '../../common/pregnancy';
 import { calculateAge } from '../../utils/dateHelpers';
 import { calculateAgeDisplay } from '../../utils/summaryCalculator';
 import {
@@ -77,6 +78,15 @@ export default function DevelopmentPage({
       title="還沒有寶寶資料"
       description={'請先到 LittleSteps 新增寶寶，\n之後這裡就會依月齡顯示該階段的成長重點。'}
       action={{ label: '前往 LittleSteps', onClick: () => { window.location.hash = '#/littlesteps'; } }}
+    />
+  ) : isPregnancyProfile(currentChild) ? (
+    // 孕期檔案的 birthday 是預產期，月齡會算成 0，若不先攔下來就會被
+    // 誤導去 LittleSteps 追蹤一個還沒出生的孩子的里程碑。
+    <ExplorerNotice
+      icon={Flower2}
+      title="這是孕期檔案"
+      description={'目前選擇的是還沒出生的寶寶。\n孕期的產檢與每週指南在 LittleBloom；出生後在那裡登記出生日期，這裡就會接手。'}
+      action={{ label: '前往 LittleBloom', onClick: () => { window.location.hash = '#/littlebloom'; } }}
     />
   ) : ageMonths < TODDLER_MIN_MONTHS ? (
     <ExplorerNotice

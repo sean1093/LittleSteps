@@ -1,5 +1,5 @@
 import { DailyLog, SleepData } from '../types';
-import { sleepRequirements, SleepRequirement } from '../littlesteps/data/sleep';
+import { getSleepRequirementForAge } from '../littlesteps/data/sleep';
 
 // 睡眠統計介面
 export interface SleepStats {
@@ -220,31 +220,11 @@ export function calculateSleepRegularity(logs: DailyLog[]): SleepRegularity {
 }
 
 /**
- * 根據月齡取得睡眠建議
- */
-export function getSleepRecommendation(ageInMonths: number): SleepRequirement {
-  // 根據月齡找到對應的建議
-  if (ageInMonths < 1) {
-    return sleepRequirements[0]; // 0-1 個月
-  } else if (ageInMonths < 3) {
-    return sleepRequirements[1]; // 1-3 個月
-  } else if (ageInMonths < 6) {
-    return sleepRequirements[2]; // 3-6 個月
-  } else if (ageInMonths < 12) {
-    return sleepRequirements[3]; // 6-12 個月
-  } else if (ageInMonths < 18) {
-    return sleepRequirements[4]; // 12-18 個月
-  } else {
-    return sleepRequirements[5]; // 18-24 個月及以上
-  }
-}
-
-/**
  * 生成睡眠建議
  */
 export function generateSleepAdvice(stats: SleepStats, ageInMonths: number): SleepAdvice[] {
   const advice: SleepAdvice[] = [];
-  const recommendation = getSleepRecommendation(ageInMonths);
+  const recommendation = getSleepRequirementForAge(ageInMonths);
 
   const { min: minHours, max: maxHours } = parseHourRange(recommendation.totalHours);
   const actualHours = stats.dailyAverage / 60; // 使用每日平均
