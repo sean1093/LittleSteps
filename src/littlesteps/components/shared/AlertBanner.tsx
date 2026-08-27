@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, AlertTriangle, AlertOctagon, Clock, Moon } from 'lucide-react';
-import type { Alert } from '../../../utils/alertEngine';
+import type { Alert } from '../../utils/alertEngine';
 
 interface AlertBannerProps {
   alerts: Alert[];

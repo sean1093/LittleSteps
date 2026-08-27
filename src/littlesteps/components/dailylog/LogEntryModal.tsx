@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { DailyLog, FeedingData, SleepData, DiaperData } from '../../../types';
-import { getCurrentDateTimeLocal, dateTimeLocalToISO, calculateDuration } from '../../../utils/dateHelpers';
+import { getCurrentDateTimeLocal, dateTimeLocalToISO, calculateDuration } from '../../../common/utils/dateHelpers';
 
 interface LogEntryModalProps {
   isOpen: boolean;

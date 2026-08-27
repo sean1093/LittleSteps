@@ -5,7 +5,7 @@ import {
   getPercentileCategory,
   getGrowthTrend,
 } from './growthCalculator';
-import type { GrowthRecord } from '../types';
+import type { GrowthRecord } from '../../types';
 
 describe('growthCalculator', () => {
   describe('calculateZScore', () => {

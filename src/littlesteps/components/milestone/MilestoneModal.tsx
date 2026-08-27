@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Milestone } from '../../../types';
 import { X, Check, Share2, Lightbulb } from 'lucide-react';
-import { shareMilestone } from '../../../utils/share';
+import { shareMilestone } from '../../utils/share';
 
 interface MilestoneModalProps {
   milestone: Milestone | null;

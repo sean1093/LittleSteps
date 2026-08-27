@@ -17,7 +17,7 @@ import {
 import { User } from 'firebase/auth';
 import type { ChildProfile, DailyLog } from '../../types';
 import { useClinicSummary } from '../hooks/useClinicSummary';
-import { formatDuration } from '../../utils/logHelpers';
+import { formatDuration } from '../utils/logHelpers';
 
 interface ClinicSummaryPageProps {
   currentChild?: ChildProfile;

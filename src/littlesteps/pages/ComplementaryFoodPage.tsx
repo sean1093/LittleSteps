@@ -28,7 +28,7 @@ import { useFirebaseChildren } from '../../common/hooks/useFirebaseChildren';
 import FoodTrackingTab from '../components/food/FoodTrackingTab';
 import FoodTrialModal from '../components/food/FoodTrialModal';
 import FourByThreeTracker from '../components/food/FourByThreeTracker';
-import { toLocalDateKey } from '../../utils/dateHelpers';
+import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
 type ViewMode = 'home' | 'my-tracking' | 'guide-overview' | 'guide-stages' | 'guide-menu' | 'guide-safety';
 type TrackingTab = 'foods' | 'tracker';

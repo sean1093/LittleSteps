@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
-import type { MilestoneProgress, VaccineProgress, VaccineSchedule } from '../types';
-import { milestones } from '../littlesteps/data/milestones';
-import { vaccineSchedules } from '../littlesteps/data/vaccines';
+import type { MilestoneProgress, VaccineProgress, VaccineSchedule } from '../../types';
+import { milestones } from '../../littlesteps/data/milestones';
+import { vaccineSchedules } from '../../littlesteps/data/vaccines';
 import {
   calculateMilestoneSummary,
   calculateVaccineSummary,

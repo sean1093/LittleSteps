@@ -1,4 +1,4 @@
-import { DailyLog, GrowthRecord, FeedingData, SleepData, DiaperData } from '../types';
+import { DailyLog, GrowthRecord, FeedingData, SleepData, DiaperData } from '../../types';
 import { filterLogsByDate, calculateSleepDuration } from './logHelpers';
 import {
   TrendDirection,
@@ -6,7 +6,7 @@ import {
   getRecommendedSleepHours,
   generateSparklineData,
 } from './trendCalculator';
-import { toLocalDateKey } from './dateHelpers';
+import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
 export interface ReportScores {
   feeding: { score: number; label: string };

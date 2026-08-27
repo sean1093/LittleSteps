@@ -11,7 +11,7 @@ import type { PrenatalItemStatus } from '../utils/prenatalSchedule';
 import BloomShell from '../components/BloomShell';
 import ServiceNotice from '../../common/components/ServiceNotice';
 import { isPregnancyProfile } from '../../common/pregnancy';
-import { toLocalDateKey } from '../../utils/dateHelpers';
+import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
 const KIND_STYLE: Record<PrenatalItemKind, string> = {
   checkup: 'bg-bloom-dusty-rose/15 text-bloom-dusty-rose-dark',

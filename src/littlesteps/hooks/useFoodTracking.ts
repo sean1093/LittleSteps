@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import type { User } from 'firebase/auth';
 import { FoodTrackingProgress } from '../../types';
 import { useFirebaseCollection } from '../../common/hooks/useFirebaseCollection';
-import { toLocalDateKey } from '../../utils/dateHelpers';
+import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
 /**
  * Realtime listener + derived views for a child's complementary-food tracking

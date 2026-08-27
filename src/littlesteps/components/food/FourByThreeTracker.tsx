@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { CheckCircle2, Clock, Info, Plus } from 'lucide-react';
 import { FoodTrialRecord } from '../../../types';
-import { toLocalDateKey } from '../../../utils/dateHelpers';
+import { toLocalDateKey } from '../../../common/utils/dateHelpers';
 
 interface FourByThreeTrackerProps {
   foodTrials: FoodTrialRecord[];

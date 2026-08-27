@@ -1,5 +1,5 @@
-import { DailyLog, DailySummary, FeedingData, SleepData, DiaperData } from '../types';
-import { toLocalDateKey } from './dateHelpers';
+import { DailyLog, DailySummary, FeedingData, SleepData, DiaperData } from '../../types';
+import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
 /**
  * 按時間倒序排序日誌（最新的在前）
@@ -135,7 +135,7 @@ export function formatDate(isoString: string): string {
  * Single canonical implementation lives in dateHelpers; re-exported here so the
  * whole app formats durations consistently.
  */
-export { formatDuration } from './dateHelpers';
+export { formatDuration } from '../../common/utils/dateHelpers';
 
 /**
  * 獲取餵奶類型的中文顯示名稱

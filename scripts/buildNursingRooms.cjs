@@ -28,7 +28,7 @@
  *   他區同名道路）。座標因此一律採用國健署自己的定位結果。
  *
  * 設施明細兩個來源都沒有，只有臺北市開放資料曾提供，保存在
- * src/data/nursingRoom/facilities.json。那是這條管線唯一無法重新取得的
+ * src/babyoasis/data/facilities.json。那是這條管線唯一無法重新取得的
  * 資產，所以進版控；其餘來源隨時可重新下載。
  *
  * 用法
@@ -42,7 +42,7 @@ const os = require('os');
 const { execFileSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
-const FACILITIES = path.join(ROOT, 'src/data/nursingRoom/facilities.json');
+const FACILITIES = path.join(ROOT, 'src/babyoasis/data/facilities.json');
 const OUTPUT = path.join(ROOT, 'public/data/nursingRooms.json');
 
 const MAP_ENDPOINT = 'https://mammy.hpa.gov.tw/Map/AjaxBreastfeedingRoom';

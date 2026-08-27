@@ -1,5 +1,5 @@
-import { DailyLog, SleepData } from '../types';
-import { getSleepRequirementForAge } from '../littlesteps/data/sleep';
+import { DailyLog, SleepData } from '../../types';
+import { getSleepRequirementForAge } from '../data/sleep';
 
 // 睡眠統計介面
 export interface SleepStats {

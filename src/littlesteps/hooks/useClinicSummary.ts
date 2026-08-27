@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import type { ChildProfile, DailyLog, FeedingData, SleepData, DiaperData } from '../../types';
 import { useGrowthTracking } from './useGrowthTracking';
-import { getRecentLogs, calculateSleepDuration } from '../../utils/logHelpers';
-import { calculateAgeDisplay, calculateVaccineSummary } from '../../utils/summaryCalculator';
+import { getRecentLogs, calculateSleepDuration } from '../utils/logHelpers';
+import { calculateAgeDisplay, calculateVaccineSummary } from '../../common/utils/summaryCalculator';
 import { vaccineSchedules } from '../data/vaccines';
-import { toLocalDateKey } from '../../utils/dateHelpers';
+import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
 export interface ClinicSummaryData {
   // Basic info

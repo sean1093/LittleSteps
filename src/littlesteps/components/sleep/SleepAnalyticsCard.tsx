@@ -13,8 +13,8 @@ import {
 } from 'lucide-react';
 import DashboardCard from '../dashboard/DashboardCard';
 import type { SleepAnalytics } from '../../../types';
-import { formatDuration } from '../../../utils/logHelpers';
-import { getRecommendedSleepHours } from '../../../utils/trendCalculator';
+import { formatDuration } from '../../utils/logHelpers';
+import { getRecommendedSleepHours } from '../../utils/trendCalculator';
 
 interface SleepAnalyticsCardProps {
   analytics: SleepAnalytics;

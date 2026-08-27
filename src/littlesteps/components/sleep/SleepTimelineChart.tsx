@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { DailyLog, SleepData } from '../../../types';
-import { isNightSleep } from '../../../utils/sleepAnalysis';
-import { toLocalDateKey } from '../../../utils/dateHelpers';
+import { isNightSleep } from '../../utils/sleepAnalysis';
+import { toLocalDateKey } from '../../../common/utils/dateHelpers';
 
 interface SleepTimelineChartProps {
   weekLogs: DailyLog[];

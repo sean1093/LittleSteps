@@ -1,7 +1,7 @@
 import { Baby } from 'lucide-react';
 import DashboardCard from '../dashboard/DashboardCard';
 import { MilestoneProgress } from '../../../types';
-import { calculateMilestoneSummary } from '../../../utils/summaryCalculator';
+import { calculateMilestoneSummary } from '../../../common/utils/summaryCalculator';
 
 interface MilestoneSummaryCardProps {
   milestoneProgress: MilestoneProgress;

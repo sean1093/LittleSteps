@@ -9,8 +9,8 @@ import type {
 } from '../../types';
 import { getLucideIcon } from '../../common/lucideIcons';
 import { isPregnancyProfile } from '../../common/pregnancy';
-import { calculateAge, toLocalDateKey } from '../../utils/dateHelpers';
-import { calculateAgeDisplay } from '../../utils/summaryCalculator';
+import { calculateAge, toLocalDateKey } from '../../common/utils/dateHelpers';
+import { calculateAgeDisplay } from '../../common/utils/summaryCalculator';
 import { careTaskKindLabels } from '../data/careTasks';
 import { tipCategoryIcons, tipCategoryLabels, toddlerCareTips } from '../data/monthlyTips';
 import { buildGoogleCalendarUrl, downloadIcs } from '../utils/icsExport';

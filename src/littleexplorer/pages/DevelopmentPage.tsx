@@ -10,8 +10,8 @@ import type {
 } from '../../types';
 import { getLucideIcon } from '../../common/lucideIcons';
 import { isPregnancyProfile } from '../../common/pregnancy';
-import { calculateAge } from '../../utils/dateHelpers';
-import { calculateAgeDisplay } from '../../utils/summaryCalculator';
+import { calculateAge } from '../../common/utils/dateHelpers';
+import { calculateAgeDisplay } from '../../common/utils/summaryCalculator';
 import {
   developmentCheckItems,
   developmentWarnings,

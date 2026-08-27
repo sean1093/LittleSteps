@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Weight, Ruler, CircleDot, Trash2 } from 'lucide-react';
 import { GrowthRecord } from '../../../types';
-import { getPercentileCategory } from '../../../utils/growthCalculator';
+import { getPercentileCategory } from '../../utils/growthCalculator';
 
 interface GrowthRecordListProps {
   records: GrowthRecord[];

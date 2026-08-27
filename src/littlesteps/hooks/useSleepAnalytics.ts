@@ -3,7 +3,7 @@ import type { DailyLog, SleepAnalytics, SleepPattern } from '../../types';
 import {
   analyzeSleepPatterns,
   getSleepPatternsByDate
-} from '../../utils/sleepAnalytics';
+} from '../utils/sleepAnalytics';
 
 /**
  * Hook for analyzing sleep patterns and providing insights

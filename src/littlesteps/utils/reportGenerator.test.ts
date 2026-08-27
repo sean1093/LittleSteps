@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import type { DailyLog, GrowthRecord, DiaperData } from '../types';
+import type { DailyLog, GrowthRecord, DiaperData } from '../../types';
 import type { WeeklyReport } from './reportGenerator';
 import {
   calculateScores,

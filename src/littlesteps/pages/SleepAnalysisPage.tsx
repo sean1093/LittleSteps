@@ -4,13 +4,13 @@ import { User } from 'firebase/auth';
 import { Star, TrendingUp, Moon, Sun, Clock } from 'lucide-react';
 import { ChildProfile } from '../../types';
 import { useDailyLogs } from '../hooks/useDailyLogs';
-import { calculateAge } from '../../utils/dateHelpers';
+import { calculateAge } from '../../common/utils/dateHelpers';
 import {
   calculateSleepStats,
   calculateSleepRegularity,
   generateSleepAdvice,
   parseHourRange,
-} from '../../utils/sleepAnalysis';
+} from '../utils/sleepAnalysis';
 import { getSleepRequirementForAge } from '../data/sleep';
 import SimpleBarChart from '../components/sleep/SimpleBarChart';
 import SleepTimelineChart from '../components/sleep/SleepTimelineChart';

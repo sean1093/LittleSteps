@@ -1,7 +1,7 @@
 import { Syringe } from 'lucide-react';
 import DashboardCard from '../dashboard/DashboardCard';
 import { VaccineProgress } from '../../../types';
-import { calculateVaccineSummary } from '../../../utils/summaryCalculator';
+import { calculateVaccineSummary } from '../../../common/utils/summaryCalculator';
 
 interface VaccineSummaryCardProps {
   vaccineProgress: VaccineProgress;

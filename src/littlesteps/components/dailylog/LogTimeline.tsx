@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Milk, Moon, Baby, Edit, Trash2, Clock } from 'lucide-react';
 import { DailyLog, FeedingData, SleepData, DiaperData } from '../../../types';
-import { formatTime, formatDuration, isSameDay } from '../../../utils/dateHelpers';
+import { formatTime, formatDuration, isSameDay } from '../../../common/utils/dateHelpers';
 
 interface LogTimelineProps {
   logs: DailyLog[];

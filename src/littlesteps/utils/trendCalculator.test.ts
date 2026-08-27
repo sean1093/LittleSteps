@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import type { DailyLog, DiaperData, FeedingData, SleepData } from '../types';
+import type { DailyLog, DiaperData, FeedingData, SleepData } from '../../types';
 import {
   calculateDailyAverage,
   calculateTrend,

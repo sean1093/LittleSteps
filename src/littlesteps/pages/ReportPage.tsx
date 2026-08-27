@@ -17,7 +17,7 @@ import { ChildProfile, DailyLog } from '../../types';
 import { useReport, ReportPeriod } from '../hooks/useReport';
 import ScoreCircle from '../components/shared/ScoreCircle';
 import ReportChart from '../components/report/ReportChart';
-import { TrendDirection } from '../../utils/trendCalculator';
+import { TrendDirection } from '../utils/trendCalculator';
 
 interface ReportPageProps {
   currentChild?: ChildProfile;

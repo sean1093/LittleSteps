@@ -4,8 +4,8 @@ import type {
   Gender,
   PercentileCategory,
   GrowthTrend,
-} from '../types';
-import { getWHOStandard } from '../littlesteps/data/growthChartData';
+} from '../../types';
+import { getWHOStandard } from '../data/growthChartData';
 
 /**
  * Calculate z-score for a measurement using WHO LMS method

@@ -4,7 +4,7 @@ import { User } from 'firebase/auth';
 import { ChildProfile, DailyLog } from '../../types';
 import { useDailyLogs } from '../hooks/useDailyLogs';
 import { useFirebaseChildren } from '../../common/hooks/useFirebaseChildren';
-import { isSameDay } from '../../utils/dateHelpers';
+import { isSameDay } from '../../common/utils/dateHelpers';
 import QuickLogButtons from '../components/dailylog/QuickLogButtons';
 import LogEntryModal from '../components/dailylog/LogEntryModal';
 import LogTimeline from '../components/dailylog/LogTimeline';

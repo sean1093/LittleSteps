@@ -12,7 +12,7 @@ import {
   vaccineTypes,
   vaccineGuidelines
 } from '../data/vaccines';
-import { toLocalDateKey } from '../../utils/dateHelpers';
+import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
 type FundingFilter = 'all' | 'public' | 'private';
 type MonthFilter = 'all' | number;

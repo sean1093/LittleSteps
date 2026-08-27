@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save, Weight, Ruler, CircleDot, Calendar } from 'lucide-react';
 import { GrowthRecord } from '../../../types';
-import { toLocalDateKey } from '../../../utils/dateHelpers';
+import { toLocalDateKey } from '../../../common/utils/dateHelpers';
 
 interface AddGrowthRecordModalProps {
   isOpen: boolean;

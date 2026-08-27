@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import { PenLine, Sprout, Trash2, X } from 'lucide-react';
 import type { ChildProfile, DiaryEntry, DiaryMood } from '../../types';
-import { calculateAgeDisplay } from '../../utils/summaryCalculator';
+import { calculateAgeDisplay } from '../../common/utils/summaryCalculator';
 import { developmentCheckItems } from '../data/developmentChecks';
 import { groupEntriesByMonth } from '../utils/diaryHelpers';
 import ExplorerShell from '../components/ExplorerShell';
 import ServiceNotice from '../../common/components/ServiceNotice';
-import { toLocalDateKey } from '../../utils/dateHelpers';
+import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
 const MOODS: { value: DiaryMood; emoji: string; label: string }[] = [
   { value: 'happy', emoji: '😊', label: '開心' },

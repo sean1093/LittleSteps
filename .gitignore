@@ -34,3 +34,5 @@ ui-debug.log
 *.njsproj
 *.sln
 *.sw?
+# Playwright MCP 的逐次輸出，屬於工具產物，不進版控
+.playwright-mcp/

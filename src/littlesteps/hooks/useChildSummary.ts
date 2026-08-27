@@ -5,8 +5,8 @@ import {
   calculateVaccineSummary,
   MilestoneSummary,
   VaccineSummary,
-} from '../../utils/summaryCalculator';
-import { calculateDailySummary } from '../../utils/logHelpers';
+} from '../../common/utils/summaryCalculator';
+import { calculateDailySummary } from '../utils/logHelpers';
 
 /**
  * 計算寶寶的各項摘要統計

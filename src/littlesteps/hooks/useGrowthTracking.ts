@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { ref, set, onValue, remove } from 'firebase/database';
 import { database } from '../../lib/firebase';
 import type { GrowthRecord, Gender } from '../../types';
-import { calculateZScore, calculatePercentile } from '../../utils/growthCalculator';
-import { removeUndefined } from '../../utils/firebaseData';
+import { calculateZScore, calculatePercentile } from '../utils/growthCalculator';
+import { removeUndefined } from '../../common/utils/firebaseData';
 
 interface UseGrowthTrackingResult {
   records: GrowthRecord[];

@@ -1,5 +1,5 @@
 import type { ChildProfile, ToddlerWikiCategory } from '../../types';
-import { calculateAgeDisplay } from '../../utils/summaryCalculator';
+import { calculateAgeDisplay } from '../../common/utils/summaryCalculator';
 import WikiBrowser, { WikiTheme } from '../../common/components/wiki/WikiBrowser';
 import {
   toddlerWikiArticles,

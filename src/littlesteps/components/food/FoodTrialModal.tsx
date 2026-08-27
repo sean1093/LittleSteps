@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Apple, Calendar, Plus, X } from 'lucide-react';
 import { FoodTrialRecord, AllergyReaction, AllergyReactionType, AllergySeverity, FoodPreference } from '../../../types';
-import { toLocalDateKey } from '../../../utils/dateHelpers';
+import { toLocalDateKey } from '../../../common/utils/dateHelpers';
 
 interface FoodTrialModalProps {
   isOpen: boolean;

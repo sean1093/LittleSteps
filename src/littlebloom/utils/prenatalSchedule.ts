@@ -1,4 +1,4 @@
-import { dueDateFromLmp, lmpFromDueDate } from '../../utils/dateHelpers';
+import { dueDateFromLmp, lmpFromDueDate } from '../../common/utils/dateHelpers';
 import type { PrenatalCheckupTemplate } from '../data/prenatalCheckups';
 
 /**

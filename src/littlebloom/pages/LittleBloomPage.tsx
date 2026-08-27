@@ -8,7 +8,7 @@ import { resolvePrenatalItems, weeksPregnant } from '../utils/prenatalSchedule';
 import BloomShell from '../components/BloomShell';
 import ServiceNotice from '../../common/components/ServiceNotice';
 import { isPregnancyProfile } from '../../common/pregnancy';
-import { toLocalDateKey } from '../../utils/dateHelpers';
+import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
 interface LittleBloomPageProps {
   currentChild?: ChildProfile | null;

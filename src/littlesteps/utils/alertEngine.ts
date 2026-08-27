@@ -1,7 +1,7 @@
-import { DailyLog, FeedingData, SleepData, DiaperData } from '../types';
+import { DailyLog, FeedingData, SleepData, DiaperData } from '../../types';
 import { filterLogsByDate, calculateSleepDuration } from './logHelpers';
 import { calculateDailyAverage, getRecommendedSleepHours } from './trendCalculator';
-import { toLocalDateKey } from './dateHelpers';
+import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
 export type AlertSeverity = 'warning' | 'danger';
 export type AlertCategory = 'feeding' | 'sleep' | 'poop';

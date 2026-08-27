@@ -4,7 +4,7 @@ import {
   generateWeeklyReport,
   generateMonthlyReport,
   WeeklyReport,
-} from '../../utils/reportGenerator';
+} from '../utils/reportGenerator';
 import { useGrowthTracking } from './useGrowthTracking';
 
 export type ReportPeriod = '7days' | '30days';

@@ -2,7 +2,7 @@ import { AlertTriangle } from 'lucide-react';
 import DashboardCard from '../dashboard/DashboardCard';
 import SparklineChart from '../shared/SparklineChart';
 import { DailyLog, DiaperData } from '../../../types';
-import { generateSparklineData } from '../../../utils/trendCalculator';
+import { generateSparklineData } from '../../utils/trendCalculator';
 
 interface PoopSummaryCardProps {
   dailyLogs: DailyLog[];

@@ -1,7 +1,7 @@
-import { DailyLog, FeedingData, SleepData, DiaperData } from '../types';
+import { DailyLog, FeedingData, SleepData, DiaperData } from '../../types';
 import { filterLogsByDate, calculateSleepDuration } from './logHelpers';
-import { getSleepRequirementForAge } from '../littlesteps/data/sleep';
-import { toLocalDateKey } from './dateHelpers';
+import { getSleepRequirementForAge } from '../data/sleep';
+import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
 export type TrendDirection = 'increasing' | 'decreasing' | 'stable';
 

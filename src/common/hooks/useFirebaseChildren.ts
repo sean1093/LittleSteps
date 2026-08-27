@@ -1,8 +1,8 @@
 import { ref, set, update, remove, get } from 'firebase/database';
 import { database } from '../../lib/firebase';
 import { CareTaskRecord, ChildProfile, DailyLog, DiaryEntry, FoodTrialRecord, Gender } from '../../types';
-import { removeUndefined } from '../../utils/firebaseData';
-import { lmpFromDueDate, toLocalDateKey } from '../../utils/dateHelpers';
+import { removeUndefined } from '../utils/firebaseData';
+import { lmpFromDueDate, toLocalDateKey } from '../utils/dateHelpers';
 
 // Helper function to generate UUID v4
 function generateUUID(): string {

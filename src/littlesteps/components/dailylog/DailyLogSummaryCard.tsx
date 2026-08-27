@@ -2,8 +2,8 @@ import { ClipboardList } from 'lucide-react';
 import DashboardCard from '../dashboard/DashboardCard';
 import SparklineChart from '../shared/SparklineChart';
 import { DailySummary, DailyLog } from '../../../types';
-import { formatDuration } from '../../../utils/logHelpers';
-import { getFeedingTrend } from '../../../utils/trendCalculator';
+import { formatDuration } from '../../utils/logHelpers';
+import { getFeedingTrend } from '../../utils/trendCalculator';
 
 interface DailyLogSummaryCardProps {
   summary: DailySummary;
