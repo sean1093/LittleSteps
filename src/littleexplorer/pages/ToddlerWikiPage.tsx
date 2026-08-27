@@ -17,6 +17,7 @@ const CATEGORY_ORDER: ToddlerWikiCategory[] = [
   'eating',
   'sleep',
   'safety',
+  'health',
   'preschool',
 ];
 

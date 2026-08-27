@@ -277,11 +277,13 @@ function AppContent() {
           <div className="px-4 py-4 flex items-center gap-2">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center"
+              className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center shrink-0"
             >
               <Menu className="w-5 h-5 text-gray-700" />
             </button>
-            <h1 className="text-2xl font-bold text-primary flex-1">
+            {/* min-w-0 + truncate：flex item 預設不會縮到內容寬度以下，
+                長標題會把右側兩顆按鈕擠出窄螢幕。 */}
+            <h1 className="text-2xl font-bold text-primary flex-1 min-w-0 truncate">
               {getPageTitle()}
             </h1>
             <button

@@ -39,7 +39,8 @@ export default function ExplorerShell({
             <h1 className="text-xl font-bold text-explorer-bark leading-tight">LittleExplorer</h1>
             <p className="text-sm text-explorer-bark/60 truncate">{subtitle}</p>
           </div>
-          <AppHomeButton className="bg-explorer-sand hover:bg-explorer-sunbeam-light text-explorer-bark" />
+          {/* 底色必須在白色 header 上看得見：explorer-sand (#FDF8EE) 幾乎等於白，會讓整顆按鈕消失。 */}
+          <AppHomeButton className="bg-explorer-sunbeam/20 hover:bg-explorer-sunbeam/35 text-explorer-sunbeam-dark" />
         </div>
       </header>
 

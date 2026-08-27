@@ -14,12 +14,13 @@ const CATEGORIES: ToddlerWikiCategory[] = [
   'eating',
   'sleep',
   'safety',
+  'health',
   'preschool',
 ];
 
 describe('toddlerWikiArticles', () => {
-  it('共 20 篇，且 id 唯一', () => {
-    expect(toddlerWikiArticles).toHaveLength(20);
+  it('共 32 篇，且 id 唯一', () => {
+    expect(toddlerWikiArticles).toHaveLength(32);
     const ids = toddlerWikiArticles.map((a) => a.id);
     expect(new Set(ids).size).toBe(ids.length);
   });

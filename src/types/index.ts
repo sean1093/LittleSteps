@@ -585,5 +585,6 @@ export type ToddlerWikiCategory =
   | 'eating'      // 飲食與挑食
   | 'sleep'       // 睡眠轉換
   | 'safety'      // 學步期安全
+  | 'health'      // 生病與就醫
   | 'preschool';  // 入園與社交
 export type ToddlerWikiArticle = WikiArticle<ToddlerWikiCategory>;
