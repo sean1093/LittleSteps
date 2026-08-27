@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { User } from 'firebase/auth';
 import { FoodTrackingProgress } from '../../types';
 import { useFirebaseCollection } from '../../common/hooks/useFirebaseCollection';
+import { toLocalDateKey } from '../../utils/dateHelpers';
 
 /**
  * Realtime listener + derived views for a child's complementary-food tracking
@@ -52,7 +53,7 @@ export function useFoodTracking(childId: string | null, user: User | null) {
     if (trialDates.length === 0) return null;
     const nextTrial = new Date(trialDates[trialDates.length - 1]);
     nextTrial.setDate(nextTrial.getDate() + 3);
-    return nextTrial.toISOString().split('T')[0];
+    return toLocalDateKey(nextTrial);
   };
 
   return { foodProgress, foodTrials, loading, stats, canTryNewFood, getNextTrialDate };

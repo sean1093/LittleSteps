@@ -6,6 +6,7 @@ import { PREGNANCY_TOTAL_WEEKS, pregnancyGuides, trimesterOf } from '../data/pre
 import { prenatalCheckupSchedule } from '../data/prenatalCheckups';
 import { resolvePrenatalItems, weeksPregnant } from '../utils/prenatalSchedule';
 import BloomShell from '../components/BloomShell';
+import { toLocalDateKey } from '../../utils/dateHelpers';
 
 interface LittleBloomPageProps {
   currentChild?: ChildProfile | null;
@@ -37,7 +38,25 @@ export default function LittleBloomPage({
   const lmp = currentChild?.pregnancyData?.lastPeriodDate ?? '';
   const dueDate = currentChild?.pregnancyData?.dueDate ?? '';
   const [birthOpen, setBirthOpen] = useState(false);
-  const [birthDate, setBirthDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [birthDate, setBirthDate] = useState(() => toLocalDateKey());
+  const [birthSaving, setBirthSaving] = useState(false);
+  const [birthError, setBirthError] = useState('');
+
+  // 登記出生會改寫檔案並封存孕期資料，失敗卻靜靜關閉表單，家長會以為存好了。
+  // 同時擋住重複點擊：這個動作不該被送出兩次。
+  const submitBirth = async () => {
+    setBirthSaving(true);
+    setBirthError('');
+    try {
+      await onRecordBirth(birthDate);
+      setBirthOpen(false);
+    } catch (error) {
+      console.error('登記出生失敗:', error);
+      setBirthError('儲存失敗，請確認網路後再試一次。');
+    } finally {
+      setBirthSaving(false);
+    }
+  };
 
   // weeksPregnant 回傳已完成整週；顯示上習慣說「第 N 週」，故 +1。
   // 舊版用 Math.abs 算天數差，未來的末次月經日會被算成正的週數。
@@ -206,25 +225,30 @@ export default function LittleBloomPage({
                 <input
                   type="date"
                   value={birthDate}
+                  max={toLocalDateKey()}
                   onChange={(e) => setBirthDate(e.target.value)}
                   className="mt-1 w-full px-3 py-2 rounded-xl border border-bloom-sand text-sm text-bloom-stone focus:outline-none focus:ring-2 focus:ring-bloom-dusty-rose"
                 />
               </label>
+              {birthError && (
+                <p role="alert" className="text-sm text-red-600">
+                  {birthError}
+                </p>
+              )}
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={async () => {
-                    await onRecordBirth(birthDate);
-                    setBirthOpen(false);
-                  }}
-                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-bloom-dusty-rose to-bloom-mauve text-white font-semibold"
+                  onClick={submitBirth}
+                  disabled={birthSaving}
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-bloom-dusty-rose to-bloom-mauve text-white font-semibold disabled:opacity-60"
                 >
-                  確認出生
+                  {birthSaving ? '儲存中…' : '確認出生'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setBirthOpen(false)}
-                  className="px-4 rounded-xl text-bloom-stone/50 hover:bg-bloom-sand"
+                  disabled={birthSaving}
+                  className="px-4 rounded-xl text-bloom-stone/50 hover:bg-bloom-sand disabled:opacity-60"
                 >
                   取消
                 </button>

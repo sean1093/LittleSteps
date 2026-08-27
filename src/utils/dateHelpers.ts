@@ -44,12 +44,39 @@ export function lmpFromDueDate(dueDate: string): string {
 }
 
 /**
- * 判斷兩個日期是否在同一天
+ * 取本地時區的日曆日期（YYYY-MM-DD）。
+ *
+ * 不要用 `toISOString().split('T')[0]`：那是 UTC 日期。台灣是 UTC+8，
+ * 凌晨 0 點到 8 點之間會得到「前一天」——而半夜餵奶、換尿布與睡眠紀錄
+ * 正是這個 app 的使用高峰，那些紀錄會被歸到錯誤的日期。
+ *
+ * 傳入已是 YYYY-MM-DD 的字串時原樣採用：再繞一次 Date 會以 UTC 午夜解析，
+ * 在 UTC 以西的時區反而位移一天。
+ */
+export function toLocalDateKey(value: Date | string = new Date()): string {
+  // 只有「純日期」字串走這條捷徑。錨住結尾很關鍵：完整 ISO 時間戳
+  // （2026-06-14T23:00:00Z）若也命中，就會直接回傳它的 UTC 日期部分，
+  // 等於完全沒有換算到本地時區。
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
+  const date = typeof value === 'string' ? new Date(value) : value;
+  // 無效輸入寧可炸掉也不要靜靜產出 "NaN-NaN-NaN" 當成日期鍵寫進資料庫。
+  if (Number.isNaN(date.getTime())) {
+    throw new RangeError(`無法解析的日期：${String(value)}`);
+  }
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
+/**
+ * 判斷兩個日期是否在同一天（依本地時區）
  */
 export function isSameDay(date1: Date | string, date2: Date | string): boolean {
-  const d1 = new Date(date1).toISOString().split('T')[0];
-  const d2 = new Date(date2).toISOString().split('T')[0];
-  return d1 === d2;
+  return toLocalDateKey(date1) === toLocalDateKey(date2);
 }
 
 /**

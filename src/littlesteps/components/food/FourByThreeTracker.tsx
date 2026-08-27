@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { CheckCircle2, Clock, Info, Plus } from 'lucide-react';
 import { FoodTrialRecord } from '../../../types';
+import { toLocalDateKey } from '../../../utils/dateHelpers';
 
 interface FourByThreeTrackerProps {
   foodTrials: FoodTrialRecord[];
@@ -25,7 +26,7 @@ export default function FourByThreeTracker({
     const nextTrial = new Date(lastTrial);
     nextTrial.setDate(nextTrial.getDate() + 3);
 
-    return nextTrial.toISOString().split('T')[0];
+    return toLocalDateKey(nextTrial);
   };
 
   /**
@@ -35,7 +36,7 @@ export default function FourByThreeTracker({
     const nextDate = getNextTrialDate(food);
     if (!nextDate) return true;
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = toLocalDateKey();
     return today >= nextDate;
   };
 

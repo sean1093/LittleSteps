@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
+  toLocalDateKey,
   isSameDay,
   calculateAge,
   calculateDuration,
@@ -92,29 +93,50 @@ const JUN_15_0805 = localDate(2026, 6, 15, 8, 5);
 const JUN_16_0805 = localDate(2026, 6, 16, 8, 5);
 
 describe('dateHelpers', () => {
+  describe('toLocalDateKey', () => {
+    it('凌晨 03:00 與下午 14:00 的紀錄要落在同一個本地日期', () => {
+      // 這就是線上的實際症狀：舊寫法 toISOString() 取的是 UTC 日期，台灣是
+      // UTC+8，凌晨 0 到 8 點的餵奶／換尿布／睡眠紀錄會被歸到「前一天」。
+      const smallHours = '2026-06-15T03:00:00+08:00'; // === 2026-06-14T19:00Z
+      const afternoon = '2026-06-15T14:00:00+08:00'; // === 2026-06-15T06:00Z
+
+      expect(toLocalDateKey(smallHours)).toBe('2026-06-15');
+      expect(toLocalDateKey(afternoon)).toBe('2026-06-15');
+      expect(toLocalDateKey(smallHours)).toBe(toLocalDateKey(afternoon));
+
+      // 這行把舊行為釘住：同一個瞬間的 UTC 日期真的是前一天，證明這組 fixture
+      // 確實踩在會出錯的區間，而不是剛好兩種寫法都給出同一天。
+      expect(new Date(smallHours).toISOString().split('T')[0]).toBe('2026-06-14');
+    });
+  });
+
   describe('isSameDay', () => {
-    it('should return true for two times within the same UTC calendar day', () => {
-      expect(isSameDay('2026-06-15T00:00:00.000Z', '2026-06-15T23:59:59.999Z')).toBe(true);
+    it('should return true for two times within the same local calendar day', () => {
+      expect(isSameDay('2026-06-15T00:00:00+08:00', '2026-06-15T23:59:59+08:00')).toBe(true);
     });
 
-    it('should return false for times on adjacent UTC calendar days', () => {
-      expect(isSameDay('2026-06-15T23:59:59.999Z', '2026-06-16T00:00:00.000Z')).toBe(false);
+    it('should return false for times on adjacent local calendar days', () => {
+      expect(isSameDay('2026-06-15T23:59:59+08:00', '2026-06-16T00:00:00+08:00')).toBe(false);
     });
 
-    it('should compare UTC calendar days, so one hour across UTC midnight is a different day', () => {
-      const beforeMidnight = new Date(Date.UTC(2026, 5, 15, 23, 30));
-      const afterMidnight = new Date(Date.UTC(2026, 5, 16, 0, 30));
+    it('compares local calendar days, so crossing UTC midnight is still the same day here', () => {
+      // 台灣 UTC+8：這兩個瞬間是同一天的 07:30 與 08:30。若照 UTC 比較會誤判成
+      // 不同天，半夜的餵奶與睡眠紀錄就會被歸到前一天。
+      const beforeUtcMidnight = new Date(Date.UTC(2026, 5, 15, 23, 30));
+      const afterUtcMidnight = new Date(Date.UTC(2026, 5, 16, 0, 30));
 
-      expect(isSameDay(beforeMidnight, afterMidnight)).toBe(false);
+      expect(isSameDay(beforeUtcMidnight, afterUtcMidnight)).toBe(true);
     });
 
     it('should accept Date and string inputs interchangeably', () => {
-      const date = new Date('2026-06-15T10:00:00.000Z');
+      // 以台灣本地時間書寫：同一天的 10:00 與 20:00。若寫成 20:00Z，那其實是
+      // 隔天凌晨 04:00，會（正確地）被判成不同天，測不到互通性。
+      const date = new Date('2026-06-15T10:00:00+08:00');
 
-      expect(isSameDay(date, '2026-06-15T20:00:00.000Z')).toBe(true);
-      expect(isSameDay('2026-06-15T20:00:00.000Z', date)).toBe(true);
-      expect(isSameDay(date, new Date('2026-06-15T02:00:00.000Z'))).toBe(true);
-      expect(isSameDay(date, new Date('2026-06-14T10:00:00.000Z'))).toBe(false);
+      expect(isSameDay(date, '2026-06-15T20:00:00+08:00')).toBe(true);
+      expect(isSameDay('2026-06-15T20:00:00+08:00', date)).toBe(true);
+      expect(isSameDay(date, new Date('2026-06-15T02:00:00+08:00'))).toBe(true);
+      expect(isSameDay(date, new Date('2026-06-14T10:00:00+08:00'))).toBe(false);
     });
 
     it('should treat offset notation of the same instant as the same day', () => {

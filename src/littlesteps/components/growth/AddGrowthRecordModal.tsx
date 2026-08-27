@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save, Weight, Ruler, CircleDot, Calendar } from 'lucide-react';
 import { GrowthRecord } from '../../../types';
+import { toLocalDateKey } from '../../../utils/dateHelpers';
 
 interface AddGrowthRecordModalProps {
   isOpen: boolean;
@@ -16,7 +17,7 @@ export default function AddGrowthRecordModal({
   onAdd,
   childId,
 }: AddGrowthRecordModalProps) {
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(toLocalDateKey());
   const [weight, setWeight] = useState('');
   const [height, setHeight] = useState('');
   const [headCircumference, setHeadCircumference] = useState('');
@@ -44,7 +45,7 @@ export default function AddGrowthRecordModal({
       });
 
       // Reset form
-      setDate(new Date().toISOString().split('T')[0]);
+      setDate(toLocalDateKey());
       setWeight('');
       setHeight('');
       setHeadCircumference('');
@@ -104,7 +105,7 @@ export default function AddGrowthRecordModal({
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  max={new Date().toISOString().split('T')[0]}
+                  max={toLocalDateKey()}
                   required
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                 />

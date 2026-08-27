@@ -111,11 +111,12 @@ describe('logHelpers', () => {
 
   describe('filterLogsByDate', () => {
     it('keeps only logs whose timestamp falls on the requested date', () => {
+      // 時間戳一律以台灣本地時間書寫（+08:00），因為分桶依的是本地日曆日。
       const logs = [
-        feedingLog('yesterday', '2026-06-14T23:00:00.000Z'),
-        feedingLog('target-early', '2026-06-15T00:00:00.000Z'),
-        feedingLog('target-late', '2026-06-15T22:15:00.000Z'),
-        feedingLog('tomorrow', '2026-06-16T01:00:00.000Z'),
+        feedingLog('yesterday', '2026-06-14T23:00:00.000+08:00'),
+        feedingLog('target-early', '2026-06-15T00:00:00.000+08:00'),
+        feedingLog('target-late', '2026-06-15T22:15:00.000+08:00'),
+        feedingLog('tomorrow', '2026-06-16T01:00:00.000+08:00'),
       ];
 
       expect(filterLogsByDate(logs, '2026-06-15').map(l => l.id)).toEqual([
@@ -124,10 +125,13 @@ describe('logHelpers', () => {
       ]);
     });
 
-    it('buckets by UTC calendar day, so the day boundary is exactly 00:00Z', () => {
+    it('buckets by local calendar day, so the day boundary is exactly 00:00+08:00', () => {
+      // 這兩個瞬間只差 1 毫秒，卻分屬不同的本地日期。兩者的 UTC 日期都是
+      // 06-15（15:59:59.999Z 與 16:00:00.000Z），所以舊的 UTC 分桶會把它們
+      // 併成同一天——這正是本測試要擋住的迴歸。
       const logs = [
-        feedingLog('last-ms-of-day', '2026-06-15T23:59:59.999Z'),
-        feedingLog('first-ms-of-next-day', '2026-06-16T00:00:00.000Z'),
+        feedingLog('last-ms-of-day', '2026-06-15T23:59:59.999+08:00'),
+        feedingLog('first-ms-of-next-day', '2026-06-16T00:00:00.000+08:00'),
       ];
 
       expect(filterLogsByDate(logs, '2026-06-15').map(l => l.id)).toEqual([
@@ -146,14 +150,26 @@ describe('logHelpers', () => {
   });
 
   describe('getTodayLogs', () => {
-    it("returns only logs from the current UTC day", () => {
+    it('returns only logs from the current local calendar day', () => {
+      // 凍結的 NOW 是 2026-06-15T08:00Z，在台灣是 06-15 16:00，
+      // 所以「今天」是本地 06-15 00:00 起、06-16 00:00 止（不含）。
       const logs = [
         feedingLog('today', at(-60)),
         feedingLog('two-days-ago', at(-2 * DAY_MINUTES)),
         sleepLog('also-today', at(-30)),
+        // 邊界：本地日的最後一毫秒與次日的第一毫秒。
+        feedingLog('last-ms-of-today', '2026-06-15T23:59:59.999+08:00'),
+        feedingLog('first-ms-of-tomorrow', '2026-06-16T00:00:00.000+08:00'),
+        // 半夜餵奶：UTC 日期是 06-14，但對台灣使用者就是今天。
+        feedingLog('small-hours-of-today', '2026-06-15T03:00:00.000+08:00'),
       ];
 
-      expect(getTodayLogs(logs).map(l => l.id).sort()).toEqual(['also-today', 'today']);
+      expect(getTodayLogs(logs).map(l => l.id)).toEqual([
+        'today',
+        'also-today',
+        'last-ms-of-today',
+        'small-hours-of-today',
+      ]);
     });
   });
 
@@ -320,17 +336,20 @@ describe('logHelpers', () => {
       });
     });
 
-    it("defaults to today's UTC date when no date is given", () => {
+    it("defaults to today's local calendar date when no date is given", () => {
       const logs = [
         feedingLog('today', at(-60), { amount: 150 }),
         feedingLog('last-week', at(-7 * DAY_MINUTES), { amount: 999 }),
+        // 半夜 03:00 的餵奶：UTC 日期是 06-14，本地日期是 06-15。舊的 UTC
+        // 預設值會把它漏掉，早上起來看到的當日總量就少一餐。
+        feedingLog('small-hours', '2026-06-15T03:00:00.000+08:00', { amount: 90 }),
       ];
 
       const summary = calculateDailySummary(logs);
 
       expect(summary.date).toBe('2026-06-15');
-      expect(summary.feedingCount).toBe(1);
-      expect(summary.totalFeedingAmount).toBe(150);
+      expect(summary.feedingCount).toBe(2);
+      expect(summary.totalFeedingAmount).toBe(240);
     });
   });
 

@@ -4,6 +4,7 @@ import { useGrowthTracking } from './useGrowthTracking';
 import { getRecentLogs, calculateSleepDuration } from '../../utils/logHelpers';
 import { calculateAgeDisplay, calculateVaccineSummary } from '../../utils/summaryCalculator';
 import { vaccineSchedules } from '../data/vaccines';
+import { toLocalDateKey } from '../../utils/dateHelpers';
 
 export interface ClinicSummaryData {
   // Basic info
@@ -136,7 +137,7 @@ export function useClinicSummary(
     let lastPoopTime: string | undefined;
 
     recentLogs.forEach((log) => {
-      const dateKey = new Date(log.timestamp).toISOString().split('T')[0];
+      const dateKey = toLocalDateKey(log.timestamp);
       if (!dayMap.has(dateKey)) {
         dayMap.set(dateKey, { feedingCount: 0, feedingAmount: 0, sleepMinutes: 0, poopCount: 0 });
       }

@@ -1,4 +1,5 @@
 import type { DailyLog, SleepData, SleepAnalytics, SleepRecommendation, SleepPattern } from '../types';
+import { toLocalDateKey } from './dateHelpers';
 
 /**
  * Filter sleep logs from daily logs
@@ -142,7 +143,7 @@ export function calculateRoutineScore(logs: DailyLog[], days: number = 7, baseDa
   sleepLogs.forEach(log => {
     const sleepData = log.data as SleepData;
     const startTime = new Date(sleepData.startTime);
-    const dateKey = startTime.toISOString().split('T')[0];
+    const dateKey = toLocalDateKey(startTime);
 
     if (!dailyFirstSleeps[dateKey] || startTime < dailyFirstSleeps[dateKey]) {
       dailyFirstSleeps[dateKey] = startTime;
@@ -185,7 +186,7 @@ export function calculateAverageBedtime(logs: DailyLog[], days: number = 7, base
   sleepLogs.forEach(log => {
     const sleepData = log.data as SleepData;
     const startTime = new Date(sleepData.startTime);
-    const dateKey = startTime.toISOString().split('T')[0];
+    const dateKey = toLocalDateKey(startTime);
 
     if (!dailyFirstSleeps[dateKey] || startTime < dailyFirstSleeps[dateKey]) {
       dailyFirstSleeps[dateKey] = startTime;
@@ -222,7 +223,7 @@ export function calculateAverageWakeTime(logs: DailyLog[], days: number = 7, bas
     if (!sleepData.endTime) return; // Skip ongoing sleep
 
     const endTime = new Date(sleepData.endTime);
-    const dateKey = endTime.toISOString().split('T')[0];
+    const dateKey = toLocalDateKey(endTime);
 
     if (!dailyLastWakes[dateKey] || endTime > dailyLastWakes[dateKey]) {
       dailyLastWakes[dateKey] = endTime;
@@ -404,7 +405,7 @@ export function getSleepPatternsByDate(logs: DailyLog[], days: number = 7, baseD
   const logsByDate: { [date: string]: DailyLog[] } = {};
 
   sleepLogs.forEach(log => {
-    const date = new Date(log.timestamp).toISOString().split('T')[0];
+    const date = toLocalDateKey(log.timestamp);
     if (!logsByDate[date]) {
       logsByDate[date] = [];
     }

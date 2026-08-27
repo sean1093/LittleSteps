@@ -1,6 +1,7 @@
 import { DailyLog, FeedingData, SleepData, DiaperData } from '../types';
 import { filterLogsByDate, calculateSleepDuration } from './logHelpers';
 import { calculateDailyAverage, getRecommendedSleepHours } from './trendCalculator';
+import { toLocalDateKey } from './dateHelpers';
 
 export type AlertSeverity = 'warning' | 'danger';
 export type AlertCategory = 'feeding' | 'sleep' | 'poop';
@@ -23,7 +24,7 @@ export interface Alert {
  */
 export function detectFeedingAlerts(logs: DailyLog[], _ageMonths: number): Alert[] {
   const alerts: Alert[] = [];
-  const today = new Date().toISOString().split('T')[0];
+  const today = toLocalDateKey();
   const todayLogs = filterLogsByDate(logs, today);
 
   // Rule 1: today's feeding amount < 70% of 7-day average
@@ -130,7 +131,7 @@ export function detectPoopAlerts(logs: DailyLog[]): Alert[] {
  */
 export function detectSleepAlerts(logs: DailyLog[], ageMonths: number): Alert[] {
   const alerts: Alert[] = [];
-  const today = new Date().toISOString().split('T')[0];
+  const today = toLocalDateKey();
   const todayLogs = filterLogsByDate(logs, today);
 
   const recommended = getRecommendedSleepHours(ageMonths);

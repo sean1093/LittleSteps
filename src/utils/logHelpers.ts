@@ -1,4 +1,5 @@
 import { DailyLog, DailySummary, FeedingData, SleepData, DiaperData } from '../types';
+import { toLocalDateKey } from './dateHelpers';
 
 /**
  * 按時間倒序排序日誌（最新的在前）
@@ -14,7 +15,7 @@ export function sortLogsByTime(logs: DailyLog[]): DailyLog[] {
  */
 export function filterLogsByDate(logs: DailyLog[], date: string): DailyLog[] {
   return logs.filter(log => {
-    const logDate = new Date(log.timestamp).toISOString().split('T')[0];
+    const logDate = toLocalDateKey(log.timestamp);
     return logDate === date;
   });
 }
@@ -23,7 +24,7 @@ export function filterLogsByDate(logs: DailyLog[], date: string): DailyLog[] {
  * 獲取今日的日誌
  */
 export function getTodayLogs(logs: DailyLog[]): DailyLog[] {
-  const today = new Date().toISOString().split('T')[0];
+  const today = toLocalDateKey();
   return filterLogsByDate(logs, today);
 }
 
@@ -57,7 +58,7 @@ export function calculateSleepDuration(sleepData: SleepData): number | undefined
  * 計算指定日期的每日摘要統計
  */
 export function calculateDailySummary(logs: DailyLog[], date?: string): DailySummary {
-  const targetDate = date || new Date().toISOString().split('T')[0];
+  const targetDate = date || toLocalDateKey();
   const dailyLogs = filterLogsByDate(logs, targetDate);
 
   const summary: DailySummary = {

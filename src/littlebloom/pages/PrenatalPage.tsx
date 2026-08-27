@@ -9,6 +9,7 @@ import type { PrenatalItemKind } from '../data/prenatalCheckups';
 import { resolvePrenatalItems, weeksPregnant } from '../utils/prenatalSchedule';
 import type { PrenatalItemStatus } from '../utils/prenatalSchedule';
 import BloomShell from '../components/BloomShell';
+import { toLocalDateKey } from '../../utils/dateHelpers';
 
 const KIND_STYLE: Record<PrenatalItemKind, string> = {
   checkup: 'bg-bloom-dusty-rose/15 text-bloom-dusty-rose-dark',
@@ -24,7 +25,7 @@ const SECTIONS: { status: PrenatalItemStatus; title: string }[] = [
   { status: 'done', title: '已完成' },
 ];
 
-const today = () => new Date().toISOString().split('T')[0];
+const today = () => toLocalDateKey();
 
 interface PrenatalPageProps {
   currentChild?: ChildProfile | null;

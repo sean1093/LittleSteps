@@ -28,6 +28,7 @@ import { useFirebaseChildren } from '../../common/hooks/useFirebaseChildren';
 import FoodTrackingTab from '../components/food/FoodTrackingTab';
 import FoodTrialModal from '../components/food/FoodTrialModal';
 import FourByThreeTracker from '../components/food/FourByThreeTracker';
+import { toLocalDateKey } from '../../utils/dateHelpers';
 
 type ViewMode = 'home' | 'my-tracking' | 'guide-overview' | 'guide-stages' | 'guide-menu' | 'guide-safety';
 type TrackingTab = 'foods' | 'tracker';
@@ -127,7 +128,7 @@ export default function ComplementaryFoodPage({
   const handleAddTrialDate = async (foodId: string) => {
     if (!childId) return;
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = toLocalDateKey();
     const food = foodProgress[foodId];
     if (!food) return;
 

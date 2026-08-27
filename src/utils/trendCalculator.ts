@@ -1,6 +1,7 @@
 import { DailyLog, FeedingData, SleepData, DiaperData } from '../types';
 import { filterLogsByDate, calculateSleepDuration } from './logHelpers';
 import { getSleepRequirementForAge } from '../littlesteps/data/sleep';
+import { toLocalDateKey } from './dateHelpers';
 
 export type TrendDirection = 'increasing' | 'decreasing' | 'stable';
 
@@ -18,7 +19,7 @@ export interface TrendData {
 function getDateNDaysAgo(daysAgo: number): string {
   const date = new Date();
   date.setDate(date.getDate() - daysAgo);
-  return date.toISOString().split('T')[0];
+  return toLocalDateKey(date);
 }
 
 /**

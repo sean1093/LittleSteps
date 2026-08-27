@@ -6,6 +6,7 @@ import {
   getRecommendedSleepHours,
   generateSparklineData,
 } from './trendCalculator';
+import { toLocalDateKey } from './dateHelpers';
 
 export interface ReportScores {
   feeding: { score: number; label: string };
@@ -50,7 +51,7 @@ export interface WeeklyReport {
 function getDateNDaysAgo(daysAgo: number): string {
   const date = new Date();
   date.setDate(date.getDate() - daysAgo);
-  return date.toISOString().split('T')[0];
+  return toLocalDateKey(date);
 }
 
 /**
@@ -251,7 +252,7 @@ function buildGrowthData(growthRecords: GrowthRecord[], days: number) {
 
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - days);
-  const cutoffStr = cutoffDate.toISOString().split('T')[0];
+  const cutoffStr = toLocalDateKey(cutoffDate);
 
   // Filter records within the period
   const periodRecords = growthRecords

@@ -9,10 +9,16 @@ import {
 } from './reportGenerator';
 
 /**
- * The generator derives its window from `new Date()`, so the clock is frozen.
- * 12:00:00Z is chosen deliberately: `getDateNDaysAgo` shifts the *local* date but
- * formats with `toISOString()`, and a midday-UTC anchor keeps both interpretations
- * on the same calendar day for every real timezone offset (-12h..+14h).
+ * 產生器用 `new Date()` 推算報表視窗，所以把時鐘凍結。
+ * 視窗與每日分桶都走 `toLocalDateKey()`（本地日曆日），而 vitest.config.ts
+ * 已把 process.env.TZ 釘在 Asia/Taipei，因此 WEEK_DATES 就是台灣使用者的日曆日。
+ *
+ * 下面所有 fixture 時間戳都是台灣本地掛鐘時間（+08:00）：「當天 20:00 開始睡」
+ * 對台灣家長就是本地 20:00。寫成 UTC 的 `...T20:00:00Z` 實際是隔天凌晨 04:00，
+ * 會被歸到下一個本地日期，把整週的資料整體往後推一天。
+ *
+ * FROZEN_NOW 是真實瞬間（instant），保持 UTC 寫法；它等於台灣時間
+ * 2026-06-15 20:00。
  */
 const FROZEN_NOW = new Date('2026-06-15T12:00:00Z');
 
@@ -40,8 +46,9 @@ describe('reportGenerator', () => {
     vi.useRealTimers();
   });
 
+  /** `time` 為台灣本地掛鐘時間（HH:MM:SS）。 */
   const feedingLog = (date: string, time: string, amount: number): DailyLog => {
-    const timestamp = `${date}T${time}Z`;
+    const timestamp = `${date}T${time}+08:00`;
     return {
       id: `log_${++logSeq}`,
       childId: 'child-1',
@@ -52,8 +59,9 @@ describe('reportGenerator', () => {
     };
   };
 
+  /** 當天本地 20:00 入睡，跨夜的睡眠仍歸在入睡當天。 */
   const sleepLog = (date: string, durationMinutes: number, nightWakings?: number): DailyLog => {
-    const start = new Date(`${date}T20:00:00Z`);
+    const start = new Date(`${date}T20:00:00+08:00`);
     const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
     return {
       id: `log_${++logSeq}`,
@@ -75,7 +83,7 @@ describe('reportGenerator', () => {
     type: DiaperData['type'],
     consistency?: DiaperData['consistency']
   ): DailyLog => {
-    const timestamp = `${date}T09:00:00Z`;
+    const timestamp = `${date}T09:00:00+08:00`;
     return {
       id: `log_${++logSeq}`,
       childId: 'child-1',
@@ -413,7 +421,7 @@ describe('reportGenerator', () => {
     it('derives sleep duration from start/end when duration is absent', () => {
       // No precomputed `duration`, so calculateSleepDuration has to run.
       const logs: DailyLog[] = WEEK_DATES.map(date => {
-        const start = new Date(`${date}T20:00:00Z`);
+        const start = new Date(`${date}T20:00:00+08:00`);
         const end = new Date(start.getTime() + 720 * 60 * 1000);
         return {
           id: `log_nodur_${date}`,

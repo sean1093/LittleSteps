@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { DailyLog, SleepData } from '../../../types';
 import { isNightSleep } from '../../../utils/sleepAnalysis';
+import { toLocalDateKey } from '../../../utils/dateHelpers';
 
 interface SleepTimelineChartProps {
   weekLogs: DailyLog[];
@@ -30,7 +31,7 @@ export default function SleepTimelineChart({ weekLogs }: SleepTimelineChartProps
       const endDate = new Date(data.endTime!);
 
       // Use date string as key (YYYY-MM-DD)
-      const dateKey = startDate.toISOString().split('T')[0];
+      const dateKey = toLocalDateKey(startDate);
 
       const startHour = startDate.getHours() + startDate.getMinutes() / 60;
       const endHour = endDate.getHours() + endDate.getMinutes() / 60;
@@ -54,7 +55,7 @@ export default function SleepTimelineChart({ weekLogs }: SleepTimelineChartProps
   for (let i = 6; i >= 0; i--) {
     const date = new Date();
     date.setDate(date.getDate() - i);
-    dates.push(date.toISOString().split('T')[0]);
+    dates.push(toLocalDateKey(date));
   }
 
   // Helper to format date label

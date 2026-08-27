@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Apple, Calendar, Plus, X } from 'lucide-react';
 import { FoodTrialRecord, AllergyReaction, AllergyReactionType, AllergySeverity, FoodPreference } from '../../../types';
+import { toLocalDateKey } from '../../../utils/dateHelpers';
 
 interface FoodTrialModalProps {
   isOpen: boolean;
@@ -46,7 +47,7 @@ export default function FoodTrialModal({
       // Reset form for new entry
       setFoodName('');
       setCategory('');
-      setFirstTriedDate(new Date().toISOString().split('T')[0]);
+      setFirstTriedDate(toLocalDateKey());
       setHasAllergy(false);
       setAllergyReactions([]);
       setPreference(undefined);
@@ -109,7 +110,7 @@ export default function FoodTrialModal({
   };
 
   const addTrialDate = () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = toLocalDateKey();
     if (!trialDates.includes(today)) {
       setTrialDates([...trialDates, today].sort());
     }

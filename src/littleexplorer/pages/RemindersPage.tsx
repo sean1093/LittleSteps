@@ -9,7 +9,7 @@ import type {
 } from '../../types';
 import { getLucideIcon } from '../../common/lucideIcons';
 import { isPregnancyProfile } from '../../common/pregnancy';
-import { calculateAge } from '../../utils/dateHelpers';
+import { calculateAge, toLocalDateKey } from '../../utils/dateHelpers';
 import { calculateAgeDisplay } from '../../utils/summaryCalculator';
 import { careTaskKindLabels } from '../data/careTasks';
 import { tipCategoryIcons, tipCategoryLabels, toddlerCareTips } from '../data/monthlyTips';
@@ -29,7 +29,7 @@ const SECTIONS: { status: ResolvedCareTask['status']; title: string; accent: str
   { status: 'upcoming', title: '接下來 90 天', accent: 'bg-white border-transparent' },
 ];
 
-const today = () => new Date().toISOString().split('T')[0];
+const today = () => toLocalDateKey();
 
 interface RemindersPageProps {
   currentChild?: ChildProfile | null;

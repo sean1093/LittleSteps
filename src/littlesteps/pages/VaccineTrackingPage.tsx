@@ -12,6 +12,7 @@ import {
   vaccineTypes,
   vaccineGuidelines
 } from '../data/vaccines';
+import { toLocalDateKey } from '../../utils/dateHelpers';
 
 type FundingFilter = 'all' | 'public' | 'private';
 type MonthFilter = 'all' | number;
@@ -743,8 +744,8 @@ export default function VaccineTrackingPage({
                   <input
                     type="date"
                     name="date"
-                    defaultValue={editingDose.currentDate || new Date().toISOString().split('T')[0]}
-                    max={new Date().toISOString().split('T')[0]}
+                    defaultValue={editingDose.currentDate || toLocalDateKey()}
+                    max={toLocalDateKey()}
                     required
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                   />

@@ -34,6 +34,7 @@ const RemindersPage = lazy(() => import('./littleexplorer/pages/RemindersPage'))
 const DiaryPage = lazy(() => import('./littleexplorer/pages/DiaryPage'));
 const ToddlerWikiPage = lazy(() => import('./littleexplorer/pages/ToddlerWikiPage'));
 import FeedbackButton from './common/components/FeedbackButton';
+import { toLocalDateKey } from './utils/dateHelpers';
 
 function AppContent() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
@@ -448,7 +449,7 @@ function AppContent() {
             onToggleTooth={toggleTooth}
             onQuickDiary={async (content, linkedCheckItemId) => {
               await addDiaryEntry({
-                date: new Date().toISOString().split('T')[0],
+                date: toLocalDateKey(),
                 content,
                 linkedCheckItemId,
               });

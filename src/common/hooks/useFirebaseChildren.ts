@@ -2,7 +2,7 @@ import { ref, set, update, remove, get } from 'firebase/database';
 import { database } from '../../lib/firebase';
 import { CareTaskRecord, ChildProfile, DailyLog, DiaryEntry, FoodTrialRecord, Gender } from '../../types';
 import { removeUndefined } from '../../utils/firebaseData';
-import { lmpFromDueDate } from '../../utils/dateHelpers';
+import { lmpFromDueDate, toLocalDateKey } from '../../utils/dateHelpers';
 
 // Helper function to generate UUID v4
 function generateUUID(): string {
@@ -182,7 +182,7 @@ export function useFirebaseChildren(userId: string | null) {
     const progressRef = ref(database, `children/${childId}/milestoneProgress/${milestoneId}`);
     await set(progressRef, removeUndefined({
       achieved,
-      achievedDate: achieved ? new Date().toISOString().split('T')[0] : undefined,
+      achievedDate: achieved ? toLocalDateKey() : undefined,
     }));
   };
 
@@ -192,7 +192,7 @@ export function useFirebaseChildren(userId: string | null) {
     const progressRef = ref(database, `children/${childId}/vaccineProgress/${vaccineId}/doses/${doseNumber}`);
     await set(progressRef, removeUndefined({
       administered,
-      administeredDate: administered ? (customDate || new Date().toISOString().split('T')[0]) : undefined,
+      administeredDate: administered ? (customDate || toLocalDateKey()) : undefined,
     }));
   };
 
@@ -203,7 +203,7 @@ export function useFirebaseChildren(userId: string | null) {
     const progressRef = ref(database, `children/${childId}/developmentProgress/${checkItemId}`);
     await set(progressRef, removeUndefined({
       achieved,
-      achievedDate: achieved ? new Date().toISOString().split('T')[0] : undefined,
+      achievedDate: achieved ? toLocalDateKey() : undefined,
     }));
   };
 
@@ -213,7 +213,7 @@ export function useFirebaseChildren(userId: string | null) {
     const toothRef = ref(database, `children/${childId}/toothProgress/${toothId}`);
     await set(toothRef, removeUndefined({
       erupted,
-      eruptedDate: erupted ? (customDate || new Date().toISOString().split('T')[0]) : undefined,
+      eruptedDate: erupted ? (customDate || toLocalDateKey()) : undefined,
     }));
   };
 

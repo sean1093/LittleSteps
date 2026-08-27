@@ -12,10 +12,16 @@ import {
 } from './trendCalculator';
 
 /**
- * The module derives its day window from `new Date()` and formats it with
- * `toISOString()` (UTC date). 08:00Z keeps the UTC calendar day identical for
- * every real-world timezone offset (-11..+14), so the expected day strings
- * below are host-timezone independent.
+ * 這個模組用 `new Date()` 取出當日視窗，並以 `toLocalDateKey()` 轉成「本地」
+ * 日曆日。vitest.config.ts 已把 process.env.TZ 釘在 Asia/Taipei，所以下面的
+ * 日期字串就是台灣使用者看到的日曆日。
+ *
+ * 因此所有 fixture 時間戳都寫成台灣本地掛鐘時間（+08:00）：「這天晚上 20:00
+ * 的一次睡眠」對台灣家長就是本地 20:00。若寫成 UTC 的 `...T20:00:00Z`，實際
+ * 是隔天凌晨 04:00，會被歸到下一個本地日期。
+ *
+ * FIXED_NOW 本身是一個真實瞬間（instant），保持 UTC 寫法；它等於台灣時間
+ * 2026-06-15 16:00。
  */
 const FIXED_NOW = new Date('2026-06-15T08:00:00Z');
 const TODAY = '2026-06-15';
@@ -39,16 +45,16 @@ const makeLog = (
   createdAt: timestamp,
 });
 
-/** Bottle feed on `date` (YYYY-MM-DD) at a fixed UTC hour. */
+/** Bottle feed on `date` (YYYY-MM-DD) at a fixed local (台灣) hour. */
 const feeding = (date: string, amount?: number, hour = '09'): DailyLog =>
-  makeLog('feeding', `${date}T${hour}:00:00Z`, {
+  makeLog('feeding', `${date}T${hour}:00:00+08:00`, {
     feedingType: amount === undefined ? 'breast_left' : 'formula',
     ...(amount === undefined ? { duration: 15 } : { amount }),
   } as FeedingData);
 
-/** Sleep log on `date` carrying an explicit duration in minutes. */
+/** Sleep log on `date` carrying an explicit duration in minutes. 時間為台灣本地時。 */
 const sleep = (date: string, durationMinutes: number, hour = '20'): DailyLog => {
-  const startTime = `${date}T${hour}:00:00Z`;
+  const startTime = `${date}T${hour}:00:00+08:00`;
   const endTime = new Date(
     new Date(startTime).getTime() + durationMinutes * 60_000
   ).toISOString();
@@ -60,7 +66,7 @@ const sleep = (date: string, durationMinutes: number, hour = '20'): DailyLog => 
 };
 
 const diaper = (date: string, type: DiaperData['type'], hour = '09'): DailyLog =>
-  makeLog('diaper', `${date}T${hour}:00:00Z`, { type } as DiaperData);
+  makeLog('diaper', `${date}T${hour}:00:00+08:00`, { type } as DiaperData);
 
 describe('trendCalculator', () => {
   beforeEach(() => {
@@ -176,12 +182,12 @@ describe('trendCalculator', () => {
     });
 
     it('reports sleep in hours, deriving duration from start/end when absent', () => {
-      const derived = makeLog('sleep', `${DAY_1_AGO}T20:00:00Z`, {
-        startTime: `${DAY_1_AGO}T20:00:00Z`,
-        endTime: `${DAY_1_AGO}T23:00:00Z`, // 180 minutes -> 3h
+      const derived = makeLog('sleep', `${DAY_1_AGO}T20:00:00+08:00`, {
+        startTime: `${DAY_1_AGO}T20:00:00+08:00`,
+        endTime: `${DAY_1_AGO}T23:00:00+08:00`, // 180 minutes -> 3h
       } as SleepData);
-      const ongoing = makeLog('sleep', `${TODAY}T07:00:00Z`, {
-        startTime: `${TODAY}T07:00:00Z`, // still sleeping -> contributes 0
+      const ongoing = makeLog('sleep', `${TODAY}T07:00:00+08:00`, {
+        startTime: `${TODAY}T07:00:00+08:00`, // still sleeping -> contributes 0
       } as SleepData);
 
       const sleepLogs = [sleep(TODAY, 90, '01'), ongoing, derived];

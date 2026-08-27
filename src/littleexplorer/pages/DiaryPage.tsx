@@ -6,6 +6,7 @@ import { developmentCheckItems } from '../data/developmentChecks';
 import { groupEntriesByMonth } from '../utils/diaryHelpers';
 import ExplorerShell from '../components/ExplorerShell';
 import ExplorerNotice from '../components/ExplorerNotice';
+import { toLocalDateKey } from '../../utils/dateHelpers';
 
 const MOODS: { value: DiaryMood; emoji: string; label: string }[] = [
   { value: 'happy', emoji: '😊', label: '開心' },
@@ -15,7 +16,7 @@ const MOODS: { value: DiaryMood; emoji: string; label: string }[] = [
   { value: 'funny', emoji: '😂', label: '好笑' },
 ];
 
-const today = () => new Date().toISOString().split('T')[0];
+const today = () => toLocalDateKey();
 
 interface DiaryPageProps {
   currentChild?: ChildProfile | null;
