@@ -1,58 +1,47 @@
-import { useState, useMemo } from 'react';
-import { ChevronLeft } from 'lucide-react';
-import { pregnancyWikiArticles, pregnancyWikiCategoryLabels, pregnancyWikiCategoryColors } from '../data/wiki';
-import WikiArticleCard from '../../common/components/wiki/WikiArticleCard';
-import AppHomeButton from '../../common/components/AppHomeButton';
+import type { PregnancyWikiCategory } from '../../types';
+import {
+  pregnancyWikiArticles,
+  pregnancyWikiCategoryLabels,
+  pregnancyWikiCategoryColors,
+} from '../data/wiki';
+import WikiBrowser, { WikiTheme } from '../../common/components/wiki/WikiBrowser';
+import BloomShell from '../components/BloomShell';
+
+const CATEGORY_ORDER: PregnancyWikiCategory[] = [
+  'checkup',
+  'symptoms',
+  'nutrition',
+  'health',
+  'lifestyle',
+];
+
+const CATEGORY_ICONS: Record<PregnancyWikiCategory, string> = {
+  checkup: 'Stethoscope',
+  symptoms: 'Activity',
+  nutrition: 'Apple',
+  health: 'Heart',
+  lifestyle: 'Sun',
+};
+
+const THEME: WikiTheme = {
+  focusRing: 'focus:ring-bloom-dusty-rose/40',
+  chipActive: 'bg-bloom-dusty-rose text-white shadow-soft',
+  chipInactive: 'bg-white text-gray-600 hover:bg-bloom-blush/40',
+  mutedText: 'text-gray-500',
+};
 
 export default function LittleBloomWikiPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  const filteredArticles = useMemo(() => {
-    return pregnancyWikiArticles.filter(a =>
-      a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.summary.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [searchQuery]);
-
   return (
-    <div className="min-h-screen bg-bloom-cream pb-6">
-      <header className="bg-bloom-dusty-rose px-4 py-6 text-white mb-4">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => { window.location.hash = '#/littlebloom'; }}
-            aria-label="返回"
-            className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 transition-colors flex items-center justify-center flex-shrink-0"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <h2 className="text-xl font-bold flex-1">孕期知識庫</h2>
-          <AppHomeButton className="bg-white/20 hover:bg-white/30 text-white" />
-        </div>
-      </header>
-
-      <div className="px-4 mb-4">
-        <input
-          type="text"
-          placeholder="搜尋孕期關鍵字..."
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-bloom-dusty-rose"
-        />
-      </div>
-
-      <div className="px-4">
-        {filteredArticles.map(article => (
-          <WikiArticleCard
-            key={article.id}
-            article={article}
-            isExpanded={expandedId === article.id}
-            onToggle={() => setExpandedId(expandedId === article.id ? null : article.id)}
-            categoryLabel={pregnancyWikiCategoryLabels[article.category]}
-            categoryColors={pregnancyWikiCategoryColors[article.category]}
-          />
-        ))}
-      </div>
-    </div>
+    <BloomShell title="孕期知識庫" subtitle="常見孕期疑問與處理方式" backTo="#/littlebloom">
+      <WikiBrowser
+        articles={pregnancyWikiArticles}
+        categoryLabels={pregnancyWikiCategoryLabels}
+        categoryColors={pregnancyWikiCategoryColors}
+        categoryOrder={CATEGORY_ORDER}
+        categoryIcons={CATEGORY_ICONS}
+        searchPlaceholder="搜尋孕期症狀、關鍵字..."
+        theme={THEME}
+      />
+    </BloomShell>
   );
 }

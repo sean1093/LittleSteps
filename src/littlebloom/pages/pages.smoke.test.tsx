@@ -5,6 +5,8 @@ import type { ChildProfile } from '../../types';
 import { pregnancyGuides } from '../data/pregnancyGuides';
 import LittleBloomPage from './LittleBloomPage';
 import PrenatalPage from './PrenatalPage';
+import LittleBloomWikiPage from './LittleBloomWikiPage';
+import { pregnancyWikiArticles } from '../data/wiki';
 
 /**
  * LittleBloom shipped as a shell: no code path wrote pregnancyData, so every
@@ -184,5 +186,54 @@ describe('PrenatalPage', () => {
       />,
     );
     expect(screen.getByText('還沒有孕期資料')).toBeInTheDocument();
+  });
+});
+
+/**
+ * 孕期知識庫累積到 24 篇時仍只有一個搜尋框：沒有分類 chip，也沒有空狀態，
+ * 搜尋不到東西時整頁空白。改用共用的 WikiBrowser 後補上，這裡釘住。
+ */
+describe('LittleBloomWikiPage', () => {
+  // 斷言可見的篇數文字而非 DOM 標題數：AnimatePresence 的離場動畫在
+  // happy-dom 不會結束，被篩掉的卡片會滯留在 DOM 裡。
+  const articleCount = () => Number(screen.getByText(/共 \d+ 篇文章/).textContent!.match(/\d+/)![0]);
+
+  it('提供分類篩選，而不是只能搜尋', async () => {
+    const user = userEvent.setup();
+    render(<LittleBloomWikiPage />);
+
+    const total = articleCount();
+    expect(total).toBe(pregnancyWikiArticles.length);
+
+    await user.click(screen.getByRole('button', { name: '產檢須知', pressed: false }));
+    const filtered = articleCount();
+    expect(filtered).toBe(
+      pregnancyWikiArticles.filter((a) => a.category === 'checkup').length,
+    );
+    expect(filtered).toBeLessThan(total);
+  });
+
+  it('搜尋涵蓋內文，不是只比對標題', async () => {
+    const user = userEvent.setup();
+    render(<LittleBloomWikiPage />);
+
+    // 取一篇文章處理步驟的內文當關鍵字；該字串不出現在任何標題裡。
+    const article = pregnancyWikiArticles.find((a) => a.solutions.length > 0)!;
+    const keyword = article.solutions[0].step.slice(0, 5);
+    const titleMatches = pregnancyWikiArticles.filter((a) =>
+      a.title.toLowerCase().includes(keyword.toLowerCase()),
+    ).length;
+
+    await user.type(screen.getByRole('searchbox'), keyword);
+    expect(articleCount()).toBeGreaterThan(titleMatches);
+  });
+
+  it('搜尋無結果時顯示空狀態，而不是一片空白', async () => {
+    const user = userEvent.setup();
+    render(<LittleBloomWikiPage />);
+
+    await user.type(screen.getByRole('searchbox'), 'zzzz-不可能命中的字串');
+    expect(articleCount()).toBe(0);
+    expect(screen.getByText('找不到相關文章')).toBeInTheDocument();
   });
 });

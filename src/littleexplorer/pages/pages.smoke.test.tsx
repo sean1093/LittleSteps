@@ -414,7 +414,7 @@ describe('ToddlerWikiPage', () => {
     expect(beforeSearch).toBeGreaterThan(0);
 
     await user.type(screen.getByRole('searchbox'), 'zzzz-不可能命中的字串');
-    expect(screen.getByText('找不到符合的文章，換個關鍵字試試')).toBeInTheDocument();
+    expect(screen.getByText('找不到相關文章')).toBeInTheDocument();
   });
 
   it('不做年齡守門，沒有寶寶也能查', () => {
