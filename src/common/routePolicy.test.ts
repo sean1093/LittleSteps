@@ -28,43 +28,45 @@ const ALL_PAGES: Page[] = [
   'babyoasis',
 ];
 
+/**
+ * 公開範圍是產品決定，不是實作細節：四個服務各自的知識內容、哺乳室地圖，
+ * 加上服務集合首頁。其餘一律需要登入。
+ *
+ * 用窮舉表比對，而不是各挑幾個路由抽查：新增一條路由卻沒決定它公不公開時，
+ * 這裡要失敗，而不是靜靜沿用預設值。
+ */
+const PUBLIC: Page[] = [
+  'home',
+  'littlesteps/baby-wiki',
+  'littlebloom/wiki',
+  'littleexplorer/wiki',
+  'babyoasis',
+];
+
 describe('requiresAuth', () => {
-  it('服務集合首頁公開', () => {
-    expect(requiresAuth('home')).toBe(false);
+  it('公開的就是這五條，一條不多', () => {
+    const actual = ALL_PAGES.filter((page) => !requiresAuth(page)).sort();
+    expect(actual).toEqual([...PUBLIC].sort());
   });
 
-  it('每個服務的首頁都公開，否則未登入者無從認識該服務', () => {
-    for (const home of Object.values(SERVICE_HOME)) {
-      // littlebloom 與 littleexplorer 的首頁本身讀孩子資料，未登入時由 App 換成
-      // 該服務的介紹頁；此處只確認 littlesteps 與 babyoasis 可直接進入。
-      if (home === 'littlesteps' || home === 'babyoasis') {
-        expect(requiresAuth(home), home).toBe(false);
-      }
-    }
+  it('四個服務的知識內容都不需登入', () => {
+    expect(requiresAuth('littlesteps/baby-wiki')).toBe(false);
+    expect(requiresAuth('littlebloom/wiki')).toBe(false);
+    expect(requiresAuth('littleexplorer/wiki')).toBe(false);
+    expect(requiresAuth('babyoasis')).toBe(false);
   });
 
-  it('靜態內容一律公開', () => {
-    const publicContent: Page[] = [
+  it('會讀或寫孩子資料的頁面都需要登入', () => {
+    const gated: Page[] = [
+      'littlesteps',
+      'littlesteps/dashboard',
       'littlesteps/milestones',
       'littlesteps/care-guide',
       'littlesteps/vaccine-tracking',
       'littlesteps/complementary-food',
-      'littlesteps/sleep-training',
-      'littlesteps/baby-wiki',
-      'littlebloom/wiki',
-      'littleexplorer/wiki',
-      'babyoasis',
-    ];
-    for (const page of publicContent) {
-      expect(requiresAuth(page), page).toBe(false);
-    }
-  });
-
-  it('讀取孩子資料的頁面需要登入', () => {
-    const gated: Page[] = [
-      'littlesteps/dashboard',
       'littlesteps/daily-log',
       'littlesteps/growth-charts',
+      'littlesteps/sleep-training',
       'littlesteps/sleep-analysis',
       'littlesteps/clinic-summary',
       'littlesteps/report',
@@ -79,10 +81,8 @@ describe('requiresAuth', () => {
     }
   });
 
-  it('每個路由都有明確歸類，沒有漏網的', () => {
-    for (const page of ALL_PAGES) {
-      expect(typeof requiresAuth(page), page).toBe('boolean');
-    }
+  it('未知路由預設需要登入，而不是預設公開', () => {
+    expect(requiresAuth('littlesteps/something-new' as Page)).toBe(true);
   });
 });
 

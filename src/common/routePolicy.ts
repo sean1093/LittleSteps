@@ -3,31 +3,26 @@ import type { Page } from '../types/routes';
 export type ServiceId = 'littlesteps' | 'littlebloom' | 'littleexplorer' | 'babyoasis';
 
 /**
- * 需要登入才能開啟的頁面。
+ * 不需登入就能看的頁面。
  *
- * 判準是「這一頁會不會讀孩子的資料」，而不是「這一頁屬於哪個服務」。靜態內容
- * ——百科、照顧指南、疫苗時程、哺乳室地圖——沒有登入的理由，擋住只會讓沒帳號
- * 的家長連看都看不到。
+ * 用「公開白名單」而不是「需登入黑名單」：這個 app 存的是孩子的健康資料，
+ * 新增一個頁面時忘了設定，預設應該是擋下來，而不是預設公開。反過來寫的話，
+ * 每加一頁就多一次靜默外洩的機會。
  *
- * 里程碑與疫苗追蹤刻意不在此列：那兩頁本來就收 `user` 與 `onSignIn`，會自己在
- * 勾選處提示登入，內容照常可讀。
+ * 公開的只有四個服務各自的知識內容與哺乳室地圖，加上服務集合首頁。這些是
+ * 純靜態內容，擋住只會讓還沒有帳號的家長連認識這些服務的機會都沒有；其餘
+ * 功能一律需要登入。
  */
-const AUTH_REQUIRED: Record<string, true> = {
-  'littlesteps/dashboard': true,
-  'littlesteps/daily-log': true,
-  'littlesteps/growth-charts': true,
-  'littlesteps/sleep-analysis': true,
-  'littlesteps/clinic-summary': true,
-  'littlesteps/report': true,
-  littlebloom: true,
-  'littlebloom/prenatal': true,
-  littleexplorer: true,
-  'littleexplorer/reminders': true,
-  'littleexplorer/diary': true,
+const PUBLIC_PAGES: Record<string, true> = {
+  home: true,
+  'littlesteps/baby-wiki': true,
+  'littlebloom/wiki': true,
+  'littleexplorer/wiki': true,
+  babyoasis: true,
 };
 
 export function requiresAuth(page: Page): boolean {
-  return AUTH_REQUIRED[page] === true;
+  return PUBLIC_PAGES[page] !== true;
 }
 
 /** 頁面所屬的服務；`home` 不屬於任何服務，回傳 null。 */

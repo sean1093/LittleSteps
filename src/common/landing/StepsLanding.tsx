@@ -4,7 +4,8 @@ import { User } from 'firebase/auth';
 import AppHomeButton from '../components/AppHomeButton';
 
 interface StepsLandingProps {
-  onNavigate: (page: 'littlesteps/milestones' | 'littlesteps/care-guide' | 'littlesteps/vaccine-tracking' | 'littlesteps/complementary-food' | 'littlesteps/sleep-training' | 'littlesteps/growth-charts') => void;
+  /** 未登入時唯一能去的 LittleSteps 內容；其餘功能都要先登入。 */
+  onNavigate: (page: 'littlesteps/baby-wiki') => void;
   user: User | null;
   onSignIn: () => Promise<void>;
 }
@@ -189,11 +190,11 @@ export default function StepsLanding({ onNavigate, user, onSignIn }: StepsLandin
                 <motion.button
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => onNavigate('littlesteps/sleep-training')}
+                  onClick={() => onNavigate('littlesteps/baby-wiki')}
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#7EC8E3] text-white font-semibold hover:bg-[#6BB8D3] transition-colors"
                 >
                   <BookOpen className="w-5 h-5" />
-                  <span>查看 0-3 歲科學睡眠指南</span>
+                  <span>先逛逛寶寶百科，不用登入</span>
                 </motion.button>
               </div>
             </div>
@@ -222,41 +223,18 @@ export default function StepsLanding({ onNavigate, user, onSignIn }: StepsLandin
             className="grid md:grid-cols-2 gap-6"
           >
             {[
-              {
-                title: '里程碑追蹤',
-                desc: '記錄寶寶每個珍貴的成長時刻',
-                bg: 'bg-[#FFE5E5]',
-                icon: '👶',
-                page: 'littlesteps/milestones' as const
-              },
-              {
-                title: '疫苗追蹤',
-                desc: '完整的疫苗接種時程表',
-                bg: 'bg-[#E8F5E9]',
-                icon: '💉',
-                page: 'littlesteps/vaccine-tracking' as const
-              },
-              {
-                title: '副食品指南',
-                desc: '科學的副食品添加方法',
-                bg: 'bg-[#FFF3E0]',
-                icon: '🍽️',
-                page: 'littlesteps/complementary-food' as const
-              },
-              {
-                title: '照顧重點',
-                desc: '各階段專業照護建議',
-                bg: 'bg-[#E8F4F8]',
-                icon: '🛡️',
-                page: 'littlesteps/care-guide' as const
-              }
-            ].map((feature, index) => (
-              <motion.div
-                key={index}
+              { title: '里程碑追蹤', desc: '記錄寶寶每個珍貴的成長時刻', bg: 'bg-[#FFE5E5]', icon: '👶' },
+              { title: '疫苗追蹤', desc: '完整的疫苗接種時程表', bg: 'bg-[#E8F5E9]', icon: '💉' },
+              { title: '副食品指南', desc: '科學的副食品添加方法', bg: 'bg-[#FFF3E0]', icon: '🍽️' },
+              { title: '照顧重點', desc: '各階段專業照護建議', bg: 'bg-[#E8F4F8]', icon: '🛡️' },
+            ].map((feature) => (
+              <motion.button
+                key={feature.title}
+                type="button"
                 variants={fadeInUp}
                 whileHover={{ y: -4 }}
-                onClick={() => onNavigate(feature.page)}
-                className={`${feature.bg} rounded-3xl p-6 cursor-pointer transition-all hover:shadow-lg`}
+                onClick={() => onSignIn()}
+                className={`${feature.bg} rounded-3xl p-6 text-left w-full transition-all hover:shadow-lg`}
               >
                 <div className="flex items-start gap-4">
                   <div className="text-4xl">{feature.icon}</div>
@@ -264,12 +242,12 @@ export default function StepsLanding({ onNavigate, user, onSignIn }: StepsLandin
                     <h3 className="text-xl font-bold text-gray-800 mb-2">{feature.title}</h3>
                     <p className="text-gray-600 text-sm mb-4">{feature.desc}</p>
                     <div className="flex items-center gap-2 text-gray-700 font-medium text-sm">
-                      <span>了解更多</span>
+                      <span>登入後開始使用</span>
                       <ArrowRight className="w-4 h-4" />
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </motion.button>
             ))}
           </motion.div>
         </div>
