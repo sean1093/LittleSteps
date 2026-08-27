@@ -1,6 +1,6 @@
 import type { Page } from '../types/routes';
 
-export type ServiceId = 'littlesteps' | 'littlebloom' | 'littleexplorer' | 'babyoasis';
+export type ServiceId = 'littlesteps' | 'littlebloom' | 'littleexplorer' | 'babyoasis' | 'littleouting';
 
 /**
  * 不需登入就能看的頁面。
@@ -25,6 +25,8 @@ const PUBLIC_PAGES: Record<string, true> = {
   'littlesteps/sleep-training': true,
   'littlebloom/wiki': true,
   'littleexplorer/wiki': true,
+  // 場館名冊是政府公開資料與查證過的整理，不讀任何孩子的資料。
+  littleouting: true,
   babyoasis: true,
 };
 
@@ -38,6 +40,7 @@ export function serviceOf(page: Page): ServiceId | null {
   if (page.startsWith('littlesteps')) return 'littlesteps';
   if (page.startsWith('littlebloom')) return 'littlebloom';
   if (page.startsWith('littleexplorer')) return 'littleexplorer';
+  if (page === 'littleouting') return 'littleouting';
   return 'babyoasis';
 }
 
@@ -46,5 +49,6 @@ export const SERVICE_HOME: Record<ServiceId, Page> = {
   littlesteps: 'littlesteps',
   littlebloom: 'littlebloom',
   littleexplorer: 'littleexplorer',
+  littleouting: 'littleouting',
   babyoasis: 'babyoasis',
 };

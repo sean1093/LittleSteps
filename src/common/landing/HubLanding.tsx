@@ -41,6 +41,15 @@ const SERVICE_CARD: Record<ServiceId, { blurb: string; features: string[]; cta: 
     features: ['12-36 個月成長檢核', '健檢、疫苗與塗氟提醒', '幼兒百科與成長日記'],
     cta: '進入幼兒期',
   },
+  littleouting: {
+    blurb: '下雨天、放假日，帶孩子能去哪？公立親子館免費又有教玩具，先查清楚再出門。',
+    features: [
+      '全台 234 間親子館，依縣市與年齡查',
+      '免費、需不需要預約、幾歲能去',
+      '精選親子餐廳與出發前檢查清單',
+    ],
+    cta: '找親子好去處',
+  },
   babyoasis: {
     blurb:
       '找到最近的哺乳室，讓外出育兒更輕鬆自在。改善政府地圖的使用體驗，提供更友善的搜尋與導航功能。',

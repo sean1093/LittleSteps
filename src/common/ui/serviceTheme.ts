@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Baby, Flower2, MapPin, Sun } from 'lucide-react';
+import { Baby, Flower2, MapPin, Sun, Trees } from 'lucide-react';
 
 /**
  * One layout language, four personalities.
@@ -17,8 +17,12 @@ import { Baby, Flower2, MapPin, Sun } from 'lucide-react';
  * never carries text; `ink`/`fill` are the readable shades (>=4.5:1). Getting
  * this wrong is what made white-on-pastel buttons unreadable across the app.
  */
-
-export type ServiceId = 'littlesteps' | 'littlebloom' | 'littleexplorer' | 'babyoasis';
+export type ServiceId =
+  | 'littlesteps'
+  | 'littlebloom'
+  | 'littleexplorer'
+  | 'babyoasis'
+  | 'littleouting';
 
 export interface ServiceTheme {
   id: ServiceId;
@@ -109,12 +113,30 @@ export const SERVICE_THEME: Record<ServiceId, ServiceTheme> = {
     body: 'text-ink',
     muted: 'text-ink-muted',
   },
+  littleouting: {
+    id: 'littleouting',
+    name: 'LittleOuting',
+    role: '親子好去處',
+    icon: Trees,
+    pageBg: 'bg-warm-white',
+    tint: 'bg-outing-soft',
+    accent: 'bg-outing',
+    ink: 'text-outing-ink',
+    fill: 'bg-outing-ink',
+    fillText: 'text-white',
+    body: 'text-ink',
+    muted: 'text-ink-muted',
+  },
 };
 
-/** Entry-point order: the timeline a family actually moves through. */
+/**
+ * Entry-point order: the timeline a family actually moves through, with the
+ * two "where can we go" services last because they apply at every stage.
+ */
 export const SERVICE_ORDER: ServiceId[] = [
   'littlebloom',
   'littlesteps',
   'littleexplorer',
+  'littleouting',
   'babyoasis',
 ];

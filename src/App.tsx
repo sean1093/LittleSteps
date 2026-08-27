@@ -23,6 +23,7 @@ const DailyLogPage = lazy(() => import('./littlesteps/pages/DailyLogPage'));
 const SleepAnalysisPage = lazy(() => import('./littlesteps/pages/SleepAnalysisPage'));
 const LittleBloomPage = lazy(() => import('./littlebloom/pages/LittleBloomPage'));
 const LittleBloomWikiPage = lazy(() => import('./littlebloom/pages/LittleBloomWikiPage'));
+const OutingPage = lazy(() => import('./littleouting/pages/OutingPage'));
 const PrenatalPage = lazy(() => import('./littlebloom/pages/PrenatalPage'));
 const BabyOasisPage = lazy(() => import('./babyoasis/pages/BabyOasisPage'));
 const BabyWikiPage = lazy(() => import('./littlesteps/pages/BabyWikiPage'));
@@ -91,6 +92,7 @@ function AppContent() {
       '#/littleexplorer/reminders': 'littleexplorer/reminders',
       '#/littleexplorer/diary': 'littleexplorer/diary',
       '#/littleexplorer/wiki': 'littleexplorer/wiki',
+      '#/littleouting': 'littleouting',
       '#/babyoasis': 'babyoasis'
     };
     return pageMap[hash] || 'home';
@@ -149,6 +151,7 @@ function AppContent() {
       'littleexplorer/reminders': '#/littleexplorer/reminders',
       'littleexplorer/diary': '#/littleexplorer/diary',
       'littleexplorer/wiki': '#/littleexplorer/wiki',
+      'littleouting': '#/littleouting',
       'babyoasis': '#/babyoasis'
     };
     window.location.hash = hashMap[page];
@@ -232,6 +235,7 @@ function AppContent() {
   const isStandaloneSubApp =
     currentPage.startsWith('littlebloom') ||
     currentPage.startsWith('littleexplorer') ||
+    currentPage === 'littleouting' ||
     currentPage === 'babyoasis';
   // Login is mandatory, so every LittleSteps route shows the header (and thus the
   // sidebar/menu) once we reach the authenticated tree below.
@@ -476,6 +480,7 @@ function AppContent() {
         )}
 
         {/* BabyOasis Route */}
+        {currentPage === 'littleouting' && <OutingPage />}
         {currentPage === 'babyoasis' && <BabyOasisPage />}
         </Suspense>
       </main>

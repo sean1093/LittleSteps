@@ -51,6 +51,16 @@ export default {
           muted: '#6B6360',   // 5.4:1  — secondary copy
           faint: '#938A86',   // 3.2:1  — captions, never body text
         },
+        // LittleOuting（親子好去處）palette. Teal is the one hue none of the
+        // other four services use, so a card in the hub reads as a different
+        // place before you read its name.
+        outing: {
+          DEFAULT: '#5FC0B5',
+          light: '#DCF1EE',
+          soft: '#F1FAF8',
+          ink: '#1F7A70',   // 5.15:1 — text, and white text on it
+          deep: '#14655C',  // 6.89:1
+        },
         // LittleBloom Morandi palette.
         //
         // The Morandi shades are deliberately desaturated, which makes them

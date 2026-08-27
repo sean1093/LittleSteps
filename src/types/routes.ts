@@ -31,6 +31,7 @@ export type Page =
   | 'littleexplorer/reminders'
   | 'littleexplorer/diary'
   | 'littleexplorer/wiki'
+  | 'littleouting'
   | 'babyoasis';
 
 /**
