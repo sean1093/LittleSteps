@@ -68,6 +68,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '如廁訓練什麼時候開始？',
     summary: '看的是準備度訊號而不是年齡，多數孩子落在 18-30 個月之間出現。',
     category: 'toilet',
+    ageRange: [18, 36],
     causes: [
       '膀胱括約肌與神經控制成熟的時間因人而異，多數孩子要 18 個月後才有憋尿能力',
       '需要語言與理解能力跟上，才能表達尿意並聽懂簡單指令',
@@ -97,6 +98,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '已經會了又退步、抗拒坐馬桶',
     summary: '退步幾乎都有原因，最常見的是便秘造成的排便疼痛，其次是生活變動帶來的壓力。',
     category: 'toilet',
+    ageRange: [18, 36],
     causes: [
       '硬便造成排便疼痛，孩子為了避免痛而憋便憋尿，越憋越硬形成惡性循環',
       '生活出現重大變動：弟妹出生、換保母、剛入園、搬家',
@@ -126,6 +128,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '夜間尿床要處理嗎？',
     summary: '5 歲前夜間尿床屬於正常發展，重點是不責備、做好防護，而不是急著訓練。',
     category: 'toilet',
+    ageRange: [24, 36],
     causes: [
       '夜間抗利尿激素分泌與膀胱容量尚未成熟，白天乾爽不代表夜間能控制',
       '睡眠深沉，膀胱脹尿的訊號叫不醒孩子',
@@ -157,6 +160,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '怎麼判斷是「大雞晚啼」還是語言遲緩？',
     summary: '語言發展有明確的年齡界標，過了界標還沒到位就該評估，不能一路等下去。',
     category: 'language',
+    ageRange: [12, 36],
     causes: [
       '聽力問題（先天聽損、反覆中耳積水）讓孩子聽不清楚語音',
       '語言環境刺激不足：真人對話少、以螢幕取代互動',
@@ -187,6 +191,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '家裡講兩種語言會不會讓孩子講話變慢？',
     summary: '雙語不會造成語言遲緩，把兩種語言的詞彙合計來看，總量與單語孩子相當。',
     category: 'language',
+    ageRange: [12, 36],
     causes: [
       '只數其中一種語言的詞彙，會系統性低估雙語孩子的真實語言能力',
       '兩種語言混在同一句話裡是正常的過渡現象，不是混亂或錯誤',
@@ -216,6 +221,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '螢幕時間對語言發展的影響',
     summary: '國健署建議 2 歲以下完全不用 3C、2-4 歲每天不超過 60 分鐘，因為螢幕擠掉的正是語言最需要的真人對話。',
     category: 'language',
+    ageRange: [12, 36],
     causes: [
       '螢幕是單向輸出，沒有來回輪替的對話，孩子練不到表達與等待回應',
       '背景開著的電視會直接減少家長與孩子的自然對話量',
@@ -247,6 +253,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '番兩歲：情緒風暴當下怎麼辦',
     summary: '1-4 歲的情緒爆發是正常發展階段，來自「想自己來卻做不到」的落差，當下該做的是保護安全而不是講道理。',
     category: 'emotion',
+    ageRange: [12, 36],
     causes: [
       '想獨立自主的動機遠超過實際能力，挫折感沒有出口',
       '語言能力還不足以說出生氣、難過與想要什麼',
@@ -277,6 +284,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '分離焦慮與睡前哭鬧',
     summary: '分離焦慮在 10-18 個月達到高峰，入園前後常再出現一次，多數在 2-3 週內隨著可預測的告別儀式緩解。',
     category: 'emotion',
+    ageRange: [12, 36],
     causes: [
       '物體恆存概念成熟，孩子知道你在別的地方，卻還掌握不了你何時回來',
       '生活變動（入園、換照顧者、搬家）打亂了原有的安全感',
@@ -307,6 +315,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '打人、咬人、搶玩具',
     summary: '3 歲前用打或咬解決問題，是語言與衝動控制還沒跟上，孩子需要的是替代方法而不是處罰。',
     category: 'emotion',
+    ageRange: [12, 36],
     causes: [
       '還不會用語言說出挫折、生氣與想要，只好用身體表達',
       '自制力與體會他人感受的能力，要到 5 歲後才逐漸成熟',
@@ -339,6 +348,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '挑食與突然不吃飯',
     summary: '1 歲後生長速度趨緩、食慾自然下降，加上對新食物的天生警戒，多數挑食是發展現象而不是疾病。',
     category: 'eating',
+    ageRange: [12, 36],
     causes: [
       '1 歲後生長趨緩，每公斤體重所需熱量下降，食量看起來明顯變小',
       '對陌生食物的警戒是天生保護機制，一種新食物常需要接觸 10-20 次才會被接受',
@@ -369,6 +379,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '幼兒一餐該吃多少？',
     summary: '依國健署每日飲食指南，1-3 歲每天約 1200 大卡，分成三正餐加兩次點心，六大類都要出現。',
     category: 'eating',
+    ageRange: [12, 36],
     causes: [
       '幼兒胃容量小，一次吃不多，本來就要靠兩次點心補足一天所需',
       '每天的食量會隨活動量與生長速度波動，看單餐一定會覺得吃太少',
@@ -398,6 +409,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '1 歲後轉全脂鮮奶與戒奶瓶',
     summary: '滿 1 歲可改喝全脂鮮奶、每天 2 杯各 240 毫升即可，奶瓶建議 1 歲開始戒、最晚不超過 1 歲半。',
     category: 'eating',
+    ageRange: [12, 18],
     causes: [
       '1 歲後奶不再是主食，六大類固體食物才是主要營養來源',
       '長期吸吮奶瓶會影響乳牙咬合，含著奶瓶入睡更容易造成奶瓶性蛀牙',
@@ -427,6 +439,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '讓孩子自己吃：弄得一團亂怎麼辦',
     summary: '弄髒是學會自主進食的必經過程，1 歲前後能用手抓、1 歲半後能用湯匙，最好在入園前就練起來。',
     category: 'eating',
+    ageRange: [12, 24],
     causes: [
       '手眼協調與手部小肌肉還在發展，湯匙送到嘴邊食物掉光是正常的',
       '用手抓握、觸摸食物是孩子認識質地、建立食物好感的重要方式',
@@ -458,6 +471,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '戒夜奶',
     summary: '1 歲後夜間已不需要進食，多數夜醒討奶是入睡習慣而不是真的餓，用漸進式方法戒最順。',
     category: 'sleep',
+    ageRange: [12, 24],
     causes: [
       '「奶睡」把喝奶和入睡綁在一起，孩子淺眠時需要同樣的方式才能接回睡眠',
       '白天進食量不足，把熱量挪到夜裡補回來',
@@ -488,6 +502,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '戒奶嘴',
     summary: '建議 3 歲前戒掉奶嘴，3 歲前造成的前牙開咬多半還能自然恢復，再拖下去就不容易了。',
     category: 'sleep',
+    ageRange: [12, 36],
     causes: [
       '持續吸吮讓前牙受力不平均，造成前牙開咬與後牙錯咬',
       '奶嘴是威力強大的自我安撫工具，孩子在疲累、焦慮時特別依賴',
@@ -517,6 +532,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '從嬰兒床換到小床',
     summary: '看的是發展成熟度不是年齡：孩子能自己爬出嬰兒床、或站立時胸線已高過床欄，就該換床了。',
     category: 'sleep',
+    ageRange: [18, 36],
     causes: [
       '孩子長高後重心高過床欄，翻越時等於從高處墜落',
       '已學會爬出嬰兒床，代表圍欄不再具有保護作用',
@@ -549,6 +565,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '學步期居家安全檢查',
     summary: '0-6 歲兒童事故傷害就醫原因以跌落最多（62.6%），其次是燒燙傷，而客廳正是最常跌倒的地點。',
     category: 'safety',
+    ageRange: [12, 36],
     causes: [
       '會走會爬後行動範圍暴增，但判斷危險的能力還沒跟上',
       '2 歲到學齡前好奇心最強，習慣把拿得到的東西放進嘴裡探索',
@@ -580,6 +597,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '撞到頭：什麼情況要就醫',
     summary: '多數學步期撞頭只需在家觀察 48-72 小時，但一旦意識、嘔吐或神經症狀出現變化就要立刻送醫。',
     category: 'safety',
+    ageRange: [12, 36],
     causes: [
       '幼兒頭部佔身體比例大、重心偏高，剛學會走路時最容易撞到頭',
       '從沙發、床、餐椅或樓梯墜落，是最常見的受傷機轉',
@@ -613,6 +631,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '幼幼班入園準備',
     summary: '幼幼班的重點不是讀寫，而是團體適應與自理能力，提前 1-2 個月在家練最有效。',
     category: 'preschool',
+    ageRange: [24, 36],
     causes: [
       '1-2 歲之間正是分離焦慮的高峰，入園會再度觸發',
       '在家什麼都由大人代勞，到學校要自己來就會產生強烈挫折',
@@ -643,6 +662,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '入園後一直生病是正常的嗎？',
     summary: '學齡前孩子一年感冒 6-10 次屬正常範圍，剛入園時更頻繁，只要 7-10 天內能痊癒就代表免疫功能沒問題。',
     category: 'preschool',
+    ageRange: [24, 36],
     causes: [
       '團體生活讓孩子短時間接觸大量新病毒，交叉感染機會倍增',
       '免疫記憶還在累積，多數抗體要靠疫苗或實際感染才能建立',
@@ -681,6 +701,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '熱痙攣：發燒時抽搐怎麼辦',
     summary: '熱痙攣好發於 6 個月至 5 歲，大多在 1-3 分鐘內自己結束，當下最重要的是不要強壓四肢、不要往嘴裡塞任何東西。',
     category: 'health',
+    ageRange: [12, 36],
     causes: [
       '幼兒腦部尚未成熟，體溫快速上升時容易誘發全身抽搐，9-18 個月是好發高峰，盛行率約 2-5%',
       '多發生在發燒後 2-6 小時內，也就是體溫正在往上衝的發燒初期',
@@ -719,6 +740,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '中耳炎：抱耳朵、半夜哭醒',
     summary: '幼兒的耳咽管又短又直又寬，感冒後很容易併發中耳炎，3 歲前有八成以上的孩子得過。',
     category: 'health',
+    ageRange: [12, 36],
     causes: [
       '連接中耳與鼻咽的耳咽管短、直、寬，上呼吸道感染時細菌容易往中耳跑',
       '躺著喝奶讓奶水積在咽喉、倒灌進中耳，是最常被忽略的原因',
@@ -758,6 +780,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '奶瓶齒：睡前奶與幼兒蛀牙',
     summary: '睡著後唾液變少、奶水整夜附在齒面上，這是奶瓶性蛀牙的成因，而含氟牙膏加上健保塗氟就能大幅降低風險。',
     category: 'health',
+    ageRange: [12, 36],
     causes: [
       '含著奶瓶或乳頭入睡後唾液分泌減少，高濃度奶水停在牙齒表面，成為細菌溫床',
       '夜奶或睡前吃喝後沒有清潔口腔，蛀牙機率比有刷牙的孩子高出一倍',
@@ -799,6 +822,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '誤食與哽噎：4 歲以下的高風險食物',
     summary: '臺灣兒科醫學會點名 4 歲以下風險特別高，關鍵不只是不主動給，而是讓這些食物根本不出現在孩子拿得到的地方。',
     category: 'safety',
+    ageRange: [12, 36],
     causes: [
       '4 歲以下臼齒還沒長齊、咀嚼與吞嚥協調不成熟，圓滑或有彈性的食物容易整顆滑進氣道',
       '邊跑邊吃、邊玩邊吃、躺著餵或在哭鬧大笑時進食，都會讓食物直接掉進氣管',
@@ -838,6 +862,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '燒燙傷：熱湯、熱水與電鍋',
     summary: '燒燙傷佔 0-6 歲兒童事故傷害的 13.2%，廚房、餐桌、客廳與浴室是四大高風險場域，急救只有「沖脫泡蓋送」一條路。',
     category: 'safety',
+    ageRange: [12, 36],
     causes: [
       '幼兒皮膚較薄，同樣的溫度與接觸時間比大人更容易造成深度燒燙傷',
       '桌緣的熱湯熱飲、朝外的鍋柄、可以被拉扯的桌巾，全都在孩子的手可及範圍內',
@@ -875,6 +900,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '汽車安全座椅：幾歲能轉前向',
     summary: '依「小型車附載幼童安全乘坐實施及宣導辦法」，2 歲以下必須後向，逾 2 歲至 4 歲以下且 18 公斤以下仍以後向為優先——滿 2 歲不等於該轉前向。',
     category: 'safety',
+    ageRange: [12, 36],
     causes: [
       '幼兒頭部佔身體比例大、頸椎尚未成熟，前向乘坐時撞擊力會集中在頸部',
       '後向座椅能把撞擊力沿著整片背部分散，是這個年紀最有保護力的方向',
@@ -913,6 +939,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '果汁、含糖飲料與幼兒該喝多少水',
     summary: '幼兒的飲料只有兩種：白開水和奶。果汁不能取代水果，1-3 歲每天最多 120 毫升，含糖飲料完全不需要。',
     category: 'eating',
+    ageRange: [12, 36],
     causes: [
       '果汁把纖維濾掉、只留下糖與熱量，喝下去的糖遠多於吃同樣份量的水果',
       '甜味會重設孩子的口味偏好，喝過含糖飲料後就更不願意接受白開水',
@@ -951,6 +978,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '夜驚與惡夢：兩者不同',
     summary: '夜驚發生在上半夜、孩子叫不醒也不記得；惡夢發生在下半夜、孩子會自己醒來並記得夢境，兩者的處理方式剛好相反。',
     category: 'sleep',
+    ageRange: [12, 36],
     causes: [
       '夜驚多在入睡後 1-2 小時進入深睡期時發生，與深睡期和快速動眼期切換不順有關，2-3 歲後開始出現，約 1-6% 的孩子會有',
       '睡眠不足、睡前過度疲累或過度興奮、發燒生病與身心壓力，都會讓夜驚更容易發作',
@@ -986,6 +1014,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '什麼時候不再午睡',
     summary: '多數孩子 3 歲前仍需要午睡，3-5 歲之間才會逐漸不需要（平均約 4 歲），判斷依據是一天的總睡眠而不是年齡。',
     category: 'sleep',
+    ageRange: [30, 36],
     causes: [
       '1 歲半前後兩段小睡會併成一段下午的午睡，這是幼兒期的正常轉換',
       '白天可以撐的清醒時間拉長後，午睡睡太晚或睡太久，晚上就會入睡困難',
@@ -1023,6 +1052,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '弟妹出生後的手足競爭',
     summary: '2-3 歲的孩子還在自我中心的階段，父母的注意力被分走時，他會用退化行為把大人叫回來。',
     category: 'emotion',
+    ageRange: [24, 36],
     causes: [
       '這個年紀仍以自己的觀點看事情，大人突然的轉變會被理解成「我被丟掉了」',
       '退化行為（已戒的尿布又尿褲子、只肯用奶瓶、要人抱著餵）是在模仿弟妹，好換到同等的關愛',
@@ -1063,6 +1093,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '屏息發作：哭到喘不過氣',
     summary: '孩子哭到停止呼吸、嘴唇發紫甚至短暫失去意識，看起來像要出事，但屏息發作是良性的，通常 30 秒到 1 分鐘就自己恢復。',
     category: 'emotion',
+    ageRange: [12, 36],
     causes: [
       '與先天體質及呼吸調節尚未成熟有關，好發於 6 個月至 1 歲半、1 歲前後是高峰，2 歲以後逐漸減少',
       '被驚嚇、疼痛、生氣或劇烈哭泣後突然停止呼吸，接著臉唇發紫、身體軟弱無力或僵直',
@@ -1104,6 +1135,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '2-3 歲的結巴是正常的嗎',
     summary: '2-4 歲的發展性不流暢很常見，多數孩子在 6 到 36 個月內自然恢復，真正要調整的往往是大人的反應。',
     category: 'language',
+    ageRange: [24, 36],
     causes: [
       '詞彙量在這個階段爆炸性成長，想說的遠比嘴巴跟得上的多，急著表達就卡住',
       '有家族史、男童比例較高；太累、太急或太興奮時特別容易出現',
@@ -1156,6 +1188,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '嘔吐腹瀉：輪狀、諾羅與脫水判斷',
     summary: '幼兒腸胃炎的重點不是止吐止瀉，而是判斷脫水程度並用正確的口服電解質液補回來。',
     category: 'health',
+    ageRange: [12, 36],
     causes: [
       '諾羅病毒最常見、其次是輪狀病毒，都走糞口途徑傳播，臺灣流行季集中在 11 月到隔年 3 月，年紀越小嘔吐越明顯',
       '輪狀病毒疫苗是嬰兒期的口服疫苗，最後 1 劑不得晚於出生後 32 週，滿 1 歲的孩子已經錯過接種時程（2027 年 1 月 1 日起改為公費，家中新生兒別再錯過）',
@@ -1202,6 +1235,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '打完疫苗後的發燒與紅腫',
     summary: '接種後 1-2 天的低燒與打針部位紅腫是身體正在製造抗體，真正要處理的是分清哪些屬於預期反應、哪些必須回診。',
     category: 'health',
+    ageRange: [12, 36],
     causes: [
       '疫苗刺激免疫系統產生抗體，過程本身就會發熱與局部發炎，接種後 1-2 天體溫落在 37.5 至 38 度屬自然現象',
       '打針部位的紅、腫、疼痛與硬塊來自針劑在肌肉內的發炎反應，通常 2-3 天內慢慢消退',
@@ -1246,6 +1280,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '3 歲視力篩檢與斜視',
     summary: '3 歲半至 4 歲是第一次眼科視力檢查的理想時機，因為弱視治療的黃金期只到 6 歲，錯過就補不回來。',
     category: 'health',
+    ageRange: [30, 36],
     causes: [
       '單眼弱視沒有症狀，孩子用好的那隻眼睛看世界，從外觀與日常表現完全看不出來',
       '斜視、兩眼度數差距大、高度遠視或先天性白內障，都會讓大腦逐漸放棄比較差的那隻眼睛',
@@ -1292,6 +1327,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '聽力警訊：叫他沒反應',
     summary: '新生兒聽力篩檢通過不代表以後都沒事，遲發性聽損與中耳積水都可能到幼兒期才出現。',
     category: 'health',
+    ageRange: [12, 36],
     causes: [
       '遲發性聽損：新生兒篩檢通過的孩子仍可能因基因、感染、腦膜炎或頭部外傷，在之後才出現聽力損失',
       '中耳積水：幼兒耳咽管又短又接近水平，感冒時鼻腔分泌物滯留中耳，6 個月到 3 歲與合併過敏性鼻炎的孩子最常見',
@@ -1339,6 +1375,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '溺水：浴缸與戲水池只需幾公分水',
     summary: '5 公分的水就足以讓幼兒溺水，而且溺水幾乎沒有聲音，1 至 4 歲是風險最高的年齡。',
     category: 'safety',
+    ageRange: [12, 36],
     causes: [
       '幼兒頭部占比重、上半身一旦入水就撐不起來，5 公分深的水、臉盆、水桶都足以致命，浴缸 20 公分就已經出過事',
       '真正溺水的孩子叫不出聲、也揮不了手，過程安靜而且可能只有幾十秒，不會像電影裡那樣拍水呼救',
@@ -1385,6 +1422,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '中暑與熱衰竭：台灣夏天的外出',
     summary: '幼兒體溫調節還沒成熟又玩到忘記喝水，體溫超過 40 度合併意識不清就是中暑，能不能在 3 小時內降溫決定結果。',
     category: 'safety',
+    ageRange: [12, 36],
     causes: [
       '幼兒的體溫調節與散熱效率不如成人，體表面積相對大、代謝快，同樣的高溫下比大人更快熱起來',
       '玩起來不會主動說渴，等到出現口渴、疲倦、頭暈時往往已經脫水',
@@ -1429,6 +1467,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '墜落：窗戶、陽台與攀爬家具',
     summary: '0-6 歲事故傷害以跌落最多，占 62.6%，而幼兒期的危險已經換成會爬高的窗台、陽台與沒固定的家具。',
     category: 'safety',
+    ageRange: [12, 36],
     causes: [
       '孩子已經會搬椅子、爬沙發、踩抽屜往上爬，卻還判斷不了高度與重心，看到有趣的東西就往上走',
       '靠窗的沙發、床、矮櫃就是登上窗台的樓梯；窗台低於 120 公分時，孩子輕易就能搆到邊緣探頭出去',
@@ -1477,6 +1516,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '幼兒期新出現的食物過敏',
     summary: '副食品階段沒事不代表以後沒事，幼兒期才第一次吃到帶殼海鮮與堅果，過敏也可能到這時才出現。',
     category: 'eating',
+    ageRange: [12, 36],
     causes: [
       '臺灣兒童最常見的食物過敏原是牛奶與蛋，第三名是海鮮；而帶殼海鮮與堅果通常要到幼兒期才第一次吃到',
       '牛奶、蛋、小麥過敏約半數在 2 到 10 歲間自然好轉，花生、堅果與海鮮過敏卻常持續終身甚至更嚴重',
@@ -1517,6 +1557,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '分房睡：什麼時候、怎麼開始',
     summary: '沒有一個正確的分房年齡，1 歲前建議同房不同床，之後看的是孩子的準備度和全家的睡眠品質。',
     category: 'sleep',
+    ageRange: [12, 36],
     causes: [
       '1 歲前的安全睡眠建議是同房不同床（至少 6 個月、最好滿 1 歲），那是為了降低睡眠相關死亡風險，不是為了養成依賴',
       '滿 1 歲後何時分房沒有醫學上的標準答案，房間數、照顧人力與全家作息都是合理的考量',
@@ -1563,6 +1604,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '在超市地上大鬧怎麼辦',
     summary: '公共場所的情緒風暴，難的不是孩子而是大人怕丟臉而妥協，那一次妥協就是下一次的教學。',
     category: 'emotion',
+    ageRange: [12, 36],
     causes: [
       '賣場的聲光刺激、人多，加上想要的東西全部攤在眼前，本來就是幼兒最難自我控制的環境',
       '出發前沒講清楚今天要買什麼、能不能買玩具，孩子沒有預期，只能用哭來談',
@@ -1609,6 +1651,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '說謊還是想像？',
     summary: '3 歲前的「說謊」多半是把願望說出口，不是欺騙；真正有意圖的謊話要到理解別人怎麼想之後才辦得到。',
     category: 'emotion',
+    ageRange: [24, 36],
     causes: [
       '幼兒對「希望的事」和「真的發生的事」界線很模糊，所以會說自己養了恐龍、媽媽是公主',
       '否認打破杯子、說自己沒吃餅乾，多半是想用話把事情撤回來的願望式思考，不是計畫好的欺騙',
@@ -1656,6 +1699,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '入園第一週的哭鬧與退化',
     summary: '常常是第 3 到 7 天哭得最慘，多數孩子在一兩週內適應，期間尿床、要人抱、講話變幼稚都是正常的退一步。',
     category: 'preschool',
+    ageRange: [24, 36],
     causes: [
       '分離焦慮是依附關係成熟的正常表現，孩子要先真的相信「你走了會回來」才放得下',
       '新環境要同時處理陌生的人、規則、作息與午睡，能量都用在適應上，行為就退回熟悉的樣子',

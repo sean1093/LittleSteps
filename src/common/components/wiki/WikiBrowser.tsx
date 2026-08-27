@@ -24,8 +24,15 @@ import WikiArticleCard from './WikiArticleCard';
  * 描述而不是文章標題。
  */
 
-interface WikiBrowserProps<Category extends string> {
-  articles: readonly WikiArticle<Category>[];
+/**
+ * `Article` 也是型別參數，不只 `Category`：幼兒百科的文章多帶一個 `ageRange`，
+ * 而 `articleTag` 需要看得到那個欄位。預設值讓另外兩個知識庫的呼叫端不受影響。
+ */
+interface WikiBrowserProps<
+  Category extends string,
+  Article extends WikiArticle<Category> = WikiArticle<Category>,
+> {
+  articles: readonly Article[];
   categoryLabels: Record<Category, string>;
   categoryColors: Record<Category, WikiCategoryColors>;
   /** chip 的顯示順序；省略時採用 categoryLabels 的鍵序 */
@@ -33,6 +40,13 @@ interface WikiBrowserProps<Category extends string> {
   /** 各分類的 lucide 圖示名稱；省略時 chip 只顯示文字 */
   categoryIcons?: Record<Category, string>;
   searchPlaceholder: string;
+  /**
+   * 依情境為每篇加一個小標籤，回傳 undefined 就不顯示。
+   *
+   * 幼兒百科用它標出哪些文章符合孩子現在的月齡；另外兩個知識庫不傳，
+   * 卡片就和以前一樣。排序由呼叫端決定——這裡照傳入順序渲染。
+   */
+  articleTag?: (article: Article) => string | undefined;
   theme: ServiceTheme;
 }
 
@@ -51,15 +65,19 @@ function matchesKeyword(article: WikiArticle<string>, keyword: string) {
   );
 }
 
-export default function WikiBrowser<Category extends string>({
+export default function WikiBrowser<
+  Category extends string,
+  Article extends WikiArticle<Category> = WikiArticle<Category>,
+>({
   articles,
   categoryLabels,
   categoryColors,
   categoryOrder,
   categoryIcons,
   searchPlaceholder,
+  articleTag,
   theme,
-}: WikiBrowserProps<Category>) {
+}: WikiBrowserProps<Category, Article>) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<Category | 'all'>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -149,6 +167,8 @@ export default function WikiBrowser<Category extends string>({
                   }
                   categoryLabel={categoryLabels[article.category]}
                   categoryColors={categoryColors[article.category]}
+                  tag={articleTag?.(article)}
+                  theme={theme}
                 />
               </motion.div>
             ))}

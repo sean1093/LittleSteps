@@ -6,6 +6,7 @@ import {
   toddlerWikiCategoryColors,
   toddlerWikiCategoryLabels,
 } from './toddlerWiki';
+import { TODDLER_MAX_MONTHS, TODDLER_MIN_MONTHS } from '../utils/ageBands';
 
 const CATEGORIES: ToddlerWikiCategory[] = [
   'toilet',
@@ -23,6 +24,32 @@ describe('toddlerWikiArticles', () => {
     expect(toddlerWikiArticles).toHaveLength(44);
     const ids = toddlerWikiArticles.map((a) => a.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('每篇的 ageRange 都在幼兒期內、起點小於終點', () => {
+    for (const article of toddlerWikiArticles) {
+      const [start, end] = article.ageRange;
+      expect(start, article.id).toBeGreaterThanOrEqual(TODDLER_MIN_MONTHS);
+      expect(end, article.id).toBeLessThanOrEqual(TODDLER_MAX_MONTHS);
+      expect(start, article.id).toBeLessThan(end);
+    }
+  });
+
+  it('ageRange 的起點對齊既有的年齡段界線', () => {
+    // 標籤會把月齡讀成「1 歲半後」，靠的就是起點落在這幾個界線上。
+    const starts = [12, 15, 18, 24, 30];
+    for (const article of toddlerWikiArticles) {
+      expect(starts, article.id).toContain(article.ageRange[0]);
+    }
+  });
+
+  it('每個年齡段都有現在適用的文章，否則排序會開天窗', () => {
+    for (const month of [12, 15, 18, 24, 30, 35]) {
+      const applicable = toddlerWikiArticles.filter(
+        (a) => month >= a.ageRange[0] && month < a.ageRange[1],
+      );
+      expect(applicable.length, `${month} 個月`).toBeGreaterThan(0);
+    }
   });
 
   it('每個分類至少 2 篇', () => {

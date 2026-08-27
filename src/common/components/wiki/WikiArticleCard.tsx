@@ -3,6 +3,7 @@ import { ChevronDown } from 'lucide-react';
 import { getLucideIcon } from '../../lucideIcons';
 import { collapse } from '../../ui/motion';
 import type { WikiArticle, WikiCategoryColors } from '../../../types';
+import type { ServiceTheme } from '../../ui/serviceTheme';
 
 interface WikiArticleCardProps {
   article: WikiArticle;
@@ -12,6 +13,9 @@ interface WikiArticleCardProps {
   categoryLabel: string;
   /** Category color scheme; resolved by the owning sub-app. */
   categoryColors: WikiCategoryColors;
+  /** Optional situational label, e.g. whether this applies at the child's age. */
+  tag?: string;
+  theme: ServiceTheme;
 }
 
 /**
@@ -26,6 +30,8 @@ export default function WikiArticleCard({
   onToggle,
   categoryLabel,
   categoryColors,
+  tag,
+  theme,
 }: WikiArticleCardProps) {
   // 每篇文章的圖示都不一樣，在三十幾篇的長清單裡是用來重新找回某一列的記號，
   // 所以留著；但原本包在外面那層著色圓角方塊只是裝飾，而且分類已經有文字 pill。
@@ -40,6 +46,9 @@ export default function WikiArticleCard({
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <h3 className="text-ink">{article.title}</h3>
             <span className={`tag ${categoryColors.pill}`}>{categoryLabel}</span>
+            {/* 情境標籤放在分類後面：它回答的是「這篇現在跟我有關嗎」，
+                和分類是兩種不同的資訊，所以用服務色而不是分類色。 */}
+            {tag && <span className={`tag ${theme.tint} ${theme.ink}`}>{tag}</span>}
           </div>
           <p className="text-sm text-ink-muted leading-relaxed line-clamp-2">
             {article.summary}

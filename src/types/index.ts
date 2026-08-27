@@ -619,4 +619,14 @@ export type ToddlerWikiCategory =
   | 'safety'      // 學步期安全
   | 'health'      // 生病與就醫
   | 'preschool';  // 入園與社交
-export type ToddlerWikiArticle = WikiArticle<ToddlerWikiCategory>;
+
+/**
+ * 幼兒百科文章。
+ *
+ * `ageRange` 是這篇最相關的月齡區間，含頭不含尾，起始值對齊
+ * `TODDLER_AGE_BANDS` 的界線（12/15/18/24/30）。橫跨整個幼兒期的常備知識
+ * 用 `[12, 36]`。用途只有排序與標籤——任何年齡都讀得到每一篇。
+ */
+export interface ToddlerWikiArticle extends WikiArticle<ToddlerWikiCategory> {
+  ageRange: [number, number];
+}
