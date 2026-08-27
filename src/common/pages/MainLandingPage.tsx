@@ -171,7 +171,7 @@ export default function MainLandingPage({ onNavigate, user, onSignIn }: MainLand
                   </div>
                   <div className="flex items-center gap-2 text-sm text-bloom-stone/70">
                     <div className="w-1.5 h-1.5 rounded-full bg-bloom-mauve" />
-                    <span>身心紀錄與情緒日記</span>
+                    <span>14 次公費產檢時程與完成紀錄</span>
                   </div>
                 </div>
               </div>

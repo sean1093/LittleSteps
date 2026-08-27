@@ -5,7 +5,7 @@ import { calculateAgeDisplay } from '../../utils/summaryCalculator';
 import { developmentCheckItems } from '../data/developmentChecks';
 import { groupEntriesByMonth } from '../utils/diaryHelpers';
 import ExplorerShell from '../components/ExplorerShell';
-import ExplorerNotice from '../components/ExplorerNotice';
+import ServiceNotice from '../../common/components/ServiceNotice';
 import { toLocalDateKey } from '../../utils/dateHelpers';
 
 const MOODS: { value: DiaryMood; emoji: string; label: string }[] = [
@@ -154,7 +154,7 @@ export default function DiaryPage({
       reminderBadge={reminderBadge}
     >
       {!currentChild ? (
-        <ExplorerNotice
+        <ServiceNotice service="littleexplorer"
           icon={Sprout}
           title="還沒有寶寶資料"
           description={'請先到 LittleSteps 新增寶寶，\n之後就能在這裡留下成長的點滴。'}
@@ -181,7 +181,7 @@ export default function DiaryPage({
           </section>
 
           {groups.length === 0 && !composerOpen && (
-            <ExplorerNotice
+            <ServiceNotice service="littleexplorer"
               icon={Sprout}
               title="還沒有任何紀錄"
               description={

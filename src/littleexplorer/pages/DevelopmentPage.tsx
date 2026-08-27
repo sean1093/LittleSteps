@@ -20,7 +20,7 @@ import {
 } from '../data/developmentChecks';
 import { TODDLER_MAX_MONTHS, TODDLER_MIN_MONTHS, bandForMonths } from '../utils/ageBands';
 import ExplorerShell from '../components/ExplorerShell';
-import ExplorerNotice from '../components/ExplorerNotice';
+import ServiceNotice from '../../common/components/ServiceNotice';
 import AgeBandPicker from '../components/AgeBandPicker';
 import ToothChart from '../components/ToothChart';
 
@@ -73,7 +73,7 @@ export default function DevelopmentPage({
   const warning = developmentWarnings.find((w) => w.ageBand === band);
 
   const outOfRange = !currentChild ? (
-    <ExplorerNotice
+    <ServiceNotice service="littleexplorer"
       icon={Baby}
       title="還沒有寶寶資料"
       description={'請先到 LittleSteps 新增寶寶，\n之後這裡就會依月齡顯示該階段的成長重點。'}
@@ -82,14 +82,14 @@ export default function DevelopmentPage({
   ) : isPregnancyProfile(currentChild) ? (
     // 孕期檔案的 birthday 是預產期，月齡會算成 0，若不先攔下來就會被
     // 誤導去 LittleSteps 追蹤一個還沒出生的孩子的里程碑。
-    <ExplorerNotice
+    <ServiceNotice service="littleexplorer"
       icon={Flower2}
       title="這是孕期檔案"
       description={'目前選擇的是還沒出生的寶寶。\n孕期的產檢與每週指南在 LittleBloom；出生後在那裡登記出生日期，這裡就會接手。'}
       action={{ label: '前往 LittleBloom', onClick: () => { window.location.hash = '#/littlebloom'; } }}
     />
   ) : ageMonths < TODDLER_MIN_MONTHS ? (
-    <ExplorerNotice
+    <ServiceNotice service="littleexplorer"
       icon={Baby}
       title="寶寶還不到 1 歲"
       description={'幼兒期的成長追蹤從滿 1 歲開始。\n在那之前，LittleSteps 的里程碑與副食品指南更適合現在的階段。'}
@@ -128,7 +128,7 @@ export default function DevelopmentPage({
       {outOfRange ?? (
     <div className="space-y-4">
       {ageMonths >= TODDLER_MAX_MONTHS && (
-        <ExplorerNotice
+        <ServiceNotice service="littleexplorer"
           icon={PartyPopper}
           tone="celebrate"
           title="已經滿 3 歲了"

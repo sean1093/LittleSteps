@@ -16,7 +16,7 @@ import { tipCategoryIcons, tipCategoryLabels, toddlerCareTips } from '../data/mo
 import { buildGoogleCalendarUrl, downloadIcs } from '../utils/icsExport';
 import { TODDLER_MIN_MONTHS, bandForMonths } from '../utils/ageBands';
 import ExplorerShell from '../components/ExplorerShell';
-import ExplorerNotice from '../components/ExplorerNotice';
+import ServiceNotice from '../../common/components/ServiceNotice';
 import AgeBandPicker from '../components/AgeBandPicker';
 
 const CATEGORY_ORDER: ToddlerTipCategory[] = ['safety', 'feeding', 'behavior', 'health'];
@@ -74,21 +74,21 @@ export default function RemindersPage({
   );
 
   const outOfRange = !currentChild ? (
-    <ExplorerNotice
+    <ServiceNotice service="littleexplorer"
       icon={Baby}
       title="還沒有寶寶資料"
       description={'請先到 LittleSteps 新增寶寶，\n提醒會依出生日自動算出健檢、疫苗與塗氟的時程。'}
       action={{ label: '前往 LittleSteps', onClick: () => { window.location.hash = '#/littlesteps'; } }}
     />
   ) : isPregnancyProfile(currentChild) ? (
-    <ExplorerNotice
+    <ServiceNotice service="littleexplorer"
       icon={Flower2}
       title="這是孕期檔案"
       description={'目前選擇的是還沒出生的寶寶。\n產檢時程在 LittleBloom；出生後在那裡登記出生日期，幼兒期的提醒就會接手。'}
       action={{ label: '前往 LittleBloom 產檢時程', onClick: () => { window.location.hash = '#/littlebloom/prenatal'; } }}
     />
   ) : ageMonths < TODDLER_MIN_MONTHS ? (
-    <ExplorerNotice
+    <ServiceNotice service="littleexplorer"
       icon={Baby}
       title="寶寶還不到 1 歲"
       description={'幼兒期的提醒從滿 1 歲開始。\n1 歲前的疫苗與健檢請在 LittleSteps 的疫苗追蹤查看。'}
@@ -123,7 +123,7 @@ export default function RemindersPage({
       {outOfRange ?? (
         <div className="space-y-4">
           {visible.length === 0 ? (
-            <ExplorerNotice
+            <ServiceNotice service="littleexplorer"
               icon={Check}
               tone="celebrate"
               title="目前沒有待辦"

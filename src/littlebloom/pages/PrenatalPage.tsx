@@ -9,6 +9,8 @@ import type { PrenatalItemKind } from '../data/prenatalCheckups';
 import { resolvePrenatalItems, weeksPregnant } from '../utils/prenatalSchedule';
 import type { PrenatalItemStatus } from '../utils/prenatalSchedule';
 import BloomShell from '../components/BloomShell';
+import ServiceNotice from '../../common/components/ServiceNotice';
+import { isPregnancyProfile } from '../../common/pregnancy';
 import { toLocalDateKey } from '../../utils/dateHelpers';
 
 const KIND_STYLE: Record<PrenatalItemKind, string> = {
@@ -63,18 +65,42 @@ export default function PrenatalPage({
 
   const weeks = lmp ? weeksPregnant(lmp) : 0;
 
+  // 與 LittleBloomPage 同一個理由：出生後 lmp 仍在，只有 status 變成 archived。
+  if (currentChild && lmp && !isPregnancyProfile(currentChild)) {
+    return (
+      <BloomShell title="產檢時程" backTo="#/littlebloom">
+        <ServiceNotice
+          service="littlebloom"
+          tone="celebrate"
+          icon={Baby}
+          title="寶寶已經出生了"
+          description={'產檢時程已經走完，紀錄都保留著。\n寶寶的健兒門診與疫苗時程請到 LittleSteps 查看。'}
+          action={{
+            label: '前往 LittleSteps',
+            onClick: () => {
+              window.location.hash = '#/littlesteps';
+            },
+          }}
+        />
+      </BloomShell>
+    );
+  }
+
   if (!lmp) {
     return (
       <BloomShell title="產檢時程" backTo="#/littlebloom">
-        <div className="bg-white rounded-3xl shadow-soft p-6 text-center">
-          <Baby className="w-12 h-12 text-bloom-dusty-rose mx-auto mb-4" />
-          <h2 className="text-lg font-bold text-bloom-stone mb-2">還沒有孕期資料</h2>
-          <p className="text-sm text-bloom-stone/70 leading-relaxed">
-            請先從側邊選單新增一個孕期檔案並填入預產期，
-            <br />
-            產檢時程會依末次月經自動排出來。
-          </p>
-        </div>
+        <ServiceNotice
+          service="littlebloom"
+          icon={Baby}
+          title="還沒有孕期資料"
+          description={'新增一個孕期檔案並填入預產期後，\n14 次公費產檢的時程會依末次月經自動排出來。'}
+          action={{
+            label: '前往新增孕期檔案',
+            onClick: () => {
+              window.location.hash = '#/littlesteps';
+            },
+          }}
+        />
       </BloomShell>
     );
   }

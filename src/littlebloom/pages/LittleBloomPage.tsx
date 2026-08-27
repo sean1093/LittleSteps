@@ -6,6 +6,8 @@ import { PREGNANCY_TOTAL_WEEKS, pregnancyGuides, trimesterOf } from '../data/pre
 import { prenatalCheckupSchedule } from '../data/prenatalCheckups';
 import { resolvePrenatalItems, weeksPregnant } from '../utils/prenatalSchedule';
 import BloomShell from '../components/BloomShell';
+import ServiceNotice from '../../common/components/ServiceNotice';
+import { isPregnancyProfile } from '../../common/pregnancy';
 import { toLocalDateKey } from '../../utils/dateHelpers';
 
 interface LittleBloomPageProps {
@@ -83,27 +85,45 @@ export default function LittleBloomPage({
     );
   }, [lmp, progress]);
 
+  // 出生後 recordBirth 會保留 lastPeriodDate 與 dueDate 當孕期紀錄，只把 status
+  // 改成 archived，所以 `!lmp` 這個條件永遠不會成立。少了下面這個分支，生完的
+  // 媽媽會一直看到「第 40 週」與還能按的「登記出生」。判斷條件與側邊欄、
+  // LittleSteps 儀表板、LittleExplorer 兩個守門一致。
+  if (currentChild && lmp && !isPregnancyProfile(currentChild)) {
+    return (
+      <BloomShell title="LittleBloom" subtitle="孕期已完成">
+        <ServiceNotice
+          service="littlebloom"
+          tone="celebrate"
+          icon={Baby}
+          title="寶寶已經出生了"
+          description={`${currentChild.name} 的孕期紀錄已經封存保留。\n接下來的成長里程碑與疫苗，請到 LittleSteps 繼續。`}
+          action={{
+            label: '前往 LittleSteps',
+            onClick: () => {
+              window.location.hash = '#/littlesteps';
+            },
+          }}
+        />
+      </BloomShell>
+    );
+  }
+
   if (!lmp) {
     return (
       <BloomShell title="LittleBloom" subtitle="孕期陪伴">
-        <div className="bg-white rounded-3xl shadow-soft p-8 text-center">
-          <Flower2 className="w-14 h-14 text-bloom-dusty-rose mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-bloom-stone mb-3">還沒有孕期檔案</h2>
-          <p className="text-sm text-bloom-stone/70 leading-relaxed mb-6">
-            到 LittleSteps 的側邊選單新增一個「孕期檔案」並填入預產期，
-            <br />
-            這裡就會依週數顯示身體變化、本週提醒與產檢時程。
-          </p>
-          <button
-            type="button"
-            onClick={() => {
+        <ServiceNotice
+          service="littlebloom"
+          icon={Flower2}
+          title="還沒有孕期檔案"
+          description={'到 LittleSteps 的側邊選單新增一個「孕期檔案」並填入預產期，\n這裡就會依週數顯示身體變化、本週提醒與產檢時程。'}
+          action={{
+            label: '前往新增孕期檔案',
+            onClick: () => {
               window.location.hash = '#/littlesteps';
-            }}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-bloom-dusty-rose to-bloom-mauve text-white font-semibold shadow-soft"
-          >
-            前往新增孕期檔案
-          </button>
-        </div>
+            },
+          }}
+        />
       </BloomShell>
     );
   }

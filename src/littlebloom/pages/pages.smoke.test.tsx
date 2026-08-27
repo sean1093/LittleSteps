@@ -237,3 +237,47 @@ describe('LittleBloomWikiPage', () => {
     expect(screen.getByText('找不到相關文章')).toBeInTheDocument();
   });
 });
+
+/**
+ * recordBirth 保留 lastPeriodDate 當孕期紀錄，只把 status 改成 archived。
+ * 兩個頁面原本只判斷 `!lmp`，那個條件產後永遠不成立，於是生完的媽媽會一直
+ * 看到「第 40 週」與還能按的「登記出生」。每位使用者最終都會走到這個狀態。
+ */
+describe('出生之後', () => {
+  const born = (): ChildProfile => ({
+    ...pregnant(),
+    isPregnancy: false,
+    birthday: '2026-08-20',
+    pregnancyData: {
+      childId: 'c1',
+      lastPeriodDate: LMP,
+      dueDate: DUE,
+      status: 'archived',
+    },
+  });
+
+  it('LittleBloom 首頁不再顯示週數，改為已出生通知', () => {
+    render(<LittleBloomPage currentChild={born()} progress={{}} onRecordBirth={noop} />);
+
+    expect(screen.getByText('寶寶已經出生了')).toBeInTheDocument();
+    expect(screen.queryByText(`第 ${EXPECTED_WEEK} 週`)).not.toBeInTheDocument();
+    expect(screen.queryByText(/第 \d+ 週/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '登記出生' })).not.toBeInTheDocument();
+  });
+
+  it('產檢頁不再列出時程，改為已出生通知', () => {
+    render(
+      <PrenatalPage currentChild={born()} progress={{}} onComplete={noop} onUndo={noop} />,
+    );
+
+    expect(screen.getByText('寶寶已經出生了')).toBeInTheDocument();
+    expect(screen.queryAllByRole('button', { name: '標記完成' })).toHaveLength(0);
+  });
+
+  it('仍在孕期時不會誤判為已出生', () => {
+    render(<LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} />);
+
+    expect(screen.queryByText('寶寶已經出生了')).not.toBeInTheDocument();
+    expect(screen.getByText(`第 ${EXPECTED_WEEK} 週`)).toBeInTheDocument();
+  });
+});
