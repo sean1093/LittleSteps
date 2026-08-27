@@ -1,0 +1,5252 @@
+[
+  {
+    "id": "centre-001",
+    "kind": "centre",
+    "name": "汐止忠厚公共托育中心",
+    "city": "新北市",
+    "district": "汐止區",
+    "address": "新北市汐止區樟樹一路137巷26號2樓",
+    "phone": "02-26413300",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-002",
+    "kind": "centre",
+    "name": "三重重新公共托育中心",
+    "city": "新北市",
+    "district": "三重區",
+    "address": "新北市三重區重新路五段511號2樓",
+    "phone": "02-29953933",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-003",
+    "kind": "centre",
+    "name": "板橋新板公共托育中心",
+    "city": "新北市",
+    "district": "板橋區",
+    "address": "新北市板橋區漢生東路258號2樓",
+    "phone": "02-29610601",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-004",
+    "kind": "centre",
+    "name": "中和南勢角公共托育中心",
+    "city": "新北市",
+    "district": "中和區",
+    "address": "新北市中和區捷運路56號2樓",
+    "phone": "02-29449595",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-005",
+    "kind": "centre",
+    "name": "新店安康公共托育中心",
+    "city": "新北市",
+    "district": "新店區",
+    "address": "新北市新店區安康路2段120號2樓",
+    "phone": "02-86662789",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-006",
+    "kind": "centre",
+    "name": "泰山幼獅公共托育中心",
+    "city": "新北市",
+    "district": "泰山區",
+    "address": "新北市泰山區全興路212號3樓",
+    "phone": "02-22960028",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-007",
+    "kind": "centre",
+    "name": "新莊昌平公共托育中心",
+    "city": "新北市",
+    "district": "新莊區",
+    "address": "新北市新莊區昌平街200號",
+    "phone": "02-85213521",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-008",
+    "kind": "centre",
+    "name": "林口仁愛公共托育中心",
+    "city": "新北市",
+    "district": "林口區",
+    "address": "新北市林口區文化一路一段137號3樓",
+    "phone": "02-26097311",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-009",
+    "kind": "centre",
+    "name": "三重二重公共托育中心",
+    "city": "新北市",
+    "district": "三重區",
+    "address": "新北市三重區大有街10號",
+    "phone": "02-29718441",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-010",
+    "kind": "centre",
+    "name": "板橋大觀公共托育中心",
+    "city": "新北市",
+    "district": "板橋區",
+    "address": "新北市板橋區大觀路一段30號",
+    "phone": "02-29659922",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-011",
+    "kind": "centre",
+    "name": "土城和平公共托育中心",
+    "city": "新北市",
+    "district": "土城區",
+    "address": "新北市土城區中正路18號2樓",
+    "phone": "02-22609588",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-012",
+    "kind": "centre",
+    "name": "永和中興公共托育中心",
+    "city": "新北市",
+    "district": "永和區",
+    "address": "新北市永和區國光路116巷2號2、3樓",
+    "phone": "02-89230013",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-013",
+    "kind": "centre",
+    "name": "淡水淡海公共托育中心",
+    "city": "新北市",
+    "district": "淡水區",
+    "address": "新北市淡水區淡海路111號2樓",
+    "phone": "02-28056620",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-014",
+    "kind": "centre",
+    "name": "蘆洲鷺江公共托育中心",
+    "city": "新北市",
+    "district": "蘆洲區",
+    "address": "新北市蘆洲區民族路7號",
+    "phone": "02-82827702",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-015",
+    "kind": "centre",
+    "name": "蘆洲長安公共托育中心",
+    "city": "新北市",
+    "district": "蘆洲區",
+    "address": "新北市蘆洲區長安街96號2樓",
+    "phone": "02-82867150",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-016",
+    "kind": "centre",
+    "name": "樹林保安公共托育中心",
+    "city": "新北市",
+    "district": "樹林區",
+    "address": "新北市樹林區保安街1段7號1、2樓",
+    "phone": "02-26758333",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-017",
+    "kind": "centre",
+    "name": "汐止北峰公共托育中心",
+    "city": "新北市",
+    "district": "汐止區",
+    "address": "新北市汐止區中興路250號2樓",
+    "phone": "02-86933229",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-018",
+    "kind": "centre",
+    "name": "鶯歌昌福公共托育中心",
+    "city": "新北市",
+    "district": "鶯歌區",
+    "address": "新北市鶯歌區永明街22號2樓",
+    "phone": "02-86776209",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-019",
+    "kind": "centre",
+    "name": "新店新和公共托育中心",
+    "city": "新北市",
+    "district": "新店區",
+    "address": "新北市新店區安和路3段100號",
+    "phone": "02-86680995",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-020",
+    "kind": "centre",
+    "name": "土城廣福公共托育中心",
+    "city": "新北市",
+    "district": "土城區",
+    "address": "新北市土城區學府路1段127號",
+    "phone": "02-22669000",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-021",
+    "kind": "centre",
+    "name": "中和連城公共托育中心",
+    "city": "新北市",
+    "district": "中和區",
+    "address": "新北市中和區中和路100號",
+    "phone": "02-82452018",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-022",
+    "kind": "centre",
+    "name": "樹林武林公共托育中心",
+    "city": "新北市",
+    "district": "樹林區",
+    "address": "新北市樹林區保安街2段151號",
+    "phone": "02-26845000",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-023",
+    "kind": "centre",
+    "name": "新莊裕民公共托育中心",
+    "city": "新北市",
+    "district": "新莊區",
+    "address": "新北市新莊區中正路新生巷66號",
+    "phone": "02-29068321",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-024",
+    "kind": "centre",
+    "name": "三峽鳶山公共托育中心",
+    "city": "新北市",
+    "district": "三峽區",
+    "address": "新北市三峽區中山路175號",
+    "phone": "02-26736782",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-025",
+    "kind": "centre",
+    "name": "三重台北橋公共托育中心",
+    "city": "新北市",
+    "district": "三重區",
+    "address": "新北市三重區重新路1段108號",
+    "phone": "02-29764358",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-026",
+    "kind": "centre",
+    "name": "五股興珍公共托育中心",
+    "city": "新北市",
+    "district": "五股區",
+    "address": "新北市五股區五工六路9號2樓",
+    "phone": "02-22992089",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-027",
+    "kind": "centre",
+    "name": "泰山同榮公共托育中心",
+    "city": "新北市",
+    "district": "泰山區",
+    "address": "新北市泰山區明志路1段427號2、3樓",
+    "phone": "02-22966939",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-028",
+    "kind": "centre",
+    "name": "中和民享公共托育中心",
+    "city": "新北市",
+    "district": "中和區",
+    "address": "新北市中和區民享街37號2樓",
+    "phone": "02-22251139",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-029",
+    "kind": "centre",
+    "name": "三峽光明公共托育中心",
+    "city": "新北市",
+    "district": "三峽區",
+    "address": "新北市三峽區光明路71號2樓",
+    "phone": "02-86713626",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-030",
+    "kind": "centre",
+    "name": "中和錦和公共托育中心",
+    "city": "新北市",
+    "district": "中和區",
+    "address": "新北市中和區圓通路292號2-3樓",
+    "phone": "02-22420016",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-031",
+    "kind": "centre",
+    "name": "新店北新公共托育中心",
+    "city": "新北市",
+    "district": "新店區",
+    "address": "新北市新店區寶橋路8號",
+    "phone": "02-29132289",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-032",
+    "kind": "centre",
+    "name": "淡水新興公共托育中心",
+    "city": "新北市",
+    "district": "淡水區",
+    "address": "新北市淡水區大義街18號",
+    "phone": "02-26259966",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-033",
+    "kind": "centre",
+    "name": "八里下庄公共托育中心",
+    "city": "新北市",
+    "district": "八里區",
+    "address": "新北市八里區舊城路19號2樓",
+    "phone": "02-86303740",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-034",
+    "kind": "centre",
+    "name": "板橋信義公共托育中心",
+    "city": "新北市",
+    "district": "板橋區",
+    "address": "新北市板橋區四川路2段245巷60號",
+    "phone": "02-89664066",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-035",
+    "kind": "centre",
+    "name": "三峽中園公共托育中心",
+    "city": "新北市",
+    "district": "三峽區",
+    "address": "新北市三峽區弘園街22號",
+    "phone": "02-26739366",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-036",
+    "kind": "centre",
+    "name": "新店青潭公共托育中心",
+    "city": "新北市",
+    "district": "新店區",
+    "address": "新北市新店區北宜路2段80號",
+    "phone": "02-22171216",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-037",
+    "kind": "centre",
+    "name": "板橋國光公共托育中心",
+    "city": "新北市",
+    "district": "板橋區",
+    "address": "新北市板橋區中正路325巷30號",
+    "phone": "02-89658118",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-038",
+    "kind": "centre",
+    "name": "蘆洲成功公共托育中心",
+    "city": "新北市",
+    "district": "蘆洲區",
+    "address": "新北市蘆洲區長安街311號",
+    "phone": "02-22820206",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-039",
+    "kind": "centre",
+    "name": "三重三光公共托育中心",
+    "city": "新北市",
+    "district": "三重區",
+    "address": "新北市三重區大同南路157號",
+    "phone": "02-29701501",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-040",
+    "kind": "centre",
+    "name": "林口忠孝公共托育中心",
+    "city": "新北市",
+    "district": "林口區",
+    "address": "新北市林口區忠孝二路55號1樓",
+    "phone": "02-26098915",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-041",
+    "kind": "centre",
+    "name": "新店柴埕公共托育中心",
+    "city": "新北市",
+    "district": "新店區",
+    "address": "新北市新店區安民街79號",
+    "phone": "02-86669801",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-042",
+    "kind": "centre",
+    "name": "蘆洲集賢公共托育中心",
+    "city": "新北市",
+    "district": "蘆洲區",
+    "address": "新北市蘆洲區集賢路245號3樓",
+    "phone": "02-82836000",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-043",
+    "kind": "centre",
+    "name": "板橋社後公共托育中心",
+    "city": "新北市",
+    "district": "板橋區",
+    "address": "新北市板橋區中正路10號2樓",
+    "phone": "02-89652255",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-044",
+    "kind": "centre",
+    "name": "新莊中港公共托育中心",
+    "city": "新北市",
+    "district": "新莊區",
+    "address": "新北市新莊區中港一街142號",
+    "phone": "02-22761115",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-045",
+    "kind": "centre",
+    "name": "樹林三多公共托育中心",
+    "city": "新北市",
+    "district": "樹林區",
+    "address": "新北市樹林區三福街52號",
+    "phone": "02-26888228",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-046",
+    "kind": "centre",
+    "name": "三峽北大公共托育中心",
+    "city": "新北市",
+    "district": "三峽區",
+    "address": "新北市三峽區學成路396號2樓",
+    "phone": "02-26741588",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-047",
+    "kind": "centre",
+    "name": "林口麗林公共托育中心",
+    "city": "新北市",
+    "district": "林口區",
+    "address": "新北市林口區公園路59號2樓",
+    "phone": "02-26083659",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-048",
+    "kind": "centre",
+    "name": "樹林文林公共托育中心",
+    "city": "新北市",
+    "district": "樹林區",
+    "address": "新北市樹林區千歲街59號",
+    "phone": "02-26810118",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-049",
+    "kind": "centre",
+    "name": "中和青年宅公共托育中心",
+    "city": "新北市",
+    "district": "中和區",
+    "address": "新北市中和區景德街23號",
+    "phone": "02-86689000",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-050",
+    "kind": "centre",
+    "name": "中和景新公共托育中心",
+    "city": "新北市",
+    "district": "中和區",
+    "address": "新北市中和區景新街467巷37號",
+    "phone": "02-86689292",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-051",
+    "kind": "centre",
+    "name": "新莊昌隆公共托育中心",
+    "city": "新北市",
+    "district": "新莊區",
+    "address": "新北市新莊區昌隆街63號",
+    "phone": "02-29946688",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-052",
+    "kind": "centre",
+    "name": "五股成泰公共托育中心",
+    "city": "新北市",
+    "district": "五股區",
+    "address": "新北市五股區芳洲八路79號",
+    "phone": "02-22935585",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-053",
+    "kind": "centre",
+    "name": "汐止智興公共托育中心",
+    "city": "新北市",
+    "district": "汐止區",
+    "address": "新北市汐止區忠孝東路3號",
+    "phone": "02-26473119",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-054",
+    "kind": "centre",
+    "name": "永和網溪公共托育中心",
+    "city": "新北市",
+    "district": "永和區",
+    "address": "新北市永和區竹林路79號",
+    "phone": "02-89281199",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-055",
+    "kind": "centre",
+    "name": "土城樂利公共托育中心",
+    "city": "新北市",
+    "district": "土城區",
+    "address": "新北市土城區裕生路65號",
+    "phone": "02-22640666",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-056",
+    "kind": "centre",
+    "name": "新莊裕民國小公共托育中心",
+    "city": "新北市",
+    "district": "新莊區",
+    "address": "新北市新莊區裕民街123號之1",
+    "phone": "02-29066321",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-057",
+    "kind": "centre",
+    "name": "土城興城公共托育中心",
+    "city": "新北市",
+    "district": "土城區",
+    "address": "新北市土城區興城路17號",
+    "phone": "02-22737350",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-058",
+    "kind": "centre",
+    "name": "新豐公共托育中心",
+    "city": "新北市",
+    "district": "新莊區",
+    "address": "新北市新莊區樹新路226號3樓",
+    "phone": "02-22075665",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-059",
+    "kind": "centre",
+    "name": "瑞芳公共托育中心",
+    "city": "新北市",
+    "district": "瑞芳區",
+    "address": "新北市瑞芳區明燈路3段2號2樓",
+    "phone": "02-24975781",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-060",
+    "kind": "centre",
+    "name": "深坑公共托育中心",
+    "city": "新北市",
+    "district": "深坑區",
+    "address": "新北市深坑區北深路2段136巷5號",
+    "phone": "02-26620663",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-061",
+    "kind": "centre",
+    "name": "新莊思賢公共托育中心",
+    "city": "新北市",
+    "district": "新莊區",
+    "address": "新北市新莊區自立街229號2-3樓",
+    "phone": "02-29918718",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-062",
+    "kind": "centre",
+    "name": "新莊豐年公共托育中心",
+    "city": "新北市",
+    "district": "新莊區",
+    "address": "新北市新莊區瓊泰路116號1-2樓",
+    "phone": "02-22068698",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-063",
+    "kind": "centre",
+    "name": "林口湖北公共托育中心",
+    "city": "新北市",
+    "district": "林口區",
+    "address": "新北市林口區湖北里後湖17-6號2樓",
+    "phone": "02-26010605",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending",
+      "needsBooking"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-064",
+    "kind": "centre",
+    "name": "臺北市松山親子館",
+    "city": "臺北市",
+    "district": "松山區",
+    "address": "臺北市松山區民生東路5段163-1號3樓",
+    "phone": "02-27661266",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-065",
+    "kind": "centre",
+    "name": "臺北市中山親子館",
+    "city": "臺北市",
+    "district": "中山區",
+    "address": "臺北市中山區玉門街1號",
+    "phone": "02-25980657",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-066",
+    "kind": "centre",
+    "name": "臺北市北投親子館",
+    "city": "臺北市",
+    "district": "北投區",
+    "address": "臺北市北投區光明路22號1-2樓",
+    "phone": "02-28983217",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-067",
+    "kind": "centre",
+    "name": "臺北市大同親子館",
+    "city": "臺北市",
+    "district": "大同區",
+    "address": "臺北市大同區涼州街2-16號1-2樓",
+    "phone": "02-25571403",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-068",
+    "kind": "centre",
+    "name": "臺北市文山親子館",
+    "city": "臺北市",
+    "district": "文山區",
+    "address": "臺北市木柵路1段177號2樓",
+    "phone": "02-22365186",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-069",
+    "kind": "centre",
+    "name": "臺北市士林親子館",
+    "city": "臺北市",
+    "district": "士林區",
+    "address": "臺北市士林區基河路130號1樓",
+    "phone": "02-28830262",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-070",
+    "kind": "centre",
+    "name": "臺北市內湖親子館",
+    "city": "臺北市",
+    "district": "內湖區",
+    "address": "臺北市內湖區內湖路1段659號2樓",
+    "phone": "02-77097990",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-071",
+    "kind": "centre",
+    "name": "臺北市萬華親子館",
+    "city": "臺北市",
+    "district": "萬華區",
+    "address": "臺北市萬華區水源路199號2樓",
+    "phone": "02-23047468",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-072",
+    "kind": "centre",
+    "name": "臺北市南港親子館",
+    "city": "臺北市",
+    "district": "南港區",
+    "address": "臺北市南港區南港路1段287巷2弄15號1樓",
+    "phone": "02-26510558",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-073",
+    "kind": "centre",
+    "name": "臺北市大安親子館",
+    "city": "臺北市",
+    "district": "大安區",
+    "address": "臺北市大安區延吉街246巷10號1-3樓",
+    "phone": "02-23254399",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-074",
+    "kind": "centre",
+    "name": "臺北市信義親子館",
+    "city": "臺北市",
+    "district": "信義區",
+    "address": "臺北市信義區松勤街50號1樓",
+    "phone": "02-27202555",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-075",
+    "kind": "centre",
+    "name": "臺北市中正親子館",
+    "city": "臺北市",
+    "district": "中正區",
+    "address": "臺北市中正區仁愛路1段17號3樓",
+    "phone": "02-23516730",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-076",
+    "kind": "centre",
+    "name": "臺北市廣慈親子館",
+    "city": "臺北市",
+    "district": "信義區",
+    "address": "臺北市信義區大道路116-3號",
+    "phone": "02-27599796",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-077",
+    "kind": "centre",
+    "name": "桃園市大園親子館",
+    "city": "桃園市",
+    "district": "大園區",
+    "address": "桃園市大園區和平東路89號3樓",
+    "phone": "03-3863316",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-078",
+    "kind": "centre",
+    "name": "桃園市八德親子館",
+    "city": "桃園市",
+    "district": "八德區",
+    "address": "桃園市八德區福國北街220號2樓",
+    "phone": "03-3766220",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-079",
+    "kind": "centre",
+    "name": "桃園市中壢親子館",
+    "city": "桃園市",
+    "district": "中壢區",
+    "address": "桃園市中壢區元化路159號4樓",
+    "phone": "03-4251620",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-080",
+    "kind": "centre",
+    "name": "桃園市桃園親子館",
+    "city": "桃園市",
+    "district": "桃園區",
+    "address": "桃園市桃園區三民路一段200號",
+    "phone": "03-3398607",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-081",
+    "kind": "centre",
+    "name": "桃園市新屋親子館",
+    "city": "桃園市",
+    "district": "新屋區",
+    "address": "桃園市新屋區中山路269號3、4樓",
+    "phone": "03-4971720",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-082",
+    "kind": "centre",
+    "name": "桃園市中壢五權親子館",
+    "city": "桃園市",
+    "district": "中壢區",
+    "address": "桃園市中壢區正大街55號",
+    "phone": "03-4911788",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-083",
+    "kind": "centre",
+    "name": "桃園市平鎮親子館",
+    "city": "桃園市",
+    "district": "平鎮區",
+    "address": "桃園市平鎮區廣成街10號4樓",
+    "phone": "03-4921366",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-084",
+    "kind": "centre",
+    "name": "桃園市觀音親子館",
+    "city": "桃園市",
+    "district": "觀音區",
+    "address": "桃園市觀音區觀新路52號",
+    "phone": "03-4732005",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-085",
+    "kind": "centre",
+    "name": "桃園市楊梅親子館",
+    "city": "桃園市",
+    "district": "楊梅區",
+    "address": "桃園市楊梅區大模街10號3樓",
+    "phone": "03-4881920",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-086",
+    "kind": "centre",
+    "name": "桃園市龍寶貝親子館",
+    "city": "桃園市",
+    "district": "桃園區",
+    "address": "桃園市桃園區國豐二街6號",
+    "phone": "03-3605530",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-087",
+    "kind": "centre",
+    "name": "桃園市平鎮新勢親子館",
+    "city": "桃園市",
+    "district": "平鎮區",
+    "address": "桃園市平鎮區延平路一段168號",
+    "phone": "03-4029791",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-088",
+    "kind": "centre",
+    "name": "桃園市大溪親子館",
+    "city": "桃園市",
+    "district": "大溪區",
+    "address": "桃園市大溪區永昌路80號3樓",
+    "phone": "03-3809970",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-089",
+    "kind": "centre",
+    "name": "桃園市楊梅雙榮親子館",
+    "city": "桃園市",
+    "district": "楊梅區",
+    "address": "桃園市楊梅區民族路五段107巷63號",
+    "phone": "03-4904649",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-090",
+    "kind": "centre",
+    "name": "桃園市蘆竹親子館",
+    "city": "桃園市",
+    "district": "蘆竹區",
+    "address": "桃園市蘆竹區大新路26號1、2樓",
+    "phone": "03-3236116",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-091",
+    "kind": "centre",
+    "name": "桃園市八德興豐親子館",
+    "city": "桃園市",
+    "district": "八德區",
+    "address": "桃園市八德區興豐路287號3樓",
+    "phone": "03-3653184",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-092",
+    "kind": "centre",
+    "name": "桃園市龜山大華親子館",
+    "city": "桃園市",
+    "district": "龜山區",
+    "address": "桃園市龜山區文化七路118巷7號2樓",
+    "phone": "03-3270237",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-093",
+    "kind": "centre",
+    "name": "桃園市中壢過嶺親子館",
+    "city": "桃園市",
+    "district": "中壢區",
+    "address": "桃園市中壢區松勇二街61號4、5樓",
+    "phone": "03-4201320",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-094",
+    "kind": "centre",
+    "name": "桃園市龜山親子館",
+    "city": "桃園市",
+    "district": "龜山區",
+    "address": "桃園市龜山區自強南路97號2樓",
+    "phone": "03-3595251",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-095",
+    "kind": "centre",
+    "name": "桃園市內壢親子館",
+    "city": "桃園市",
+    "district": "中壢區",
+    "address": "桃園市中壢區文化二路219號1-2樓",
+    "phone": "03-4518321",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-096",
+    "kind": "centre",
+    "name": "桃園市中壢龍福親子館",
+    "city": "桃園市",
+    "district": "中壢區",
+    "address": "桃園市中壢區中山東路四段26號4樓",
+    "phone": "03-2830173",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-097",
+    "kind": "centre",
+    "name": "桃園市八德北青親子館",
+    "city": "桃園市",
+    "district": "八德區",
+    "address": "桃園市八德區福興里建德路358號三樓",
+    "phone": "03-3653605",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-098",
+    "kind": "centre",
+    "name": "桃園市平鎮一號親子館",
+    "city": "桃園市",
+    "district": "平鎮區",
+    "address": "桃園市平鎮區大興街66巷35號1樓",
+    "phone": "03-4396662",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-099",
+    "kind": "centre",
+    "name": "桃園市觀音草漯親子館",
+    "city": "桃園市",
+    "district": "觀音區",
+    "address": "桃園市觀音區莊敬路188號2樓",
+    "phone": "03-4831823",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-100",
+    "kind": "centre",
+    "name": "桃園市楊梅四維親子館",
+    "city": "桃園市",
+    "district": "楊梅區",
+    "address": "桃園市楊梅區四維二路108號3樓",
+    "phone": "03-4822207",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-101",
+    "kind": "centre",
+    "name": "臺中市北區親子館",
+    "city": "臺中市",
+    "district": "北區",
+    "address": "臺中市民權路400號",
+    "phone": "04-22058580",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-102",
+    "kind": "centre",
+    "name": "臺中市豐原親子館",
+    "city": "臺中市",
+    "district": "豐原區",
+    "address": "臺中市豐原區圓環北路一段355號2樓",
+    "phone": "04-25280975",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-103",
+    "kind": "centre",
+    "name": "臺中市沙鹿親子館",
+    "city": "臺中市",
+    "district": "沙鹿區",
+    "address": "臺中市沙鹿區福幼街8號2樓",
+    "phone": "04-26363780",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-104",
+    "kind": "centre",
+    "name": "臺中市大里親子館",
+    "city": "臺中市",
+    "district": "大里區",
+    "address": "臺中市大里區新光路32號",
+    "phone": "04-24866520",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-105",
+    "kind": "centre",
+    "name": "臺中市大甲親子館",
+    "city": "臺中市",
+    "district": "大甲區",
+    "address": "臺中市大甲區水源路169號2樓",
+    "phone": "04-26869399",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-106",
+    "kind": "centre",
+    "name": "臺中市南屯親子館",
+    "city": "臺中市",
+    "district": "南屯區",
+    "address": "臺中市南屯區南屯路2段407號",
+    "phone": "04-23803141",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-107",
+    "kind": "centre",
+    "name": "臺中市坪林親子館",
+    "city": "臺中市",
+    "district": "太平區",
+    "address": "臺中市太平區中山路一段213號",
+    "phone": "04-23913251",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-108",
+    "kind": "centre",
+    "name": "臺中市石岡親子館",
+    "city": "臺中市",
+    "district": "石岡區",
+    "address": "臺中市石岡區和盛街13巷50號",
+    "phone": "04-25826736",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-109",
+    "kind": "centre",
+    "name": "臺中市太平親子館",
+    "city": "臺中市",
+    "district": "太平區",
+    "address": "臺中市太平區明德里德明路422號",
+    "phone": "04-22710140",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-110",
+    "kind": "centre",
+    "name": "臺中市和平親子館",
+    "city": "臺中市",
+    "district": "和平區",
+    "address": "臺中市和平區東崎路二段三叉巷8號",
+    "phone": "04-25911576",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-111",
+    "kind": "centre",
+    "name": "臺中市大雅親子館",
+    "city": "臺中市",
+    "district": "大雅區",
+    "address": "臺中市大雅區民生路一段196號",
+    "phone": "04-25694321",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-112",
+    "kind": "centre",
+    "name": "臺中市后里親子館",
+    "city": "臺中市",
+    "district": "后里區",
+    "address": "臺中市后里區文明路77號",
+    "phone": "04-25588660",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-113",
+    "kind": "centre",
+    "name": "臺中市新社親子館",
+    "city": "臺中市",
+    "district": "新社區",
+    "address": "臺中市新社區興社街四段57號2樓",
+    "phone": "04-25826098",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-114",
+    "kind": "centre",
+    "name": "臺中市烏日親子館",
+    "city": "臺中市",
+    "district": "烏日區",
+    "address": "臺中市烏日區三榮路一段127號2F",
+    "phone": "04-23360702",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-115",
+    "kind": "centre",
+    "name": "臺中市西屯親子館",
+    "city": "臺中市",
+    "district": "西屯區",
+    "address": "臺中市西屯區四川路126號2樓",
+    "phone": "04-23123203",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-116",
+    "kind": "centre",
+    "name": "臺中市潭子親子館",
+    "city": "臺中市",
+    "district": "潭子區",
+    "address": "臺中市潭子區中山路二段241巷1號",
+    "phone": "04-25349376",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-117",
+    "kind": "centre",
+    "name": "臺中市神岡親子館",
+    "city": "臺中市",
+    "district": "神岡區",
+    "address": "臺中市神岡區神圳路6-1號",
+    "phone": "04-25633293",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-118",
+    "kind": "centre",
+    "name": "臺中市清水親子館",
+    "city": "臺中市",
+    "district": "清水區",
+    "address": "臺中市清水區中社里42鄰鎮政路358號",
+    "phone": "04-26263809",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-119",
+    "kind": "centre",
+    "name": "臺中市霧峰親子館",
+    "city": "臺中市",
+    "district": "霧峰區",
+    "address": "臺中市霧峰區大同路16號",
+    "phone": "04-23305532",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-120",
+    "kind": "centre",
+    "name": "臺中市東勢親子館",
+    "city": "臺中市",
+    "district": "東勢區",
+    "address": "臺中市東勢區圓樓街1號",
+    "phone": "04-25880132",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-121",
+    "kind": "centre",
+    "name": "臺中市中區親子館",
+    "city": "臺中市",
+    "district": "中區",
+    "address": "臺中市中區臺灣大道一段456號",
+    "phone": "04-22295150",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-122",
+    "kind": "centre",
+    "name": "臺中市大肚親子館",
+    "city": "臺中市",
+    "district": "大肚區",
+    "address": "臺中市大肚區大德一街68號1樓",
+    "phone": "04-26990001",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-123",
+    "kind": "centre",
+    "name": "臺中市南區親子館",
+    "city": "臺中市",
+    "district": "南區",
+    "address": "臺中市南區高工路155號2樓",
+    "phone": "04-22612088",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-124",
+    "kind": "centre",
+    "name": "臺中市大安親子館",
+    "city": "臺中市",
+    "district": "大安區",
+    "address": "臺中市大安區中山南路345號",
+    "phone": "04-26714827",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-125",
+    "kind": "centre",
+    "name": "臺中市龍井親子館",
+    "city": "臺中市",
+    "district": "龍井區",
+    "address": "臺中市龍井區沙田路四段247號4樓",
+    "phone": "04-26365800",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-126",
+    "kind": "centre",
+    "name": "臺中市外埔親子館",
+    "city": "臺中市",
+    "district": "外埔區",
+    "address": "臺中市外埔區大同里六分路297號2樓",
+    "phone": "04-26833381",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-127",
+    "kind": "centre",
+    "name": "臺南市新市親子悠遊館",
+    "city": "臺南市",
+    "district": "新市區",
+    "address": "臺南市新市區富強路16巷1號4-5樓",
+    "phone": "06-5890050",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-128",
+    "kind": "centre",
+    "name": "臺南市安平親子悠遊館",
+    "city": "臺南市",
+    "district": "安平區",
+    "address": "臺南市安平區中華西路二段315號1樓",
+    "phone": "06-2984289",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-129",
+    "kind": "centre",
+    "name": "臺南市佳里親子悠遊館",
+    "city": "臺南市",
+    "district": "佳里區",
+    "address": "臺南市佳里區安北路116號2樓",
+    "phone": "06-7237320",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-130",
+    "kind": "centre",
+    "name": "臺南市仁德親子悠遊館",
+    "city": "臺南市",
+    "district": "仁德區",
+    "address": "臺南市仁德區德南路68號4樓",
+    "phone": "06-2706729",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-131",
+    "kind": "centre",
+    "name": "臺南市南瀛親子館",
+    "city": "臺南市",
+    "district": "新營區",
+    "address": "臺南市新營區中正路32號",
+    "phone": "06-6322725",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-132",
+    "kind": "centre",
+    "name": "臺南市善化親子悠遊館",
+    "city": "臺南市",
+    "district": "善化區",
+    "address": "臺南市善化區三民路6-6號2樓",
+    "phone": "06-5817521",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-133",
+    "kind": "centre",
+    "name": "臺南市東區親子悠遊館",
+    "city": "臺南市",
+    "district": "東區",
+    "address": "臺南市東區裕文路62號",
+    "phone": "06-3319126",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-134",
+    "kind": "centre",
+    "name": "臺南市麻豆親子悠遊館",
+    "city": "臺南市",
+    "district": "麻豆區",
+    "address": "臺南市麻豆區總榮里總爺庄32號之1(2樓)",
+    "phone": "06-2094059",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-135",
+    "kind": "centre",
+    "name": "臺南市歸仁親子悠遊館",
+    "city": "臺南市",
+    "district": "歸仁區",
+    "address": "臺南市歸仁區仁愛南街288號2樓",
+    "phone": "06-2300501",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-136",
+    "kind": "centre",
+    "name": "臺南市南區親子悠遊館",
+    "city": "臺南市",
+    "district": "南區",
+    "address": "臺南市南區三官路176巷5弄19號",
+    "phone": "06-2639967",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-137",
+    "kind": "centre",
+    "name": "臺南市鹽水區親子悠遊館",
+    "city": "臺南市",
+    "district": "鹽水區",
+    "address": "臺南市鹽水區三福路14號3樓",
+    "phone": "06-6525585",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-138",
+    "kind": "centre",
+    "name": "臺南市七股區親子悠遊館",
+    "city": "臺南市",
+    "district": "七股區",
+    "address": "臺南市七股區大埕里大埕380號2樓",
+    "phone": "06-7871008",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-139",
+    "kind": "centre",
+    "name": "臺南市北區親子悠遊館",
+    "city": "臺南市",
+    "district": "北區",
+    "address": "臺南市北區中華北路一段488號3樓",
+    "phone": "06-3585915",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-140",
+    "kind": "centre",
+    "name": "高雄市前鎮草衙親子館",
+    "city": "高雄市",
+    "district": "前鎮區",
+    "address": "高雄市前鎮區信義里同安路120號",
+    "phone": "07-8127225",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-141",
+    "kind": "centre",
+    "name": "高雄市三民兒福親子館",
+    "city": "高雄市",
+    "district": "三民區",
+    "address": "高雄市三民區九如一路775號",
+    "phone": "07-3958366",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-142",
+    "kind": "centre",
+    "name": "高雄市三民陽明親子館",
+    "city": "高雄市",
+    "district": "三民區",
+    "address": "高雄市三民區陽明路300號2樓",
+    "phone": "07-3801856",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-143",
+    "kind": "centre",
+    "name": "高雄市前鎮竹西親子館",
+    "city": "高雄市",
+    "district": "前鎮區",
+    "address": "高雄市前鎮區廣東三街73號2樓",
+    "phone": "07-7161625",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-144",
+    "kind": "centre",
+    "name": "高雄市仁武親子館",
+    "city": "高雄市",
+    "district": "仁武區",
+    "address": "高雄市仁武區中正路94號3樓",
+    "phone": "07-3721884",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-145",
+    "kind": "centre",
+    "name": "高雄市前鎮愛群親子館",
+    "city": "高雄市",
+    "district": "前鎮區",
+    "address": "高雄市前鎮區二聖二路194號",
+    "phone": "07-3311470",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-146",
+    "kind": "centre",
+    "name": "高雄市大寮親子館",
+    "city": "高雄市",
+    "district": "大寮區",
+    "address": "高雄市大寮區鳳林三路315-22號2樓",
+    "phone": "07-7828330",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-147",
+    "kind": "centre",
+    "name": "高雄市小港親子館",
+    "city": "高雄市",
+    "district": "小港區",
+    "address": "高雄市小港區康莊路80號2樓",
+    "phone": "07-8055828",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-148",
+    "kind": "centre",
+    "name": "高雄市岡山親子館",
+    "city": "高雄市",
+    "district": "岡山區",
+    "address": "高雄市岡山區河堤路二段122號",
+    "phone": "07-6298550",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-149",
+    "kind": "centre",
+    "name": "高雄市林園親子館",
+    "city": "高雄市",
+    "district": "林園區",
+    "address": "高雄市林園區林園北路191號2樓",
+    "phone": "07-6421938",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-150",
+    "kind": "centre",
+    "name": "高雄市路竹親子館",
+    "city": "高雄市",
+    "district": "路竹區",
+    "address": "高雄市路竹區中正路51號2F",
+    "phone": "07-6071101",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-151",
+    "kind": "centre",
+    "name": "高雄市前金親子館",
+    "city": "高雄市",
+    "district": "前金區",
+    "address": "高雄市前金區中正四路261號2樓",
+    "phone": "07-2153998",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-152",
+    "kind": "centre",
+    "name": "高雄市旗山親子館",
+    "city": "高雄市",
+    "district": "旗山區",
+    "address": "高雄市旗山區中正路199號1樓",
+    "phone": "07-6625016",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-153",
+    "kind": "centre",
+    "name": "高雄市楠梓親子館",
+    "city": "高雄市",
+    "district": "楠梓區",
+    "address": "高雄市楠梓區後昌路960巷19號3樓",
+    "phone": "07-3640791",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-154",
+    "kind": "centre",
+    "name": "高雄市彌陀親子館",
+    "city": "高雄市",
+    "district": "彌陀區",
+    "address": "高雄市彌陀區中華路1巷5弄2號",
+    "phone": "07-6106837",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-155",
+    "kind": "centre",
+    "name": "高雄市左營富民親子館",
+    "city": "高雄市",
+    "district": "左營區",
+    "address": "高雄市左營區富民路435號2樓",
+    "phone": "07-5566105",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-156",
+    "kind": "centre",
+    "name": "高雄市大樹親子館",
+    "city": "高雄市",
+    "district": "大樹區",
+    "address": "高雄市大樹區久堂路128號1樓",
+    "phone": "07-6525569",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-157",
+    "kind": "centre",
+    "name": "高雄市美濃親子館",
+    "city": "高雄市",
+    "district": "美濃區",
+    "address": "高雄市美濃區中正路二段351號",
+    "phone": "07-6819456",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-158",
+    "kind": "centre",
+    "name": "高雄市旗津親子館",
+    "city": "高雄市",
+    "district": "旗津區",
+    "address": "高雄市旗津區旗津三路900巷1弄33號",
+    "phone": "07-5711191",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-159",
+    "kind": "centre",
+    "name": "高雄市桃源親子館",
+    "city": "高雄市",
+    "district": "桃源區",
+    "address": "高雄市桃源區南進巷180-10號3樓",
+    "phone": "07-6861280",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-160",
+    "kind": "centre",
+    "name": "高雄市那瑪夏親子館",
+    "city": "高雄市",
+    "district": "那瑪夏區",
+    "address": "高雄市那瑪夏區達卡努瓦里大光巷236號",
+    "phone": "07-6701708",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-161",
+    "kind": "centre",
+    "name": "高雄市杉林親子館",
+    "city": "高雄市",
+    "district": "杉林區",
+    "address": "高雄市杉林區大愛路47號",
+    "phone": "07-6775554",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-162",
+    "kind": "centre",
+    "name": "高雄市大社親子館",
+    "city": "高雄市",
+    "district": "大社區",
+    "address": "高雄市大社區金龍路65號3樓",
+    "phone": "07-3541509",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-163",
+    "kind": "centre",
+    "name": "高雄市鼓山親子館",
+    "city": "高雄市",
+    "district": "鼓山區",
+    "address": "高雄市鼓山區鼓山三路4號",
+    "phone": "07-5884210",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-164",
+    "kind": "centre",
+    "name": "宜蘭縣0-6歲教玩具外借資源中心",
+    "city": "宜蘭縣",
+    "district": "宜蘭市",
+    "address": "宜蘭市神農里民權路1段65號3樓",
+    "phone": "03-9353718",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-165",
+    "kind": "centre",
+    "name": "宜蘭縣蘇澳親子館",
+    "city": "宜蘭縣",
+    "district": "蘇澳鎮",
+    "address": "宜蘭縣蘇澳鎮隘丁里隘丁路36號",
+    "phone": "03-9906316",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-166",
+    "kind": "centre",
+    "name": "宜蘭縣熊讚親子館",
+    "city": "宜蘭縣",
+    "district": "宜蘭市",
+    "address": "宜蘭市中山路2段462號3樓",
+    "phone": "03-9333030",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-167",
+    "kind": "centre",
+    "name": "宜蘭縣壯圍親子館",
+    "city": "宜蘭縣",
+    "district": "壯圍鄉",
+    "address": "宜蘭縣壯圍鄉古亭路81號",
+    "phone": "03-9301669",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-168",
+    "kind": "centre",
+    "name": "宜蘭縣礁溪親子館",
+    "city": "宜蘭縣",
+    "district": "礁溪鄉",
+    "address": "宜蘭縣礁溪鄉龍潭村育龍路71號",
+    "phone": "03-9283206",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-169",
+    "kind": "centre",
+    "name": "宜蘭縣員山親子館",
+    "city": "宜蘭縣",
+    "district": "員山鄉",
+    "address": "宜蘭縣員山鄉新城路84號",
+    "phone": "03-9221810",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-170",
+    "kind": "centre",
+    "name": "宜蘭縣冬山親子館",
+    "city": "宜蘭縣",
+    "district": "冬山鄉",
+    "address": "宜蘭縣冬山鄉安中路35號",
+    "phone": "03-9595592",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-171",
+    "kind": "centre",
+    "name": "宜蘭縣頭城親子館",
+    "city": "宜蘭縣",
+    "district": "頭城鎮",
+    "address": "宜蘭縣頭城鎮復興路145號",
+    "phone": "03-9770588",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-172",
+    "kind": "centre",
+    "name": "宜蘭縣三星親子館",
+    "city": "宜蘭縣",
+    "district": "三星鄉",
+    "address": "宜蘭縣三星鄉月眉街54號",
+    "phone": "03-9895766",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-173",
+    "kind": "centre",
+    "name": "宜蘭縣五結親子館",
+    "city": "宜蘭縣",
+    "district": "五結鄉",
+    "address": "宜蘭縣五結鄉五結中路一段500號",
+    "phone": "03-9509968",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-174",
+    "kind": "centre",
+    "name": "宜蘭縣羅東親子館",
+    "city": "宜蘭縣",
+    "district": "羅東鎮",
+    "address": "宜蘭縣羅東鎮公正路199號",
+    "phone": "03-9550397",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-175",
+    "kind": "centre",
+    "name": "宜蘭縣南澳親子館",
+    "city": "宜蘭縣",
+    "district": "南澳鄉",
+    "address": "宜蘭縣南澳鄉中正路52號",
+    "phone": "03-9981138",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-176",
+    "kind": "centre",
+    "name": "宜蘭縣大同親子館",
+    "city": "宜蘭縣",
+    "district": "大同鄉",
+    "address": "宜蘭縣大同鄉泰雅路五段70號",
+    "phone": "03-9229275",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-177",
+    "kind": "centre",
+    "name": "羅東鎮托嬰暨托育資源中心",
+    "city": "宜蘭縣",
+    "district": "羅東鎮",
+    "address": "宜蘭縣羅東鎮南門路11巷28號",
+    "phone": "03-9530260",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-178",
+    "kind": "centre",
+    "name": "新竹縣托育資源中心",
+    "city": "新竹縣",
+    "district": "竹北市",
+    "address": "新竹縣竹北市縣政二路620號1樓",
+    "phone": "03-6570620",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-179",
+    "kind": "centre",
+    "name": "新竹縣親子夢想館",
+    "city": "新竹縣",
+    "district": "竹北市",
+    "address": "新竹縣竹北市光明二街91號2樓",
+    "phone": "03-5551291",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-180",
+    "kind": "centre",
+    "name": "北區托育資源中心",
+    "city": "苗栗縣",
+    "district": "竹南鎮",
+    "address": "苗栗縣竹南鎮公義路936號",
+    "phone": "037-582581",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-181",
+    "kind": "centre",
+    "name": "頭份親子館",
+    "city": "苗栗縣",
+    "district": "頭份市",
+    "address": "苗栗縣頭份市合興街32號",
+    "phone": "037-681733",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-182",
+    "kind": "centre",
+    "name": "通苑區托育資源中心",
+    "city": "苗栗縣",
+    "district": "苑裡鎮",
+    "address": "苗栗縣苑裡鎮公民街3號",
+    "phone": "037-860039",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-183",
+    "kind": "centre",
+    "name": "彰化縣員林托育資源中心",
+    "city": "彰化縣",
+    "district": "員林市",
+    "address": "彰化縣員林市員鹿路245巷111號3樓",
+    "phone": "04-8363628",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-184",
+    "kind": "centre",
+    "name": "彰化縣彰化育兒親子館",
+    "city": "彰化縣",
+    "district": "彰化市",
+    "address": "彰化縣彰化市介壽北路108巷8號6樓",
+    "phone": "04-7517126",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-185",
+    "kind": "centre",
+    "name": "彰化縣鹿港育兒親子館",
+    "city": "彰化縣",
+    "district": "鹿港鎮",
+    "address": "彰化縣鹿港鎮正興路66號2、3樓",
+    "phone": "04-7775758",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-186",
+    "kind": "centre",
+    "name": "彰化縣二林育兒親子館",
+    "city": "彰化縣",
+    "district": "二林鎮",
+    "address": "彰化縣二林鎮明德街249號",
+    "phone": "04-8951388",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-187",
+    "kind": "centre",
+    "name": "彰化縣和美育兒親子館",
+    "city": "彰化縣",
+    "district": "和美鎮",
+    "address": "彰化縣和美鎮惠來五街45號2樓",
+    "phone": "04-7563866",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-188",
+    "kind": "centre",
+    "name": "彰化縣社頭育兒親子館",
+    "city": "彰化縣",
+    "district": "社頭鄉",
+    "address": "彰化縣社頭鄉民生路371號3樓",
+    "phone": "04-8725125",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-189",
+    "kind": "centre",
+    "name": "彰化縣芳苑育兒親子館",
+    "city": "彰化縣",
+    "district": "芳苑鄉",
+    "address": "彰化縣芳苑鄉斗苑路芳苑段210巷8號3樓",
+    "phone": "04-8981289",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-190",
+    "kind": "centre",
+    "name": "彰化縣竹塘育兒親子館",
+    "city": "彰化縣",
+    "district": "竹塘鄉",
+    "address": "彰化縣竹塘鄉竹林路一段306號3樓",
+    "phone": "04-8970399",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-191",
+    "kind": "centre",
+    "name": "彰化縣大城育兒親子館",
+    "city": "彰化縣",
+    "district": "大城鄉",
+    "address": "彰化縣大城鄉大城村中平路232號3樓",
+    "phone": "04-8941799",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-192",
+    "kind": "centre",
+    "name": "彰化縣北斗育兒親子館",
+    "city": "彰化縣",
+    "district": "北斗鎮",
+    "address": "彰化縣北斗鎮復興路270號5樓",
+    "phone": "04-8837469",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-193",
+    "kind": "centre",
+    "name": "南投縣托育資源中心",
+    "city": "南投縣",
+    "district": "南投市",
+    "address": "南投縣南投市南崗二路87號1樓",
+    "phone": "049-2247511",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-194",
+    "kind": "centre",
+    "name": "南投縣埔里區親子館",
+    "city": "南投縣",
+    "district": "埔里鎮",
+    "address": "南投縣埔里鎮育英街20號",
+    "phone": "049-2421949",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-195",
+    "kind": "centre",
+    "name": "南投縣竹山區親子館",
+    "city": "南投縣",
+    "district": "竹山鎮",
+    "address": "南投縣竹山鎮鯉南路19之18號",
+    "phone": "049-2630180",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-196",
+    "kind": "centre",
+    "name": "雲林縣西螺親子館",
+    "city": "雲林縣",
+    "district": "西螺鎮",
+    "address": "雲林縣西螺鎮中山路227號2樓(兒福館2樓)",
+    "phone": "05-5870520",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-197",
+    "kind": "centre",
+    "name": "雲林縣北港親子館",
+    "city": "雲林縣",
+    "district": "北港鎮",
+    "address": "雲林縣北港鎮文化路246號3樓",
+    "phone": "05-5870520",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-198",
+    "kind": "centre",
+    "name": "雲林縣虎尾親子館",
+    "city": "雲林縣",
+    "district": "虎尾鎮",
+    "address": "雲林縣虎尾鎮光明路70號",
+    "phone": "05-6321913",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-199",
+    "kind": "centre",
+    "name": "雲林縣斗南親子館",
+    "city": "雲林縣",
+    "district": "斗南鎮",
+    "address": "雲林縣斗南鎮莒光街30號",
+    "phone": "05-5977659",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-200",
+    "kind": "centre",
+    "name": "雲林縣斗六親子館",
+    "city": "雲林縣",
+    "district": "斗六市",
+    "address": "雲林縣斗六市府前街58號",
+    "phone": "05-5361566",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-201",
+    "kind": "centre",
+    "name": "雲林縣麥寮親子館",
+    "city": "雲林縣",
+    "district": "麥寮鄉",
+    "address": "雲林縣麥寮鄉後安222-39號",
+    "phone": "05-6939112",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-202",
+    "kind": "centre",
+    "name": "嘉義縣朴子親子館",
+    "city": "嘉義縣",
+    "district": "朴子市",
+    "address": "嘉義縣朴子市山通路7號",
+    "phone": "05-3707042",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-203",
+    "kind": "centre",
+    "name": "嘉義縣民雄親子館",
+    "city": "嘉義縣",
+    "district": "民雄鄉",
+    "address": "嘉義縣民雄鄉西安路155號(嘉義縣綜合社會福利館)",
+    "phone": "05-2266335",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-204",
+    "kind": "centre",
+    "name": "屏東托育資源中心",
+    "city": "屏東縣",
+    "district": "屏東市",
+    "address": "屏東市華正路95號108室(社福館1樓)",
+    "phone": "08-7362972",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-205",
+    "kind": "centre",
+    "name": "潮州托育資源中心",
+    "city": "屏東縣",
+    "district": "潮州鎮",
+    "address": "屏東縣潮州鎮光春路292號(潮州多元社福園區)",
+    "phone": "08-7889918",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-206",
+    "kind": "centre",
+    "name": "九如托育資源中心",
+    "city": "屏東縣",
+    "district": "九如鄉",
+    "address": "屏東縣九如鄉九如路二段266號3樓",
+    "phone": "08-7396011#30",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-207",
+    "kind": "centre",
+    "name": "恆春托育資源中心",
+    "city": "屏東縣",
+    "district": "恆春鎮",
+    "address": "屏東縣恆春鎮文化路33號1樓",
+    "phone": "08-8891233#113",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-208",
+    "kind": "centre",
+    "name": "內埔托育資源中心",
+    "city": "屏東縣",
+    "district": "內埔鄉",
+    "address": "屏東縣內埔鄉學人路627號2樓",
+    "phone": "08-7781393",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-209",
+    "kind": "centre",
+    "name": "臺東縣托育資源中心(臺東站)",
+    "city": "臺東縣",
+    "district": "臺東市",
+    "address": "臺東市更生北路69號3樓",
+    "phone": "089-236541",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-210",
+    "kind": "centre",
+    "name": "臺東縣托育資源中心(成功站)",
+    "city": "臺東縣",
+    "district": "成功鎮",
+    "address": "臺東縣成功鎮三民路18號1樓(三民國小)",
+    "phone": "089-854822",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-211",
+    "kind": "centre",
+    "name": "臺東縣托育資源中心(大武站)",
+    "city": "臺東縣",
+    "district": "大武鄉",
+    "address": "臺東縣大武鄉大武街21巷1號2樓",
+    "phone": "089-790341",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-212",
+    "kind": "centre",
+    "name": "臺東縣托育資源中心(關山站)",
+    "city": "臺東縣",
+    "district": "關山鎮",
+    "address": "臺東縣關山鎮中華路二十一號",
+    "phone": "089-810277",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-213",
+    "kind": "centre",
+    "name": "洄瀾親子館─花蓮縣托育資源中心",
+    "city": "花蓮縣",
+    "district": "花蓮市",
+    "address": "花蓮縣花蓮市文苑路12號4樓",
+    "phone": "038-234370",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-214",
+    "kind": "centre",
+    "name": "玉里鎮托育資源中心",
+    "city": "花蓮縣",
+    "district": "玉里鎮",
+    "address": "花蓮縣玉里鎮莊敬路8號2樓",
+    "phone": "038-886675",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-215",
+    "kind": "centre",
+    "name": "豐濱鄉托育資源中心",
+    "city": "花蓮縣",
+    "district": "豐濱鄉",
+    "address": "花蓮縣豐濱鄉豐濱村民權街63號",
+    "phone": "038-791528",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-216",
+    "kind": "centre",
+    "name": "光復鄉托育資源中心",
+    "city": "花蓮縣",
+    "district": "光復鄉",
+    "address": "花蓮縣光復鄉糖廠街18號",
+    "phone": "03-8701939",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-217",
+    "kind": "centre",
+    "name": "澎湖縣托育資源中心",
+    "city": "澎湖縣",
+    "district": "馬公市",
+    "address": "澎湖縣馬公市貿商街60號2樓(兒少福利中心)",
+    "phone": "06-9265596",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-218",
+    "kind": "centre",
+    "name": "基隆市安樂托育資源中心",
+    "city": "基隆市",
+    "district": "安樂區",
+    "address": "基隆市麥金路482號3樓",
+    "phone": "02-34010672",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-219",
+    "kind": "centre",
+    "name": "基隆市七堵托育資源中心",
+    "city": "基隆市",
+    "district": "七堵區",
+    "address": "基隆市七堵區自治街15號2樓(家庭服務中心2F)",
+    "phone": "02-24564366",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-220",
+    "kind": "centre",
+    "name": "基隆市西定托育資源中心",
+    "city": "基隆市",
+    "district": "中山區",
+    "address": "基隆市中山區西定路230號2樓",
+    "phone": "02-24213313",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-221",
+    "kind": "centre",
+    "name": "基隆市暖暖托育資源中心",
+    "city": "基隆市",
+    "district": "暖暖區",
+    "address": "基隆市暖暖區暖暖街350號1樓",
+    "phone": "02-24590206",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-222",
+    "kind": "centre",
+    "name": "基隆市仁愛托育資源中心",
+    "city": "基隆市",
+    "district": "仁愛區",
+    "address": "基隆市仁愛區光一路28號5樓",
+    "phone": "02-24319096",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-223",
+    "kind": "centre",
+    "name": "基隆市中正托育資源中心(基隆祖孫館)",
+    "city": "基隆市",
+    "district": "中正區",
+    "address": "基隆市中正區調和街3號2樓",
+    "phone": "02-24696899",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-224",
+    "kind": "centre",
+    "name": "基隆市信義托育資源中心",
+    "city": "基隆市",
+    "district": "信義區",
+    "address": "基隆市信義區東信路282-2號2樓",
+    "phone": "02-24685368",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-225",
+    "kind": "centre",
+    "name": "新竹市東區托育資源中心暨親子館",
+    "city": "新竹市",
+    "district": "東區",
+    "address": "新竹市中央路241號3樓",
+    "phone": "03-5330761",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-226",
+    "kind": "centre",
+    "name": "新竹市香山區托育資源中心暨親子館",
+    "city": "新竹市",
+    "district": "香山區",
+    "address": "新竹市育德街188號1樓",
+    "phone": "03-5301268",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-227",
+    "kind": "centre",
+    "name": "新竹市北區托育資源中心暨親子館",
+    "city": "新竹市",
+    "district": "北區",
+    "address": "新竹市南勢六街11號2樓",
+    "phone": "03-5230866",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-228",
+    "kind": "centre",
+    "name": "嘉義市托育資源中心(東區)",
+    "city": "嘉義市",
+    "district": "東區",
+    "address": "嘉義市興業東路555號2樓(兒童福利服務中心2樓)",
+    "phone": "05-2225212",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-229",
+    "kind": "centre",
+    "name": "嘉義市托育資源中心(西區)",
+    "city": "嘉義市",
+    "district": "西區",
+    "address": "嘉義市德安路6號(婦女福利服務中心5F)",
+    "phone": "05-2338170",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-230",
+    "kind": "centre",
+    "name": "金門縣托育資源中心(蘭湖館)",
+    "city": "金門縣",
+    "district": "金湖鎮",
+    "address": "金門縣金湖鎮瓊徑路35號1樓",
+    "phone": "082-337733",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-231",
+    "kind": "centre",
+    "name": "金湖托育資源中心(醫遊館)",
+    "city": "金門縣",
+    "district": "金湖鎮",
+    "address": "金門縣金湖鎮林森路2-7號",
+    "phone": "082-336029",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-232",
+    "kind": "centre",
+    "name": "烈嶼托育資源中心(生態館)",
+    "city": "金門縣",
+    "district": "烈嶼鄉",
+    "address": "金門縣烈嶼鄉西口村西方76號2樓",
+    "phone": "082-362172",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-233",
+    "kind": "centre",
+    "name": "連江縣東引鄉公共托育中心",
+    "city": "連江縣",
+    "district": "東引鄉",
+    "address": "連江縣東引鄉中柳村94-2號",
+    "phone": "0836-76520",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "centre-234",
+    "kind": "centre",
+    "name": "連江縣托育資源中心",
+    "city": "連江縣",
+    "district": "南竿鄉",
+    "address": "連江縣南竿鄉介壽村353之5號",
+    "phone": "0836-23238",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor",
+      "toyLending"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://www.sfaa.gov.tw/sfaa/list/detail/5eC/5Ea",
+    "verifiedOn": "2026-08-28"
+  },
+  {
+    "id": "youyuan-01",
+    "kind": "centre",
+    "name": "小小貓頭鷹玩樂屋",
+    "city": "臺北市",
+    "district": "士林區",
+    "address": "臺北市士林區雨聲街53巷1號1樓",
+    "phone": "(02)28360200",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://data.taipei/dataset/detail?id=7262cdae-18e7-4d33-a842-4978cbc84d43",
+    "verifiedOn": "2026-08-28",
+    "notes": "育兒友善園，非親子館。臺北市獨有的社區小型據點，空間與服務規模都比親子館小，未收錄於社家署全國名冊。"
+  },
+  {
+    "id": "youyuan-02",
+    "kind": "centre",
+    "name": "和平Kids-Care館",
+    "city": "臺北市",
+    "district": "大安區",
+    "address": "臺北市大安區新生南路3段11巷15號2樓",
+    "phone": "(02)23623022",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://data.taipei/dataset/detail?id=7262cdae-18e7-4d33-a842-4978cbc84d43",
+    "verifiedOn": "2026-08-28",
+    "notes": "育兒友善園，非親子館。臺北市獨有的社區小型據點，空間與服務規模都比親子館小，未收錄於社家署全國名冊。"
+  },
+  {
+    "id": "youyuan-03",
+    "kind": "centre",
+    "name": "大安小古意歡樂園",
+    "city": "臺北市",
+    "district": "大安區",
+    "address": "臺北市大安區浦城街16巷11號1樓",
+    "phone": "(02)23651301",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://data.taipei/dataset/detail?id=7262cdae-18e7-4d33-a842-4978cbc84d43",
+    "verifiedOn": "2026-08-28",
+    "notes": "育兒友善園，非親子館。臺北市獨有的社區小型據點，空間與服務規模都比親子館小，未收錄於社家署全國名冊。"
+  },
+  {
+    "id": "youyuan-04",
+    "kind": "centre",
+    "name": "娃娃藝術探索屋",
+    "city": "臺北市",
+    "district": "中山區",
+    "address": "臺北市中山區龍江路15號3樓",
+    "phone": "(02)27400040",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://data.taipei/dataset/detail?id=7262cdae-18e7-4d33-a842-4978cbc84d43",
+    "verifiedOn": "2026-08-28",
+    "notes": "育兒友善園，非親子館。臺北市獨有的社區小型據點，空間與服務規模都比親子館小，未收錄於社家署全國名冊。"
+  },
+  {
+    "id": "youyuan-05",
+    "kind": "centre",
+    "name": "安泰藍鵲",
+    "city": "臺北市",
+    "district": "內湖區",
+    "address": "臺北市內湖區康樂街136巷3弄8號1樓",
+    "phone": "(02)26308850",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://data.taipei/dataset/detail?id=7262cdae-18e7-4d33-a842-4978cbc84d43",
+    "verifiedOn": "2026-08-28",
+    "notes": "育兒友善園，非親子館。臺北市獨有的社區小型據點，空間與服務規模都比親子館小，未收錄於社家署全國名冊。"
+  },
+  {
+    "id": "youyuan-06",
+    "kind": "centre",
+    "name": "親親寶貝",
+    "city": "臺北市",
+    "district": "文山區",
+    "address": "臺北市文山區興隆路4段165巷14號1樓",
+    "phone": "(02)29396053",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://data.taipei/dataset/detail?id=7262cdae-18e7-4d33-a842-4978cbc84d43",
+    "verifiedOn": "2026-08-28",
+    "notes": "育兒友善園，非親子館。臺北市獨有的社區小型據點，空間與服務規模都比親子館小，未收錄於社家署全國名冊。"
+  },
+  {
+    "id": "youyuan-07",
+    "kind": "centre",
+    "name": "文山寶貝妙妙屋",
+    "city": "臺北市",
+    "district": "文山區",
+    "address": "臺北市文山區萬安街97號",
+    "phone": "(02)22306651",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://data.taipei/dataset/detail?id=7262cdae-18e7-4d33-a842-4978cbc84d43",
+    "verifiedOn": "2026-08-28",
+    "notes": "育兒友善園，非親子館。臺北市獨有的社區小型據點，空間與服務規模都比親子館小，未收錄於社家署全國名冊。"
+  },
+  {
+    "id": "youyuan-08",
+    "kind": "centre",
+    "name": "FUN鬆玩",
+    "city": "臺北市",
+    "district": "北投區",
+    "address": "臺北市北投區明德路136巷18號1樓",
+    "phone": "(02)28234245",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://data.taipei/dataset/detail?id=7262cdae-18e7-4d33-a842-4978cbc84d43",
+    "verifiedOn": "2026-08-28",
+    "notes": "育兒友善園，非親子館。臺北市獨有的社區小型據點，空間與服務規模都比親子館小，未收錄於社家署全國名冊。"
+  },
+  {
+    "id": "youyuan-09",
+    "kind": "centre",
+    "name": "幸福童心屋",
+    "city": "臺北市",
+    "district": "北投區",
+    "address": "臺北市北投區石牌路1段71巷17、19號1樓",
+    "phone": "(02)28232802",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://data.taipei/dataset/detail?id=7262cdae-18e7-4d33-a842-4978cbc84d43",
+    "verifiedOn": "2026-08-28",
+    "notes": "育兒友善園，非親子館。臺北市獨有的社區小型據點，空間與服務規模都比親子館小，未收錄於社家署全國名冊。"
+  },
+  {
+    "id": "youyuan-10",
+    "kind": "centre",
+    "name": "久如FUNNY KIDS 童趣探索屋",
+    "city": "臺北市",
+    "district": "南港區",
+    "address": "臺北市南港區研究院路3段86巷1號1樓",
+    "phone": "(02)26519993",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://data.taipei/dataset/detail?id=7262cdae-18e7-4d33-a842-4978cbc84d43",
+    "verifiedOn": "2026-08-28",
+    "notes": "育兒友善園，非親子館。臺北市獨有的社區小型據點，空間與服務規模都比親子館小，未收錄於社家署全國名冊。"
+  },
+  {
+    "id": "youyuan-11",
+    "kind": "centre",
+    "name": "親子手語故事屋",
+    "city": "臺北市",
+    "district": "大同區",
+    "address": "臺北市大同區雙連里錦西街38巷32之1號2樓",
+    "phone": "(02)25577506",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://data.taipei/dataset/detail?id=7262cdae-18e7-4d33-a842-4978cbc84d43",
+    "verifiedOn": "2026-08-28",
+    "notes": "育兒友善園，非親子館。臺北市獨有的社區小型據點，空間與服務規模都比親子館小，未收錄於社家署全國名冊。"
+  },
+  {
+    "id": "youyuan-12",
+    "kind": "centre",
+    "name": "溫叨暖心窩",
+    "city": "臺北市",
+    "district": "松山區",
+    "address": "臺北市松山區東興路2巷2號1樓",
+    "phone": "(02)27676691",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://data.taipei/dataset/detail?id=7262cdae-18e7-4d33-a842-4978cbc84d43",
+    "verifiedOn": "2026-08-28",
+    "notes": "育兒友善園，非親子館。臺北市獨有的社區小型據點，空間與服務規模都比親子館小，未收錄於社家署全國名冊。"
+  },
+  {
+    "id": "youyuan-13",
+    "kind": "centre",
+    "name": "愛Fun電",
+    "city": "臺北市",
+    "district": "萬華區",
+    "address": "臺北市萬華區德昌街10巷10號1樓",
+    "phone": "(02)26229852",
+    "tags": [
+      "free",
+      "guardianRequired",
+      "indoor"
+    ],
+    "ageYears": [
+      0,
+      6
+    ],
+    "sourceUrl": "https://data.taipei/dataset/detail?id=7262cdae-18e7-4d33-a842-4978cbc84d43",
+    "verifiedOn": "2026-08-28",
+    "notes": "育兒友善園，非親子館。臺北市獨有的社區小型據點，空間與服務規模都比親子館小，未收錄於社家署全國名冊。"
+  }
+]
