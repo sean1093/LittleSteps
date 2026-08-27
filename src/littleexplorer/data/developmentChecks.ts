@@ -52,15 +52,6 @@ export const domainLabels: Record<DevelopmentDomain, string> = {
   social: '身邊處理與社會性',
 };
 
-/** 對應 src/common/lucideIcons.ts registry 中已註冊的名稱。 */
-export const domainIcons: Record<DevelopmentDomain, string> = {
-  'gross-motor': 'Footprints',
-  'fine-motor': 'Hand',
-  language: 'MessageCircle',
-  cognitive: 'Lightbulb',
-  social: 'Users',
-};
-
 export const developmentCheckItems: DevelopmentCheckItem[] = [
   // ── 12-15 個月（官方檢核點：1 歲 3 個月）────────────────────────
   {

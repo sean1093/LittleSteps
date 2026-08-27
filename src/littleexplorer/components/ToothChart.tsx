@@ -1,7 +1,12 @@
 import { useState } from 'react';
-import { ChevronDown, Sparkles } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ChevronDown } from 'lucide-react';
 import type { PrimaryTooth, ToothJaw, ToothProgress } from '../../types';
+import { tap } from '../../common/ui/motion';
+import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { primaryTeeth, toothPositionLabels } from '../data/primaryTeeth';
+
+const THEME = SERVICE_THEME.littleexplorer;
 
 interface ToothChartProps {
   progress: ToothProgress;
@@ -40,7 +45,7 @@ export default function ToothChart({ progress, ageMonths, onToggleTooth }: Tooth
             due={ageMonths >= tooth.eruptFromMonth}
             onToggle={onToggleTooth}
             // 左右兩半之間留一個中線間隙
-            className={index === right.length ? 'ml-3' : ''}
+            className={index === right.length ? 'ml-2' : ''}
           />
         ))}
       </div>
@@ -48,36 +53,38 @@ export default function ToothChart({ progress, ageMonths, onToggleTooth }: Tooth
   };
 
   return (
-    <section className="bg-white rounded-3xl shadow-soft p-5">
-      <button
+    <section className="panel">
+      <motion.button
         type="button"
+        whileTap={tap}
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="w-full flex items-center gap-2 text-left"
+        className="w-full min-h-tap flex items-center gap-2 text-left"
       >
-        <Sparkles className="w-5 h-5 text-explorer-sunbeam-dark shrink-0" />
-        <h3 className="flex-1 font-semibold text-explorer-bark">
+        <h3 className={`flex-1 ${THEME.body}`}>
           乳牙萌發
-          <span className="ml-2 text-sm font-normal text-explorer-bark/60">
+          <span className={`ml-2 text-sm font-normal ${THEME.muted}`}>
             已長 {eruptedCount}／{primaryTeeth.length} 顆
           </span>
         </h3>
         <ChevronDown
-          className={`w-5 h-5 text-explorer-bark/40 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`w-5 h-5 shrink-0 text-explorer-bark/40 transition-transform ${open ? 'rotate-180' : ''}`}
         />
-      </button>
+      </motion.button>
 
       {open && (
         <div className="mt-4 space-y-4">
-          <div className="space-y-2">
-            <p className="text-xs text-explorer-bark/50 text-center">上排</p>
+          {/* 每排 10 顆牙都得排進 320px 的螢幕：格子用 flex-1 自行縮放，
+              外層限寬則讓寬螢幕上的牙弓不被拉開。 */}
+          <div className="max-w-xs mx-auto space-y-2">
+            <p className={`text-xs text-center ${THEME.muted}`}>上排</p>
             {renderJaw('upper')}
             <div className="h-px bg-explorer-sand" />
             {renderJaw('lower')}
-            <p className="text-xs text-explorer-bark/50 text-center">下排</p>
+            <p className={`text-xs text-center ${THEME.muted}`}>下排</p>
           </div>
 
-          <p className="text-xs text-explorer-bark/50 leading-relaxed">
+          <p className={`text-xs leading-relaxed ${THEME.muted}`}>
             點一下記錄長出來了。虛線框是依月齡差不多該長的牙位；萌發時間個別差異很大，
             早半年或晚半年都常見，順序比時間更值得參考。
           </p>
@@ -96,22 +103,24 @@ interface ToothCellProps {
 }
 
 function ToothCell({ tooth, erupted, due, onToggle, className = '' }: ToothCellProps) {
+  // 三種狀態由底色與框線形狀區分，不靠文字深淺——淡到看不清的字不算狀態。
   const surface = erupted
-    ? 'bg-explorer-meadow border-explorer-meadow text-white'
+    ? 'bg-explorer-meadow-ink border-explorer-meadow-ink text-white'
     : due
-      ? 'bg-white border-explorer-sunbeam border-dashed text-explorer-bark/50'
-      : 'bg-explorer-sand border-explorer-sand text-explorer-bark/30';
+      ? 'bg-white border-explorer-sunbeam border-dashed text-explorer-bark/70'
+      : 'bg-explorer-sand border-explorer-sand text-explorer-bark/70';
 
   return (
-    <button
+    <motion.button
       type="button"
+      whileTap={tap}
       onClick={() => onToggle(tooth.id)}
       aria-pressed={erupted}
       title={`${tooth.name}（約 ${tooth.eruptFromMonth}-${tooth.eruptToMonth} 個月）`}
       aria-label={`${tooth.name}，約 ${tooth.eruptFromMonth} 至 ${tooth.eruptToMonth} 個月`}
-      className={`w-8 h-9 rounded-lg border-2 text-[10px] font-medium flex items-center justify-center transition-colors ${surface} ${className}`}
+      className={`flex-1 min-w-0 h-tap rounded-lg border-2 text-xs font-medium flex items-center justify-center transition-colors ${surface} ${className}`}
     >
       {toothPositionLabels[tooth.position].slice(0, 1)}
-    </button>
+    </motion.button>
   );
 }

@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Baby, Book, Calendar, Flower2, Sparkles } from 'lucide-react';
+import { Baby, Book, Calendar } from 'lucide-react';
 import type { ChildProfile, PrenatalCheckupProgress } from '../../types';
 import { PREGNANCY_TOTAL_WEEKS, pregnancyGuides, trimesterOf } from '../data/pregnancyGuides';
 import { prenatalCheckupSchedule } from '../data/prenatalCheckups';
 import { resolvePrenatalItems, weeksPregnant } from '../utils/prenatalSchedule';
 import BloomShell from '../components/BloomShell';
-import ServiceNotice from '../../common/components/ServiceNotice';
+import EmptyState from '../../common/ui/EmptyState';
+import { SERVICE_THEME } from '../../common/ui/serviceTheme';
+import { hoverLift, listItem, stagger, tap } from '../../common/ui/motion';
 import { isPregnancyProfile } from '../../common/pregnancy';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
@@ -16,15 +18,7 @@ interface LittleBloomPageProps {
   onRecordBirth: (birthday: string) => Promise<void>;
 }
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
-};
+const THEME = SERVICE_THEME.littlebloom;
 
 const TRIMESTER_LABEL: Record<1 | 2 | 3, string> = {
   1: '第一孕期',
@@ -92,9 +86,8 @@ export default function LittleBloomPage({
   if (currentChild && lmp && !isPregnancyProfile(currentChild)) {
     return (
       <BloomShell title="LittleBloom" subtitle="孕期已完成">
-        <ServiceNotice
-          service="littlebloom"
-          tone="celebrate"
+        <EmptyState
+          theme={THEME}
           icon={Baby}
           title="寶寶已經出生了"
           description={`${currentChild.name} 的孕期紀錄已經封存保留。\n接下來的成長里程碑與疫苗，請到 LittleSteps 繼續。`}
@@ -112,9 +105,8 @@ export default function LittleBloomPage({
   if (!lmp) {
     return (
       <BloomShell title="LittleBloom" subtitle="孕期陪伴">
-        <ServiceNotice
-          service="littlebloom"
-          icon={Flower2}
+        <EmptyState
+          theme={THEME}
           title="還沒有孕期檔案"
           description={'到 LittleSteps 的側邊選單新增一個「孕期檔案」並填入預產期，\n這裡就會依週數顯示身體變化、本週提醒與產檢時程。'}
           action={{
@@ -130,33 +122,25 @@ export default function LittleBloomPage({
 
   return (
     <BloomShell title="LittleBloom" subtitle={`第 ${displayWeek} 週 · 預產期 ${dueDate}`}>
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="space-y-5"
-      >
-        <motion.section
-          variants={itemVariants}
-          className="bg-white rounded-3xl shadow-soft p-6 text-center"
-        >
-          <p className="text-sm text-bloom-stone/60">{TRIMESTER_LABEL[trimesterOf(displayWeek)]}</p>
-          <p className="text-4xl font-bold text-bloom-dusty-rose my-2">第 {displayWeek} 週</p>
-          <p className="text-sm text-bloom-stone/70">還有 {Math.max(PREGNANCY_TOTAL_WEEKS - displayWeek, 0)} 週見面</p>
+      <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-4">
+        <motion.section variants={listItem} className="panel text-center">
+          <p className={`text-sm ${THEME.muted}`}>{TRIMESTER_LABEL[trimesterOf(displayWeek)]}</p>
+          <p className={`text-4xl font-bold my-2 ${THEME.ink}`}>第 {displayWeek} 週</p>
+          <p className={`text-sm ${THEME.muted}`}>
+            還有 {Math.max(PREGNANCY_TOTAL_WEEKS - displayWeek, 0)} 週見面
+          </p>
         </motion.section>
 
         {currentGuide ? (
-          <motion.section variants={itemVariants} className="bg-white rounded-3xl shadow-soft p-6">
-            <h2 className="text-lg font-bold text-bloom-stone mb-2">{currentGuide.title}</h2>
-            <p className="text-sm text-bloom-stone/70 leading-relaxed mb-5">{currentGuide.summary}</p>
+          <motion.section variants={listItem} className="panel">
+            <h2 className={`mb-2 ${THEME.body}`}>{currentGuide.title}</h2>
+            <p className={`text-sm leading-relaxed mb-5 ${THEME.muted}`}>{currentGuide.summary}</p>
 
-            <h3 className="font-semibold text-bloom-dusty-rose flex items-center gap-2 mb-2">
-              <Sparkles className="w-4 h-4" /> 本週提醒
-            </h3>
+            <h3 className={`mb-2 ${THEME.ink}`}>本週提醒</h3>
             <ul className="space-y-2 mb-5">
               {currentGuide.tips.map((tip) => (
-                <li key={tip} className="text-sm text-bloom-stone/80 flex gap-2 leading-relaxed">
-                  <span className="text-bloom-dusty-rose shrink-0">·</span>
+                <li key={tip} className={`text-sm flex gap-2 leading-relaxed ${THEME.body}`}>
+                  <span className="text-bloom-dusty-rose-ink shrink-0">·</span>
                   <span>{tip}</span>
                 </li>
               ))}
@@ -164,13 +148,11 @@ export default function LittleBloomPage({
 
             {currentGuide.warningSignals.length > 0 && (
               <div className="rounded-2xl bg-bloom-terracotta/10 p-4">
-                <h3 className="font-semibold text-bloom-terracotta-dark flex items-center gap-2 mb-2">
-                  <AlertTriangle className="w-4 h-4" /> 這些情況請盡快就醫
-                </h3>
+                <h3 className="mb-2 text-bloom-terracotta-ink">這些情況請盡快就醫</h3>
                 <ul className="space-y-1.5">
                   {currentGuide.warningSignals.map((signal) => (
-                    <li key={signal} className="text-sm text-bloom-stone/80 flex gap-2 leading-relaxed">
-                      <span className="text-bloom-terracotta-dark shrink-0">·</span>
+                    <li key={signal} className={`text-sm flex gap-2 leading-relaxed ${THEME.body}`}>
+                      <span className="text-bloom-terracotta-ink shrink-0">·</span>
                       <span>{signal}</span>
                     </li>
                   ))}
@@ -179,75 +161,72 @@ export default function LittleBloomPage({
             )}
           </motion.section>
         ) : (
-          <motion.section variants={itemVariants} className="bg-white rounded-3xl shadow-soft p-6">
-            <p className="text-sm text-bloom-stone/70 leading-relaxed">
+          <motion.section variants={listItem} className="panel">
+            <p className={`text-sm leading-relaxed ${THEME.body}`}>
               已經超過第 {PREGNANCY_TOTAL_WEEKS} 週。37 至 42 週都屬正常生產期，請依產檢醫師的安排追蹤。
             </p>
           </motion.section>
         )}
 
-        <motion.section variants={itemVariants} className="bg-white rounded-3xl shadow-soft p-6">
-          <h3 className="font-bold text-bloom-stone flex items-center gap-2 mb-4">
-            <Calendar className="w-5 h-5 text-bloom-sage-dark" /> 下一項產檢
-          </h3>
+        <motion.section variants={listItem} className="panel">
+          <h3 className={`mb-4 ${THEME.body}`}>下一項產檢</h3>
           {nextItem ? (
-            <button
+            <motion.button
               type="button"
+              whileTap={tap}
               onClick={() => {
                 window.location.hash = '#/littlebloom/prenatal';
               }}
               className="w-full text-left rounded-2xl bg-bloom-cream p-4 hover:bg-bloom-sand transition-colors"
             >
-              <p className="font-semibold text-bloom-stone">
+              <p className={`font-semibold ${THEME.body}`}>
                 {nextItem.template.visitNumber ? `第 ${nextItem.template.visitNumber} 次 · ` : ''}
                 {nextItem.template.title}
               </p>
-              <p className="text-sm text-bloom-stone/60 mt-1">
+              <p className={`text-sm mt-1 ${THEME.muted}`}>
                 建議第 {nextItem.template.dueWeek} 週 · {nextItem.dueDate}
                 {nextItem.status === 'overdue' && ' · 已過建議週數'}
               </p>
-            </button>
+            </motion.button>
           ) : (
-            <p className="text-sm text-bloom-stone/60">所有產檢項目都完成了。</p>
+            <p className={`text-sm ${THEME.muted}`}>所有產檢項目都完成了。</p>
           )}
         </motion.section>
 
-        <motion.section variants={itemVariants} className="grid grid-cols-2 gap-4">
+        <motion.section variants={listItem} className="grid grid-cols-2 gap-3 sm:gap-4">
           <NavCard
             label="產檢時程"
             icon={<Calendar className="w-6 h-6" />}
             hash="#/littlebloom/prenatal"
-            className="bg-bloom-sage/20 text-bloom-sage-dark"
+            className="bg-bloom-sage/20 text-bloom-sage-ink"
           />
           <NavCard
             label="孕期知識庫"
             icon={<Book className="w-6 h-6" />}
             hash="#/littlebloom/wiki"
-            className="bg-bloom-dusty-blue/20 text-bloom-dusty-blue-dark"
+            className="bg-bloom-dusty-blue/20 text-bloom-dusty-blue-ink"
           />
         </motion.section>
 
         {/* 出生登記：孕期檔案轉為寶寶檔案。PregnancyData.status 這個欄位
             從設計出來就存在，卻一直沒有任何流程會把它改成 archived。 */}
-        <motion.section variants={itemVariants} className="bg-white rounded-3xl shadow-soft p-6">
-          <h3 className="font-bold text-bloom-stone flex items-center gap-2 mb-2">
-            <Baby className="w-5 h-5 text-bloom-dusty-rose" /> 寶寶出生了
-          </h3>
-          <p className="text-sm text-bloom-stone/70 leading-relaxed mb-4">
+        <motion.section variants={listItem} className="panel">
+          <h3 className={`mb-2 ${THEME.body}`}>寶寶出生了</h3>
+          <p className={`text-sm leading-relaxed mb-4 ${THEME.muted}`}>
             填入實際出生日期後，這份檔案會變成寶寶檔案，
             LittleSteps 與 LittleExplorer 就會依實際月齡接手。孕期與產檢紀錄都會保留。
           </p>
 
           {birthOpen ? (
             <div className="space-y-2">
-              <label className="block text-xs text-bloom-stone/60">
+              <label className={`block text-xs ${THEME.muted}`}>
                 出生日期
                 <input
                   type="date"
                   value={birthDate}
                   max={toLocalDateKey()}
                   onChange={(e) => setBirthDate(e.target.value)}
-                  className="mt-1 w-full px-3 py-2 rounded-xl border border-bloom-sand text-sm text-bloom-stone focus:outline-none focus:ring-2 focus:ring-bloom-dusty-rose"
+                  className="mt-1 w-full px-3 min-h-tap rounded-xl border border-bloom-sand text-sm text-bloom-stone-ink"
                 />
               </label>
               {birthError && (
@@ -260,7 +239,7 @@ export default function LittleBloomPage({
                   type="button"
                   onClick={submitBirth}
                   disabled={birthSaving}
-                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-bloom-dusty-rose to-bloom-mauve text-white font-semibold disabled:opacity-60"
+                  className={`btn-primary flex-1 ${THEME.fill}`}
                 >
                   {birthSaving ? '儲存中…' : '確認出生'}
                 </button>
@@ -268,7 +247,7 @@ export default function LittleBloomPage({
                   type="button"
                   onClick={() => setBirthOpen(false)}
                   disabled={birthSaving}
-                  className="px-4 rounded-xl text-bloom-stone/50 hover:bg-bloom-sand disabled:opacity-60"
+                  className="btn-ghost disabled:opacity-60"
                 >
                   取消
                 </button>
@@ -278,9 +257,8 @@ export default function LittleBloomPage({
             <button
               type="button"
               onClick={() => setBirthOpen(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-bloom-dusty-rose/15 text-bloom-dusty-rose-dark font-medium"
+              className={`btn-primary ${THEME.fill}`}
             >
-              <Baby className="w-4 h-4" />
               登記出生
             </button>
           )}
@@ -301,12 +279,12 @@ function NavCard({ label, icon, hash, className }: NavCardProps) {
   return (
     <motion.button
       type="button"
-      whileHover={{ y: -4, scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={hoverLift}
+      whileTap={tap}
       onClick={() => {
         window.location.hash = hash;
       }}
-      className={`${className} rounded-3xl p-6 shadow-soft hover:shadow-soft-lg transition-all flex flex-col items-center gap-3`}
+      className={`${className} rounded-3xl p-5 shadow-soft hover:shadow-soft-lg transition-shadow flex flex-col items-center gap-2`}
     >
       {icon}
       <span className="font-semibold">{label}</span>

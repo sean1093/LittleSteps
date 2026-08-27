@@ -40,14 +40,6 @@ export const tipCategoryLabels: Record<ToddlerTipCategory, string> = {
   health: '健康照護',
 };
 
-/** 對應 src/common/lucideIcons.ts registry 中已註冊的名稱。 */
-export const tipCategoryIcons: Record<ToddlerTipCategory, string> = {
-  safety: 'ShieldAlert',
-  feeding: 'UtensilsCrossed',
-  behavior: 'Heart',
-  health: 'Stethoscope',
-};
-
 export const toddlerCareTips: ToddlerCareTip[] = [
   // ── 12-15 個月：剛學會走，活動範圍突然變大 ──
   {

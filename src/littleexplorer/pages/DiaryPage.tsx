@@ -1,13 +1,19 @@
 import { useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import { PenLine, Sprout, Trash2, X } from 'lucide-react';
 import type { ChildProfile, DiaryEntry, DiaryMood } from '../../types';
 import { calculateAgeDisplay } from '../../common/utils/summaryCalculator';
+import EmptyState from '../../common/ui/EmptyState';
+import { SERVICE_THEME } from '../../common/ui/serviceTheme';
+import { listItem, stagger, tap } from '../../common/ui/motion';
 import { developmentCheckItems } from '../data/developmentChecks';
 import { groupEntriesByMonth } from '../utils/diaryHelpers';
 import ExplorerShell from '../components/ExplorerShell';
-import ServiceNotice from '../../common/components/ServiceNotice';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
+const THEME = SERVICE_THEME.littleexplorer;
+
+/* 心情是使用者選的值，不是裝飾：文字才是標籤，emoji 只是前面那一小記。 */
 const MOODS: { value: DiaryMood; emoji: string; label: string }[] = [
   { value: 'happy', emoji: '😊', label: '開心' },
   { value: 'proud', emoji: '🥹', label: '感動' },
@@ -98,7 +104,7 @@ export default function DiaryPage({
         type="date"
         value={date}
         onChange={(e) => setDate(e.target.value)}
-        className="w-full px-3 py-2 rounded-xl border border-explorer-sand text-sm text-explorer-bark focus:outline-none focus:ring-2 focus:ring-explorer-sunbeam"
+        className="w-full px-3 min-h-tap rounded-xl border border-explorer-sand text-sm text-explorer-bark"
       />
       <textarea
         value={content}
@@ -106,7 +112,7 @@ export default function DiaryPage({
         rows={4}
         autoFocus
         placeholder="今天發生了什麼？"
-        className="w-full px-3 py-2 rounded-xl border border-explorer-sand text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-explorer-sunbeam"
+        className="w-full px-3 py-2 rounded-xl border border-explorer-sand text-sm text-explorer-bark leading-relaxed resize-none"
       />
       <div className="flex flex-wrap gap-2">
         {MOODS.map((option) => (
@@ -115,13 +121,14 @@ export default function DiaryPage({
             type="button"
             onClick={() => setMood(mood === option.value ? undefined : option.value)}
             aria-pressed={mood === option.value}
-            className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
+            className={`chip ${
               mood === option.value
-                ? 'bg-explorer-sunbeam text-white'
-                : 'bg-explorer-sand text-explorer-bark/70'
+                ? 'bg-explorer-sunbeam-ink text-white border-explorer-sunbeam-ink hover:border-explorer-sunbeam-ink'
+                : ''
             }`}
           >
-            {option.emoji} {option.label}
+            <span aria-hidden="true">{option.emoji}</span>
+            {option.label}
           </button>
         ))}
       </div>
@@ -130,16 +137,11 @@ export default function DiaryPage({
           type="button"
           onClick={submit}
           disabled={!content.trim()}
-          className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-explorer-sunbeam to-explorer-meadow text-white font-semibold disabled:opacity-40"
+          className={`btn-primary flex-1 ${THEME.fill}`}
         >
           {editingId ? '儲存修改' : '記下來'}
         </button>
-        <button
-          type="button"
-          onClick={resetForm}
-          aria-label="取消"
-          className="px-4 rounded-xl text-explorer-bark/50 hover:bg-explorer-sand"
-        >
+        <button type="button" onClick={resetForm} aria-label="取消" className="btn-icon">
           <X className="w-5 h-5" />
         </button>
       </div>
@@ -154,76 +156,78 @@ export default function DiaryPage({
       reminderBadge={reminderBadge}
     >
       {!currentChild ? (
-        <ServiceNotice service="littleexplorer"
-          icon={Sprout}
+        <EmptyState
+          theme={THEME}
           title="還沒有寶寶資料"
           description={'請先到 LittleSteps 新增寶寶，\n之後就能在這裡留下成長的點滴。'}
           action={{ label: '前往 LittleSteps', onClick: () => { window.location.hash = '#/littlesteps'; } }}
         />
       ) : (
-        <div className="space-y-4">
-          <section className="bg-white rounded-3xl shadow-soft p-5">
+        <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-4">
+          <motion.section variants={listItem} className="panel">
             {composerOpen && !editingId ? (
               form
             ) : (
-              <button
+              <motion.button
                 type="button"
+                whileTap={tap}
                 onClick={() => {
                   resetForm();
                   setComposerOpen(true);
                 }}
-                className="w-full flex items-center gap-3 text-left text-explorer-bark/50"
+                className={`w-full min-h-tap flex items-center gap-3 text-left ${THEME.muted}`}
               >
                 <PenLine className="w-5 h-5 shrink-0" />
                 <span className="text-sm">今天發生了什麼？</span>
-              </button>
+              </motion.button>
             )}
-          </section>
+          </motion.section>
 
           {groups.length === 0 && !composerOpen && (
-            <ServiceNotice service="littleexplorer"
-              icon={Sprout}
-              title="還沒有任何紀錄"
-              description={
-                '這裡適合記下那些不會出現在數據裡的時刻——\n今天冒出的新詞、第一次自己穿鞋、公園裡不肯回家。\n\n在成長分頁勾選會的項目時，也可以順手記一筆。'
-              }
-            />
+            <motion.div variants={listItem}>
+              <EmptyState
+                theme={THEME}
+                title="還沒有任何紀錄"
+                description={
+                  '這裡適合記下那些不會出現在數據裡的時刻——\n今天冒出的新詞、第一次自己穿鞋、公園裡不肯回家。\n\n在成長分頁勾選會的項目時，也可以順手記一筆。'
+                }
+              />
+            </motion.div>
           )}
 
           {groups.map((group) => (
             <section key={group.key}>
-              <h2 className="sticky top-[72px] z-10 -mx-4 px-4 py-2 bg-explorer-sand/95 backdrop-blur-sm text-sm font-semibold text-explorer-bark/70">
+              {/* AppBar 固定 h-16，月份分隔線就貼在它下緣。
+                  這一層刻意不做入場動畫：sticky 元素若落在有 transform 的
+                  祖先裡，動畫期間會連帶被推移。 */}
+              <h2
+                className={`sticky top-16 z-10 -mx-4 px-4 py-2 bg-explorer-sand/95 backdrop-blur-sm ${THEME.body}`}
+              >
                 {group.label}
               </h2>
-              <ul className="space-y-3 mt-2">
+              <motion.ul variants={listItem} className="space-y-3 mt-2">
                 {group.entries.map((entry) => {
-                  const moodOption = MOODS.find((m) => m.value === entry.mood);
                   const linkedTitle = entry.linkedCheckItemId
                     ? checkItemTitles[entry.linkedCheckItemId]
                     : undefined;
 
                   if (editingId === entry.id) {
                     return (
-                      <li key={entry.id} className="bg-white rounded-3xl shadow-soft p-5">
+                      <li key={entry.id} className="panel">
                         {form}
                       </li>
                     );
                   }
 
                   return (
-                    <li key={entry.id} className="bg-white rounded-3xl shadow-soft p-5">
+                    <li key={entry.id} className="panel">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm text-explorer-bark/50">{entry.date}</span>
-                        {moodOption && (
-                          <span title={moodOption.label} className="text-base leading-none">
-                            {moodOption.emoji}
-                          </span>
-                        )}
+                        <span className={`text-sm ${THEME.muted}`}>{entry.date}</span>
                         <span className="flex-1" />
                         <button
                           type="button"
                           onClick={() => startEdit(entry)}
-                          className="p-1.5 rounded-lg text-explorer-bark/40 hover:bg-explorer-sand hover:text-explorer-bark"
+                          className="btn-icon"
                           aria-label="編輯"
                         >
                           <PenLine className="w-4 h-4" />
@@ -231,7 +235,7 @@ export default function DiaryPage({
                         <button
                           type="button"
                           onClick={() => remove(entry)}
-                          className="p-1.5 rounded-lg text-explorer-bark/40 hover:bg-explorer-clay/10 hover:text-explorer-clay"
+                          className="btn-icon hover:bg-explorer-clay/10 hover:text-explorer-clay-ink"
                           aria-label="刪除"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -243,7 +247,7 @@ export default function DiaryPage({
                       </p>
 
                       {linkedTitle && (
-                        <p className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-explorer-meadow/15 text-explorer-meadow-dark text-xs">
+                        <p className="tag mt-3 bg-explorer-meadow/15 text-explorer-meadow-ink">
                           <Sprout className="w-3.5 h-3.5" />
                           {linkedTitle}
                         </p>
@@ -251,10 +255,10 @@ export default function DiaryPage({
                     </li>
                   );
                 })}
-              </ul>
+              </motion.ul>
             </section>
           ))}
-        </div>
+        </motion.div>
       )}
     </ExplorerShell>
   );

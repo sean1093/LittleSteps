@@ -1,11 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import type { DevelopmentDomain, ToddlerAgeBand } from '../../types';
-import { getLucideIcon } from '../../common/lucideIcons';
 import {
   ageBandLabels,
   developmentCheckItems,
   developmentWarnings,
-  domainIcons,
   domainLabels,
 } from './developmentChecks';
 
@@ -71,16 +69,5 @@ describe('顯示標籤', () => {
   it('所有年齡段與發展面向都有中文標籤', () => {
     for (const band of BANDS) expect(ageBandLabels[band]).toBeTruthy();
     for (const domain of DOMAINS) expect(domainLabels[domain]).toBeTruthy();
-  });
-
-  it('每個發展面向的 icon 名稱可由 lucideIcons registry 解析', () => {
-    for (const domain of DOMAINS) {
-      const name = domainIcons[domain];
-      expect(name, domain).toBeTruthy();
-      // getLucideIcon 對未註冊名稱會回退到 HelpCircle，故需比對回退值
-      expect(getLucideIcon(name), `${domain} 的 icon ${name} 未註冊`).not.toBe(
-        getLucideIcon('__definitely_not_registered__'),
-      );
-    }
   });
 });

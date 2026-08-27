@@ -1,5 +1,7 @@
+import { motion } from 'framer-motion';
 import { BellRing, BookOpen, PenLine, Sprout } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { tap } from '../../common/ui/motion';
 
 export type ExplorerTab = 'development' | 'reminders' | 'diary' | 'wiki';
 
@@ -43,22 +45,23 @@ export default function ExplorerTabBar({ active, reminderBadge = 0 }: ExplorerTa
           const showBadge = tab.id === 'reminders' && reminderBadge > 0;
 
           return (
-            <button
+            <motion.button
               key={tab.id}
               type="button"
+              whileTap={tap}
               onClick={() => {
                 window.location.hash = tab.hash;
               }}
               aria-current={isActive ? 'page' : undefined}
               className={`flex-1 min-h-[56px] flex flex-col items-center justify-center gap-1 transition-colors ${
-                isActive ? 'text-explorer-sunbeam-dark' : 'text-gray-400 hover:text-gray-600'
+                isActive ? 'text-explorer-sunbeam-ink' : 'text-ink-muted hover:text-ink'
               }`}
             >
               <span className="relative">
                 <Icon className={`w-6 h-6 ${isActive ? 'fill-explorer-sunbeam/20' : ''}`} />
                 {showBadge && (
                   <span
-                    className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-explorer-clay text-white text-[10px] font-semibold flex items-center justify-center"
+                    className="absolute -top-2 -right-2.5 min-w-[20px] h-5 px-1 rounded-full bg-explorer-clay-ink text-white text-xs font-semibold flex items-center justify-center"
                     aria-label={`${reminderBadge} 項待處理`}
                   >
                     {reminderBadge > 9 ? '9+' : reminderBadge}
@@ -66,7 +69,7 @@ export default function ExplorerTabBar({ active, reminderBadge = 0 }: ExplorerTa
                 )}
               </span>
               <span className="text-xs font-medium">{tab.label}</span>
-            </button>
+            </motion.button>
           );
         })}
       </div>

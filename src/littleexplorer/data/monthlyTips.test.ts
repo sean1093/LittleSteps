@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ToddlerAgeBand, ToddlerTipCategory } from '../../types';
-import { getLucideIcon } from '../../common/lucideIcons';
-import { tipCategoryIcons, tipCategoryLabels, toddlerCareTips } from './monthlyTips';
+import { tipCategoryLabels, toddlerCareTips } from './monthlyTips';
 
 const BANDS: ToddlerAgeBand[] = ['12-15', '15-18', '18-24', '24-30', '30-36'];
 const CATEGORIES: ToddlerTipCategory[] = ['safety', 'feeding', 'behavior', 'health'];
@@ -47,15 +46,6 @@ describe('分類顯示設定', () => {
   it('每個類別都有中文標籤', () => {
     for (const category of CATEGORIES) {
       expect(tipCategoryLabels[category], category).toBeTruthy();
-    }
-  });
-
-  it('每個類別的 icon 名稱可由 lucideIcons registry 解析', () => {
-    const fallback = getLucideIcon('__definitely_not_registered__');
-    for (const category of CATEGORIES) {
-      const name = tipCategoryIcons[category];
-      expect(name, category).toBeTruthy();
-      expect(getLucideIcon(name), `${category}: ${name}`).not.toBe(fallback);
     }
   });
 });
