@@ -1,5 +1,5 @@
 import { useState, useEffect, Suspense, lazy } from 'react';
-import { Menu, Home, Baby } from 'lucide-react';
+import { Menu, Home } from 'lucide-react';
 import { Page, LittleStepsPage } from './types/routes'; // Import route types
 import { logPageView } from './lib/firebase';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -9,6 +9,8 @@ import { useCareTasks } from './littleexplorer/hooks/useCareTasks';
 import { useDiary } from './littleexplorer/hooks/useDiary';
 import Sidebar from './common/components/Sidebar';
 import AppHomeButton from './common/components/AppHomeButton';
+import AppBar from './common/ui/AppBar';
+import { SERVICE_THEME } from './common/ui/serviceTheme';
 import LandingPage, { landingKindFor, isStandaloneLanding } from './common/landing/LandingPage';
 const DashboardPage = lazy(() => import('./littlesteps/pages/DashboardPage'));
 const MilestonesPage = lazy(() => import('./littlesteps/pages/MilestonesPage'));
@@ -236,13 +238,15 @@ function AppContent() {
   const showHeader = !(currentPage === 'home' || isStandaloneSubApp);
 
 
-  // Show loading state while auth or children data is loading
+  // Show loading state while auth or children data is loading.
+  // A pulsing 64px baby icon was the old treatment; a thin progress bar says
+  // the same thing without an illustration and without a layout jump.
   if (loading || (user && childrenLoading)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-warm-white">
-        <div className="text-center">
-          <Baby className="w-16 h-16 text-primary mx-auto mb-4 animate-pulse" />
-          <p className="text-gray-600">載入中...</p>
+      <div className="min-h-dscreen flex items-center justify-center bg-warm-white">
+        <div className="w-40 h-1 rounded-full bg-primary-light overflow-hidden" role="status">
+          <div className="h-full w-1/3 rounded-full bg-primary-dark animate-[loading_1.2s_ease-in-out_infinite]" />
+          <span className="sr-only">載入中</span>
         </div>
       </div>
     );
@@ -273,7 +277,7 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-warm-white">
+    <div className="min-h-dscreen bg-warm-white">
       {/* Sidebar - Only show for LittleSteps routes */}
       {!isStandaloneSubApp && (
         <Sidebar
@@ -296,30 +300,32 @@ function AppContent() {
 
       {/* Header */}
       {showHeader && (
-        <header className="bg-white shadow-soft sticky top-0 z-30">
-          <div className="px-4 py-4 flex items-center gap-2">
+        <AppBar
+          theme={SERVICE_THEME.littlesteps}
+          title={getPageTitle()}
+          leading={
             <button
               onClick={() => setSidebarOpen(true)}
-              className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center shrink-0"
+              aria-label="開啟選單"
+              className="btn-icon -ml-1.5 bg-ink/5 hover:bg-ink/10"
             >
-              <Menu className="w-5 h-5 text-gray-700" />
+              <Menu className="w-5 h-5" />
             </button>
-            {/* min-w-0 + truncate：flex item 預設不會縮到內容寬度以下，
-                長標題會把右側兩顆按鈕擠出窄螢幕。 */}
-            <h1 className="text-2xl font-bold text-primary flex-1 min-w-0 truncate">
-              {getPageTitle()}
-            </h1>
-            <button
-              onClick={() => navigateToPage('littlesteps')}
-              className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center shrink-0"
-              title="LittleSteps 首頁"
-              aria-label="LittleSteps 首頁"
-            >
-              <Home className="w-5 h-5 text-gray-700" />
-            </button>
-            <AppHomeButton />
-          </div>
-        </header>
+          }
+          actions={
+            <>
+              <button
+                onClick={() => navigateToPage('littlesteps')}
+                className="btn-icon bg-ink/5 hover:bg-ink/10"
+                title="LittleSteps 首頁"
+                aria-label="LittleSteps 首頁"
+              >
+                <Home className="w-5 h-5" />
+              </button>
+              <AppHomeButton />
+            </>
+          }
+        />
       )}
 
       {/* Main Content */}
@@ -327,7 +333,13 @@ function AppContent() {
         <Suspense
           fallback={
             <div className="min-h-[50vh] flex items-center justify-center">
-              <Baby className="w-12 h-12 text-primary animate-pulse" />
+              <div
+                className="w-40 h-1 rounded-full bg-primary-light overflow-hidden"
+                role="status"
+              >
+                <div className="h-full w-1/3 rounded-full bg-primary-dark animate-[loading_1.2s_ease-in-out_infinite]" />
+                <span className="sr-only">載入中</span>
+              </div>
             </div>
           }
         >

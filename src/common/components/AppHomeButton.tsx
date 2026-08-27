@@ -21,7 +21,7 @@ interface AppHomeButtonProps {
  * already listens for hashchange.
  */
 export default function AppHomeButton({
-  className = 'bg-gray-100 hover:bg-gray-200 text-gray-700',
+  className = 'bg-ink/5 hover:bg-ink/10 text-ink-muted',
 }: AppHomeButtonProps) {
   return (
     <button
@@ -31,7 +31,7 @@ export default function AppHomeButton({
       }}
       title="所有服務"
       aria-label="所有服務"
-      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0 ${className}`}
+      className={`w-tap h-tap rounded-full flex items-center justify-center transition-colors shrink-0 ${className}`}
     >
       <LayoutGrid className="w-5 h-5" />
     </button>

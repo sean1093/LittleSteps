@@ -127,6 +127,14 @@ export default {
         // 28-40px; this gives them one name to reach for.
         tap: '2.75rem', // 44px
       },
+      keyframes: {
+        // Indeterminate progress: a bar sweeping its track. Replaces the
+        // pulsing icons that used to stand in for "loading".
+        loading: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(300%)' },
+        },
+      },
       fontFamily: {
         sans: [
           '-apple-system',

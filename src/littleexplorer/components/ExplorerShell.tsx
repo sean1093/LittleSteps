@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
-import { Sun } from 'lucide-react';
 import ExplorerTabBar from './ExplorerTabBar';
+import AppBar from '../../common/ui/AppBar';
+import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import AppHomeButton from '../../common/components/AppHomeButton';
 import type { ExplorerTab } from './ExplorerTabBar';
 
@@ -18,6 +19,10 @@ interface ExplorerShellProps {
  * tab bar. Written once here so the four pages carry no chrome of their own.
  *
  * No back button — the tabs are siblings, there is no level above them.
+ *
+ * The gradient Sun badge that used to sit left of the wordmark on all four tabs
+ * is gone; it was identical on every screen, so it carried no information and
+ * only narrowed the title.
  */
 export default function ExplorerShell({
   active,
@@ -26,25 +31,24 @@ export default function ExplorerShell({
   reminderBadge,
   children,
 }: ExplorerShellProps) {
+  const theme = SERVICE_THEME.littleexplorer;
   const subtitle = [childName ?? '小小探險家', ageLabel].filter(Boolean).join(' · ');
 
   return (
-    <div className="min-h-screen bg-explorer-sand">
-      <header className="bg-white shadow-soft sticky top-0 z-30">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-explorer-sunbeam/20 to-explorer-meadow/20 flex items-center justify-center shrink-0">
-            <Sun className="w-6 h-6 text-explorer-sunbeam-dark" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-bold text-explorer-bark leading-tight">LittleExplorer</h1>
-            <p className="text-sm text-explorer-bark/60 truncate">{subtitle}</p>
-          </div>
-          {/* 底色必須在白色 header 上看得見：explorer-sand (#FDF8EE) 幾乎等於白，會讓整顆按鈕消失。 */}
-          <AppHomeButton className="bg-explorer-sunbeam/20 hover:bg-explorer-sunbeam/35 text-explorer-sunbeam-dark" />
-        </div>
-      </header>
+    <div className={`min-h-dscreen ${theme.pageBg}`}>
+      <AppBar
+        theme={theme}
+        title={theme.name}
+        subtitle={subtitle}
+        actions={
+          /* explorer-sand (#FDF8EE) is almost white, so the default neutral
+             tint would disappear against the bar. */
+          <AppHomeButton className="bg-explorer-sunbeam/25 hover:bg-explorer-sunbeam/40 text-explorer-sunbeam-ink" />
+        }
+      />
 
-      <main className="max-w-4xl mx-auto px-4 pt-4 pb-24">{children}</main>
+      {/* pb-24 clears the fixed tab bar. */}
+      <main className="screen-body space-y-4 pb-24">{children}</main>
 
       <ExplorerTabBar active={active} reminderBadge={reminderBadge} />
     </div>
