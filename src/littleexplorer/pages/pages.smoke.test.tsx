@@ -70,6 +70,16 @@ describe('ExplorerShell 與 tab bar', () => {
     render(<ToddlerWikiPage currentChild={child()} reminderBadge={0} />);
     expect(screen.queryByLabelText(/項待處理/)).not.toBeInTheDocument();
   });
+
+  it('頁首提供回主頁的入口，點擊後導向主頁面', async () => {
+    const user = userEvent.setup();
+    window.location.hash = '#/littleexplorer/wiki';
+
+    render(<ToddlerWikiPage currentChild={child()} />);
+    await user.click(screen.getByRole('button', { name: '回主頁' }));
+
+    expect(window.location.hash).toBe('#/');
+  });
 });
 
 describe('DevelopmentPage', () => {

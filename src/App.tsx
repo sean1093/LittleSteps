@@ -284,9 +284,10 @@ function AppContent() {
               {getPageTitle()}
             </h1>
             <button
-              onClick={() => navigateToPage('littlesteps')}
+              onClick={() => navigateToPage('home')}
               className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center"
-              title="返回首頁"
+              title="回主頁"
+              aria-label="回主頁"
             >
               <Home className="w-5 h-5 text-gray-700" />
             </button>

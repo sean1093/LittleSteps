@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { pregnancyWikiArticles, pregnancyWikiCategoryLabels, pregnancyWikiCategoryColors } from '../data/wiki';
 import WikiArticleCard from '../../common/components/wiki/WikiArticleCard';
+import HomeButton from '../../common/components/HomeButton';
 
 export default function LittleBloomWikiPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,7 +26,8 @@ export default function LittleBloomWikiPage() {
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <h2 className="text-xl font-bold">孕期知識庫</h2>
+          <h2 className="text-xl font-bold flex-1">孕期知識庫</h2>
+          <HomeButton className="bg-white/20 hover:bg-white/30 text-white" />
         </div>
       </header>
 

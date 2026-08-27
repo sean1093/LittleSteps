@@ -5,6 +5,7 @@ import { User } from 'firebase/auth';
 import { pregnancyGuides } from '../../data/pregnancyGuides';
 import { ChildProfile, PrenatalCheckup } from '../../types';
 import { usePregnancyData } from '../hooks/usePregnancyData';
+import HomeButton from '../../common/components/HomeButton';
 
 interface LittleBloomPageProps {
   currentChild?: ChildProfile | null;
@@ -70,13 +71,18 @@ function LittleBloomPage({ currentChild, user }: LittleBloomPageProps) {
         {/* Header */}
         <motion.div
           variants={itemVariants}
-          className="bg-white rounded-3xl p-8 shadow-soft mb-6 text-center"
+          className="bg-white rounded-3xl p-8 shadow-soft mb-6 relative"
         >
-          <Flower2 className="w-12 h-12 text-[#FF9B9B] mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            LittleBloom
-          </h1>
-          <p className="text-gray-600 font-medium">第 {currentWeek} 週，妳做得很好 ✨</p>
+          <div className="absolute top-4 right-4">
+            <HomeButton />
+          </div>
+          <div className="text-center">
+            <Flower2 className="w-12 h-12 text-[#FF9B9B] mx-auto mb-4" />
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+              LittleBloom
+            </h1>
+            <p className="text-gray-600 font-medium">第 {currentWeek} 週，妳做得很好 ✨</p>
+          </div>
         </motion.div>
 
         {/* Weekly Guide Card */}

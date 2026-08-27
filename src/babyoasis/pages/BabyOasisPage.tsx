@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NursingRoom } from '../../types';
+import HomeButton from '../../common/components/HomeButton';
 
 // Import leaflet CSS
 import 'leaflet/dist/leaflet.css';
@@ -299,11 +300,14 @@ const BabyOasisPage = () => {
     <div className="relative h-screen w-screen">
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-[1000] bg-white/95 backdrop-blur-sm shadow-sm">
-        <div className="p-4">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            BabyOasis
-          </h1>
-          <p className="text-sm text-gray-600 mt-1">找到最近的哺乳室</p>
+        <div className="p-4 flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              BabyOasis
+            </h1>
+            <p className="text-sm text-gray-600 mt-1">找到最近的哺乳室</p>
+          </div>
+          <HomeButton />
         </div>
       </div>
 
