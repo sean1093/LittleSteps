@@ -1,4 +1,5 @@
 import type { ToddlerWikiArticle } from '../../types';
+import { TODDLER_MAX_MONTHS, TODDLER_MIN_MONTHS } from './ageBands';
 
 /**
  * 依孩子的月齡決定百科文章的閱讀順序。
@@ -10,6 +11,40 @@ import type { ToddlerWikiArticle } from '../../types';
  * 這裡只重排順序，不做篩選。半夜搜「發燒」的家長必須找得到那一篇，跟孩子幾
  * 歲無關，所以任何年齡的文章都留在清單上，搜尋與分類篩選也照舊。
  */
+
+/**
+ * 百科的年齡分段，刻意比 `TODDLER_AGE_BANDS` 粗。
+ *
+ * 成長檢核用五段（12-15/15-18/18-24/24-30/30-36），因為那是逐項勾選的發展
+ * 題目，三個月的差別是有意義的。百科不是——文章自己講的是「1 歲後」「1 歲半」
+ * 「2-3 歲」，官方與場館的資料也只公告到歲。
+ *
+ * 而且細分在這裡量不出東西：以五段篩選 45 篇，各段分別命中
+ * 33/33/35/40/42 篇，因為三分之二的內容橫跨整個幼兒期。分那麼細只是讓家長
+ * 多滑幾下，得到幾乎一樣的清單。
+ *
+ * 三段剛好在 390px 的手機上和「全部」並排成一列，不必橫向滑動。
+ */
+export interface WikiStage {
+  id: string;
+  label: string;
+  start: number;
+  end: number;
+}
+
+export const WIKI_STAGES: WikiStage[] = [
+  { id: '12-18', label: '1 歲-1 歲半', start: 12, end: 18 },
+  { id: '18-24', label: '1 歲半-2 歲', start: 18, end: 24 },
+  { id: '24-36', label: '2-3 歲', start: 24, end: 36 },
+];
+
+/** 這個月齡屬於哪一段；範圍外夾到最近的一端。 */
+export function stageForMonths(ageMonths: number): WikiStage {
+  for (let i = WIKI_STAGES.length - 1; i >= 0; i--) {
+    if (ageMonths >= WIKI_STAGES[i].start) return WIKI_STAGES[i];
+  }
+  return WIKI_STAGES[0];
+}
 
 export type WikiRelevance =
   /** 現在正是這篇適用的月齡 */
@@ -84,16 +119,41 @@ export function monthsLabel(months: number): string {
 }
 
 /**
- * 卡片上的小標籤。只在能補充資訊時回傳字串：
- * 現在適用的講「現在適用」，還沒到的講從什麼時候開始，已經過去的不標
- * ——「已過」對家長沒有用，而且那篇仍然可以讀。
+ * 這篇是否與某個年齡段有交集，用來做年齡篩選。
+ *
+ * 交集判定而不是包含判定：一篇 18-36 個月的文章對 24-30 這個段當然有用，
+ * 不需要它的區間完整落在段內。
+ *
+ * 這個篩選之所以安全，是因為橫跨整個幼兒期的內容（居家安全、哽噎、燒燙傷、
+ * 熱痙攣、常備藥）區間都是 12-36，和每一段都有交集，所以任何年齡段都篩不掉
+ * 它們。被篩掉的只有真的還沒到的階段性內容。
+ */
+export function overlapsBand(
+  article: ToddlerWikiArticle,
+  bandStart: number,
+  bandEnd: number,
+): boolean {
+  const [start, end] = article.ageRange;
+  return start < bandEnd && end > bandStart;
+}
+
+/**
+ * 卡片上的小標籤。
+ *
+ * 只標「階段性」的文章。三分之二的文章區間是 12-36——它們隨時都用得上，
+ * 對每一個年齡都「現在適用」，所以標了等於沒標：實測 26 個月時會有 40 張
+ * 卡片掛著同一個徽章，徽章就不再是資訊。
  */
 export function relevanceTag(
   article: ToddlerWikiArticle,
   ageMonths: number,
 ): string | undefined {
+  const [start, end] = article.ageRange;
+  const spansWholePeriod = start <= TODDLER_MIN_MONTHS && end >= TODDLER_MAX_MONTHS;
+  if (spansWholePeriod) return undefined;
+
   const relevance = relevanceFor(article, ageMonths);
   if (relevance === 'now') return '現在適用';
   if (relevance === 'past') return undefined;
-  return `${monthsLabel(article.ageRange[0])}後`;
+  return `${monthsLabel(start)}後`;
 }

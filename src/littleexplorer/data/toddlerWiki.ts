@@ -1014,7 +1014,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '什麼時候不再午睡',
     summary: '多數孩子 3 歲前仍需要午睡，3-5 歲之間才會逐漸不需要（平均約 4 歲），判斷依據是一天的總睡眠而不是年齡。',
     category: 'sleep',
-    ageRange: [30, 36],
+    ageRange: [24, 36],
     causes: [
       '1 歲半前後兩段小睡會併成一段下午的午睡，這是幼兒期的正常轉換',
       '白天可以撐的清醒時間拉長後，午睡睡太晚或睡太久，晚上就會入睡困難',
@@ -1280,7 +1280,7 @@ export const toddlerWikiArticles: ToddlerWikiArticle[] = [
     title: '3 歲視力篩檢與斜視',
     summary: '3 歲半至 4 歲是第一次眼科視力檢查的理想時機，因為弱視治療的黃金期只到 6 歲，錯過就補不回來。',
     category: 'health',
-    ageRange: [30, 36],
+    ageRange: [24, 36],
     causes: [
       '單眼弱視沒有症狀，孩子用好的那隻眼睛看世界，從外觀與日常表現完全看不出來',
       '斜視、兩眼度數差距大、高度遠視或先天性白內障，都會讓大腦逐漸放棄比較差的那隻眼睛',

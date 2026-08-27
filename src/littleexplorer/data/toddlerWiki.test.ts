@@ -7,6 +7,7 @@ import {
   toddlerWikiCategoryLabels,
 } from './toddlerWiki';
 import { TODDLER_MAX_MONTHS, TODDLER_MIN_MONTHS } from '../utils/ageBands';
+import { WIKI_STAGES } from '../utils/wikiRelevance';
 
 const CATEGORIES: ToddlerWikiCategory[] = [
   'toilet',
@@ -35,11 +36,24 @@ describe('toddlerWikiArticles', () => {
     }
   });
 
-  it('ageRange 的起點對齊既有的年齡段界線', () => {
+  it('ageRange 的起點對齊百科的三段界線', () => {
     // 標籤會把月齡讀成「1 歲半後」，靠的就是起點落在這幾個界線上。
-    const starts = [12, 15, 18, 24, 30];
+    // 刻意只有三個界線——見 WIKI_STAGES 的說明。
+    const starts = WIKI_STAGES.map((s) => s.start);
     for (const article of toddlerWikiArticles) {
       expect(starts, article.id).toContain(article.ageRange[0]);
+    }
+  });
+
+  it('每一段都有階段性文章，否則那顆 chip 篩出來的東西和「全部」一樣', () => {
+    for (const stage of WIKI_STAGES) {
+      const stageSpecific = toddlerWikiArticles.filter(
+        (a) =>
+          a.ageRange[0] < stage.end &&
+          a.ageRange[1] > stage.start &&
+          !(a.ageRange[0] <= 12 && a.ageRange[1] >= 36),
+      );
+      expect(stageSpecific.length, stage.label).toBeGreaterThan(0);
     }
   });
 
