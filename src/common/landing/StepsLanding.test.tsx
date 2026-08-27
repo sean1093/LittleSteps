@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import LandingPage from './LandingPage';
+import StepsLanding from './StepsLanding';
 
 /**
  * 這一頁是所有「需要登入的 LittleSteps 路由」在未登入時的落點：登出之後、
@@ -12,13 +12,13 @@ import LandingPage from './LandingPage';
  * 而且只能手動改網址才出得去。LittleBloom 與 LittleExplorer 的介紹頁
  * （ServiceLandingPage）一直都有這顆按鈕，只有這一頁漏掉。
  */
-describe('LandingPage', () => {
+describe('StepsLanding', () => {
   beforeEach(() => {
     window.location.hash = '#/littlesteps/dashboard';
   });
 
   const renderPage = () =>
-    render(<LandingPage onNavigate={vi.fn()} user={null} onSignIn={vi.fn()} />);
+    render(<StepsLanding onNavigate={vi.fn()} user={null} onSignIn={vi.fn()} />);
 
   it('提供通往所有服務的出口', () => {
     renderPage();

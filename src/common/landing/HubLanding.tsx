@@ -3,19 +3,19 @@ import { Baby, Flower2, Heart, Sparkles, ArrowRight, Sun, MapPin, LogIn } from '
 import type { User } from 'firebase/auth';
 
 /**
- * MainLandingPage - Entry point for all four services
+ * HubLanding - Entry point for all four services
  *
  * Public: reachable without signing in, so a first-time visitor can see what
  * the collection offers before deciding to hand over an account.
  */
 
-interface MainLandingPageProps {
+interface HubLandingProps {
   onNavigate: (page: 'littlesteps' | 'littlebloom' | 'babyoasis' | 'littleexplorer') => void;
   user?: User | null;
   onSignIn?: () => Promise<void>;
 }
 
-export default function MainLandingPage({ onNavigate, user, onSignIn }: MainLandingPageProps) {
+export default function HubLanding({ onNavigate, user, onSignIn }: HubLandingProps) {
   const fadeInUp = {
     hidden: { opacity: 0, y: 30 },
     visible: {

@@ -79,12 +79,12 @@ const SERVICE_INTRO: Record<IntroService, ServiceIntro> = {
   },
 };
 
-interface ServiceLandingPageProps {
+interface ServiceLandingProps {
   service: IntroService;
   onSignIn: () => Promise<void>;
 }
 
-export default function ServiceLandingPage({ service, onSignIn }: ServiceLandingPageProps) {
+export default function ServiceLanding({ service, onSignIn }: ServiceLandingProps) {
   const intro = SERVICE_INTRO[service];
   const Icon = intro.icon;
   const { theme } = intro;

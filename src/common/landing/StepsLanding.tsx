@@ -1,30 +1,20 @@
 import { motion } from 'framer-motion';
-import { useEffect, useRef } from 'react';
 import { Baby, Heart, Sparkles, ArrowRight, Moon, TrendingUp, Shield, Lock, BookOpen, Camera } from 'lucide-react';
 import { User } from 'firebase/auth';
 import AppHomeButton from '../components/AppHomeButton';
 
-interface LandingPageProps {
+interface StepsLandingProps {
   onNavigate: (page: 'littlesteps/milestones' | 'littlesteps/care-guide' | 'littlesteps/vaccine-tracking' | 'littlesteps/complementary-food' | 'littlesteps/sleep-training' | 'littlesteps/growth-charts') => void;
   user: User | null;
   onSignIn: () => Promise<void>;
 }
 
-export default function LandingPage({ onNavigate, user, onSignIn }: LandingPageProps) {
-  // Track previous user state to detect login
-  const prevUserRef = useRef<User | null>(null);
-
-  // Auto-navigate to dashboard after successful login
-  useEffect(() => {
-    // Only navigate if user just logged in (was null, now has value)
-    if (prevUserRef.current === null && user !== null) {
-      // Small delay for smooth transition
-      setTimeout(() => {
-        window.location.hash = '#/littlesteps/dashboard';
-      }, 300);
-    }
-    prevUserRef.current = user;
-  }, [user]);
+/**
+ * LittleSteps 未登入時的介紹頁。登入後要去哪由 LandingPage 統一決定——
+ * 這裡原本也有一份 useEffect 會在登入瞬間跳去儀表板，但它不看使用者有沒有
+ * 孩子，剛註冊的人會落在空的儀表板上。
+ */
+export default function StepsLanding({ onNavigate, user, onSignIn }: StepsLandingProps) {
   const fadeInUp = {
     hidden: { opacity: 0, y: 30 },
     visible: {

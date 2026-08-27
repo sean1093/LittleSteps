@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import MainLandingPage from './MainLandingPage';
+import HubLanding from './HubLanding';
 
 /**
  * The main landing page is the only place a parent can discover the other
@@ -9,7 +9,7 @@ import MainLandingPage from './MainLandingPage';
  * scoped to LittleSteps routes by type. If a card goes missing here, that
  * sub-app becomes unreachable without hand-editing the URL.
  */
-describe('MainLandingPage', () => {
+describe('HubLanding', () => {
   const SUB_APPS = [
     { name: 'LittleBloom', page: 'littlebloom', cta: '進入孕期陪伴' },
     { name: 'LittleSteps', page: 'littlesteps', cta: '開始記錄成長' },
@@ -18,7 +18,7 @@ describe('MainLandingPage', () => {
   ] as const;
 
   it('每個子應用都有一張卡片', () => {
-    render(<MainLandingPage onNavigate={vi.fn()} />);
+    render(<HubLanding onNavigate={vi.fn()} />);
     for (const app of SUB_APPS) {
       expect(screen.getByRole('heading', { name: app.name })).toBeInTheDocument();
     }
@@ -29,7 +29,7 @@ describe('MainLandingPage', () => {
 
     for (const app of SUB_APPS) {
       const onNavigate = vi.fn();
-      const { unmount } = render(<MainLandingPage onNavigate={onNavigate} />);
+      const { unmount } = render(<HubLanding onNavigate={onNavigate} />);
 
       await user.click(screen.getByText(app.cta));
       expect(onNavigate, app.name).toHaveBeenCalledWith(app.page);
@@ -39,7 +39,7 @@ describe('MainLandingPage', () => {
   });
 
   it('LittleExplorer 卡片點出 1-3 歲的四項能力', () => {
-    render(<MainLandingPage onNavigate={vi.fn()} />);
+    render(<HubLanding onNavigate={vi.fn()} />);
 
     // 這些字串只出現在 LittleExplorer 卡片，故不需要先鎖定容器——
     // 以 styling class 當選擇器會在改版時假性失敗。
@@ -52,7 +52,7 @@ describe('MainLandingPage', () => {
   it('旅程時間軸的幼兒期節點可點，並導向 LittleExplorer', async () => {
     const user = userEvent.setup();
     const onNavigate = vi.fn();
-    render(<MainLandingPage onNavigate={onNavigate} />);
+    render(<HubLanding onNavigate={onNavigate} />);
 
     await user.click(screen.getByText('1-3 歲'));
     expect(onNavigate).toHaveBeenCalledWith('littleexplorer');
@@ -61,7 +61,7 @@ describe('MainLandingPage', () => {
   it('未登入時進入點自己就給得出登入', async () => {
     const user = userEvent.setup();
     const onSignIn = vi.fn(async () => {});
-    render(<MainLandingPage onNavigate={vi.fn()} user={null} onSignIn={onSignIn} />);
+    render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={onSignIn} />);
 
     await user.click(screen.getByRole('button', { name: /使用 Google 登入/ }));
 
@@ -70,7 +70,7 @@ describe('MainLandingPage', () => {
 
   it('已登入時不再顯示登入按鈕', () => {
     render(
-      <MainLandingPage
+      <HubLanding
         onNavigate={vi.fn()}
         user={{ uid: 'u1' } as never}
         onSignIn={vi.fn()}
