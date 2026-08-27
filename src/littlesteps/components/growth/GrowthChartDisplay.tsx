@@ -185,7 +185,7 @@ export default function GrowthChartDisplay({
           );
         })}
 
-        {/* WHO Percentile curves. `#2F7F9C` is `secondary-dark`. */}
+        {/* WHO Percentile curves. `#2A7288` is `secondary-dark`. */}
         {percentileCurves.map((curve) => (
           <g key={`curve-${curve.percentile}`}>
             <path
@@ -193,7 +193,7 @@ export default function GrowthChartDisplay({
               fill="none"
               stroke={
                 curve.percentile === 50
-                  ? '#2F7F9C'
+                  ? '#2A7288'
                   : curve.percentile === 3 || curve.percentile === 97
                   ? '#ef4444'
                   : '#94a3b8'

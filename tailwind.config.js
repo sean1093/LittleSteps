@@ -25,7 +25,7 @@ export default {
           DEFAULT: '#7EC8E3', // soft sky
           light: '#E8F4F8',
           soft: '#F5FAFC',
-          dark: '#2F7F9C',    // 4.53:1 on white
+          dark: '#2A7288',    // 5.44:1 on white, 5.26:1 on warm-white
         },
         mint: {
           DEFAULT: '#81C784', // vaccines, "safe"/"done" states
@@ -73,7 +73,7 @@ export default {
           'dusty-rose': '#D4A5A5',
           'dusty-rose-light': '#E6C9C9',
           'dusty-rose-dark': '#B88A8A',
-          'dusty-rose-ink': '#8E6A6A',   // 4.75:1
+          'dusty-rose-ink': '#855F5F',   // 5.53:1 on white, 4.87:1 on bloom-cream
           'dusty-rose-deep': '#966565',  // 4.83:1 — bed for white text
           'blush': '#F3E4E4',            // was referenced but never defined
           'sage': '#A8B5A0',

@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import HubLanding from './HubLanding';
+import { SERVICE_ORDER, SERVICE_THEME } from '../ui/serviceTheme';
+import type { ServiceId } from '../ui/serviceTheme';
 
 /**
  * The main landing page is the only place a parent can discover the other
@@ -10,12 +12,37 @@ import HubLanding from './HubLanding';
  * sub-app becomes unreachable without hand-editing the URL.
  */
 describe('HubLanding', () => {
-  const SUB_APPS = [
-    { name: 'LittleBloom', page: 'littlebloom', cta: '進入孕期陪伴' },
-    { name: 'LittleSteps', page: 'littlesteps', cta: '開始記錄成長' },
-    { name: 'LittleExplorer', page: 'littleexplorer', cta: '進入幼兒期' },
-    { name: 'BabyOasis', page: 'babyoasis', cta: '探索附近哺乳室' },
-  ] as const;
+  /**
+   * The one thing the page renders that is not already in `SERVICE_THEME`.
+   * Typed as a total `Record<ServiceId, …>`, so a sixth service fails to
+   * compile until its CTA is listed here — and the list below then covers it
+   * automatically. A hand-written array of four is what let LittleOuting ship
+   * with no card assertion at all, the same way `routePolicy.test.ts` quietly
+   * stopped covering it.
+   */
+  const CTA: Record<ServiceId, string> = {
+    littlebloom: '進入孕期陪伴',
+    littlesteps: '開始記錄成長',
+    littleexplorer: '進入幼兒期',
+    littleouting: '找親子好去處',
+    babyoasis: '探索附近哺乳室',
+  };
+
+  /** Derived from the same list the page maps over. */
+  const SUB_APPS = SERVICE_ORDER.map((id) => ({
+    id,
+    name: SERVICE_THEME[id].name,
+    cta: CTA[id],
+  }));
+
+  it('清單涵蓋每一個服務', () => {
+    // 沒有這條，SUB_APPS 少一個服務時底下兩條就只是「少測一張卡」，不會紅。
+    expect([...SERVICE_ORDER].sort()).toEqual(Object.keys(SERVICE_THEME).sort());
+    for (const app of SUB_APPS) {
+      expect(app.name, `${app.id} 沒有 name`).toBeTruthy();
+      expect(app.cta, `${app.id} 沒有列出進入按鈕的說法`).toBeTruthy();
+    }
+  });
 
   it('每個子應用都有一張卡片', () => {
     render(<HubLanding onNavigate={vi.fn()} />);
@@ -32,7 +59,7 @@ describe('HubLanding', () => {
       const { unmount } = render(<HubLanding onNavigate={onNavigate} />);
 
       await user.click(screen.getByText(app.cta));
-      expect(onNavigate, app.name).toHaveBeenCalledWith(app.page);
+      expect(onNavigate, app.name).toHaveBeenCalledWith(app.id);
 
       unmount();
     }

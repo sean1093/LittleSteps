@@ -17,8 +17,8 @@ export default function ReportChart({
   data,
   labels,
   type,
-  /* `#2F7F9C` is `secondary-dark`; SVG paint can't take a Tailwind class. */
-  color = '#2F7F9C',
+  /* `#2A7288` is `secondary-dark`; SVG paint can't take a Tailwind class. */
+  color = '#2A7288',
   height = 200,
   unit = '',
   recommendedValue,

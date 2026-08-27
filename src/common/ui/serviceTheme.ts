@@ -83,7 +83,9 @@ export const SERVICE_THEME: Record<ServiceId, ServiceTheme> = {
     fill: 'bg-bloom-dusty-rose-deep',
     fillText: 'text-white',
     body: 'text-bloom-stone-ink',
-    muted: 'text-bloom-stone-ink/70',
+    // /80 keeps muted visibly lighter than body while still clearing the 3:1
+    // floor on bloom-cream (3.38:1). /70 was 2.82:1 there — under the floor.
+    muted: 'text-bloom-stone-ink/80',
   },
   littleexplorer: {
     id: 'littleexplorer',

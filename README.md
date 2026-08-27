@@ -120,23 +120,29 @@ Access is enforced by `database.rules.json`; see it for the authoritative rules.
 
 Everything visual comes from one place. The rule that matters most:
 
-> **Pastel shades are fills. Only `-dark` / `-ink` shades carry text.**
+> **Pastel shades are fills. Text takes the ramp's readable partner: `-dark` in
+> the four base ramps, `-ink` in `bloom.*` / `explorer.*` / `outing.*`.**
 
 The pastels sit at roughly 2:1 against white. Used as text or as a bed for
 white text they are unreadable, which is what they were before this was written
 down — the primary buttons were the least legible text on screen.
 
+`bloom.*` and `explorer.*` are the trap: there `-dark` is a *deeper fill* for
+hover and borders and measures 2.44–3.72:1 on white (`explorer-sunbeam-dark`
+2.44, `bloom-dusty-rose-dark` 2.98, `bloom-sage-dark` 3.01), so text in those
+two palettes always takes `-ink`.
+
 ### Palette — `tailwind.config.js`
 
-| Ramp | Fill (≈2:1, decoration) | Text (≥4.5:1) | Used for |
+| Ramp | Fill (decoration, never text) | Text (≥4.5:1) | Used for |
 |---|---|---|---|
 | `primary` | `#FF9B9B` | `primary-dark` `#B84A50` | LittleSteps, and the app's own brand |
-| `secondary` | `#7EC8E3` | `secondary-dark` `#2F7F9C` | BabyOasis, informational accents |
+| `secondary` | `#7EC8E3` | `secondary-dark` `#2A7288` | BabyOasis, informational accents |
 | `mint` | `#81C784` | `mint-dark` `#3F7D43` | vaccines, "done" and "safe" |
 | `butter` | `#F0B357` | `butter-dark` `#9A6212` | food, nappies, gentle warnings |
-| `bloom.*` | Morandi shades | `*-ink` | LittleBloom |
-| `outing.*` | `#5FC0B5` | `outing-ink` `#1F7A70` | LittleOuting |
-| `explorer.*` | bright shades | `*-ink`, `bark` | LittleExplorer |
+| `bloom.*` | Morandi shades **and every `-dark`** | `*-ink` (`bloom-dusty-rose-ink` `#855F5F`), `*-deep` | LittleBloom |
+| `outing.*` | `#5FC0B5` | `outing-ink` `#1F7A70`, `outing-deep` `#14655C` | LittleOuting |
+| `explorer.*` | bright shades **and every `-dark`** | `*-ink`, `bark` | LittleExplorer |
 
 `ink` / `ink-muted` / `ink-faint` are body, secondary and caption copy — warmer
 than `gray-*` against the `warm-white` (`#FDFBF7`) background, which is the one

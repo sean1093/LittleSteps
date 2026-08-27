@@ -1,0 +1,250 @@
+import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
+
+/**
+ * 設計系統的護欄：掃 source，守那些「看起來沒壞、但會慢慢長回來」的約定。
+ *
+ * 為什麼是掃檔案而不是渲染
+ *   這些是詞彙一致性的規則，不是某個元件的行為。統一之前，同一個卡片角色有五種
+ *   寫法、同一個陰影有五個 token、同一個容器寬度有五個值；沒有任何單一元件是壞
+ *   的，壞的是「每個人各自挑一個」。這種漂移只有窮舉整棵樹才看得到。
+ *
+ * 每條規則都印出檔名與行號。護欄測試一旦只說「有東西不合規」，下一個人會直接
+ * 刪掉它；說得出 `src/x/Y.tsx:42` 才會被修。
+ *
+ * VenueTag 的標籤與分組窮舉不在這裡：src/littleouting/data/restaurants.test.ts
+ * 已經有「每個 VenueTag 都有標籤，且沒有多出來的鍵」與「恰好切分全部標籤，不重複
+ * 也不遺漏」，重寫一份只會變成兩個地方要一起改。
+ */
+
+const ROOT = process.cwd();
+const SRC = path.join(ROOT, 'src');
+
+/** 這支測試自己會寫出被禁的字串（在 regex 裡），掃 .ts 的規則要跳過自己。 */
+const SELF = 'src/common/ui/designSystem.test.ts';
+
+/** motion 詞彙的唯一持有者。 */
+const MOTION_OWNER = 'src/common/ui/motion.ts';
+
+interface SourceFile {
+  /** 相對於 repo 根目錄，訊息裡用得上。 */
+  name: string;
+  /** 已把註解換成空白（行號不變）的內容。 */
+  code: string;
+}
+
+function collect(dir: string, suffixes: string[]): SourceFile[] {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) return collect(full, suffixes);
+    if (!suffixes.some((suffix) => entry.name.endsWith(suffix))) return [];
+    const raw = fs.readFileSync(full, 'utf8');
+    return [{ name: path.relative(ROOT, full).split(path.sep).join('/'), code: withoutComments(raw) }];
+  });
+}
+
+/**
+ * 把註解換成等量空白，行號因此不動。
+ *
+ * 必要而不是保險：BabyOasisPage 有一段註解解釋「為什麼是 h-dscreen 而不是
+ * h-screen」，SparklineChart 的註解寫著 `#2A7288` 是哪個 token。那些是說明，
+ * 不是違規；不先清掉，護欄第一次跑就會誤報。
+ */
+function withoutComments(source: string): string {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, (block) => block.replace(/[^\n]/g, ' '))
+    // 排除 `https://`：lookbehind 擋掉前面是 `:` 或 `/` 的斜線對。
+    .replace(/(?<![:/])\/\/[^\n]*/g, (line) => ' '.repeat(line.length));
+}
+
+const lineOf = (code: string, index: number) => code.slice(0, index).split('\n').length;
+
+/** 每個 match 收成 `檔名:行號: 內容`，失敗訊息就是一份可以直接去修的清單。 */
+function offenders(files: SourceFile[], pattern: RegExp, skip: string[] = []): string[] {
+  const found: string[] = [];
+  for (const file of files) {
+    if (skip.includes(file.name)) continue;
+    for (const match of file.code.matchAll(pattern)) {
+      found.push(`${file.name}:${lineOf(file.code, match.index)}: ${match[0]}`);
+    }
+  }
+  return found;
+}
+
+/**
+ * 抓出每個 `className` 的值，包含 `="…"`、`={'…'}`、`={\`…\`}` 與跨行的三元式：
+ * 遇到 `{` 就數到成對的 `}`，所以整段 template literal 都拿得到。
+ */
+function classNameValues(file: SourceFile): { line: number; value: string }[] {
+  const values: { line: number; value: string }[] = [];
+  for (const match of file.code.matchAll(/className\s*=\s*/g)) {
+    const start = match.index + match[0].length;
+    const opener = file.code[start];
+    if (opener === '"' || opener === "'") {
+      const end = file.code.indexOf(opener, start + 1);
+      if (end === -1) continue;
+      values.push({ line: lineOf(file.code, start), value: file.code.slice(start + 1, end) });
+      continue;
+    }
+    if (opener !== '{') continue;
+    let depth = 0;
+    let cursor = start;
+    for (; cursor < file.code.length; cursor += 1) {
+      if (file.code[cursor] === '{') depth += 1;
+      else if (file.code[cursor] === '}') {
+        depth -= 1;
+        if (depth === 0) break;
+      }
+    }
+    values.push({ line: lineOf(file.code, start), value: file.code.slice(start + 1, cursor) });
+  }
+  return values;
+}
+
+const TSX = collect(SRC, ['.tsx']);
+const TS_AND_TSX = collect(SRC, ['.ts', '.tsx']);
+
+/** src/index.css：`.screen` 這個所有頁面共用的外殼就住在這裡。 */
+const CSS = collect(SRC, ['.css']);
+
+/**
+ * 挖掉 `.h-dscreen` / `.min-h-dscreen` 這兩個 block 的內容（同樣換成等量空白，
+ * 行號不動）。
+ *
+ * 它們的定義本來就必須有一行 `100vh`：那是 pre-`dvh` 瀏覽器的 fallback，後面
+ * 緊接著被 `100dvh` 覆蓋。只排除這兩個 block，而不是把 pattern 放寬成「後面沒
+ * 有 dvh 就算違規」——放寬 pattern 的話 `.screen` 那種直接寫 `min-h-screen`
+ * 的用法也會一起被放過，而那正是要守的東西。
+ */
+function withoutDscreenFallback(code: string): string {
+  return code.replace(/\.(?:min-)?h-dscreen\s*\{[^}]*\}/g, (block) => block.replace(/[^\n]/g, ' '));
+}
+
+describe('掃描範圍', () => {
+  it('真的掃到整棵 src 樹', () => {
+    // cwd 不對或走訪壞掉時，底下每條規則都會「通過」。先在這裡失敗。
+    expect(fs.existsSync(SRC), `找不到 ${SRC}`).toBe(true);
+    expect(TSX.length, '.tsx 檔數異常，走訪可能壞了').toBeGreaterThan(50);
+    expect(TS_AND_TSX.some((file) => file.name === MOTION_OWNER)).toBe(true);
+    expect(TS_AND_TSX.some((file) => file.name === SELF)).toBe(true);
+  });
+
+  it('註解被清掉，但程式碼留著', () => {
+    const babyOasis = TSX.find((file) => file.name === 'src/babyoasis/pages/BabyOasisPage.tsx');
+    expect(babyOasis, '找不到 BabyOasisPage').toBeDefined();
+    // 那段註解裡就寫著 h-screen；清不掉的話下面的規則會誤報。
+    expect(babyOasis?.code).not.toContain('h-screen: 100vh');
+    expect(babyOasis?.code).toContain('h-dscreen');
+  });
+
+  it('CSS 也在掃描範圍內，且只挖掉 dscreen 的 fallback', () => {
+    const css = CSS.find((file) => file.name === 'src/index.css');
+    expect(css, '找不到 src/index.css').toBeDefined();
+    // page shell 就住在這裡，規則要真的看得到它。
+    expect(css?.code, '抓不到 .screen，CSS 規則會變成永遠通過').toContain('.screen {');
+
+    const stripped = withoutDscreenFallback(css?.code ?? '');
+    expect(stripped, 'dscreen 的 100vh fallback 沒被挖掉，CSS 規則會誤報').not.toContain('100vh');
+    expect(stripped, '挖太多了，整個 utilities layer 都不見了').toContain('.row-bleed');
+    expect(stripped, '挖太多了，.screen 一起被清掉').toContain('.screen {');
+  });
+
+  it('className 抽取器兩種寫法都吃得到', () => {
+    // 抽取器安靜地回空陣列時，hex 那條規則就變成永遠通過。實測全樹有
+    // 1648 個 className（1379 個引號字串、201 個帶 ${} 的 template），
+    // 門檻放寬到只要沒有整批消失就好。
+    const values = TSX.flatMap((file) => classNameValues(file));
+    expect(values.length, 'className 抽取數量異常').toBeGreaterThan(800);
+    expect(
+      values.filter(({ value }) => value.includes('${')).length,
+      '抓不到帶 ${} 的 className，`{…}` 那條路壞了',
+    ).toBeGreaterThan(50);
+  });
+});
+
+describe('顏色', () => {
+  /**
+   * className 裡不寫 hex。明列的例外（而不是把 regex 放寬）：
+   *
+   *  1. SVG presentation attribute：`fill=`/`stroke=`/`color=` 收的是 paint 值，
+   *     吃不到 Tailwind class。SparklineChart、GrowthChartDisplay、ReportChart、
+   *     ScoreCircle、PoopSummaryCard 因此只能寫色碼，且都在註解裡寫明對應的
+   *     token。這些不在 className 裡，本來就落在掃描範圍外。
+   *  2. Leaflet 的 divIcon HTML 字串（src/babyoasis/pages/BabyOasisPage.tsx）：
+   *     marker 是 Leaflet 用 innerHTML 塞進地圖的，Tailwind 掃不到那段字串也不會
+   *     產出對應的 class，只能寫 inline style。這一條由下一個 it 收斂成白名單。
+   */
+  it('className 裡沒有 hex 色碼', () => {
+    const found: string[] = [];
+    for (const file of TSX) {
+      for (const { line, value } of classNameValues(file)) {
+        for (const hex of value.matchAll(/#[0-9a-fA-F]{3,8}\b/g)) {
+          found.push(`${file.name}:${line}: className 含 ${hex[0]}`);
+        }
+      }
+    }
+    expect(found).toEqual([]);
+  });
+
+  it('只有 BabyOasisPage 的 Leaflet marker 可以在 HTML 字串裡寫色碼', () => {
+    // 白名單要有牙齒：別的地方開始用 innerHTML 拼樣式時，這裡要響。
+    const allowed = ['src/babyoasis/pages/BabyOasisPage.tsx'];
+    // marker 的 HTML 動輒好幾百字元，只留開頭讓失敗訊息還讀得懂。
+    const found = offenders(TSX, /html:\s*`[^`]*#[0-9a-fA-F]{3,8}[^`]*`/g, allowed).map(
+      (entry) => `${entry.slice(0, 80)}…`,
+    );
+    expect(found).toEqual([]);
+  });
+
+  it('沒有 text-gray / bg-gray / border-gray', () => {
+    // ink 色階取代了它們：純灰在暖底色上偏冷，同一頁會出現兩種「黑」。
+    expect(offenders(TSX, /(?<![\w-])(?:text|bg|border)-gray-\d{2,3}(?![\w-])/g)).toEqual([]);
+  });
+});
+
+describe('陰影', () => {
+  it('沒有 shadow-lg / shadow-xl / shadow-2xl', () => {
+    // 只有 shadow-soft、shadow-soft-lg、shadow-sm 合法。
+    // 用 token 邊界比對而不是 includes('-lg')：`shadow-soft-lg` 是合法的，
+    // 用字串包含判斷會把它一起打掉。
+    expect(offenders(TSX, /(?<![\w-])(?:drop-)?shadow-(?:lg|xl|2xl)(?![\w-])/g)).toEqual([]);
+  });
+});
+
+describe('版面高度', () => {
+  it('.tsx 不用 min-h-screen / h-screen', () => {
+    // 100vh 把手機瀏覽器的 chrome 也算進去，而那塊 chrome 正蓋在螢幕底部：
+    // 定位按鈕與 sheet 把手曾經被壓在它下面。改用 min-h-dscreen / h-dscreen。
+    // 註解裡提到這兩個字沒關係（withoutComments 已經清掉）。
+    expect(offenders(TSX, /(?<![\w-])(?:min-h|h)-screen(?![\w-])/g)).toEqual([]);
+  });
+
+  it('.css 也不用 min-h-screen / h-screen / 100vh', () => {
+    // 這條規則原本只掃 .tsx，而 page shell 不住在 .tsx 裡：`.screen` 在
+    // src/index.css 用 `@apply min-h-screen`，14 個頁面全部繼承那個 100vh，
+    // 每一支 .tsx 卻都是乾淨的——規則要防的 bug 就活在規則的掃描範圍外。
+    // 連原始的 `100vh` 一起掃：`.screen` 若繞過 utility 直接寫 CSS 也要紅。
+    const files = CSS.map((file) => ({ ...file, code: withoutDscreenFallback(file.code) }));
+    expect(offenders(files, /(?<![\w-])(?:min-h|h)-screen(?![\w-])|\b100vh\b/g)).toEqual([]);
+  });
+});
+
+describe('動效詞彙', () => {
+  it('沒有本地的 containerVariants / itemVariants', () => {
+    // 曾經有六份手抄的 variants，其中一份漏了 duration，那個清單的入場速度
+    // 因此和其他五個畫面不一樣。詞彙集中在 src/common/ui/motion.ts。
+    expect(
+      offenders(TS_AND_TSX, /(?<![\w$])(?:containerVariants|itemVariants)(?![\w$])/g, [
+        MOTION_OWNER,
+        SELF,
+      ]),
+    ).toEqual([]);
+  });
+
+  it('只有 motion.ts 能寫 staggerChildren', () => {
+    expect(offenders(TS_AND_TSX, /(?<![\w$])staggerChildren(?![\w$])/g, [MOTION_OWNER, SELF])).toEqual(
+      [],
+    );
+  });
+});

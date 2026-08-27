@@ -73,11 +73,11 @@
   }
 
   /*
-    Page shell. `min-h-screen` + one background + one column width, replacing
+    Page shell. `min-h-dscreen` + one background + one column width, replacing
     five different `max-w-*` values and two different off-whites.
   */
   .screen {
-    @apply min-h-screen bg-warm-white;
+    @apply min-h-dscreen bg-warm-white;
   }
 
   /* Reading width: prose, lists, forms. */

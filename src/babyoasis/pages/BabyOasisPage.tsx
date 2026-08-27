@@ -54,7 +54,7 @@ const ROOM_ICON = L.divIcon({
 });
 
 const USER_ICON = L.divIcon({
-  html: `<div style="background: #2F7F9C; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(63,58,56,0.28);"></div>`,
+  html: `<div style="background: #2A7288; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(63,58,56,0.28);"></div>`,
   className: 'custom-marker-icon',
   iconSize: [24, 24],
   iconAnchor: [12, 12],
