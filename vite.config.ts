@@ -38,7 +38,22 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,json}']
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,json}'],
+        // 全國哺乳室資料約 1.1 MB，預先快取會讓每個使用者在安裝 PWA 時就下載，
+        // 即使從未開啟 BabyOasis。改為首次進入地圖時才取得並快取。
+        globIgnores: ['**/data/nursingRooms.json'],
+        runtimeCaching: [
+          {
+            urlPattern: /\/data\/nursingRooms\.json$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'nursing-rooms-data',
+              // 上游每半年更新一次，過期資料仍遠勝於空白地圖。
+              expiration: { maxEntries: 1, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       }
     })
   ],
