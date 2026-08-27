@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { Baby } from 'lucide-react';
 import type { User } from 'firebase/auth';
 import type { Page } from '../../types/routes';
 import { requiresAuth, serviceOf } from '../routePolicy';
+import EmptyState from '../ui/EmptyState';
+import { SERVICE_THEME } from '../ui/serviceTheme';
 import HubLanding from './HubLanding';
 import StepsLanding from './StepsLanding';
 import ServiceLanding from './ServiceLanding';
@@ -100,18 +101,13 @@ export default function LandingPage({
   }
 
   return (
-    <div className="max-w-md mx-auto px-4 py-16 text-center">
-      <Baby className="w-16 h-16 text-primary mx-auto mb-4" />
-      <h2 className="text-2xl font-bold text-gray-800 mb-2">開始記錄寶寶的成長</h2>
-      <p className="text-gray-600 mb-6">先新增一個寶寶，即可開始追蹤里程碑、疫苗與日常照顧。</p>
-      <button
-        type="button"
-        onClick={onAddChild}
-        className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-primary to-secondary text-white font-semibold shadow-soft hover:shadow-soft-lg transition-all"
-      >
-        <Baby className="w-5 h-5" />
-        新增寶寶
-      </button>
+    <div className="screen-body">
+      <EmptyState
+        theme={SERVICE_THEME.littlesteps}
+        title="開始記錄寶寶的成長"
+        description="先新增一個寶寶，即可開始追蹤里程碑、疫苗與日常照顧。"
+        action={{ label: '新增寶寶', onClick: onAddChild }}
+      />
     </div>
   );
 }

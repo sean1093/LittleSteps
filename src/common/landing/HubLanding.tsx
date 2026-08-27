@@ -1,455 +1,192 @@
 import { motion } from 'framer-motion';
-import { Baby, Flower2, Heart, Sparkles, ArrowRight, Sun, MapPin, LogIn } from 'lucide-react';
 import type { User } from 'firebase/auth';
+import { fadeInUp, hoverLift, listItem, stagger, tap } from '../ui/motion';
+import { SERVICE_ORDER, SERVICE_THEME } from '../ui/serviceTheme';
+import type { ServiceId } from '../ui/serviceTheme';
 
 /**
  * HubLanding - Entry point for all four services
  *
  * Public: reachable without signing in, so a first-time visitor can see what
  * the collection offers before deciding to hand over an account.
+ *
+ * 名稱、中文角色與配色全部來自 SERVICE_THEME，因此四張卡片只剩下真正不同的
+ * 東西：一句介紹、三到四條功能、以及進入按鈕的說法。原本是四段幾乎一樣的
+ * 手寫區塊，差異只有 hover 邊框顏色與漸層。
  */
 
 interface HubLandingProps {
-  onNavigate: (page: 'littlesteps' | 'littlebloom' | 'babyoasis' | 'littleexplorer') => void;
+  onNavigate: (page: ServiceId) => void;
   user?: User | null;
   onSignIn?: () => Promise<void>;
 }
 
+const SERVICE_CARD: Record<ServiceId, { blurb: string; features: string[]; cta: string }> = {
+  littlebloom: {
+    blurb: '專為準媽媽設計的溫柔陪伴空間，用心記錄每一個孕期時刻',
+    features: [
+      '孕期追蹤與產檢規劃',
+      '專業孕期知識與營養指南',
+      '14 次公費產檢時程與完成紀錄',
+    ],
+    cta: '進入孕期陪伴',
+  },
+  littlesteps: {
+    blurb: '完整記錄寶寶的每個成長瞬間，讓珍貴的回憶不再錯過',
+    features: ['里程碑追蹤與發展紀錄', '疫苗接種時程管理', '快速日誌與睡眠分析'],
+    cta: '開始記錄成長',
+  },
+  littleexplorer: {
+    blurb: '1-3 歲什麼都想自己來，陪你看懂他的每一步',
+    features: ['12-36 個月成長檢核', '健檢、疫苗與塗氟提醒', '幼兒百科與成長日記'],
+    cta: '進入幼兒期',
+  },
+  babyoasis: {
+    blurb:
+      '找到最近的哺乳室，讓外出育兒更輕鬆自在。改善政府地圖的使用體驗，提供更友善的搜尋與導航功能。',
+    features: ['定位最近哺乳室', '詳細設施資訊', '一鍵導航', '全台 22 縣市、3,852 處'],
+    cta: '探索附近哺乳室',
+  },
+};
+
+/**
+ * 「孕期 → 新生兒 → 幼兒期」原本是三顆圓形圖示節點，用的正是上面卡片已經用過
+ * 的同三個圖示——同一頁出現兩次。這裡只留這條時間軸真正在講的事：階段名稱、
+ * 年齡區間，以及三者相連。
+ */
+const JOURNEY: { id: ServiceId; label: string; range: string }[] = [
+  { id: 'littlebloom', label: '孕期', range: '0-40 週' },
+  { id: 'littlesteps', label: '新生兒', range: '0-12 月' },
+  { id: 'littleexplorer', label: '幼兒期', range: '1-3 歲' },
+];
+
 export default function HubLanding({ onNavigate, user, onSignIn }: HubLandingProps) {
-  const fadeInUp = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6,
-        ease: "easeOut"
-      }
-    }
-  };
-
-  const stagger = {
-    visible: {
-      transition: {
-        staggerChildren: 0.15
-      }
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-warm-white via-white to-warm-cream relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            rotate: [0, 90, 0],
-            opacity: [0.03, 0.05, 0.03]
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          className="absolute -top-20 -right-20 w-96 h-96 bg-primary rounded-full blur-3xl"
-        />
-        <motion.div
-          animate={{
-            scale: [1, 1.3, 1],
-            rotate: [0, -90, 0],
-            opacity: [0.03, 0.05, 0.03]
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          className="absolute -bottom-20 -left-20 w-96 h-96 bg-bloom-sage rounded-full blur-3xl"
-        />
-      </div>
-
-      {/* Main Content */}
-      <div className="relative z-10 px-4 py-16 max-w-6xl mx-auto">
-        {/* Hero Section */}
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={stagger}
-          className="text-center mb-20"
+    <div className="screen-body-wide space-y-10">
+      {/* Hero */}
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={stagger}
+        className="text-center pt-6"
+      >
+        <motion.h1
+          variants={listItem}
+          className="text-3xl sm:text-4xl md:text-5xl text-ink mb-3"
         >
-          <motion.div variants={fadeInUp} className="mb-6">
-            <motion.div
-              animate={{
-                rotate: [0, 5, -5, 0],
-                scale: [1, 1.05, 1]
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                repeatDelay: 2
-              }}
-              className="inline-block"
+          用愛陪伴，溫柔守護
+        </motion.h1>
+
+        <motion.p
+          variants={listItem}
+          className="text-base sm:text-lg text-ink-muted leading-relaxed max-w-2xl mx-auto"
+        >
+          從懷孕到育兒，每個階段都值得被用心記錄
+          <br />
+          讓我們陪伴你走過這段珍貴的旅程
+        </motion.p>
+
+        <motion.p variants={listItem} className="text-sm text-ink-faint mt-4">
+          為台灣新手爸媽與準媽媽量身打造
+        </motion.p>
+
+        {/* 未登入時，進入點本身就要給得出登入；否則訪客得先挑一個服務才找得到入口。 */}
+        {!user && onSignIn && (
+          <motion.div variants={listItem} className="mt-8">
+            <motion.button
+              type="button"
+              whileHover={hoverLift}
+              whileTap={tap}
+              onClick={onSignIn}
+              className="btn-primary"
             >
-              <Heart className="w-20 h-20 text-primary mx-auto mb-4 fill-primary/20" />
-            </motion.div>
-            <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-primary to-bloom-dusty-rose bg-clip-text text-transparent mb-4">
-              用愛陪伴，溫柔守護
-            </h1>
-            <p className="text-xl md:text-2xl text-gray-600 leading-relaxed max-w-2xl mx-auto">
-              從懷孕到育兒，每個階段都值得被用心記錄
-              <br />
-              讓我們陪伴你走過這段珍貴的旅程
+              使用 Google 登入
+            </motion.button>
+            <p className="text-xs text-ink-faint mt-3">
+              知識內容不需登入即可閱讀；記錄功能登入後才能跨裝置同步
             </p>
           </motion.div>
+        )}
+      </motion.div>
 
-          <motion.div variants={fadeInUp} className="flex items-center justify-center gap-2 text-gray-500">
-            <Sparkles className="w-5 h-5" />
-            <p className="text-sm">為台灣新手爸媽與準媽媽量身打造</p>
-            <Sparkles className="w-5 h-5" />
-          </motion.div>
+      {/* Service cards */}
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={stagger}
+        className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+      >
+        {SERVICE_ORDER.map((id) => {
+          const theme = SERVICE_THEME[id];
+          const card = SERVICE_CARD[id];
 
-          {/* 未登入時，進入點本身就要給得出登入；否則訪客得先挑一個服務才找得到入口。 */}
-          {!user && onSignIn && (
-            <motion.div variants={fadeInUp} className="mt-8">
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={onSignIn}
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-primary to-bloom-dusty-rose text-white font-semibold shadow-soft hover:shadow-soft-lg transition-all"
+          return (
+            <motion.div key={id} variants={listItem} className="h-full">
+              <motion.div
+                whileHover={hoverLift}
+                whileTap={tap}
+                onClick={() => onNavigate(id)}
+                className="panel-tap h-full flex flex-col"
               >
-                <LogIn className="w-5 h-5" />
-                使用 Google 登入
-              </motion.button>
-              <p className="text-xs text-gray-400 mt-3">
-                知識內容不需登入即可閱讀；記錄功能登入後才能跨裝置同步
-              </p>
+                <h2 className={theme.ink}>{theme.name}</h2>
+                <p className={`text-sm ${theme.muted} mb-3`}>{theme.role}</p>
+                <p className={`${theme.body} leading-relaxed mb-4`}>{card.blurb}</p>
+
+                <ul
+                  className={`list-disc list-outside pl-5 space-y-1 text-sm ${theme.muted} mb-5`}
+                >
+                  {card.features.map((feature) => (
+                    <li key={feature}>{feature}</li>
+                  ))}
+                </ul>
+
+                {/* 卡片本身就是點擊區；這顆按鈕靠冒泡觸發，同時讓鍵盤也進得去。 */}
+                <button type="button" className={`btn-primary w-full mt-auto ${theme.fill}`}>
+                  {card.cta}
+                </button>
+              </motion.div>
             </motion.div>
-          )}
-        </motion.div>
+          );
+        })}
+      </motion.div>
 
-        {/* Two App Cards */}
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={stagger}
-          className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16"
-        >
-          {/* LittleBloom Card */}
-          <motion.div variants={fadeInUp}>
-            <motion.div
-              whileHover={{ y: -8, scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => onNavigate('littlebloom')}
-              className="bg-white rounded-3xl p-8 shadow-soft hover:shadow-soft-lg transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-bloom-dusty-rose/30 h-full"
-            >
-              {/* Icon Header */}
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-bloom-dusty-rose/20 to-bloom-mauve/20 flex items-center justify-center">
-                  <Flower2 className="w-9 h-9 text-bloom-dusty-rose" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-bloom-stone mb-1">
-                    LittleBloom
-                  </h2>
-                  <p className="text-sm text-bloom-stone/60">孕期陪伴</p>
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="mb-6">
-                <p className="text-bloom-stone/80 leading-relaxed mb-4">
-                  專為準媽媽設計的溫柔陪伴空間，用心記錄每一個孕期時刻
-                </p>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-bloom-stone/70">
-                    <div className="w-1.5 h-1.5 rounded-full bg-bloom-dusty-rose" />
-                    <span>孕期追蹤與產檢規劃</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-bloom-stone/70">
-                    <div className="w-1.5 h-1.5 rounded-full bg-bloom-sage" />
-                    <span>專業孕期知識與營養指南</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-bloom-stone/70">
-                    <div className="w-1.5 h-1.5 rounded-full bg-bloom-mauve" />
-                    <span>14 次公費產檢時程與完成紀錄</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Status Badge */}
-              <div className="mb-6">
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
-                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  立即可用
+      {/* Journey */}
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={fadeInUp}
+        className="panel"
+      >
+        <h2 className="text-center mb-4 text-ink">陪伴你的育兒旅程</h2>
+        <ol className="flex items-center justify-center">
+          {JOURNEY.map((step, index) => (
+            <li key={step.id} className="flex items-center">
+              {index > 0 && (
+                <span className="w-4 sm:w-10 h-px bg-ink/15 shrink-0" aria-hidden="true" />
+              )}
+              <button
+                type="button"
+                onClick={() => onNavigate(step.id)}
+                className="min-h-tap px-3 rounded-2xl text-center hover:bg-ink/5 transition-colors"
+              >
+                <span className={`block text-sm font-semibold ${SERVICE_THEME[step.id].ink}`}>
+                  {step.label}
                 </span>
-              </div>
+                <span className="block text-xs text-ink-faint">{step.range}</span>
+              </button>
+            </li>
+          ))}
+        </ol>
+      </motion.div>
 
-              {/* CTA Button */}
-              <motion.button
-                whileHover={{ x: 4 }}
-                className="w-full flex items-center justify-between px-6 py-4 rounded-2xl bg-gradient-to-r from-bloom-dusty-rose to-bloom-mauve text-white font-medium shadow-soft hover:shadow-soft-lg transition-all"
-              >
-                <span>進入孕期陪伴</span>
-                <ArrowRight className="w-5 h-5" />
-              </motion.button>
-            </motion.div>
-          </motion.div>
-
-          {/* LittleSteps Card */}
-          <motion.div variants={fadeInUp}>
-            <motion.div
-              whileHover={{ y: -8, scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => onNavigate('littlesteps')}
-              className="bg-white rounded-3xl p-8 shadow-soft hover:shadow-soft-lg transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-primary/30 h-full"
-            >
-              {/* Icon Header */}
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                  <Baby className="w-9 h-9 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-800 mb-1">
-                    LittleSteps
-                  </h2>
-                  <p className="text-sm text-gray-500">寶寶成長追蹤</p>
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="mb-6">
-                <p className="text-gray-700 leading-relaxed mb-4">
-                  完整記錄寶寶的每個成長瞬間，讓珍貴的回憶不再錯過
-                </p>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                    <span>里程碑追蹤與發展紀錄</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                    <span>疫苗接種時程管理</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <div className="w-1.5 h-1.5 rounded-full bg-secondary" />
-                    <span>快速日誌與睡眠分析</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Status Badge */}
-              <div className="mb-6">
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
-                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  立即可用
-                </span>
-              </div>
-
-              {/* CTA Button */}
-              <motion.button
-                whileHover={{ x: 4 }}
-                className="w-full flex items-center justify-between px-6 py-4 rounded-2xl bg-gradient-to-r from-primary to-secondary text-white font-medium shadow-soft hover:shadow-soft-lg transition-all"
-              >
-                <span>開始記錄成長</span>
-                <ArrowRight className="w-5 h-5" />
-              </motion.button>
-            </motion.div>
-          </motion.div>
-
-          {/* LittleExplorer Card */}
-          <motion.div variants={fadeInUp}>
-            <motion.div
-              whileHover={{ y: -8, scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => onNavigate('littleexplorer')}
-              className="bg-white rounded-3xl p-8 shadow-soft hover:shadow-soft-lg transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-explorer-sunbeam/30 h-full"
-            >
-              {/* Icon Header */}
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-explorer-sunbeam/20 to-explorer-meadow/20 flex items-center justify-center">
-                  <Sun className="w-9 h-9 text-explorer-sunbeam-dark" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-explorer-bark mb-1">
-                    LittleExplorer
-                  </h2>
-                  <p className="text-sm text-gray-500">幼兒期陪伴</p>
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="mb-6">
-                <p className="text-gray-700 leading-relaxed mb-4">
-                  1-3 歲什麼都想自己來，陪你看懂他的每一步
-                </p>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <div className="w-1.5 h-1.5 rounded-full bg-explorer-sunbeam" />
-                    <span>12-36 個月成長檢核</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <div className="w-1.5 h-1.5 rounded-full bg-explorer-clay" />
-                    <span>健檢、疫苗與塗氟提醒</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <div className="w-1.5 h-1.5 rounded-full bg-explorer-sky" />
-                    <span>幼兒百科與成長日記</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Status Badge */}
-              <div className="mb-6">
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
-                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  立即可用
-                </span>
-              </div>
-
-              {/* CTA Button */}
-              <motion.button
-                whileHover={{ x: 4 }}
-                className="w-full flex items-center justify-between px-6 py-4 rounded-2xl bg-gradient-to-r from-explorer-sunbeam to-explorer-meadow text-white font-medium shadow-soft hover:shadow-soft-lg transition-all"
-              >
-                <span>進入幼兒期</span>
-                <ArrowRight className="w-5 h-5" />
-              </motion.button>
-            </motion.div>
-          </motion.div>
-        </motion.div>
-
-        {/* BabyOasis Card - Standalone Feature */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="mb-16"
-        >
-          <motion.div
-            whileHover={{ y: -4, scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => onNavigate('babyoasis')}
-            className="bg-white rounded-3xl p-8 shadow-soft hover:shadow-soft-lg transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-green-400/30 max-w-3xl mx-auto"
-          >
-            {/* Icon Header */}
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
-                <MapPin className="w-9 h-9 text-green-600" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-gray-800 mb-1">
-                  BabyOasis
-                </h2>
-                <p className="text-sm text-gray-500">哺乳室地圖</p>
-              </div>
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                立即可用
-              </span>
-            </div>
-
-            {/* Description */}
-            <div className="mb-6">
-              <p className="text-gray-700 leading-relaxed mb-4">
-                找到最近的哺乳室，讓外出育兒更輕鬆自在。改善政府地圖的使用體驗，提供更友善的搜尋與導航功能。
-              </p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                  <span>定位最近哺乳室</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span>詳細設施資訊</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <div className="w-1.5 h-1.5 rounded-full bg-teal-500" />
-                  <span>一鍵導航</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
-                  <span>全台 22 縣市、3,852 處</span>
-                </div>
-              </div>
-            </div>
-
-            {/* CTA Button */}
-            <motion.button
-              whileHover={{ x: 4 }}
-              className="w-full flex items-center justify-between px-6 py-4 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-medium shadow-soft hover:shadow-soft-lg transition-all"
-            >
-              <span>探索附近哺乳室</span>
-              <ArrowRight className="w-5 h-5" />
-            </motion.button>
-          </motion.div>
-        </motion.div>
-
-        {/* Journey Timeline */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-          className="bg-white/50 backdrop-blur-sm rounded-3xl p-8 shadow-soft"
-        >
-          <h3 className="text-2xl font-bold text-center text-gray-800 mb-8">
-            陪伴你的育兒旅程
-          </h3>
-          <div className="flex items-center justify-center gap-4 md:gap-8 flex-wrap">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="flex flex-col items-center gap-2 p-4 rounded-2xl hover:bg-white/80 transition-colors"
-            >
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-bloom-dusty-rose/20 to-bloom-mauve/20 flex items-center justify-center">
-                <Flower2 className="w-7 h-7 text-bloom-dusty-rose" />
-              </div>
-              <span className="text-sm font-medium text-bloom-stone">孕期</span>
-              <span className="text-xs text-gray-500">0-40 週</span>
-            </motion.div>
-
-            <div className="hidden md:block w-12 h-0.5 bg-gradient-to-r from-bloom-dusty-rose to-primary" />
-
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="flex flex-col items-center gap-2 p-4 rounded-2xl hover:bg-white/80 transition-colors"
-            >
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                <Baby className="w-7 h-7 text-primary" />
-              </div>
-              <span className="text-sm font-medium text-gray-800">新生兒</span>
-              <span className="text-xs text-gray-500">0-12 月</span>
-            </motion.div>
-
-            <div className="hidden md:block w-12 h-0.5 bg-gradient-to-r from-primary to-secondary" />
-
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              onClick={() => onNavigate('littleexplorer')}
-              className="flex flex-col items-center gap-2 p-4 rounded-2xl hover:bg-white/80 transition-colors cursor-pointer"
-            >
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-explorer-sunbeam/20 to-explorer-meadow/20 flex items-center justify-center">
-                <Sun className="w-7 h-7 text-explorer-sunbeam-dark" />
-              </div>
-              <span className="text-sm font-medium text-gray-800">幼兒期</span>
-              <span className="text-xs text-gray-500">1-3 歲</span>
-            </motion.div>
-          </div>
-        </motion.div>
-
-        {/* Footer */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-          className="mt-16 text-center"
-        >
-          <p className="text-gray-500 text-sm mb-2">
-            ✨ 用心陪伴每個家庭的珍貴時光 ✨
-          </p>
-          <p className="text-gray-400 text-xs">
-            © 2026 LittleBloom · LittleSteps · LittleExplorer · BabyOasis — Made with ❤️ in Taiwan
-          </p>
-        </motion.div>
-      </div>
+      <motion.p
+        initial="hidden"
+        animate="visible"
+        variants={fadeInUp}
+        className="text-center text-xs text-ink-faint"
+      >
+        © {new Date().getFullYear()} LittleBloom · LittleSteps · LittleExplorer · BabyOasis
+      </motion.p>
     </div>
   );
 }
