@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-warm-white text-gray-800;
+    @apply bg-warm-white text-ink;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang TC', 'Microsoft JhengHei', 'Helvetica Neue', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -13,22 +13,174 @@
   * {
     -webkit-tap-highlight-color: transparent;
   }
+
+  /*
+    Tailwind Preflight resets heading font-size to `inherit`, and dozens of
+    section headings were written as `<h3 className="font-semibold">` with no
+    `text-*` class — so they rendered at body size and carried hierarchy on
+    weight alone. Giving the elements a default restores the scale without
+    touching those call sites.
+  */
+  h1 {
+    @apply text-2xl font-bold leading-tight;
+  }
+
+  h2 {
+    @apply text-lg font-bold leading-snug;
+  }
+
+  h3 {
+    @apply text-base font-semibold leading-snug;
+  }
+
+  h4 {
+    @apply text-sm font-semibold leading-snug;
+  }
+
+  /*
+    Keyboard users had no focus indicator anywhere. Scoped to :focus-visible so
+    pointer taps stay clean.
+  */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary-dark/50 ring-offset-2 ring-offset-warm-white;
+  }
 }
 
 @layer components {
+  /*
+    Two surfaces, two jobs.
+
+    `.card` is a row inside a list. `.panel` is a section of a page. Before
+    this, the same conceptual surface was written five ways — `.card`, a
+    hand-typed copy of `.card`, `rounded-3xl p-6`, `rounded-2xl p-6`, and
+    `rounded-2xl p-8` — which is why no two screens lined up.
+  */
   .card {
-    @apply bg-white rounded-2xl shadow-soft p-4 transition-all duration-200;
+    @apply bg-white rounded-2xl shadow-soft p-4 transition-shadow duration-200;
   }
 
-  .card:active {
-    @apply shadow-sm scale-[0.98];
+  .panel {
+    @apply bg-white rounded-3xl shadow-soft p-5;
+  }
+
+  /* Tappable card. Plain `.card` no longer pretends to be interactive. */
+  .card-tap {
+    @apply card cursor-pointer active:scale-[0.99] active:shadow-sm transition-all;
+  }
+
+  .panel-tap {
+    @apply panel cursor-pointer active:scale-[0.99] transition-all;
+  }
+
+  /*
+    Page shell. `min-h-screen` + one background + one column width, replacing
+    five different `max-w-*` values and two different off-whites.
+  */
+  .screen {
+    @apply min-h-screen bg-warm-white;
+  }
+
+  /* Reading width: prose, lists, forms. */
+  .screen-body {
+    @apply max-w-2xl mx-auto px-4 py-5;
+  }
+
+  /* Wide width: charts, dashboards, multi-column grids. */
+  .screen-body-wide {
+    @apply max-w-4xl mx-auto px-4 py-5;
   }
 
   .btn-primary {
-    @apply bg-primary text-white rounded-2xl px-6 py-3 font-medium shadow-soft active:scale-95 transition-all;
+    /* `bg-primary` is a 2:1 fill — white text on it was unreadable. */
+    @apply inline-flex items-center justify-center gap-2 min-h-tap px-6 py-3 rounded-full
+           bg-primary-dark text-white font-semibold shadow-soft
+           hover:shadow-soft-lg active:scale-[0.98] transition-all
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 min-h-tap px-6 py-3 rounded-full
+           bg-white text-ink font-semibold border border-ink/10 shadow-soft
+           hover:border-ink/20 active:scale-[0.98] transition-all;
   }
 
   .btn-ghost {
-    @apply text-gray-600 rounded-2xl px-4 py-2 active:bg-gray-100 transition-all;
+    @apply inline-flex items-center justify-center gap-2 min-h-tap px-4 py-2 rounded-full
+           text-ink-muted hover:bg-ink/5 active:bg-ink/10 transition-colors;
+  }
+
+  /* Icon-only button. Was shipping at 28-40px in ~15 places. */
+  .btn-icon {
+    @apply inline-flex items-center justify-center w-tap h-tap rounded-full shrink-0
+           text-ink-muted hover:bg-ink/5 active:bg-ink/10 transition-colors;
+  }
+
+  /*
+    Filter chip. Every chip row had its own height, and only one of eight set a
+    minimum tall enough to hit reliably.
+  */
+  .chip {
+    @apply inline-flex items-center gap-1.5 min-h-tap px-4 rounded-full whitespace-nowrap
+           text-sm font-medium transition-colors
+           bg-white text-ink-muted border border-ink/10 hover:border-ink/25;
+  }
+
+  .chip-on {
+    @apply bg-primary-dark text-white border-primary-dark hover:border-primary-dark;
+  }
+
+  /* Small non-interactive label. */
+  .tag {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium;
+  }
+}
+
+@layer utilities {
+  /*
+    Used in three horizontal chip rows but never defined — the scrollbar showed
+    anyway.
+  */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /*
+    Full-height for a phone. `100vh` includes the browser chrome that is
+    actually covering the bottom of the screen.
+  */
+  .h-dscreen {
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .min-h-dscreen {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  /* Edge-to-edge scroller inside a `px-4` column. */
+  .row-bleed {
+    @apply -mx-4 px-4 overflow-x-auto scrollbar-hide;
+  }
+}
+
+/*
+  Respect the OS setting. The hub had two 20-second looping background
+  animations and a breathing icon; those are gone, but entrance transitions
+  remain and should stop for anyone who asked them to.
+*/
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
