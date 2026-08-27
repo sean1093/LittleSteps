@@ -355,8 +355,6 @@ function AppContent() {
           <MilestonesPage
             progress={currentChildMilestoneProgress}
             onToggleMilestone={toggleMilestone}
-            user={user}
-            onSignIn={signInWithGoogle}
           />
         )}
         {currentPage === 'littlesteps/care-guide' && (
@@ -366,8 +364,6 @@ function AppContent() {
           <VaccineTrackingPage
             vaccineProgress={currentChildVaccineProgress}
             onToggleVaccineDose={toggleVaccineDose}
-            user={user}
-            onSignIn={signInWithGoogle}
           />
         )}
         {currentPage === 'littlesteps/complementary-food' && (

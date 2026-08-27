@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, AlertTriangle, BookOpen, Calendar, Check, CheckCircle2, Clock, Filter, Pill, ShieldAlert, Stethoscope, Syringe, X } from 'lucide-react';
 import { getLucideIcon } from '../../common/lucideIcons';
-import { User } from 'firebase/auth';
+
 import { VaccineProgress } from '../../types';
 import {
   vaccineSchedules,
@@ -20,15 +20,11 @@ type MonthFilter = 'all' | number;
 interface VaccineTrackingPageProps {
   vaccineProgress: VaccineProgress;
   onToggleVaccineDose: (vaccineId: string, doseNumber: number, customDate?: string) => void;
-  user?: User | null;
-  onSignIn?: () => Promise<void>;
 }
 
 export default function VaccineTrackingPage({
   vaccineProgress,
-  onToggleVaccineDose,
-  user,
-  onSignIn = async () => {}
+  onToggleVaccineDose
 }: VaccineTrackingPageProps) {
   const [fundingFilter, setFundingFilter] = useState<FundingFilter>('all');
   const [monthFilter, setMonthFilter] = useState<MonthFilter>('all');
@@ -111,40 +107,6 @@ export default function VaccineTrackingPage({
         <p className="text-sm text-gray-600 mb-4">
           依照衛福部建議時程，記錄寶寶的疫苗接種狀況
         </p>
-
-        {/* Login Prompt - show when not logged in */}
-        {!user && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4"
-          >
-            <div className="bg-[#E8F5E9]/50 border-2 border-[#81C784]/30 rounded-3xl p-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#81C784] flex items-center justify-center flex-shrink-0">
-                  <Syringe className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-gray-800 mb-1">登入以記錄疫苗接種</h4>
-                  <p className="text-sm text-gray-600 mb-3">
-                    登入後即可追蹤並記錄寶寶的疫苗接種進度，資料會自動同步到所有裝置
-                  </p>
-                  <button
-                    onClick={onSignIn}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#81C784] text-white text-sm font-medium hover:bg-[#6BB870] transition-colors"
-                  >
-                    <img
-                      src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                      alt="Google"
-                      className="w-4 h-4 bg-white rounded-full p-0.5"
-                    />
-                    <span>使用 Google 登入</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
 
         {/* Quick Action Buttons */}
         <div className="grid grid-cols-2 gap-2">
@@ -353,33 +315,30 @@ export default function VaccineTrackingPage({
 
                               return (
                                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                                  {/* Checkbox - only show when logged in */}
-                                  {user && (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        if (isAdministered) {
-                                          // If already administered, show edit date modal
-                                          setEditingDose({ vaccineId: vaccine.id, doseNumber: doseNum, currentDate: doseDate });
-                                        } else {
-                                          // If not administered, show date picker to set date
-                                          setEditingDose({ vaccineId: vaccine.id, doseNumber: doseNum });
-                                        }
-                                      }}
-                                      className={`
-                                        flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer
-                                        ${isAdministered
-                                          ? 'bg-primary border-primary'
-                                          : 'border-gray-300 hover:border-primary'
-                                        }
-                                      `}
-                                      aria-label={`標記為${isAdministered ? '未接種' : '已接種'}`}
-                                    >
-                                      {isAdministered && <Check className="w-4 h-4 text-white" />}
-                                    </button>
-                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      if (isAdministered) {
+                                        // If already administered, show edit date modal
+                                        setEditingDose({ vaccineId: vaccine.id, doseNumber: doseNum, currentDate: doseDate });
+                                      } else {
+                                        // If not administered, show date picker to set date
+                                        setEditingDose({ vaccineId: vaccine.id, doseNumber: doseNum });
+                                      }
+                                    }}
+                                    className={`
+                                      flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer
+                                      ${isAdministered
+                                        ? 'bg-primary border-primary'
+                                        : 'border-gray-300 hover:border-primary'
+                                      }
+                                    `}
+                                    aria-label={`標記為${isAdministered ? '未接種' : '已接種'}`}
+                                  >
+                                    {isAdministered && <Check className="w-4 h-4 text-white" />}
+                                  </button>
                                   <div className="flex-1">
                                     {isAdministered && doseDate && (
                                       <button
@@ -389,12 +348,7 @@ export default function VaccineTrackingPage({
                                         ✓ {doseDate}
                                       </button>
                                     )}
-                                    {!user && !isAdministered && (
-                                      <span className="text-sm text-gray-600">
-                                        登入後可記錄接種
-                                      </span>
-                                    )}
-                                    {user && !isAdministered && (
+                                    {!isAdministered && (
                                       <span className="text-sm text-gray-600">
                                         點擊記錄接種日期
                                       </span>

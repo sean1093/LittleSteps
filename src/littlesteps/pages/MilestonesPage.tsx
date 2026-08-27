@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Baby } from 'lucide-react';
-import { User } from 'firebase/auth';
+
 import { MonthRange, Category, MilestoneProgress } from '../../types';
 import { milestones, monthRanges, categories } from '../data/milestones';
 import MonthPicker from '../components/shared/MonthPicker';
@@ -12,11 +12,9 @@ import MilestoneModal from '../components/milestone/MilestoneModal';
 interface MilestonesPageProps {
   progress: MilestoneProgress;
   onToggleMilestone: (id: string) => void;
-  user?: User | null;
-  onSignIn?: () => Promise<void>;
 }
 
-export default function MilestonesPage({ progress, onToggleMilestone, user, onSignIn }: MilestonesPageProps) {
+export default function MilestonesPage({ progress, onToggleMilestone }: MilestonesPageProps) {
   const [selectedMonth, setSelectedMonth] = useState<MonthRange>("0-2");
   const [selectedCategory, setSelectedCategory] = useState<Category>("all");
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
@@ -47,40 +45,6 @@ export default function MilestonesPage({ progress, onToggleMilestone, user, onSi
           記錄寶寶每個珍貴的成長時刻，從第一個微笑到第一步
         </p>
       </div>
-
-      {/* Login Prompt - show when not logged in */}
-      {!user && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="px-4 mb-4 relative z-10"
-        >
-          <div className="bg-[#E8F4F8]/50 border-2 border-[#7EC8E3]/30 rounded-3xl p-4">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#7EC8E3] flex items-center justify-center flex-shrink-0">
-                <Baby className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex-1">
-                <h4 className="font-semibold text-gray-800 mb-1">登入以記錄里程碑</h4>
-                <p className="text-sm text-gray-600 mb-3">
-                  登入後即可追蹤並記錄寶寶的成長里程碑，資料會自動同步到所有裝置
-                </p>
-                <button
-                  onClick={() => onSignIn?.()}
-                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#7EC8E3] text-white text-sm font-medium hover:bg-[#6BB8D3] transition-colors"
-                >
-                  <img
-                    src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                    alt="Google"
-                    className="w-4 h-4 bg-white rounded-full p-0.5"
-                  />
-                  <span>使用 Google 登入</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      )}
 
       {/* Month Picker */}
       <div className="px-4 mb-4">
@@ -119,7 +83,6 @@ export default function MilestonesPage({ progress, onToggleMilestone, user, onSi
                   achievedDate={progress[milestone.id]?.achievedDate}
                   onToggle={() => onToggleMilestone(milestone.id)}
                   onClick={() => setSelectedMilestoneId(milestone.id)}
-                  isReadOnly={!user}
                 />
               </motion.div>
             ))
@@ -148,7 +111,6 @@ export default function MilestonesPage({ progress, onToggleMilestone, user, onSi
         isCompleted={selectedMilestone ? progress[selectedMilestone.id]?.achieved || false : false}
         achievedDate={selectedMilestone ? progress[selectedMilestone.id]?.achievedDate : undefined}
         onToggle={() => selectedMilestone && onToggleMilestone(selectedMilestone.id)}
-        isReadOnly={!user}
       />
     </div>
   );

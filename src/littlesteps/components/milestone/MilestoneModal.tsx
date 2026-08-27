@@ -11,7 +11,6 @@ interface MilestoneModalProps {
   isCompleted: boolean;
   achievedDate?: string;
   onToggle: () => void;
-  isReadOnly?: boolean;
 }
 
 export default function MilestoneModal({
@@ -20,8 +19,7 @@ export default function MilestoneModal({
   onClose,
   isCompleted,
   achievedDate,
-  onToggle,
-  isReadOnly = false
+  onToggle
 }: MilestoneModalProps) {
   useEffect(() => {
     if (isOpen) {
@@ -119,25 +117,22 @@ export default function MilestoneModal({
 
             {/* Actions */}
             <div className="sticky bottom-0 bg-white border-t border-gray-100 px-4 py-4 flex gap-3">
-              {/* Toggle button - only show when logged in */}
-              {!isReadOnly && (
-                <button
-                  onClick={onToggle}
-                  className={`
-                    flex-1 py-3 px-6 rounded-2xl font-medium transition-all flex items-center justify-center gap-2
-                    ${isCompleted
-                      ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      : 'bg-primary text-white shadow-soft hover:bg-primary-dark'
-                    }
-                  `}
-                >
-                  <Check className="w-5 h-5" />
-                  {isCompleted ? '已完成' : '標記完成'}
-                </button>
-              )}
+              <button
+                onClick={onToggle}
+                className={`
+                  flex-1 py-3 px-6 rounded-2xl font-medium transition-all flex items-center justify-center gap-2
+                  ${isCompleted
+                    ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-primary text-white shadow-soft hover:bg-primary-dark'
+                  }
+                `}
+              >
+                <Check className="w-5 h-5" />
+                {isCompleted ? '已完成' : '標記完成'}
+              </button>
               <button
                 onClick={handleShare}
-                className={`${!isReadOnly ? '' : 'flex-1'} px-6 py-3 rounded-2xl bg-secondary text-white shadow-soft hover:bg-secondary-dark transition-all flex items-center gap-2`}
+                className="px-6 py-3 rounded-2xl bg-secondary text-white shadow-soft hover:bg-secondary-dark transition-all flex items-center gap-2"
               >
                 <Share2 className="w-5 h-5" />
                 分享

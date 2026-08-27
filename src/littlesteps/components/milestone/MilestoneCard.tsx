@@ -7,7 +7,6 @@ interface MilestoneCardProps {
   achievedDate?: string;
   onToggle: () => void;
   onClick: () => void;
-  isReadOnly?: boolean;
 }
 
 export default function MilestoneCard({
@@ -15,29 +14,25 @@ export default function MilestoneCard({
   isCompleted,
   achievedDate,
   onToggle,
-  onClick,
-  isReadOnly = false
+  onClick
 }: MilestoneCardProps) {
   return (
     <div className="card flex gap-3 items-start">
-      {/* Checkbox - only show when logged in */}
-      {!isReadOnly && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggle();
-          }}
-          className={`
-            flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
-            ${isCompleted
-              ? 'bg-primary border-primary'
-              : 'border-gray-300 hover:border-primary'
-            }
-          `}
-        >
-          {isCompleted && <Check className="w-4 h-4 text-white" />}
-        </button>
-      )}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle();
+        }}
+        className={`
+          flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
+          ${isCompleted
+            ? 'bg-primary border-primary'
+            : 'border-gray-300 hover:border-primary'
+          }
+        `}
+      >
+        {isCompleted && <Check className="w-4 h-4 text-white" />}
+      </button>
 
       {/* Content */}
       <div
