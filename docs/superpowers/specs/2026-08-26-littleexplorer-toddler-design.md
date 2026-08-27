@@ -419,9 +419,8 @@ A 肝自 114/1/1 起調整為滿 18、27 個月接種第 1、2 劑。現有兩�
 | `pages/RemindersPage.tsx` | 提醒：待辦時程 ＋ 月齡注意事項 ＋ 行事曆匯出 |
 | `pages/ToddlerWikiPage.tsx` | 百科：搜尋 ＋ 分類篩選，渲染共用 `WikiArticleCard` |
 | `pages/DiaryPage.tsx` | 日記：新增區 ＋ 依月分組時間軸 ＋ 編輯刪除 |
-| `hooks/useCareTasks.ts` | 讀 `careTaskProgress`，結合 `vaccineProgress` 與 `birthday` 產出 `ResolvedCareTask[]` |
-| `hooks/useDevelopmentProgress.ts` | 讀 `developmentProgress` |
-| `hooks/useDiary.ts` | 讀 `diaryEntries`，轉為依日期降序的陣列 |
+| `hooks/useCareTasks.ts` | 純 `useMemo`：結合 `ChildProfile` 上的 `careTaskProgress`、`vaccineProgress` 與 `birthday` 產出 `ResolvedCareTask[]`。無自己的 listener |
+| `hooks/useDiary.ts` | 讀 `diaryEntries` collection 的 realtime listener |
 | `data/careTasks.ts` | `CareTaskTemplate[]`（20 筆） |
 | `data/developmentChecks.ts` | `DevelopmentCheckItem[]`（30 題）＋ `DevelopmentWarning[]`（5 組） |
 | `data/monthlyTips.ts` | `ToddlerCareTip[]`（20 筆） |
@@ -435,7 +434,7 @@ A 肝自 114/1/1 起調整為滿 18、27 個月接種第 1、2 劑。現有兩�
 | 檔案 | 變更 |
 |---|---|
 | `src/types/routes.ts` | `Page` union 新增 4 個成員。**不加入** `LittleStepsPage`（該 union 專供 Sidebar） |
-| `src/types/index.ts` | 新增 §4.3／§5.3／§6.2／§7.2 全部型別；`Milestone.monthRange`（:3）與 `MonthRange`（:18）移除 `"12+"` |
+| `src/types/index.ts` | 新增 §4.3／§5.3／§6.2／§7.2 全部型別；`ChildProfile` 新增 `developmentProgress?` 與 `careTaskProgress?`；`Milestone.monthRange`（:3）與 `MonthRange`（:18）移除 `"12+"` |
 | `src/App.tsx` | 4 個 `lazy()` import；`pageMap` +4；`hashMap` +4；`isStandaloneSubApp` 加 `startsWith('littleexplorer')`；`getPageTitle` 早退分支；`<Suspense>` 內 +4 個渲染分支 |
 | `src/common/pages/MainLandingPage.tsx` | `onNavigate` 型別 union 新增 `'littleexplorer'`；新增第四張卡；時間軸「幼兒期」格（:341-350）接上 `onClick` |
 | `src/lib/firebase.ts` | `logPageView` 新增 `startsWith('littleexplorer')` 分支；順修既有 bug：LittleBloom 分支用 `===` 比對，導致 `littlebloom/wiki` 落到 `app: 'main'` |

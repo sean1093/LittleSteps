@@ -1662,3 +1662,364 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 ```
 
 ---
+
+### Task 6: 月齡注意事項資料
+
+這是 `careGuides.ts`（硬停在 `month: 12`）的 12-36 個月延續，但改以年齡段而非單月為單位——幼兒期的照顧重點不會月月都變，逐月編排只會製造 24 格必須填滿的空洞。
+
+**Files:**
+- Create: `src/littleexplorer/data/monthlyTips.ts`
+- Test: `src/littleexplorer/data/monthlyTips.test.ts`
+
+**Interfaces:**
+- Consumes: `ToddlerAgeBand`、`ToddlerCareTip`、`ToddlerTipCategory` from Task 1
+- Produces: `toddlerCareTips: ToddlerCareTip[]`（20 筆）、`tipCategoryLabels: Record<ToddlerTipCategory, string>`、`tipCategoryIcons: Record<ToddlerTipCategory, string>`
+
+`ToddlerCareTip` 刻意不設 `id`——`ageBand` ＋ `category` 已是唯一複合鍵（由完整性測試保證），與既有 `MonthlyCareGuide`（`types/index.ts:29-34`，同樣無 id）一致。渲染時以 `` `${tip.ageBand}-${tip.category}` `` 當 React key。
+
+- [ ] **Step 1: 寫失敗測試**
+
+Create `src/littleexplorer/data/monthlyTips.test.ts`:
+
+```ts
+import { describe, it, expect } from 'vitest';
+import type { ToddlerAgeBand, ToddlerTipCategory } from '../../types';
+import { getLucideIcon } from '../../common/lucideIcons';
+import { tipCategoryIcons, tipCategoryLabels, toddlerCareTips } from './monthlyTips';
+
+const BANDS: ToddlerAgeBand[] = ['12-15', '15-18', '18-24', '24-30', '30-36'];
+const CATEGORIES: ToddlerTipCategory[] = ['safety', 'feeding', 'behavior', 'health'];
+
+describe('toddlerCareTips', () => {
+  it('共 20 筆', () => {
+    expect(toddlerCareTips).toHaveLength(BANDS.length * CATEGORIES.length);
+  });
+
+  it('每個年齡段 × 類別的組合恰好一筆，無空格也無重複', () => {
+    for (const ageBand of BANDS) {
+      for (const category of CATEGORIES) {
+        const matches = toddlerCareTips.filter(
+          (t) => t.ageBand === ageBand && t.category === category,
+        );
+        expect(matches, `${ageBand} / ${category}`).toHaveLength(1);
+      }
+    }
+  });
+
+  it('每筆都有標題與至少 3 條重點', () => {
+    for (const tip of toddlerCareTips) {
+      const key = `${tip.ageBand}/${tip.category}`;
+      expect(tip.title.length, key).toBeGreaterThan(0);
+      expect(tip.highlights.length, key).toBeGreaterThanOrEqual(3);
+      for (const line of tip.highlights) {
+        expect(line.length, key).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('標題在同一年齡段內不重複', () => {
+    for (const ageBand of BANDS) {
+      const titles = toddlerCareTips
+        .filter((t) => t.ageBand === ageBand)
+        .map((t) => t.title);
+      expect(new Set(titles).size, ageBand).toBe(titles.length);
+    }
+  });
+});
+
+describe('分類顯示設定', () => {
+  it('每個類別都有中文標籤', () => {
+    for (const category of CATEGORIES) {
+      expect(tipCategoryLabels[category], category).toBeTruthy();
+    }
+  });
+
+  it('每個類別的 icon 名稱可由 lucideIcons registry 解析', () => {
+    const fallback = getLucideIcon('__definitely_not_registered__');
+    for (const category of CATEGORIES) {
+      const name = tipCategoryIcons[category];
+      expect(name, category).toBeTruthy();
+      expect(getLucideIcon(name), `${category}: ${name}`).not.toBe(fallback);
+    }
+  });
+});
+```
+
+- [ ] **Step 2: 執行測試確認失敗**
+
+Run: `npx vitest run src/littleexplorer/data/monthlyTips.test.ts`
+Expected: FAIL —「Failed to resolve import "./monthlyTips"」。
+
+- [ ] **Step 3: 建立標籤與 icon 對應**
+
+Create `src/littleexplorer/data/monthlyTips.ts` starting with:
+
+```ts
+import type { ToddlerCareTip, ToddlerTipCategory } from '../../types';
+
+export const tipCategoryLabels: Record<ToddlerTipCategory, string> = {
+  safety: '安全',
+  feeding: '飲食',
+  behavior: '行為與情緒',
+  health: '健康照護',
+};
+
+/** 對應 src/common/lucideIcons.ts registry 中已註冊的名稱。 */
+export const tipCategoryIcons: Record<ToddlerTipCategory, string> = {
+  safety: 'AlertTriangle',
+  feeding: 'UtensilsCrossed',
+  behavior: 'Heart',
+  health: 'Stethoscope',
+};
+```
+
+- [ ] **Step 4: 確認 icon 名稱皆已註冊**
+
+Read `src/common/lucideIcons.ts` and verify `AlertTriangle`、`UtensilsCrossed`、`Heart`、`Stethoscope` are all present in the explicit registry. For any missing name, add both the `import` from `lucide-react` and the registry entry, following the file's existing pattern. The registry is explicit for tree-shaking; `getLucideIcon` silently falls back to `HelpCircle` for unknown names, which is why the test compares against the fallback.
+
+- [ ] **Step 5: 撰寫 20 筆注意事項**
+
+Append `toddlerCareTips` to the same file. 下表釘死每一格的標題；`highlights` 寫 3-4 條具體、可執行的重點。
+
+**撰寫前必做**：對照衛福部國健署「兒童健康手冊」之衛教頁、國健署健康九九平台之兒童安全與營養主題，以及衛福部「兒童居家安全」相關宣導資料。於檔案頂端以註解標註實際查核的來源與日期。
+
+| ageBand | category | title |
+|---|---|---|
+| 12-15 | safety | 學步期的居家防護 |
+| 12-15 | feeding | 從副食品轉為幼兒餐 |
+| 12-15 | behavior | 分離焦慮的高峰 |
+| 12-15 | health | 長牙與口腔清潔的開始 |
+| 15-18 | safety | 誤食與哽噎風險 |
+| 15-18 | feeding | 戒奶瓶與自己動手吃 |
+| 15-18 | behavior | 開始說「不要」 |
+| 15-18 | health | 第一次塗氟與 1 歲半健檢 |
+| 18-24 | safety | 攀爬期的家具固定 |
+| 18-24 | feeding | 挑食的開始 |
+| 18-24 | behavior | 情緒風暴與界線 |
+| 18-24 | health | 如廁準備的訊號 |
+| 24-30 | safety | 戶外與遊戲場安全 |
+| 24-30 | feeding | 份量拿捏與零食界線 |
+| 24-30 | behavior | 同儕互動與分享 |
+| 24-30 | health | 戒尿布與睡眠轉換 |
+| 30-36 | safety | 汽車安全座椅與外出 |
+| 30-36 | feeding | 與大人共食 |
+| 30-36 | behavior | 入園準備與社交 |
+| 30-36 | health | 3 歲健檢與視力篩檢 |
+
+Shape reference — write all 20 in this form:
+
+```ts
+export const toddlerCareTips: ToddlerCareTip[] = [
+  {
+    ageBand: '12-15',
+    category: 'safety',
+    title: '學步期的居家防護',
+    highlights: [
+      '桌角與櫃角加裝防撞條，孩子跌倒時多半是頭部先撞上',
+      '樓梯上下兩端裝安全門欄，不要只裝上端',
+      '電線與窗簾拉繩收高，垂落的繩索有纏繞頸部的風險',
+    ],
+  },
+  // ...其餘 19 筆
+];
+```
+
+- [ ] **Step 6: 執行測試確認通過**
+
+Run: `npx vitest run src/littleexplorer/data/monthlyTips.test.ts`
+Expected: PASS，全部 6 個測試。
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add src/littleexplorer/data/monthlyTips.ts src/littleexplorer/data/monthlyTips.test.ts src/common/lucideIcons.ts
+git commit -m "feat: add month-age care tips for 12-36 months
+
+Continues careGuides.ts, which stops dead at month 12, but keys
+on age bands rather than single months: toddler care priorities
+do not change monthly, and a per-month grid would be 24 cells
+that all need filling.
+
+Twenty tips across safety, feeding, behaviour, and health.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 7: 日記分組純函式
+
+**Files:**
+- Create: `src/littleexplorer/utils/diaryHelpers.ts`
+- Test: `src/littleexplorer/utils/diaryHelpers.test.ts`
+
+**Interfaces:**
+- Consumes: `DiaryEntry` from Task 1
+- Produces: `DiaryMonthGroup` interface、`groupEntriesByMonth(entries: DiaryEntry[]): DiaryMonthGroup[]`
+
+- [ ] **Step 1: 寫失敗測試**
+
+Create `src/littleexplorer/utils/diaryHelpers.test.ts`:
+
+```ts
+import { describe, it, expect } from 'vitest';
+import type { DiaryEntry } from '../../types';
+import { groupEntriesByMonth } from './diaryHelpers';
+
+const entry = (
+  id: string,
+  date: string,
+  createdAt = `${date}T09:00:00.000Z`,
+): DiaryEntry => ({
+  id,
+  childId: 'child-1',
+  date,
+  content: `內容 ${id}`,
+  createdAt,
+});
+
+describe('groupEntriesByMonth', () => {
+  it('空輸入回傳空陣列', () => {
+    expect(groupEntriesByMonth([])).toEqual([]);
+  });
+
+  it('同月份的條目歸為一組', () => {
+    const groups = groupEntriesByMonth([
+      entry('a', '2026-08-03'),
+      entry('b', '2026-08-27'),
+    ]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].key).toBe('2026-08');
+    expect(groups[0].entries.map((e) => e.id)).toEqual(['b', 'a']);
+  });
+
+  it('群組依月份降序，組內依日期降序', () => {
+    const groups = groupEntriesByMonth([
+      entry('old', '2026-06-10'),
+      entry('new', '2026-08-27'),
+      entry('mid', '2026-07-01'),
+    ]);
+    expect(groups.map((g) => g.key)).toEqual(['2026-08', '2026-07', '2026-06']);
+  });
+
+  it('跨年的同月份不合併', () => {
+    const groups = groupEntriesByMonth([
+      entry('this-year', '2026-01-15'),
+      entry('last-year', '2025-01-15'),
+    ]);
+    expect(groups.map((g) => g.key)).toEqual(['2026-01', '2025-01']);
+    expect(groups).toHaveLength(2);
+  });
+
+  it('同一天的條目以 createdAt 降序排列', () => {
+    const groups = groupEntriesByMonth([
+      entry('morning', '2026-08-27', '2026-08-27T01:00:00.000Z'),
+      entry('evening', '2026-08-27', '2026-08-27T13:00:00.000Z'),
+    ]);
+    expect(groups[0].entries.map((e) => e.id)).toEqual(['evening', 'morning']);
+  });
+
+  it('label 為繁體中文的年月', () => {
+    const groups = groupEntriesByMonth([entry('a', '2026-08-27')]);
+    expect(groups[0].label).toBe('2026 年 8 月');
+  });
+
+  it('不修改傳入的陣列', () => {
+    const input = [entry('a', '2026-06-10'), entry('b', '2026-08-27')];
+    const snapshot = input.map((e) => e.id);
+    groupEntriesByMonth(input);
+    expect(input.map((e) => e.id)).toEqual(snapshot);
+  });
+});
+```
+
+- [ ] **Step 2: 執行測試確認失敗**
+
+Run: `npx vitest run src/littleexplorer/utils/diaryHelpers.test.ts`
+Expected: FAIL —「Failed to resolve import "./diaryHelpers"」。
+
+- [ ] **Step 3: 實作 `diaryHelpers.ts`**
+
+Create `src/littleexplorer/utils/diaryHelpers.ts`:
+
+```ts
+import type { DiaryEntry } from '../../types';
+
+export interface DiaryMonthGroup {
+  /** YYYY-MM，用於排序與 React key */
+  key: string;
+  /** 顯示用，例：2026 年 8 月 */
+  label: string;
+  entries: DiaryEntry[];
+}
+
+/** 由 YYYY-MM 產生「2026 年 8 月」，月份不補零。 */
+function monthLabel(key: string): string {
+  const [year, month] = key.split('-');
+  return `${year} 年 ${Number(month)} 月`;
+}
+
+/**
+ * 將日記條目依月份分組，群組與組內皆為降序（最新在前）。
+ * 同一天的條目以 createdAt 決定先後。不修改傳入的陣列。
+ */
+export function groupEntriesByMonth(entries: DiaryEntry[]): DiaryMonthGroup[] {
+  const buckets = new Map<string, DiaryEntry[]>();
+
+  for (const entry of entries) {
+    const key = entry.date.slice(0, 7);
+    const bucket = buckets.get(key);
+    if (bucket) {
+      bucket.push(entry);
+    } else {
+      buckets.set(key, [entry]);
+    }
+  }
+
+  return [...buckets.keys()]
+    .sort((a, b) => b.localeCompare(a))
+    .map((key) => ({
+      key,
+      label: monthLabel(key),
+      entries: buckets
+        .get(key)!
+        .slice()
+        .sort(
+          (a, b) =>
+            b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt),
+        ),
+    }));
+}
+```
+
+分組以字串切片 `date.slice(0, 7)` 取 `YYYY-MM`，不經過 `Date` 物件——避免時區把月底的條目推到隔月。同理排序全用 `localeCompare` 比對 ISO 字串，`YYYY-MM-DD` 的字典序即時間序。
+
+- [ ] **Step 4: 執行測試確認通過**
+
+Run: `npx vitest run src/littleexplorer/utils/diaryHelpers.test.ts`
+Expected: PASS，全部 7 個測試。
+
+- [ ] **Step 5: 執行本計畫全部測試**
+
+Run: `npx vitest run src/littleexplorer`
+Expected: 七個任務的測試全數 PASS。
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/littleexplorer/utils/diaryHelpers.ts src/littleexplorer/utils/diaryHelpers.test.ts
+git commit -m "feat: add diary month grouping helper
+
+Groups by slicing YYYY-MM off the date string rather than
+constructing Date objects, so a month-end entry cannot drift
+into the next month across timezones. ISO strings sort
+lexicographically, so ordering needs no date parsing either.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
+```
+
+- [ ] **Step 7: Push**
+
+```bash
+git push origin master
+```
