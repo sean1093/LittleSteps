@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
+import { ChevronRight } from 'lucide-react';
 import type { User } from 'firebase/auth';
 import { fadeInUp, hoverLift, listItem, stagger, tap } from '../ui/motion';
+import { pressable } from '../ui/pressable';
 import { SERVICE_ORDER, SERVICE_THEME } from '../ui/serviceTheme';
 import type { ServiceId } from '../ui/serviceTheme';
 
@@ -10,9 +12,14 @@ import type { ServiceId } from '../ui/serviceTheme';
  * Public: reachable without signing in, so a first-time visitor can see what
  * the collection offers before deciding to hand over an account.
  *
- * 名稱、中文角色與配色全部來自 SERVICE_THEME，因此四張卡片只剩下真正不同的
- * 東西：一句介紹、三到四條功能、以及進入按鈕的說法。原本是四段幾乎一樣的
- * 手寫區塊，差異只有 hover 邊框顏色與漸層。
+ * 這一頁是選擇器，不是五份疊起來的產品首頁。原本一張卡片高約 300px：名稱、
+ * 中文角色、一句行銷介紹、三到四條項目符號，再加一顆只是把標題重講一遍的
+ * 全寬按鈕（LittleBloom 的按鈕寫「進入孕期陪伴」）。五張疊起來 2,161px，
+ * 而畫面只有 844px 高——最後一個服務要滑過兩個螢幕才看得到。
+ *
+ * 現在一張卡就是一列：圖示、名稱與角色、一行「做得到什麼」。整列自己就是
+ * 點擊區（pressable 讓鍵盤也進得去），所以那顆按鈕不必存在。名稱、角色與
+ * 配色全部來自 SERVICE_THEME，這裡只剩各服務真正不同的那一行。
  */
 
 interface HubLandingProps {
@@ -21,41 +28,30 @@ interface HubLandingProps {
   onSignIn?: () => Promise<void>;
 }
 
-const SERVICE_CARD: Record<ServiceId, { blurb: string; features: string[]; cta: string }> = {
-  littlebloom: {
-    blurb: '專為準媽媽設計的溫柔陪伴空間，用心記錄每一個孕期時刻',
-    features: [
-      '孕期追蹤與產檢規劃',
-      '專業孕期知識與營養指南',
-      '14 次公費產檢時程與完成紀錄',
-    ],
-    cta: '進入孕期陪伴',
-  },
-  littlesteps: {
-    blurb: '完整記錄寶寶的每個成長瞬間，讓珍貴的回憶不再錯過',
-    features: ['里程碑追蹤與發展紀錄', '疫苗接種時程管理', '快速日誌與睡眠分析'],
-    cta: '開始記錄成長',
-  },
-  littleexplorer: {
-    blurb: '1-3 歲什麼都想自己來，陪你看懂他的每一步',
-    features: ['12-36 個月成長檢核', '健檢、疫苗與塗氟提醒', '幼兒百科與成長日記'],
-    cta: '進入幼兒期',
-  },
-  littleouting: {
-    blurb: '下雨天、放假日，帶孩子能去哪？公立親子館免費又有教玩具，先查清楚再出門。',
-    features: [
-      '全台 234 間親子館，依縣市與年齡查',
-      '免費、需不需要預約、幾歲能去',
-      '精選親子餐廳與出發前檢查清單',
-    ],
-    cta: '找親子好去處',
-  },
-  babyoasis: {
-    blurb:
-      '找到最近的哺乳室，讓外出育兒更輕鬆自在。改善政府地圖的使用體驗，提供更友善的搜尋與導航功能。',
-    features: ['定位最近哺乳室', '詳細設施資訊', '一鍵導航', '全台 22 縣市、3,852 處'],
-    cta: '探索附近哺乳室',
-  },
+/**
+ * 每個服務做得到什麼。
+ *
+ * 這幾條是整頁唯一回答「這個服務跟另外四個差在哪」的文字，所以原字不動，
+ * 只從項目符號清單改成一行併排——清單的行距與縮排是卡片高度的大宗，而讀者
+ * 在選服務時要的是一眼掃過去，不是逐條讀完。想看完整說明的人按進去就有：
+ * 每個服務自己的首頁本來就會把同樣的能力再展開講一次。
+ *
+ * 數字都對得上真實資料，serviceCopy.test.ts 會逐條比對，不要憑印象改。
+ */
+const SERVICE_FEATURES: Record<ServiceId, string[]> = {
+  littlebloom: [
+    '孕期追蹤與產檢規劃',
+    '專業孕期知識與營養指南',
+    '14 次公費產檢時程與完成紀錄',
+  ],
+  littlesteps: ['里程碑追蹤與發展紀錄', '疫苗接種時程管理', '快速日誌與睡眠分析'],
+  littleexplorer: ['12-36 個月成長檢核', '健檢、疫苗與塗氟提醒', '幼兒百科與成長日記'],
+  littleouting: [
+    '全台 234 間親子館，依縣市與年齡查',
+    '免費、需不需要預約、幾歲能去',
+    '精選親子餐廳與出發前檢查清單',
+  ],
+  babyoasis: ['定位最近哺乳室', '詳細設施資訊', '一鍵導航', '全台 22 縣市、3,852 處'],
 };
 
 /**
@@ -118,42 +114,41 @@ export default function HubLanding({ onNavigate, user, onSignIn }: HubLandingPro
         )}
       </motion.div>
 
-      {/* Service cards */}
+      {/* Service cards：一列一個服務 */}
       <motion.div
         initial="hidden"
         animate="visible"
         variants={stagger}
-        className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+        className="grid grid-cols-1 sm:grid-cols-2 gap-3"
       >
         {SERVICE_ORDER.map((id) => {
           const theme = SERVICE_THEME[id];
-          const card = SERVICE_CARD[id];
+          const Icon = theme.icon;
 
           return (
-            <motion.div key={id} variants={listItem} className="h-full">
-              <motion.div
-                whileHover={hoverLift}
-                whileTap={tap}
-                onClick={() => onNavigate(id)}
-                className="panel-tap h-full flex flex-col"
-              >
-                <h2 className={theme.ink}>{theme.name}</h2>
-                <p className={`text-sm ${theme.muted} mb-3`}>{theme.role}</p>
-                <p className={`${theme.body} leading-relaxed mb-4`}>{card.blurb}</p>
+            <motion.div
+              key={id}
+              variants={listItem}
+              {...pressable(() => onNavigate(id))}
+              className="card-tap flex items-start gap-3"
+            >
+              <Icon className={`w-5 h-5 shrink-0 mt-1 ${theme.ink}`} aria-hidden="true" />
 
-                <ul
-                  className={`list-disc list-outside pl-5 space-y-1 text-sm ${theme.muted} mb-5`}
-                >
-                  {card.features.map((feature) => (
-                    <li key={feature}>{feature}</li>
-                  ))}
-                </ul>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  {/* 角色標籤放在 h2 外面：標題的可及名稱要正好是服務名。 */}
+                  <h2 className={theme.ink}>{theme.name}</h2>
+                  <span className={`text-xs ${theme.muted}`}>{theme.role}</span>
+                </div>
+                <p className={`text-sm ${theme.body} leading-snug mt-1`}>
+                  {SERVICE_FEATURES[id].join(' · ')}
+                </p>
+              </div>
 
-                {/* 卡片本身就是點擊區；這顆按鈕靠冒泡觸發，同時讓鍵盤也進得去。 */}
-                <button type="button" className={`btn-primary w-full mt-auto ${theme.fill} ${theme.fillText}`}>
-                  {card.cta}
-                </button>
-              </motion.div>
+              <ChevronRight
+                className="w-5 h-5 shrink-0 mt-1 text-ink-faint"
+                aria-hidden="true"
+              />
             </motion.div>
           );
         })}

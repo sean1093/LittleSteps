@@ -128,37 +128,6 @@ function endOfOpeningTag(code: string, from: number): number {
   return code.length;
 }
 
-/** 標籤名稱之後、`>` 之前的整段屬性；標籤跨行也拿得到。 */
-function attrsOf(code: string, afterName: number): { attrs: string; end: number } {
-  const end = endOfOpeningTag(code, afterName);
-  return { attrs: code.slice(afterName, end), end };
-}
-
-/**
- * 元素的內容：開頭標籤的 `>` 之後，到成對的 `</name>`。
- *
- * 同名的巢狀標籤要一起數——一張卡片裡通常還疊了好幾層 div，看到第一個
- * `</div>` 就收手會把子樹切在半路。
- */
-function childrenOf(code: string, name: string, contentStart: number): string {
-  const escaped = name.replace('.', '\\.');
-  const scan = new RegExp(`<${escaped}(?=[\\s/>])|</${escaped}\\s*>`, 'g');
-  scan.lastIndex = contentStart;
-  let depth = 1;
-  for (let match = scan.exec(code); match; match = scan.exec(code)) {
-    if (match[0].startsWith('</')) {
-      depth -= 1;
-      if (depth === 0) return code.slice(contentStart, match.index);
-      continue;
-    }
-    // 從屬性段的尾巴繼續找，免得屬性字串裡的角括號被當成標籤。
-    const { attrs, end } = attrsOf(code, match.index + match[0].length);
-    if (!/\/\s*$/.test(attrs)) depth += 1;
-    scan.lastIndex = end;
-  }
-  return code.slice(contentStart);
-}
-
 const TSX = collect(SRC, ['.tsx']);
 const TS_AND_TSX = collect(SRC, ['.ts', '.tsx']);
 
@@ -323,8 +292,6 @@ describe('鍵盤可達性', () => {
     file: string;
     line: number;
     attrs: string;
-    /** 子樹延後算：只有走到「靠巢狀 button 代打」那一支才需要。 */
-    children: () => string;
   }
 
   /** motion. 前綴一定要抓：出事的那五個全都是 motion.div。 */
@@ -347,41 +314,15 @@ describe('鍵盤可達性', () => {
     /\{\s*\.\.\.\s*backdrop\s*\}/.test(attrs) ||
     /(?<![\w-])fixed\s+inset-0(?![\w-])/.test(attrs);
 
-  /**
-   * HubLanding 的服務卡：整張卡是點擊區，裡面那顆 CTA 按鈕自己沒有 onClick，
-   * 靠冒泡觸發外層。鍵盤 tab 到那顆按鈕按 Enter，冒泡上去執行的就是卡片的
-   * 動作，路徑是通的，所以不需要再包一層 pressable。
-   *
-   * 條件收在「巢狀 button 自己沒有 onClick，也沒有 disabled」：有自己 handler
-   * 的按鈕做的是別的事，disabled 的按鈕連 tab 都停不了，兩種情況下外層那個
-   * 動作依然沒有鍵盤入口，要照樣紅。
-   */
-  function delegatesToNestedButton(children: string): boolean {
-    for (const match of children.matchAll(/<(motion\.)?button(?=[\s/>])/g)) {
-      const { attrs } = attrsOf(children, match.index + match[0].length);
-      if (hasAttr(attrs, 'onClick')) continue;
-      if (/(?<![\w$])disabled(?![\w$])/.test(attrs)) continue;
-      return true;
-    }
-    return false;
-  }
-
   const CLICKABLE: Clickable[] = TSX.flatMap((file) =>
     [...file.code.matchAll(NON_INTERACTIVE)].flatMap((match) => {
-      const name = `${match[1] ?? ''}${match[2]}`;
-      const { attrs, end } = attrsOf(file.code, match.index + match[0].length);
+      // 屬性段從標籤名之後吃到開頭標籤自己的 `>`，跨行也要吃到底。
+      const afterName = match.index + match[0].length;
+      const attrs = file.code.slice(afterName, endOfOpeningTag(file.code, afterName));
       // pressable 是 spread 進去的，標籤上不會有字面的 onClick；兩種都要收，
       // 否則五個已經修好的元素會整批掉出掃描範圍，非空檢查就失去意義。
       if (!hasAttr(attrs, 'onClick') && !spreadsPressable(attrs)) return [];
-      return [
-        {
-          file: file.name,
-          line: lineOf(file.code, match.index),
-          attrs,
-          children: () =>
-            /\/\s*$/.test(attrs) ? '' : childrenOf(file.code, name, end + 1),
-        },
-      ];
+      return [{ file: file.name, line: lineOf(file.code, match.index), attrs }];
     }),
   );
 
@@ -427,11 +368,6 @@ describe('鍵盤可達性', () => {
     );
     expect(card, '找不到 WikiArticleCard 的 pressable').toBeDefined();
     expect(card?.attrs, '屬性只吃到第一行，跨行標籤會被判成沒有鍵盤路徑').toContain('className');
-
-    // 子樹要真的往下走：HubLanding 的服務卡靠最底下那顆 CTA 按鈕代打。
-    const hubCard = CLICKABLE.find((tag) => tag.file === 'src/common/landing/HubLanding.tsx');
-    expect(hubCard, '找不到 HubLanding 的服務卡').toBeDefined();
-    expect(hubCard?.children(), '子樹被切在半路，抓不到巢狀 button').toContain('<button');
   });
 
   it('遮罩例外就是那八片，一片不多', () => {
@@ -450,8 +386,7 @@ describe('鍵盤可達性', () => {
           hasAttr(tag.attrs, 'role') &&
           hasAttr(tag.attrs, 'tabIndex') &&
           hasAttr(tag.attrs, 'onKeyDown')
-        ) &&
-        !delegatesToNestedButton(tag.children()),
+        ),
     );
     expect(
       unreachable.map((tag) => `${at(tag)}: onClick 但鍵盤到不了，改用 pressable()`),

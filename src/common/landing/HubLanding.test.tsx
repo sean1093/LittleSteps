@@ -13,67 +13,123 @@ import type { ServiceId } from '../ui/serviceTheme';
  */
 describe('HubLanding', () => {
   /**
-   * The one thing the page renders that is not already in `SERVICE_THEME`.
-   * Typed as a total `Record<ServiceId, …>`, so a sixth service fails to
-   * compile until its CTA is listed here — and the list below then covers it
-   * automatically. A hand-written array of four is what let LittleOuting ship
-   * with no card assertion at all, the same way `routePolicy.test.ts` quietly
-   * stopped covering it.
+   * 每張卡片上「做得到什麼」那一行裡，只屬於這個服務的一句。
+   *
+   * 打成完整的 `Record<ServiceId, …>`，所以第六個服務不列進來就編譯不過，而
+   * 底下每一條也就自動涵蓋它。一個手寫的四元素陣列，正是 LittleOuting 當初
+   * 一條卡片斷言都沒有就上線的原因，`routePolicy.test.ts` 也同樣悄悄漏掉它。
+   *
+   * 這裡原本對的是進入按鈕的說法。按鈕已經拿掉——它只是把卡片標題重講一遍
+   * ——所以改對這一行：它現在是卡片除了名稱與角色以外唯一的內容，也是「這個
+   * 服務跟另外四個差在哪」真正的答案。
    */
-  const CTA: Record<ServiceId, string> = {
-    littlebloom: '進入孕期陪伴',
-    littlesteps: '開始記錄成長',
-    littleexplorer: '進入幼兒期',
-    littleouting: '找親子好去處',
-    babyoasis: '探索附近哺乳室',
+  const DOES: Record<ServiceId, string> = {
+    littlebloom: '14 次公費產檢時程與完成紀錄',
+    littlesteps: '快速日誌與睡眠分析',
+    littleexplorer: '12-36 個月成長檢核',
+    littleouting: '全台 234 間親子館',
+    babyoasis: '全台 22 縣市、3,852 處',
   };
 
   /** Derived from the same list the page maps over. */
   const SUB_APPS = SERVICE_ORDER.map((id) => ({
     id,
     name: SERVICE_THEME[id].name,
-    cta: CTA[id],
+    role: SERVICE_THEME[id].role,
+    does: DOES[id],
   }));
+
+  /**
+   * 整張卡自己就是點擊區，所以入口是包住標題的那個 `role="button"`，不是卡片
+   * 裡的某顆按鈕。取不到就直接紅：那表示卡片又變回一塊點不動的區域。
+   */
+  function cardOf(name: string): HTMLElement {
+    const card = screen.getByRole('heading', { name }).closest('[role="button"]');
+    expect(card, `${name} 的卡片不是點擊區`).not.toBeNull();
+    return card as HTMLElement;
+  }
 
   it('清單涵蓋每一個服務', () => {
     // 沒有這條，SUB_APPS 少一個服務時底下兩條就只是「少測一張卡」，不會紅。
     expect([...SERVICE_ORDER].sort()).toEqual(Object.keys(SERVICE_THEME).sort());
     for (const app of SUB_APPS) {
       expect(app.name, `${app.id} 沒有 name`).toBeTruthy();
-      expect(app.cta, `${app.id} 沒有列出進入按鈕的說法`).toBeTruthy();
+      expect(app.does, `${app.id} 沒有列出它做得到什麼`).toBeTruthy();
     }
   });
 
-  it('每個子應用都有一張卡片', () => {
+  it('每個子應用都有一張卡片，卡片也說得出它做什麼', () => {
     render(<HubLanding onNavigate={vi.fn()} />);
     for (const app of SUB_APPS) {
       expect(screen.getByRole('heading', { name: app.name })).toBeInTheDocument();
+      // 卡片縮短了，但不能縮到只剩五個英文名：角色與能力都要還在。
+      expect(cardOf(app.name), app.name).toHaveTextContent(app.role);
+      expect(cardOf(app.name), app.name).toHaveTextContent(app.does);
     }
   });
 
-  it('每張卡片都導向自己的子應用', async () => {
+  it('點卡片上任何一處都導向自己的子應用', async () => {
     const user = userEvent.setup();
 
     for (const app of SUB_APPS) {
       const onNavigate = vi.fn();
       const { unmount } = render(<HubLanding onNavigate={onNavigate} />);
 
-      await user.click(screen.getByText(app.cta));
+      // 點的是「做得到什麼」那一行，也就是離原本那顆按鈕最遠的地方：
+      // 確認入口是整張卡，不是卡片裡某個特定元素。
+      await user.click(screen.getByText(app.does, { exact: false }));
       expect(onNavigate, app.name).toHaveBeenCalledWith(app.id);
 
       unmount();
     }
   });
 
-  it('LittleExplorer 卡片點出 1-3 歲的四項能力', () => {
+  it('卡片用鍵盤也進得去', () => {
+    render(<HubLanding onNavigate={vi.fn()} />);
+    // 沒有按鈕代打之後，鍵盤路徑只剩卡片自己的 pressable；焦點停不下來，
+    // 五個服務就全部只剩滑鼠進得去。
+    for (const app of SUB_APPS) {
+      expect(cardOf(app.name), app.name).toHaveAttribute('tabindex', '0');
+    }
+  });
+
+  it('聚焦在卡片上按 Enter 或空白鍵就會進去', async () => {
+    const user = userEvent.setup();
+    const onNavigate = vi.fn();
+    render(<HubLanding onNavigate={onNavigate} />);
+
+    const card = cardOf('BabyOasis');
+    card.focus();
+    expect(card).toHaveFocus();
+
+    await user.keyboard('{Enter}');
+    expect(onNavigate).toHaveBeenCalledWith('babyoasis');
+
+    await user.keyboard(' ');
+    expect(onNavigate, '空白鍵沒有作用').toHaveBeenCalledTimes(2);
+  });
+
+  it('卡片裡沒有第二個入口', () => {
+    render(<HubLanding onNavigate={vi.fn()} />);
+    for (const app of SUB_APPS) {
+      // 原本每張卡底下有一顆把標題重講一遍的全寬按鈕，吃掉近 60px 高度，
+      // 又在 tab 順序裡多一個停留點，做的還是外層卡片同一件事。
+      expect(
+        cardOf(app.name).querySelectorAll('button').length,
+        `${app.name} 卡片裡又多了一顆按鈕`,
+      ).toBe(0);
+    }
+  });
+
+  it('LittleExplorer 卡片點出 1-3 歲的三項能力', () => {
     render(<HubLanding onNavigate={vi.fn()} />);
 
-    // 這些字串只出現在 LittleExplorer 卡片，故不需要先鎖定容器——
-    // 以 styling class 當選擇器會在改版時假性失敗。
-    expect(screen.getByText('幼兒期陪伴')).toBeInTheDocument();
-    expect(screen.getByText('12-36 個月成長檢核')).toBeInTheDocument();
-    expect(screen.getByText('健檢、疫苗與塗氟提醒')).toBeInTheDocument();
-    expect(screen.getByText('幼兒百科與成長日記')).toBeInTheDocument();
+    // 三條功能現在併成一行，所以對的是這張卡的內容，而不是三個獨立節點。
+    const card = cardOf('LittleExplorer');
+    expect(card).toHaveTextContent('幼兒期陪伴');
+    expect(card).toHaveTextContent('12-36 個月成長檢核');
+    expect(card).toHaveTextContent('健檢、疫苗與塗氟提醒');
+    expect(card).toHaveTextContent('幼兒百科與成長日記');
   });
 
   it('旅程時間軸的幼兒期節點可點，並導向 LittleExplorer', async () => {
@@ -85,14 +141,18 @@ describe('HubLanding', () => {
     expect(onNavigate).toHaveBeenCalledWith('littleexplorer');
   });
 
-  it('未登入時進入點自己就給得出登入', async () => {
+  it('未登入時進入點自己就給得出登入，也說清楚登入換到什麼', async () => {
     const user = userEvent.setup();
     const onSignIn = vi.fn(async () => {});
     render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={onSignIn} />);
 
     await user.click(screen.getByRole('button', { name: /使用 Google 登入/ }));
-
     expect(onSignIn).toHaveBeenCalled();
+
+    // 全站唯一交代「不登入能看什麼、登入才能做什麼」的一句話。
+    expect(
+      screen.getByText('知識內容不需登入即可閱讀；記錄功能登入後才能跨裝置同步'),
+    ).toBeInTheDocument();
   });
 
   it('已登入時不再顯示登入按鈕', () => {
