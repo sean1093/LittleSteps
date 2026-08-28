@@ -6,6 +6,7 @@ import { PREGNANCY_TOTAL_WEEKS, pregnancyGuides, trimesterOf } from '../data/pre
 import { prenatalCheckupSchedule } from '../data/prenatalCheckups';
 import { resolvePrenatalItems, weeksPregnant } from '../utils/prenatalSchedule';
 import BloomShell from '../components/BloomShell';
+import AddPregnancyModal from '../components/AddPregnancyModal';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { hoverLift, listItem, stagger, tap } from '../../common/ui/motion';
@@ -16,6 +17,14 @@ interface LittleBloomPageProps {
   currentChild?: ChildProfile | null;
   progress: PrenatalCheckupProgress;
   onRecordBirth: (birthday: string) => Promise<void>;
+  /**
+   * 建立孕期檔案。傳預產期進去，資料層就會把它標成孕期檔案並用 Naegele
+   * 法則回推末次月經。
+   *
+   * LittleBloom 自己開這個視窗，而不是把家長送去 LittleSteps 的側邊欄——
+   * 兩個服務之間共用的是帳號與孩子資料，不是彼此的畫面。
+   */
+  onAddPregnancy: (name: string, dueDate: string) => Promise<void>;
 }
 
 const THEME = SERVICE_THEME.littlebloom;
@@ -30,7 +39,9 @@ export default function LittleBloomPage({
   currentChild,
   progress,
   onRecordBirth,
+  onAddPregnancy,
 }: LittleBloomPageProps) {
+  const [addOpen, setAddOpen] = useState(false);
   const lmp = currentChild?.pregnancyData?.lastPeriodDate ?? '';
   const dueDate = currentChild?.pregnancyData?.dueDate ?? '';
   const [birthOpen, setBirthOpen] = useState(false);
@@ -108,13 +119,13 @@ export default function LittleBloomPage({
         <EmptyState
           theme={THEME}
           title="還沒有孕期檔案"
-          description={'到 LittleSteps 的側邊選單新增一個「孕期檔案」並填入預產期，\n這裡就會依週數顯示身體變化、本週提醒與產檢時程。'}
-          action={{
-            label: '前往新增孕期檔案',
-            onClick: () => {
-              window.location.hash = '#/littlesteps';
-            },
-          }}
+          description={'填入預產期就開始——這裡會依週數顯示身體變化、本週提醒與產檢時程。'}
+          action={{ label: '新增孕期檔案', onClick: () => setAddOpen(true) }}
+        />
+        <AddPregnancyModal
+          isOpen={addOpen}
+          onClose={() => setAddOpen(false)}
+          onAdd={onAddPregnancy}
         />
       </BloomShell>
     );

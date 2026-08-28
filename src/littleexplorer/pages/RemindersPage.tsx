@@ -7,6 +7,7 @@ import type {
   ResolvedCareTask,
   ToddlerAgeBand,
   ToddlerTipCategory,
+  Gender,
 } from '../../types';
 import { isPregnancyProfile } from '../../common/pregnancy';
 import { calculateAge, toLocalDateKey } from '../../common/utils/dateHelpers';
@@ -19,6 +20,7 @@ import { tipCategoryLabels, toddlerCareTips } from '../data/monthlyTips';
 import { buildGoogleCalendarUrl, downloadIcs } from '../utils/icsExport';
 import { TODDLER_MIN_MONTHS, bandForMonths } from '../utils/ageBands';
 import ExplorerShell from '../components/ExplorerShell';
+import NoChildNotice from '../components/NoChildNotice';
 import AgeBandPicker from '../components/AgeBandPicker';
 
 const THEME = SERVICE_THEME.littleexplorer;
@@ -41,6 +43,12 @@ interface RemindersPageProps {
   tasks: ResolvedCareTask[];
   reminderBadge?: number;
   onCompleteTask: (record: CareTaskRecord) => Promise<void>;
+  /**
+   * 新增／加入寶寶。LittleExplorer 自己開新增視窗，不把家長送去 LittleSteps
+   * ——共用的是帳號與孩子資料，不是彼此的畫面。
+   */
+  onAddChild: (name: string, birthday: string, gender?: Gender) => Promise<void>;
+  onJoinChild?: (uuid: string) => Promise<void>;
 }
 
 /**
@@ -54,6 +62,8 @@ export default function RemindersPage({
   tasks,
   reminderBadge,
   onCompleteTask,
+  onAddChild,
+  onJoinChild,
 }: RemindersPageProps) {
   const ageMonths = currentChild ? calculateAge(currentChild.birthday) : 0;
   const [band, setBand] = useState<ToddlerAgeBand>(() => bandForMonths(ageMonths));
@@ -79,11 +89,10 @@ export default function RemindersPage({
   );
 
   const outOfRange = !currentChild ? (
-    <EmptyState
-      theme={THEME}
-      title="還沒有寶寶資料"
-      description={'請先到 LittleSteps 新增寶寶，\n提醒會依出生日自動算出健檢、疫苗與塗氟的時程。'}
-      action={{ label: '前往 LittleSteps', onClick: () => { window.location.hash = '#/littlesteps'; } }}
+    <NoChildNotice
+      description={'新增寶寶後，提醒會依出生日自動算出健檢、疫苗與塗氟的時程。'}
+      onAddChild={onAddChild}
+      onJoinChild={onJoinChild}
     />
   ) : isPregnancyProfile(currentChild) ? (
     <EmptyState

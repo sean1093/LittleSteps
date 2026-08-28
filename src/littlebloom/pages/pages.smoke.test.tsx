@@ -37,6 +37,7 @@ const pregnant = (overrides: Partial<ChildProfile> = {}): ChildProfile => ({
 });
 
 const noop = async () => {};
+const noopAdd = async (_name: string, _dueDate: string) => {};
 
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -49,12 +50,12 @@ afterEach(() => {
 
 describe('LittleBloomPage', () => {
   it('依末次月經算出真正的週數，而不是永遠停在第 1 週', () => {
-    render(<LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} />);
+    render(<LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} onAddPregnancy={noopAdd} />);
     expect(screen.getByText(`第 ${EXPECTED_WEEK} 週`)).toBeInTheDocument();
   });
 
   it('顯示該週的指南，而不是退回第 1 週的內容', () => {
-    render(<LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} />);
+    render(<LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} onAddPregnancy={noopAdd} />);
 
     const guide = pregnancyGuides.find((g) => g.week === EXPECTED_WEEK)!;
     expect(screen.getByRole('heading', { name: guide.title })).toBeInTheDocument();
@@ -62,7 +63,7 @@ describe('LittleBloomPage', () => {
   });
 
   it('第 20 週以後顯示就醫警訊', () => {
-    render(<LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} />);
+    render(<LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} onAddPregnancy={noopAdd} />);
     expect(screen.getByText('這些情況請盡快就醫')).toBeInTheDocument();
   });
 
@@ -71,7 +72,7 @@ describe('LittleBloomPage', () => {
       <LittleBloomPage
         currentChild={{ ...pregnant(), isPregnancy: undefined, pregnancyData: undefined }}
         progress={{}}
-        onRecordBirth={noop}
+        onRecordBirth={noop} onAddPregnancy={noopAdd}
       />,
     );
     expect(screen.getByText('還沒有孕期檔案')).toBeInTheDocument();
@@ -79,7 +80,7 @@ describe('LittleBloomPage', () => {
   });
 
   it('下一項產檢來自真實時程，不是寫死的假資料', () => {
-    render(<LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} />);
+    render(<LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} onAddPregnancy={noopAdd} />);
     // 舊版寫死「幸福婦產科 2026-04-15」給每一位使用者。
     expect(screen.queryByText('幸福婦產科')).not.toBeInTheDocument();
     expect(screen.getByText('下一項產檢')).toBeInTheDocument();
@@ -88,7 +89,7 @@ describe('LittleBloomPage', () => {
   it('產檢時程按鈕真的會導航（原本是空的 onClick）', async () => {
     const user = userEvent.setup();
     window.location.hash = '#/littlebloom';
-    render(<LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} />);
+    render(<LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} onAddPregnancy={noopAdd} />);
 
     await user.click(screen.getByRole('button', { name: /產檢時程/ }));
 
@@ -105,7 +106,7 @@ describe('LittleBloomPage', () => {
       <LittleBloomPage
         currentChild={pregnant()}
         progress={{}}
-        onRecordBirth={onRecordBirth}
+        onRecordBirth={onRecordBirth} onAddPregnancy={noopAdd}
       />,
     );
 
@@ -117,7 +118,7 @@ describe('LittleBloomPage', () => {
 
   it('說明出生後孕期紀錄會保留', () => {
     render(
-      <LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} />,
+      <LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} onAddPregnancy={noopAdd} />,
     );
     expect(screen.getByText(/孕期與產檢紀錄都會保留/)).toBeInTheDocument();
   });
@@ -257,7 +258,7 @@ describe('出生之後', () => {
   });
 
   it('LittleBloom 首頁不再顯示週數，改為已出生通知', () => {
-    render(<LittleBloomPage currentChild={born()} progress={{}} onRecordBirth={noop} />);
+    render(<LittleBloomPage currentChild={born()} progress={{}} onRecordBirth={noop} onAddPregnancy={noopAdd} />);
 
     expect(screen.getByText('寶寶已經出生了')).toBeInTheDocument();
     expect(screen.queryByText(`第 ${EXPECTED_WEEK} 週`)).not.toBeInTheDocument();
@@ -275,7 +276,7 @@ describe('出生之後', () => {
   });
 
   it('仍在孕期時不會誤判為已出生', () => {
-    render(<LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} />);
+    render(<LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} onAddPregnancy={noopAdd} />);
 
     expect(screen.queryByText('寶寶已經出生了')).not.toBeInTheDocument();
     expect(screen.getByText(`第 ${EXPECTED_WEEK} 週`)).toBeInTheDocument();

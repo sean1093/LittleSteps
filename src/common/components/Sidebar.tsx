@@ -419,7 +419,13 @@ export default function Sidebar({
             </div>
           </motion.div>
 
-          {/* Add/Edit Child Modal */}
+          {/*
+            Add/Edit Child Modal.
+
+            沒有「懷孕中」分頁：孕期檔案由 LittleBloom 自己新增。要求家長先進
+            LittleSteps 的側邊欄才能開始用 LittleBloom，是把兩個服務綁在一起；
+            共用的應該只有帳號與孩子資料。
+          */}
           <AddChildModal
             isOpen={showAddChildModal}
             onClose={() => setShowAddChildModal(false)}
@@ -427,6 +433,7 @@ export default function Sidebar({
             onJoin={joinChild}
             editingChild={editingChild}
             onDelete={editingChild ? () => handleDeleteChild(editingChild.id) : undefined}
+            modes={['create', 'join']}
           />
 
           {/* Share Child UUID Modal */}

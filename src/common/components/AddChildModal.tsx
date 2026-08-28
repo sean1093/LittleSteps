@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { ChildProfile, Gender } from '../../types';
 import ModalFrame from './ModalFrame';
 
+export type ChildModalMode = 'create' | 'join' | 'pregnancy';
+
 interface AddChildModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -10,6 +12,21 @@ interface AddChildModalProps {
   editingChild?: ChildProfile | null;
   /** 只在編輯既有寶寶時提供。刪除從側邊欄那一列搬進來，避開誤觸。 */
   onDelete?: () => void;
+  /**
+   * 這個入口提供哪些分頁，順序即顯示順序。
+   *
+   * 每個服務自己開自己需要的：LittleBloom 只要建孕期檔案，LittleSteps 與
+   * LittleExplorer 要建寶寶或加入既有寶寶。共用的是帳號與孩子資料，不是
+   * 彼此的畫面——孕期檔案原本只能從 LittleSteps 的側邊欄新增，等於要先進
+   * 別的服務才能開始用 LittleBloom。
+   */
+  modes?: readonly ChildModalMode[];
+  /**
+   * 選取中的分頁與送出鍵的顏色。預設是 LittleSteps 的主色；其他服務傳入
+   * 自己的 `ServiceTheme.fill` + `fillText`，這樣視窗看起來就屬於當下的服務。
+   */
+  accent?: string;
+  accentText?: string;
 }
 
 const FIELD =
@@ -23,9 +40,12 @@ export default function AddChildModal({
   onSave,
   onJoin,
   editingChild,
-  onDelete
+  onDelete,
+  modes = ['create', 'join'],
+  accent = 'bg-primary-dark',
+  accentText = 'text-white',
 }: AddChildModalProps) {
-  const [mode, setMode] = useState<'create' | 'join' | 'pregnancy'>('create');
+  const [mode, setMode] = useState<ChildModalMode>(modes[0]);
   const [name, setName] = useState('');
   const [birthday, setBirthday] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -39,6 +59,9 @@ export default function AddChildModal({
       setBirthday(editingChild.birthday);
       setGender(editingChild.gender || '');
     } else {
+      // 回到這個入口提供的第一個分頁，而不是硬回 'create'——只提供
+      // 孕期的入口沒有 'create' 可回。
+      setMode(modes[0]);
       setName('');
       setBirthday('');
       setDueDate('');
@@ -69,8 +92,16 @@ export default function AddChildModal({
     }
   };
 
-  // If editing, only show create mode
-  const showModeSelector = !editingChild && onJoin;
+  const MODE_LABELS: Record<ChildModalMode, string> = {
+    create: '寶寶',
+    pregnancy: '懷孕中',
+    join: '加入',
+  };
+
+  // 只有一種選擇時不畫分頁——LittleBloom 只建孕期檔案，一顆孤零零的
+  // 「懷孕中」按鈕沒有在選什麼。
+  const available = modes.filter((m) => m !== 'join' || onJoin);
+  const showModeSelector = !editingChild && available.length > 1;
 
   const title = editingChild
     ? '編輯寶寶資料'
@@ -88,29 +119,23 @@ export default function AddChildModal({
         ? '開始追蹤孕期'
         : '加入寶寶';
 
-  const MODES = [
-    { id: 'create', label: '寶寶' },
-    { id: 'pregnancy', label: '懷孕中' },
-    { id: 'join', label: '加入' },
-  ] as const;
-
   return (
     <ModalFrame isOpen={isOpen} onClose={onClose} title={title}>
       {showModeSelector && (
         <div className="flex gap-2 mb-5">
-          {MODES.map((option) => (
+          {available.map((id) => (
             <button
-              key={option.id}
+              key={id}
               type="button"
-              onClick={() => setMode(option.id)}
-              aria-pressed={mode === option.id}
+              onClick={() => setMode(id)}
+              aria-pressed={mode === id}
               className={`flex-1 min-h-tap px-3 rounded-2xl text-sm font-medium transition-colors ${
-                mode === option.id
-                  ? 'bg-primary-dark text-white'
+                mode === id
+                  ? `${accent} ${accentText}`
                   : 'bg-ink/5 text-ink-muted hover:bg-ink/10'
               }`}
             >
-              {option.label}
+              {MODE_LABELS[id]}
             </button>
           ))}
         </div>
@@ -208,7 +233,7 @@ export default function AddChildModal({
           </div>
         )}
 
-        <button type="submit" className="btn-primary w-full">
+        <button type="submit" className={`btn-primary w-full ${accent} ${accentText}`}>
           {submitLabel}
         </button>
       </form>

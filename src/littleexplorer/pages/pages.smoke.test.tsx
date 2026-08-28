@@ -38,6 +38,7 @@ const child = (overrides: Partial<ChildProfile> = {}): ChildProfile => ({
 });
 
 const noop = async () => {};
+const noopAddChild = async (_n: string, _b: string) => {};
 
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -97,7 +98,7 @@ describe('ExplorerShell 與 tab bar', () => {
 describe('DevelopmentPage', () => {
   const renderPage = (overrides: Partial<ChildProfile> = {}) =>
     render(
-      <DevelopmentPage
+      <DevelopmentPage onAddChild={noopAddChild}
         currentChild={child(overrides)}
         progress={{}}
         toothProgress={{}}
@@ -116,7 +117,7 @@ describe('DevelopmentPage', () => {
 
   it('顯示該年齡段的 6 個項目與已完成計數', () => {
     render(
-      <DevelopmentPage
+      <DevelopmentPage onAddChild={noopAddChild}
         currentChild={child()}
         toothProgress={{}}
         onToggleTooth={noop}
@@ -137,7 +138,7 @@ describe('DevelopmentPage', () => {
 
   it('沒有寶寶時顯示引導卡', () => {
     render(
-      <DevelopmentPage
+      <DevelopmentPage onAddChild={noopAddChild}
         currentChild={null}
         progress={{}}
         toothProgress={{}}
@@ -151,7 +152,7 @@ describe('DevelopmentPage', () => {
 
   it('乳牙記錄收合時仍顯示已長顆數', () => {
     render(
-      <DevelopmentPage
+      <DevelopmentPage onAddChild={noopAddChild}
         currentChild={child()}
         progress={{}}
         toothProgress={{ 'lower-right-1': { erupted: true }, 'lower-left-1': { erupted: true } }}
@@ -168,7 +169,7 @@ describe('DevelopmentPage', () => {
     const onToggleTooth = vi.fn(async (_id: string) => {});
 
     render(
-      <DevelopmentPage
+      <DevelopmentPage onAddChild={noopAddChild}
         currentChild={child()}
         progress={{}}
         toothProgress={{}}
@@ -210,7 +211,7 @@ describe('DevelopmentPage', () => {
     const item = developmentCheckItems.find((i) => i.ageBand === '24-30')!;
 
     render(
-      <DevelopmentPage
+      <DevelopmentPage onAddChild={noopAddChild}
         currentChild={child()}
         progress={{}}
         toothProgress={{}}
@@ -234,7 +235,7 @@ describe('DevelopmentPage', () => {
     const item = developmentCheckItems.find((i) => i.ageBand === '24-30')!;
 
     render(
-      <DevelopmentPage
+      <DevelopmentPage onAddChild={noopAddChild}
         currentChild={child()}
         progress={{}}
         toothProgress={{}}
@@ -258,7 +259,7 @@ describe('RemindersPage', () => {
 
   it('疫苗任務不提供標記完成，只深連結回疫苗追蹤', () => {
     render(
-      <RemindersPage currentChild={child()} tasks={tasks()} onCompleteTask={noop} />,
+      <RemindersPage onAddChild={noopAddChild} currentChild={child()} tasks={tasks()} onCompleteTask={noop} />,
     );
 
     const vaccineRows = screen.getAllByText('疫苗接種');
@@ -276,7 +277,7 @@ describe('RemindersPage', () => {
     const onCompleteTask = vi.fn(async (_record: CareTaskRecord) => {});
 
     render(
-      <RemindersPage currentChild={child()} tasks={tasks()} onCompleteTask={onCompleteTask} />,
+      <RemindersPage onAddChild={noopAddChild} currentChild={child()} tasks={tasks()} onCompleteTask={onCompleteTask} />,
     );
 
     await user.click(screen.getAllByRole('button', { name: '標記完成' })[0]);
@@ -289,14 +290,14 @@ describe('RemindersPage', () => {
   });
 
   it('顯示這個月齡的四類注意事項', () => {
-    render(<RemindersPage currentChild={child()} tasks={tasks()} onCompleteTask={noop} />);
+    render(<RemindersPage onAddChild={noopAddChild} currentChild={child()} tasks={tasks()} onCompleteTask={noop} />);
     for (const label of ['安全', '飲食', '行為與情緒', '健康照護']) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
   });
 
   it('注意事項不提供勾選', () => {
-    render(<RemindersPage currentChild={child()} tasks={tasks()} onCompleteTask={noop} />);
+    render(<RemindersPage onAddChild={noopAddChild} currentChild={child()} tasks={tasks()} onCompleteTask={noop} />);
     const safety = screen.getByText('安全').closest('article')!;
     expect(within(safety).queryByRole('checkbox')).not.toBeInTheDocument();
     expect(within(safety).queryByRole('button')).not.toBeInTheDocument();
@@ -304,7 +305,7 @@ describe('RemindersPage', () => {
 
   it('未滿 1 歲顯示引導卡', () => {
     render(
-      <RemindersPage
+      <RemindersPage onAddChild={noopAddChild}
         currentChild={child({ birthday: '2026-03-01' })}
         tasks={[]}
         onCompleteTask={noop}
@@ -326,7 +327,7 @@ describe('DiaryPage', () => {
 
   const renderPage = (entries: DiaryEntry[]) =>
     render(
-      <DiaryPage
+      <DiaryPage onAddChild={noopAddChild}
         currentChild={child()}
         entries={entries}
         onAdd={async () => 'd2'}
@@ -370,7 +371,7 @@ describe('DiaryPage', () => {
     vi.stubGlobal('confirm', confirmStub);
 
     render(
-      <DiaryPage
+      <DiaryPage onAddChild={noopAddChild}
         currentChild={child()}
         entries={[entry()]}
         onAdd={async () => 'd2'}
@@ -392,7 +393,7 @@ describe('DiaryPage', () => {
 
   it('沒有寶寶時顯示引導卡', () => {
     render(
-      <DiaryPage
+      <DiaryPage onAddChild={noopAddChild}
         currentChild={null}
         entries={[]}
         onAdd={async () => undefined}

@@ -8,6 +8,7 @@ import type {
   DevelopmentDomain,
   ToddlerAgeBand,
   ToothProgress,
+  Gender,
 } from '../../types';
 import { isPregnancyProfile } from '../../common/pregnancy';
 import { calculateAge } from '../../common/utils/dateHelpers';
@@ -22,6 +23,7 @@ import {
 } from '../data/developmentChecks';
 import { TODDLER_MAX_MONTHS, TODDLER_MIN_MONTHS, bandForMonths } from '../utils/ageBands';
 import ExplorerShell from '../components/ExplorerShell';
+import NoChildNotice from '../components/NoChildNotice';
 import AgeBandPicker from '../components/AgeBandPicker';
 import ToothChart from '../components/ToothChart';
 
@@ -43,6 +45,12 @@ interface DevelopmentPageProps {
   onToggleCheck: (checkItemId: string) => Promise<void>;
   onQuickDiary: (content: string, linkedCheckItemId: string) => Promise<void>;
   onToggleTooth: (toothId: string) => Promise<void>;
+  /**
+   * 新增／加入寶寶。LittleExplorer 自己開新增視窗，不把家長送去 LittleSteps
+   * ——共用的是帳號與孩子資料，不是彼此的畫面。
+   */
+  onAddChild: (name: string, birthday: string, gender?: Gender) => Promise<void>;
+  onJoinChild?: (uuid: string) => Promise<void>;
 }
 
 /**
@@ -59,6 +67,8 @@ export default function DevelopmentPage({
   onToggleTooth,
   onToggleCheck,
   onQuickDiary,
+  onAddChild,
+  onJoinChild,
 }: DevelopmentPageProps) {
   const ageMonths = currentChild ? calculateAge(currentChild.birthday) : 0;
   const [band, setBand] = useState<ToddlerAgeBand>(() => bandForMonths(ageMonths));
@@ -76,11 +86,10 @@ export default function DevelopmentPage({
   const warning = developmentWarnings.find((w) => w.ageBand === band);
 
   const outOfRange = !currentChild ? (
-    <EmptyState
-      theme={THEME}
-      title="還沒有寶寶資料"
-      description={'請先到 LittleSteps 新增寶寶，\n之後這裡就會依月齡顯示該階段的成長重點。'}
-      action={{ label: '前往 LittleSteps', onClick: () => { window.location.hash = '#/littlesteps'; } }}
+    <NoChildNotice
+      description={'新增寶寶後，這裡就會依月齡顯示該階段的成長重點。'}
+      onAddChild={onAddChild}
+      onJoinChild={onJoinChild}
     />
   ) : isPregnancyProfile(currentChild) ? (
     // 孕期檔案的 birthday 是預產期，月齡會算成 0，若不先攔下來就會被

@@ -99,9 +99,10 @@ export default function PrenatalPage({
           title="還沒有孕期資料"
           description={'新增一個孕期檔案並填入預產期後，\n14 次公費產檢的時程會依末次月經自動排出來。'}
           action={{
-            label: '前往新增孕期檔案',
+            label: '回 LittleBloom 建立孕期檔案',
             onClick: () => {
-              window.location.hash = '#/littlesteps';
+              // 留在 LittleBloom 之內：新增孕期檔案的入口在本服務的首頁。
+              window.location.hash = '#/littlebloom';
             },
           }}
         />

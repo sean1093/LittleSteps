@@ -427,6 +427,9 @@ function AppContent() {
             currentChild={currentChild}
             progress={currentChildPrenatalProgress}
             onRecordBirth={recordBirth}
+            // 孕期檔案就是「還沒出生的孩子」，所以走同一個 addChild；帶了
+            // 預產期，資料層就會標成孕期檔案。共用資料層，不共用畫面。
+            onAddPregnancy={(name, dueDate) => addChild(name, dueDate, undefined, dueDate)}
           />
         )}
         {currentPage === 'littlebloom/prenatal' && (
@@ -455,6 +458,8 @@ function AppContent() {
                 linkedCheckItemId,
               });
             }}
+            onAddChild={(name, birthday, gender) => addChild(name, birthday, gender)}
+            onJoinChild={joinChild}
           />
         )}
         {currentPage === 'littleexplorer/reminders' && (
@@ -463,6 +468,8 @@ function AppContent() {
             tasks={careTasks}
             reminderBadge={reminderBadge}
             onCompleteTask={upsertCareTaskRecord}
+            onAddChild={(name, birthday, gender) => addChild(name, birthday, gender)}
+            onJoinChild={joinChild}
           />
         )}
         {currentPage === 'littleexplorer/diary' && (
@@ -473,6 +480,8 @@ function AppContent() {
             onAdd={addDiaryEntry}
             onUpdate={updateDiaryEntry}
             onDelete={deleteDiaryEntry}
+            onAddChild={(name, birthday, gender) => addChild(name, birthday, gender)}
+            onJoinChild={joinChild}
           />
         )}
         {currentPage === 'littleexplorer/wiki' && (

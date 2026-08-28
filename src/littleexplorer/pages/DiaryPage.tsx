@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { PenLine, Sprout, Trash2, X } from 'lucide-react';
-import type { ChildProfile, DiaryEntry, DiaryMood } from '../../types';
+import type { ChildProfile, DiaryEntry, DiaryMood, Gender } from '../../types';
 import { calculateAgeDisplay } from '../../common/utils/summaryCalculator';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
@@ -9,6 +9,7 @@ import { listItem, stagger, tap } from '../../common/ui/motion';
 import { developmentCheckItems } from '../data/developmentChecks';
 import { groupEntriesByMonth } from '../utils/diaryHelpers';
 import ExplorerShell from '../components/ExplorerShell';
+import NoChildNotice from '../components/NoChildNotice';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
 const THEME = SERVICE_THEME.littleexplorer;
@@ -31,6 +32,12 @@ interface DiaryPageProps {
   onAdd: (entry: Omit<DiaryEntry, 'id' | 'childId' | 'createdAt'>) => Promise<string | undefined>;
   onUpdate: (entryId: string, updates: Partial<DiaryEntry>) => Promise<void>;
   onDelete: (entryId: string) => Promise<void>;
+  /**
+   * 新增／加入寶寶。LittleExplorer 自己開新增視窗，不把家長送去 LittleSteps
+   * ——共用的是帳號與孩子資料，不是彼此的畫面。
+   */
+  onAddChild: (name: string, birthday: string, gender?: Gender) => Promise<void>;
+  onJoinChild?: (uuid: string) => Promise<void>;
 }
 
 /**
@@ -50,6 +57,8 @@ export default function DiaryPage({
   onAdd,
   onUpdate,
   onDelete,
+  onAddChild,
+  onJoinChild,
 }: DiaryPageProps) {
   const [composerOpen, setComposerOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -156,11 +165,10 @@ export default function DiaryPage({
       reminderBadge={reminderBadge}
     >
       {!currentChild ? (
-        <EmptyState
-          theme={THEME}
-          title="還沒有寶寶資料"
-          description={'請先到 LittleSteps 新增寶寶，\n之後就能在這裡留下成長的點滴。'}
-          action={{ label: '前往 LittleSteps', onClick: () => { window.location.hash = '#/littlesteps'; } }}
+        <NoChildNotice
+          description={'新增寶寶後，就能在這裡留下成長的點滴。'}
+          onAddChild={onAddChild}
+          onJoinChild={onJoinChild}
         />
       ) : (
         <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-4">
