@@ -2,12 +2,13 @@ import type { ReactNode } from 'react';
 import AppBar from '../../common/ui/AppBar';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import AppHomeButton from '../../common/components/AppHomeButton';
+import type { Page } from '../../types/routes';
 
 interface BloomShellProps {
   title: string;
   subtitle?: string;
-  /** 有值時顯示返回鍵，導向該 hash；LittleBloom 首頁自己不需要 */
-  backTo?: string;
+  /** 有值時顯示返回鍵，導向該頁；LittleBloom 首頁自己不需要 */
+  backTo?: Page;
   children: ReactNode;
 }
 

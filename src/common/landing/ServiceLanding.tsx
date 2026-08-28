@@ -3,6 +3,8 @@ import { ArrowRight } from 'lucide-react';
 import AppHomeButton from '../components/AppHomeButton';
 import { fadeInUp, tap } from '../ui/motion';
 import { SERVICE_THEME } from '../ui/serviceTheme';
+import { goTo } from '../navigate';
+import type { Page } from '../../types/routes';
 
 type IntroService = 'littlebloom' | 'littleexplorer';
 
@@ -10,7 +12,7 @@ interface ServiceIntro {
   tagline: string;
   features: { title: string; detail: string }[];
   /** 不需登入就能看的內容入口 */
-  publicLink: { label: string; hash: string };
+  publicLink: { label: string; page: Page };
 }
 
 /**
@@ -31,7 +33,7 @@ const SERVICE_INTRO: Record<IntroService, ServiceIntro> = {
       { title: '產檢時程', detail: '記錄每次產檢的日期與院所，不再翻媽媽手冊找。' },
       { title: '孕期知識庫', detail: '常見孕期狀況的成因、處理方式與就醫時機。' },
     ],
-    publicLink: { label: '先看孕期知識庫', hash: '#/littlebloom/wiki' },
+    publicLink: { label: '先看孕期知識庫', page: 'littlebloom/wiki' },
   },
   littleexplorer: {
     tagline: '1 到 3 歲什麼都想自己來。陪你看懂他正在學會什麼。',
@@ -41,7 +43,7 @@ const SERVICE_INTRO: Record<IntroService, ServiceIntro> = {
       { title: '幼兒百科', detail: '如廁、語言、情緒、挑食、生病，45 篇對照官方指引的照顧指南。' },
       { title: '成長日記', detail: '記下那些不會出現在數據裡的時刻。' },
     ],
-    publicLink: { label: '先看幼兒百科', hash: '#/littleexplorer/wiki' },
+    publicLink: { label: '先看幼兒百科', page: 'littleexplorer/wiki' },
   },
 };
 
@@ -96,7 +98,7 @@ export default function ServiceLanding({ service, onSignIn }: ServiceLandingProp
             type="button"
             whileTap={tap}
             onClick={() => {
-              window.location.hash = intro.publicLink.hash;
+              goTo(intro.publicLink.page);
             }}
             className={`btn-ghost w-full mt-3 ${theme.ink}`}
           >

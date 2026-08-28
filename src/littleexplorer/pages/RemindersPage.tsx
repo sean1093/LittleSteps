@@ -22,6 +22,7 @@ import { TODDLER_MIN_MONTHS, bandForMonths } from '../utils/ageBands';
 import ExplorerShell from '../components/ExplorerShell';
 import NoChildNotice from '../components/NoChildNotice';
 import AgeBandPicker from '../components/AgeBandPicker';
+import { goTo } from '../../common/navigate';
 
 const THEME = SERVICE_THEME.littleexplorer;
 
@@ -99,14 +100,14 @@ export default function RemindersPage({
       theme={THEME}
       title="這是孕期檔案"
       description={'目前選擇的是還沒出生的寶寶。\n產檢時程在 LittleBloom；出生後在那裡登記出生日期，幼兒期的提醒就會接手。'}
-      action={{ label: '前往 LittleBloom 產檢時程', onClick: () => { window.location.hash = '#/littlebloom/prenatal'; } }}
+      action={{ label: '前往 LittleBloom 產檢時程', onClick: () => { goTo('littlebloom/prenatal'); } }}
     />
   ) : ageMonths < TODDLER_MIN_MONTHS ? (
     <EmptyState
       theme={THEME}
       title="寶寶還不到 1 歲"
       description={'幼兒期的提醒從滿 1 歲開始。\n1 歲前的疫苗與健檢請在 LittleSteps 的疫苗追蹤查看。'}
-      action={{ label: '回 LittleSteps 疫苗追蹤', onClick: () => { window.location.hash = '#/littlesteps/vaccine-tracking'; } }}
+      action={{ label: '回 LittleSteps 疫苗追蹤', onClick: () => { goTo('littlesteps/vaccine-tracking'); } }}
     />
   ) : null;
 
@@ -185,7 +186,7 @@ export default function RemindersPage({
                                 type="button"
                                 whileTap={tap}
                                 onClick={() => {
-                                  window.location.hash = '#/littlesteps/vaccine-tracking';
+                                  goTo('littlesteps/vaccine-tracking');
                                 }}
                                 className="btn-secondary px-4 text-sm text-explorer-sky-ink"
                               >

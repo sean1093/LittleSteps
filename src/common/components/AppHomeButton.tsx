@@ -1,4 +1,5 @@
 import { LayoutGrid } from 'lucide-react';
+import { goTo } from '../navigate';
 
 interface AppHomeButtonProps {
   /** Tailwind classes for the button surface; defaults suit a white header. */
@@ -27,7 +28,7 @@ export default function AppHomeButton({
     <button
       type="button"
       onClick={() => {
-        window.location.hash = '#/';
+        goTo('home');
       }}
       title="所有服務"
       aria-label="所有服務"

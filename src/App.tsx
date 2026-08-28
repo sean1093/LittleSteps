@@ -1,6 +1,7 @@
 import { useState, useEffect, Suspense, lazy } from 'react';
 import { Menu, Home } from 'lucide-react';
-import { Page, LittleStepsPage } from './types/routes'; // Import route types
+import { pageFromHash, type Page, type LittleStepsPage } from './types/routes';
+import { goTo } from './common/navigate';
 import { logPageView } from './lib/firebase';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useDailyLogs } from './littlesteps/hooks/useDailyLogs';
@@ -67,38 +68,8 @@ function AppContent() {
     setCurrentChild: handleSetCurrentChild,
   } = useChildStore(user);
 
-  // Parse initial page from URL hash
-  const getPageFromHash = (): Page => {
-    const hash = window.location.hash;
-    const pageMap: Record<string, Page> = {
-      '#/': 'home',
-      '#/littlesteps': 'littlesteps',
-      '#/littlesteps/dashboard': 'littlesteps/dashboard',
-      '#/littlesteps/milestones': 'littlesteps/milestones',
-      '#/littlesteps/care-guide': 'littlesteps/care-guide',
-      '#/littlesteps/vaccine-tracking': 'littlesteps/vaccine-tracking',
-      '#/littlesteps/complementary-food': 'littlesteps/complementary-food',
-      '#/littlesteps/daily-log': 'littlesteps/daily-log',
-      '#/littlesteps/growth-charts': 'littlesteps/growth-charts',
-      '#/littlesteps/sleep-training': 'littlesteps/sleep-training',
-      '#/littlesteps/sleep-analysis': 'littlesteps/sleep-analysis',
-      '#/littlesteps/baby-wiki': 'littlesteps/baby-wiki',
-      '#/littlesteps/clinic-summary': 'littlesteps/clinic-summary',
-      '#/littlesteps/report': 'littlesteps/report',
-      '#/littlebloom': 'littlebloom',
-      '#/littlebloom/prenatal': 'littlebloom/prenatal',
-      '#/littlebloom/wiki': 'littlebloom/wiki',
-      '#/littleexplorer': 'littleexplorer',
-      '#/littleexplorer/reminders': 'littleexplorer/reminders',
-      '#/littleexplorer/diary': 'littleexplorer/diary',
-      '#/littleexplorer/wiki': 'littleexplorer/wiki',
-      '#/littleouting': 'littleouting',
-      '#/babyoasis': 'babyoasis'
-    };
-    return pageMap[hash] || 'home';
-  };
+  const [currentPage, setCurrentPage] = useState<Page>(() => pageFromHash(window.location.hash));
 
-  const [currentPage, setCurrentPage] = useState<Page>(getPageFromHash());
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
 
@@ -114,11 +85,10 @@ function AppContent() {
   // 「什麼都還沒有」的畫面與登入後的去向都由 common/landing/LandingPage 決定，
   // 包含未登入被擋下時該顯示哪一張服務介紹頁。這裡不再各自判斷。
 
-  // Handle hash changes (browser back/forward buttons)
+  // 瀏覽器上一頁／下一頁只會改 hash，不會重新掛載，所以要自己跟著換頁。
   useEffect(() => {
     const handleHashChange = () => {
-      const newPage = getPageFromHash();
-      setCurrentPage(newPage);
+      setCurrentPage(pageFromHash(window.location.hash));
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -126,35 +96,8 @@ function AppContent() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-
-  // Update URL when page changes
   const navigateToPage = (page: Page) => {
-    const hashMap: Record<Page, string> = {
-      'home': '#/',
-      'littlesteps': '#/littlesteps',
-      'littlesteps/dashboard': '#/littlesteps/dashboard',
-      'littlesteps/milestones': '#/littlesteps/milestones',
-      'littlesteps/care-guide': '#/littlesteps/care-guide',
-      'littlesteps/vaccine-tracking': '#/littlesteps/vaccine-tracking',
-      'littlesteps/complementary-food': '#/littlesteps/complementary-food',
-      'littlesteps/daily-log': '#/littlesteps/daily-log',
-      'littlesteps/growth-charts': '#/littlesteps/growth-charts',
-      'littlesteps/sleep-training': '#/littlesteps/sleep-training',
-      'littlesteps/sleep-analysis': '#/littlesteps/sleep-analysis',
-      'littlesteps/baby-wiki': '#/littlesteps/baby-wiki',
-      'littlesteps/clinic-summary': '#/littlesteps/clinic-summary',
-      'littlesteps/report': '#/littlesteps/report',
-      'littlebloom': '#/littlebloom',
-      'littlebloom/prenatal': '#/littlebloom/prenatal',
-      'littlebloom/wiki': '#/littlebloom/wiki',
-      'littleexplorer': '#/littleexplorer',
-      'littleexplorer/reminders': '#/littleexplorer/reminders',
-      'littleexplorer/diary': '#/littleexplorer/diary',
-      'littleexplorer/wiki': '#/littleexplorer/wiki',
-      'littleouting': '#/littleouting',
-      'babyoasis': '#/babyoasis'
-    };
-    window.location.hash = hashMap[page];
+    goTo(page);
     setCurrentPage(page);
     // Scroll to top when navigating
     window.scrollTo({ top: 0, behavior: 'smooth' });

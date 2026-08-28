@@ -18,6 +18,7 @@ import PoopSummaryCard from '../components/dailylog/PoopSummaryCard';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem, tap, hoverLift } from '../../common/ui/motion';
+import { goTo } from '../../common/navigate';
 
 interface DashboardPageProps {
   currentChild?: ChildProfile;
@@ -150,7 +151,7 @@ export default function DashboardPage({
             <button
               type="button"
               onClick={() => {
-                window.location.hash = '#/littlebloom';
+                goTo('littlebloom');
               }}
               className="btn-primary bg-bloom-dusty-rose-deep mt-3"
             >

@@ -10,8 +10,10 @@ import AddPregnancyModal from '../components/AddPregnancyModal';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { hoverLift, listItem, stagger, tap } from '../../common/ui/motion';
+import type { Page } from '../../types/routes';
 import { isPregnancyProfile } from '../../common/pregnancy';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
+import { goTo } from '../../common/navigate';
 
 interface LittleBloomPageProps {
   currentChild?: ChildProfile | null;
@@ -105,7 +107,7 @@ export default function LittleBloomPage({
           action={{
             label: '前往 LittleSteps',
             onClick: () => {
-              window.location.hash = '#/littlesteps';
+              goTo('littlesteps');
             },
           }}
         />
@@ -186,7 +188,7 @@ export default function LittleBloomPage({
               type="button"
               whileTap={tap}
               onClick={() => {
-                window.location.hash = '#/littlebloom/prenatal';
+                goTo('littlebloom/prenatal');
               }}
               className="w-full text-left rounded-2xl bg-bloom-cream p-4 hover:bg-bloom-sand transition-colors"
             >
@@ -208,13 +210,13 @@ export default function LittleBloomPage({
           <NavCard
             label="產檢時程"
             icon={<Calendar className="w-6 h-6" />}
-            hash="#/littlebloom/prenatal"
+            page="littlebloom/prenatal"
             className="bg-bloom-sage/20 text-bloom-sage-ink"
           />
           <NavCard
             label="孕期知識庫"
             icon={<Book className="w-6 h-6" />}
-            hash="#/littlebloom/wiki"
+            page="littlebloom/wiki"
             className="bg-bloom-dusty-blue/20 text-bloom-dusty-blue-ink"
           />
         </motion.section>
@@ -282,18 +284,18 @@ export default function LittleBloomPage({
 interface NavCardProps {
   label: string;
   icon: React.ReactNode;
-  hash: string;
+  page: Page;
   className: string;
 }
 
-function NavCard({ label, icon, hash, className }: NavCardProps) {
+function NavCard({ label, icon, page, className }: NavCardProps) {
   return (
     <motion.button
       type="button"
       whileHover={hoverLift}
       whileTap={tap}
       onClick={() => {
-        window.location.hash = hash;
+        goTo(page);
       }}
       className={`${className} rounded-3xl p-5 shadow-soft hover:shadow-soft-lg transition-shadow flex flex-col items-center gap-2`}
     >

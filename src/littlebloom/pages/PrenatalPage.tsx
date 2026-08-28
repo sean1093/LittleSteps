@@ -15,6 +15,7 @@ import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { listItem, stagger, tap } from '../../common/ui/motion';
 import { isPregnancyProfile } from '../../common/pregnancy';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
+import { goTo } from '../../common/navigate';
 
 const THEME = SERVICE_THEME.littlebloom;
 
@@ -74,7 +75,7 @@ export default function PrenatalPage({
   // 與 LittleBloomPage 同一個理由：出生後 lmp 仍在，只有 status 變成 archived。
   if (currentChild && lmp && !isPregnancyProfile(currentChild)) {
     return (
-      <BloomShell title="產檢時程" backTo="#/littlebloom">
+      <BloomShell title="產檢時程" backTo="littlebloom">
         <EmptyState
           theme={THEME}
           icon={Baby}
@@ -83,7 +84,7 @@ export default function PrenatalPage({
           action={{
             label: '前往 LittleSteps',
             onClick: () => {
-              window.location.hash = '#/littlesteps';
+              goTo('littlesteps');
             },
           }}
         />
@@ -93,7 +94,7 @@ export default function PrenatalPage({
 
   if (!lmp) {
     return (
-      <BloomShell title="產檢時程" backTo="#/littlebloom">
+      <BloomShell title="產檢時程" backTo="littlebloom">
         <EmptyState
           theme={THEME}
           title="還沒有孕期資料"
@@ -102,7 +103,7 @@ export default function PrenatalPage({
             label: '回 LittleBloom 建立孕期檔案',
             onClick: () => {
               // 留在 LittleBloom 之內：新增孕期檔案的入口在本服務的首頁。
-              window.location.hash = '#/littlebloom';
+              goTo('littlebloom');
             },
           }}
         />
@@ -123,7 +124,7 @@ export default function PrenatalPage({
     <BloomShell
       title="產檢時程"
       subtitle={`第 ${weeks + 1} 週 · 預產期 ${currentChild?.pregnancyData?.dueDate ?? ''}`}
-      backTo="#/littlebloom"
+      backTo="littlebloom"
     >
       <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-4">
         {SECTIONS.map(({ status, title }) => {

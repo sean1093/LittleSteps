@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import type { ServiceTheme } from './serviceTheme';
+import type { Page } from '../../types/routes';
+import { goTo } from '../navigate';
 
 /**
  * The one page header.
@@ -26,8 +28,8 @@ interface AppBarProps {
   theme: ServiceTheme;
   title: string;
   subtitle?: string;
-  /** Renders a back button pointing at this hash. */
-  backTo?: string;
+  /** Renders a back button pointing at this page. */
+  backTo?: Page;
   /** Accessible label for the back button; defaults to a generic one. */
   backLabel?: string;
   /** Replaces the back button — used by LittleSteps for its menu button. */
@@ -61,7 +63,7 @@ export default function AppBar({
             <button
               type="button"
               onClick={() => {
-                window.location.hash = backTo;
+                goTo(backTo);
               }}
               aria-label={backLabel ?? `返回${theme.name}首頁`}
               className="btn-icon -ml-1.5"

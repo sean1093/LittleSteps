@@ -1,43 +1,19 @@
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
-import type { Page } from '../types/routes';
+import { ROUTE_HASH, pageFromHash, type Page } from '../types/routes';
 import type { ServiceId } from './routePolicy';
 import { SERVICE_HOME, requiresAuth, serviceOf } from './routePolicy';
 
 /**
- * 執行期的 Page 清單。TS 的 union 不可窮舉，所以只能手寫。
+ * 執行期的 Page 清單，直接從路由表推導。
  *
- * 加一條新路由時要一起改三個地方：src/types/routes.ts 的 Page union、
- * 這張表，以及下面 PUBLIC 或 GATED 其中一邊。三者對不上時，
- * 「路由表同步」那組測試會直接指出漏了哪一步。
+ * 以前這張表是手抄的，而且靠正規表示式去 App.tsx 撈出兩張路由字典來對帳——
+ * 路由真相散在三個地方，抄漏一個就會有頁面靜靜地連不進來。現在 ROUTE_HASH
+ * 是唯一來源，Page 型別也由它推導，所以這裡不可能過期。
+ *
+ * 剩下要人決定的只有一件事：新的路由公開還是需登入。下面的 PUBLIC/GATED
+ * 仍然手寫，漏了就會在「每條路由不是公開就是需登入」那條失敗。
  */
-const ALL_PAGES: Page[] = [
-  'home',
-  'littlesteps',
-  'littlesteps/dashboard',
-  'littlesteps/milestones',
-  'littlesteps/care-guide',
-  'littlesteps/vaccine-tracking',
-  'littlesteps/complementary-food',
-  'littlesteps/daily-log',
-  'littlesteps/growth-charts',
-  'littlesteps/sleep-training',
-  'littlesteps/sleep-analysis',
-  'littlesteps/baby-wiki',
-  'littlesteps/clinic-summary',
-  'littlesteps/report',
-  'littlebloom',
-  'littlebloom/prenatal',
-  'littlebloom/wiki',
-  'littleexplorer',
-  'littleexplorer/reminders',
-  'littleexplorer/diary',
-  'littleexplorer/wiki',
-  'littleouting',
-  'babyoasis',
-];
+const ALL_PAGES = Object.keys(ROUTE_HASH) as Page[];
 
 /**
  * 公開範圍是產品決定，不是實作細節。判準是「這一頁需不需要某個孩子的資料
@@ -91,37 +67,24 @@ const ALL_SERVICES = Object.keys({
   littleouting: true,
 } satisfies Record<ServiceId, true>) as ServiceId[];
 
-/**
- * 從 App.tsx 讀出真正被接上的路由。
- *
- * TypeScript 的 union 在執行期不可窮舉，所以 ALL_PAGES 只能手寫；手寫的表會過期。
- * 拿 App.tsx 的兩張路由表當事實來源，就讓「加了一條路由但沒有決定它公不公開、
- * 屬於哪個服務」變成一個會紅的測試，而不是一次靜悄悄的預設值。
- */
-function parseRouteTable(declaration: string, entry: RegExp): string[] {
-  // happy-dom 覆寫了全域 URL，Node 的 fs 不吃它，所以先轉成字串路徑再讀。
-  const appSource = join(dirname(fileURLToPath(import.meta.url)), '..', 'App.tsx');
-  const source = readFileSync(appSource, 'utf8');
-  const table = source.match(
-    new RegExp(`${declaration} = \\{([\\s\\S]*?)\\n {4}\\};`),
-  );
-  if (!table) {
-    throw new Error(`在 App.tsx 找不到 ${declaration}；改了寫法請一併更新這個測試`);
-  }
-  return [...table[1].matchAll(entry)].map((match) => match[1]);
-}
-
 describe('路由表同步', () => {
-  it('ALL_PAGES 就是 App.tsx 真正接上的那幾條', () => {
-    // 這張表是下面每一條窮舉測試的基礎，過期了整組測試就一起失去意義。
-    const wired = parseRouteTable('hashMap: Record<Page, string>', /'([^']+)':\s*'#/g);
-    expect([...ALL_PAGES].sort()).toEqual(wired.sort());
+  it('每條路由都能從網址列直接進來', () => {
+    // 導得過去卻連不進來的頁面 = 分享出去的連結會靜靜掉回首頁。
+    // 反查表由 ROUTE_HASH 推導，所以這條現在是結構保證，不是巧合。
+    for (const page of ALL_PAGES) {
+      expect(pageFromHash(ROUTE_HASH[page])).toBe(page);
+    }
   });
 
-  it('每條路由都能從網址列直接進來', () => {
-    // 只加 hashMap 沒加 pageMap，深連結會靜靜掉回首頁——分享出去的連結全失效。
-    const reachable = parseRouteTable('pageMap: Record<string, Page>', /'#[^']*':\s*'([^']+)'/g);
-    expect(reachable.sort()).toEqual([...ALL_PAGES].sort());
+  it('沒有兩頁共用同一個 hash', () => {
+    // 撞號的話後面那頁永遠進不去，而型別不會抱怨——Record 的值沒有唯一性限制。
+    const hashes = Object.values(ROUTE_HASH);
+    expect(new Set(hashes).size).toBe(hashes.length);
+  });
+
+  it('認不得的 hash 回服務集合首頁', () => {
+    expect(pageFromHash('#/nope')).toBe('home');
+    expect(pageFromHash('')).toBe('home');
   });
 
   it('每條路由不是公開就是需登入，沒有第三種狀態', () => {

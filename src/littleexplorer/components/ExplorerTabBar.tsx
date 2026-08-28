@@ -2,6 +2,8 @@ import { motion } from 'framer-motion';
 import { BellRing, BookOpen, PenLine, Sprout } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { tap } from '../../common/ui/motion';
+import { goTo } from '../../common/navigate';
+import type { Page } from '../../types/routes';
 
 export type ExplorerTab = 'development' | 'reminders' | 'diary' | 'wiki';
 
@@ -9,7 +11,7 @@ interface TabDefinition {
   id: ExplorerTab;
   label: string;
   icon: LucideIcon;
-  hash: string;
+  page: Page;
 }
 
 /**
@@ -17,10 +19,10 @@ interface TabDefinition {
  * mirroring how Sidebar declares its menuSections.
  */
 const TABS: TabDefinition[] = [
-  { id: 'development', label: '成長', icon: Sprout, hash: '#/littleexplorer' },
-  { id: 'reminders', label: '提醒', icon: BellRing, hash: '#/littleexplorer/reminders' },
-  { id: 'diary', label: '日記', icon: PenLine, hash: '#/littleexplorer/diary' },
-  { id: 'wiki', label: '百科', icon: BookOpen, hash: '#/littleexplorer/wiki' },
+  { id: 'development', label: '成長', icon: Sprout, page: 'littleexplorer' },
+  { id: 'reminders', label: '提醒', icon: BellRing, page: 'littleexplorer/reminders' },
+  { id: 'diary', label: '日記', icon: PenLine, page: 'littleexplorer/diary' },
+  { id: 'wiki', label: '百科', icon: BookOpen, page: 'littleexplorer/wiki' },
 ];
 
 interface ExplorerTabBarProps {
@@ -50,7 +52,7 @@ export default function ExplorerTabBar({ active, reminderBadge = 0 }: ExplorerTa
               type="button"
               whileTap={tap}
               onClick={() => {
-                window.location.hash = tab.hash;
+                goTo(tab.page);
               }}
               aria-current={isActive ? 'page' : undefined}
               className={`flex-1 min-h-[56px] flex flex-col items-center justify-center gap-1 transition-colors ${

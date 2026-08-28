@@ -26,6 +26,7 @@ import ExplorerShell from '../components/ExplorerShell';
 import NoChildNotice from '../components/NoChildNotice';
 import AgeBandPicker from '../components/AgeBandPicker';
 import ToothChart from '../components/ToothChart';
+import { goTo } from '../../common/navigate';
 
 const THEME = SERVICE_THEME.littleexplorer;
 
@@ -98,14 +99,14 @@ export default function DevelopmentPage({
       theme={THEME}
       title="這是孕期檔案"
       description={'目前選擇的是還沒出生的寶寶。\n孕期的產檢與每週指南在 LittleBloom；出生後在那裡登記出生日期，這裡就會接手。'}
-      action={{ label: '前往 LittleBloom', onClick: () => { window.location.hash = '#/littlebloom'; } }}
+      action={{ label: '前往 LittleBloom', onClick: () => { goTo('littlebloom'); } }}
     />
   ) : ageMonths < TODDLER_MIN_MONTHS ? (
     <EmptyState
       theme={THEME}
       title="寶寶還不到 1 歲"
       description={'幼兒期的成長追蹤從滿 1 歲開始。\n在那之前，LittleSteps 的里程碑與副食品指南更適合現在的階段。'}
-      action={{ label: '回 LittleSteps 追蹤里程碑', onClick: () => { window.location.hash = '#/littlesteps/milestones'; } }}
+      action={{ label: '回 LittleSteps 追蹤里程碑', onClick: () => { goTo('littlesteps/milestones'); } }}
     />
   ) : null;
 

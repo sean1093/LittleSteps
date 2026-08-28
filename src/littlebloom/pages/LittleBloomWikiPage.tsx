@@ -28,7 +28,7 @@ const CATEGORY_ICONS: Record<PregnancyWikiCategory, string> = {
 
 export default function LittleBloomWikiPage() {
   return (
-    <BloomShell title="孕期知識庫" subtitle="常見孕期疑問與處理方式" backTo="#/littlebloom">
+    <BloomShell title="孕期知識庫" subtitle="常見孕期疑問與處理方式" backTo="littlebloom">
       <motion.div variants={fadeInUp} initial="hidden" animate="visible">
         <WikiBrowser
           articles={pregnancyWikiArticles}
