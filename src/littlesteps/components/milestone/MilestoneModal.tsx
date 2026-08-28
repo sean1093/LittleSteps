@@ -5,6 +5,7 @@ import { X, Check, Share2 } from 'lucide-react';
 import { backdrop, sheet } from '../../../common/ui/motion';
 import { shareMilestone } from '../../utils/share';
 import { formatDate } from '../../../common/utils/dateHelpers';
+import { useToast } from '../../../common/ui/toast';
 
 interface MilestoneModalProps {
   milestone: Milestone | null;
@@ -23,6 +24,7 @@ export default function MilestoneModal({
   achievedDate,
   onToggle
 }: MilestoneModalProps) {
+  const toast = useToast();
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -37,7 +39,10 @@ export default function MilestoneModal({
   if (!milestone) return null;
 
   const handleShare = async () => {
-    await shareMilestone(milestone.title);
+    const outcome = await shareMilestone(milestone.title);
+    // 系統分享面板自己就是回饋，只有退回複製或失敗時才需要說話。
+    if (outcome === 'copied') toast.show('已複製到剪貼簿', 'success');
+    if (outcome === 'failed') toast.show('分享失敗，請稍後再試');
   };
 
   return (

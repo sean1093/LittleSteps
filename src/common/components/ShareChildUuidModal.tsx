@@ -4,6 +4,7 @@ import { Copy, Check } from 'lucide-react';
 import { ChildProfile } from '../../types';
 import { tap } from '../ui/motion';
 import ModalFrame from './ModalFrame';
+import { useToast } from '../ui/toast';
 
 interface ShareChildUuidModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export default function ShareChildUuidModal({
   onClose,
   child
 }: ShareChildUuidModalProps) {
+  const toast = useToast();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -27,7 +29,7 @@ export default function ShareChildUuidModal({
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
-      alert('複製失敗，請手動選取並複製');
+      toast.show('複製失敗，請手動選取並複製');
     }
   };
 

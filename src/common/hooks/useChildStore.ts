@@ -13,6 +13,7 @@ import type {
 } from '../../types';
 import { isPregnancyProfile, resolvePregnancyChild } from '../pregnancy';
 import { CHILD_LIMIT_MESSAGE, MAX_CHILDREN } from '../childLimits';
+import { useToast } from '../ui/toast';
 import { useUserChildren } from './useUserChildren';
 import { useFirebaseChildren } from './useFirebaseChildren';
 import {
@@ -70,6 +71,7 @@ export interface ChildStore {
  * unauthenticated callers get empty data and no-op mutators.
  */
 export function useChildStore(user: User | null): ChildStore {
+  const toast = useToast();
   const {
     children: childProfiles,
     currentChildId,
@@ -144,7 +146,7 @@ export function useChildStore(user: User | null): ChildStore {
   ) => {
     if (!user) return;
     if (childProfiles.length >= MAX_CHILDREN) {
-      alert(CHILD_LIMIT_MESSAGE);
+      toast.show(CHILD_LIMIT_MESSAGE);
       return;
     }
     try {
@@ -152,14 +154,14 @@ export function useChildStore(user: User | null): ChildStore {
       logChildProfileAction('create');
     } catch (error) {
       console.error('新增寶寶失敗:', error);
-      alert(errorMessage(error, '新增寶寶失敗，請稍後再試'));
+      toast.show(errorMessage(error, '新增寶寶失敗，請稍後再試'));
     }
   };
 
   const joinChild = async (childUuid: string) => {
     if (!user) return;
     if (childProfiles.length >= MAX_CHILDREN) {
-      alert(CHILD_LIMIT_MESSAGE);
+      toast.show(CHILD_LIMIT_MESSAGE);
       return;
     }
     try {
@@ -167,7 +169,7 @@ export function useChildStore(user: User | null): ChildStore {
       logChildProfileAction('create'); // Creating a reference to an existing child.
     } catch (error) {
       console.error('加入寶寶失敗:', error);
-      alert(errorMessage(error, '加入寶寶失敗，請確認代碼是否正確'));
+      toast.show(errorMessage(error, '加入寶寶失敗，請確認代碼是否正確'));
     }
   };
 
@@ -184,7 +186,7 @@ export function useChildStore(user: User | null): ChildStore {
       logChildProfileAction('update');
     } catch (error) {
       console.error('更新寶寶資料失敗:', error);
-      alert(errorMessage(error, '更新失敗，請稍後再試'));
+      toast.show(errorMessage(error, '更新失敗，請稍後再試'));
     }
   };
 
@@ -198,7 +200,7 @@ export function useChildStore(user: User | null): ChildStore {
       logChildProfileAction('delete');
     } catch (error) {
       console.error('刪除寶寶失敗:', error);
-      alert(errorMessage(error, '刪除失敗，請稍後再試'));
+      toast.show(errorMessage(error, '刪除失敗，請稍後再試'));
     }
   };
 

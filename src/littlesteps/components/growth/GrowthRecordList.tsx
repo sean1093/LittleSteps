@@ -6,6 +6,7 @@ import EmptyState from '../../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../../common/ui/serviceTheme';
 import { listItem, stagger, tap } from '../../../common/ui/motion';
 import { formatDate } from '../../../common/utils/dateHelpers';
+import { useToast } from '../../../common/ui/toast';
 
 interface GrowthRecordListProps {
   records: GrowthRecord[];
@@ -20,13 +21,14 @@ export default function GrowthRecordList({
   loading,
   onDelete,
 }: GrowthRecordListProps) {
+  const toast = useToast();
   const handleDelete = async (recordId: string) => {
     if (window.confirm('確定要刪除這筆記錄嗎？')) {
       try {
         await onDelete(recordId);
       } catch (error) {
         console.error('Failed to delete record:', error);
-        alert('刪除失敗，請稍後再試');
+        toast.show('刪除失敗，請稍後再試');
       }
     }
   };

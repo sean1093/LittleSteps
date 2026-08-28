@@ -4,6 +4,7 @@ import { Save, X } from 'lucide-react';
 import { backdrop, sheet, tap } from '../../../common/ui/motion';
 import { GrowthRecord } from '../../../types';
 import { toLocalDateKey } from '../../../common/utils/dateHelpers';
+import { useToast } from '../../../common/ui/toast';
 
 interface AddGrowthRecordModalProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export default function AddGrowthRecordModal({
   onAdd,
   childId,
 }: AddGrowthRecordModalProps) {
+  const toast = useToast();
   const [date, setDate] = useState(toLocalDateKey());
   const [weight, setWeight] = useState('');
   const [height, setHeight] = useState('');
@@ -33,7 +35,7 @@ export default function AddGrowthRecordModal({
     e.preventDefault();
 
     if (!weight && !height && !headCircumference) {
-      alert('請至少輸入一項測量數據');
+      toast.show('請至少輸入一項測量數據');
       return;
     }
 
@@ -58,7 +60,7 @@ export default function AddGrowthRecordModal({
       onClose();
     } catch (error) {
       console.error('Failed to add record:', error);
-      alert((error as Error).message || '新增失敗，請檢查輸入資料');
+      toast.show((error as Error).message || '新增失敗，請檢查輸入資料');
     } finally {
       setSaving(false);
     }

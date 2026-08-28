@@ -16,6 +16,7 @@ import AccountButton from './common/components/AccountButton';
 import PregnancyGate from './littlesteps/components/PregnancyGate';
 import LandingPage, { landingKindFor, isStandaloneLanding } from './common/landing/LandingPage';
 import ErrorBoundary from './common/components/ErrorBoundary';
+import { ToastProvider } from './common/ui/toast';
 import AppBar from './common/ui/AppBar';
 import { SERVICE_THEME } from './common/ui/serviceTheme';
 const DashboardPage = lazy(() => import('./littlesteps/pages/DashboardPage'));
@@ -457,13 +458,16 @@ function App() {
     // 外層這道攔的是頁首、側邊欄、context provider 之類的外框錯誤——那些
     // 在 <main> 之外，裡面那道 boundary 看不到。
     <ErrorBoundary scope="app">
-      <AuthProvider>
+      {/* Toast 在最外層：AuthProvider 自己也會回報登入失敗。 */}
+      <ToastProvider>
+        <AuthProvider>
         {/* 孩子資料與帳號一樣是全站脈絡：五個服務的 AppBar 都要拿得到，
             不然登出與切換寶寶就只會存在於能拿到 prop 的那一個服務裡。 */}
-        <ChildStoreProvider>
-          <AppContent />
-        </ChildStoreProvider>
-      </AuthProvider>
+          <ChildStoreProvider>
+            <AppContent />
+          </ChildStoreProvider>
+        </AuthProvider>
+      </ToastProvider>
     </ErrorBoundary>
   );
 }

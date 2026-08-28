@@ -8,6 +8,7 @@ import {
   signOut as firebaseSignOut
 } from 'firebase/auth';
 import { auth, googleProvider, logAuthEvent } from '../lib/firebase';
+import { useToast } from '../common/ui/toast';
 
 
 interface AuthContextType {
@@ -46,6 +47,7 @@ function isInAppBrowser(): boolean {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
+  const toast = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -62,7 +64,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.error('Redirect 登入失敗:', error);
         if (error?.code !== 'auth/popup-closed-by-user') {
           logAuthEvent('login_failed');
-          alert('登入失敗，請稍後再試');
+          toast.show('登入失敗，請稍後再試');
         }
       }
     };
@@ -96,7 +98,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // 忽略用戶取消登入的錯誤
       if (error?.code !== 'auth/popup-closed-by-user') {
         logAuthEvent('login_failed');
-        alert('登入失敗，請稍後再試');
+        toast.show('登入失敗，請稍後再試');
       }
     }
   };
@@ -107,7 +109,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       logAuthEvent('logout');
     } catch (error) {
       console.error('登出失敗:', error);
-      alert('登出失敗，請稍後再試');
+      toast.show('登出失敗，請稍後再試');
     }
   };
 

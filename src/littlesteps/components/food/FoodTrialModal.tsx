@@ -4,6 +4,7 @@ import { Plus, X } from 'lucide-react';
 import { backdrop, sheet } from '../../../common/ui/motion';
 import { FoodTrialRecord, AllergyReaction, AllergyReactionType, AllergySeverity, FoodPreference } from '../../../types';
 import { formatDate, toLocalDateKey } from '../../../common/utils/dateHelpers';
+import { useToast } from '../../../common/ui/toast';
 
 interface FoodTrialModalProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export default function FoodTrialModal({
   onSave,
   editingFood,
 }: FoodTrialModalProps) {
+  const toast = useToast();
   const [foodName, setFoodName] = useState('');
   const [category, setCategory] = useState('');
   const [firstTriedDate, setFirstTriedDate] = useState('');
@@ -71,12 +73,12 @@ export default function FoodTrialModal({
 
   const handleSave = () => {
     if (!foodName.trim()) {
-      alert('請輸入食物名稱');
+      toast.show('請輸入食物名稱');
       return;
     }
 
     if (!firstTriedDate) {
-      alert('請選擇首次嘗試日期');
+      toast.show('請選擇首次嘗試日期');
       return;
     }
 
@@ -98,7 +100,7 @@ export default function FoodTrialModal({
 
   const addAllergyReaction = () => {
     if (!newReactionDate) {
-      alert('請選擇過敏反應日期');
+      toast.show('請選擇過敏反應日期');
       return;
     }
 

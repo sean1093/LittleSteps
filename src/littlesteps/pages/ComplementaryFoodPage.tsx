@@ -17,6 +17,7 @@ import FoodTrackingView from '../components/food/FoodTrackingView';
 import type { TrackingTab, ViewMode } from '../components/food/types';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
 import { fadeInUp } from '../../common/ui/motion';
+import { useToast } from '../../common/ui/toast';
 
 interface ComplementaryFoodPageProps {
   currentChild?: ChildProfile | null;
@@ -33,6 +34,7 @@ export default function ComplementaryFoodPage({
   currentChild,
   user,
 }: ComplementaryFoodPageProps) {
+  const toast = useToast();
   const [viewMode, setViewMode] = useState<ViewMode>('home');
   const [trackingTab, setTrackingTab] = useState<TrackingTab>('foods');
   const [showAllergyTest, setShowAllergyTest] = useState(false);
@@ -57,7 +59,7 @@ export default function ComplementaryFoodPage({
 
   const handleSaveFood = async (foodData: Omit<FoodTrialRecord, 'id' | 'createdAt'>) => {
     if (!childId) {
-      alert('請先選擇寶寶');
+      toast.show('請先選擇寶寶');
       return;
     }
 
@@ -71,7 +73,7 @@ export default function ComplementaryFoodPage({
       setEditingFood(null);
     } catch (error) {
       console.error('保存食物記錄失敗:', error);
-      alert(error instanceof Error ? error.message : '保存失敗，請稍後再試');
+      toast.show(error instanceof Error ? error.message : '保存失敗，請稍後再試');
     }
   };
 
@@ -82,7 +84,7 @@ export default function ComplementaryFoodPage({
       await firebaseChildren.deleteFoodTrial(childId, foodId);
     } catch (error) {
       console.error('刪除食物記錄失敗:', error);
-      alert(error instanceof Error ? error.message : '刪除失敗，請稍後再試');
+      toast.show(error instanceof Error ? error.message : '刪除失敗，請稍後再試');
     }
   };
 
@@ -100,7 +102,7 @@ export default function ComplementaryFoodPage({
       });
     } catch (error) {
       console.error('新增嘗試日期失敗:', error);
-      alert(error instanceof Error ? error.message : '新增失敗，請稍後再試');
+      toast.show(error instanceof Error ? error.message : '新增失敗，請稍後再試');
     }
   };
 

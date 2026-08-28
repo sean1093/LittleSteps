@@ -11,6 +11,7 @@ import LogTimeline from '../components/dailylog/LogTimeline';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem } from '../../common/ui/motion';
+import { useToast } from '../../common/ui/toast';
 
 interface DailyLogPageProps {
   currentChild?: ChildProfile | null;
@@ -18,6 +19,7 @@ interface DailyLogPageProps {
 }
 
 export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) {
+  const toast = useToast();
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState<'feeding' | 'sleep' | 'diaper' | null>(null);
   const [editingLog, setEditingLog] = useState<DailyLog | null>(null);
@@ -41,7 +43,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
 
   const handleSave = async (logData: Omit<DailyLog, 'id'>) => {
     if (!currentChild) {
-      alert('請先選擇寶寶');
+      toast.show('請先選擇寶寶');
       return;
     }
 
@@ -61,7 +63,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
       setEditingLog(null);
     } catch (error) {
       console.error('保存日誌失敗:', error);
-      alert(error instanceof Error ? error.message : '保存失敗，請稍後再試');
+      toast.show(error instanceof Error ? error.message : '保存失敗，請稍後再試');
     }
   };
 
@@ -78,7 +80,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
       await firebaseChildren.deleteDailyLog(currentChild.id, logId);
     } catch (error) {
       console.error('刪除日誌失敗:', error);
-      alert(error instanceof Error ? error.message : '刪除失敗，請稍後再試');
+      toast.show(error instanceof Error ? error.message : '刪除失敗，請稍後再試');
     }
   };
 

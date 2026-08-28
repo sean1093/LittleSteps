@@ -29,6 +29,7 @@ import RoomSearch from '../components/RoomSearch';
 
 // Import leaflet CSS
 import 'leaflet/dist/leaflet.css';
+import { useToast } from '../../common/ui/toast';
 
 // Fix Leaflet icon issue in React
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -285,6 +286,7 @@ const SelectedRoomFocus = ({ room }: { room: NursingRoom | null }) => {
 };
 
 const BabyOasisPage = () => {
+  const toast = useToast();
   const theme = SERVICE_THEME.babyoasis;
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<NursingRoom | null>(null);
@@ -328,11 +330,11 @@ const BabyOasisPage = () => {
         },
         (error) => {
           console.error('定位失敗:', error);
-          alert('無法取得您的位置，請確認已開啟定位權限');
+          toast.show('無法取得您的位置，請確認已開啟定位權限');
         }
       );
     } else {
-      alert('您的瀏覽器不支援定位功能');
+      toast.show('您的瀏覽器不支援定位功能');
     }
   };
 
