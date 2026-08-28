@@ -1,29 +1,15 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Baby, AlertCircle, Home, Syringe, UtensilsCrossed, Edit, LogOut, TrendingUp, Moon, Share2, BarChart3, ClipboardList, BookOpen, Stethoscope, FileBarChart } from 'lucide-react';
-import { isPregnancyProfile } from '../pregnancy';
+import { X, Baby, AlertCircle, Home, Syringe, UtensilsCrossed, TrendingUp, Moon, BarChart3, ClipboardList, BookOpen, Stethoscope, FileBarChart } from 'lucide-react';
 import { User } from 'firebase/auth';
-import { ChildProfile, Gender } from '../../types'; // Import ChildProfile and Gender
 import { LittleStepsPage } from '../../types/routes'; // Import route types
 import { backdrop, listItem, stagger } from '../ui/motion';
-import AddChildModal from './AddChildModal'; // Import AddChildModal
-import ShareChildUuidModal from './ShareChildUuidModal'; // Import ShareChildUuidModal
-import { useState } from 'react'; // Import useState
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   currentPage: LittleStepsPage;
   onNavigate: (page: LittleStepsPage) => void;
-  childProfiles: ChildProfile[];
-  currentChildId: string | null;
-  setCurrentChildId: (id: string) => void;
-  addChild: (name: string, birthday: string, gender?: Gender, dueDate?: string) => void;
-  joinChild: (uuid: string) => void;
-  updateChild: (id: string, name: string, birthday: string, gender?: Gender) => void;
-  deleteChild: (id: string) => void;
   user: User | null;
-  onSignIn: () => Promise<void>;
-  onSignOut: () => Promise<void>;
 }
 
 /** 抽屜裡每一組的標題共用同一個 eyebrow 樣式，才不會五組標題五種大小。 */
@@ -34,26 +20,8 @@ export default function Sidebar({
   onClose,
   currentPage,
   onNavigate,
-  childProfiles,
-  currentChildId,
-  setCurrentChildId,
-  addChild,
-  joinChild,
-  updateChild,
-  deleteChild,
   user,
-  onSignIn,
-  onSignOut,
 }: SidebarProps) {
-  const [showAddChildModal, setShowAddChildModal] = useState(false);
-  const [editingChild, setEditingChild] = useState<ChildProfile | null>(null);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [sharingChild, setSharingChild] = useState<ChildProfile | null>(null);
-
-  // 計算子女數量與免費版限制
-  const childCount = childProfiles.length;
-  const canAddChild = childCount < 2;
-
   // Menu structure organized by functional domains
   const menuSections = [
     {
@@ -173,30 +141,6 @@ export default function Sidebar({
     onClose();
   };
 
-  const handleSaveChild = (
-    name: string,
-    birthday: string,
-    gender?: Gender,
-    _isPregnancy?: boolean,
-    dueDate?: string,
-  ) => {
-    if (editingChild) {
-      updateChild(editingChild.id, name, birthday, gender);
-    } else {
-      addChild(name, birthday, gender, dueDate);
-    }
-    setEditingChild(null);
-  };
-
-  // 刪除是不可回復的（里程碑進度一起消失），所以它不再和「編輯」並排擺在
-  // 每一列裡——原本兩者只隔 4px，誤觸代價太大。入口收進編輯表單內。
-  const handleDeleteChild = (id: string) => {
-    if (window.confirm('確定要刪除這位寶寶的資料嗎？所有里程碑進度也將一併刪除。')) {
-      deleteChild(id);
-      setShowAddChildModal(false);
-      setEditingChild(null);
-    }
-  };
 
   return (
     <AnimatePresence>
@@ -235,129 +179,10 @@ export default function Sidebar({
               </div>
             </div>
 
-            {/* Auth Section */}
-            <div className="p-4 border-b border-ink/5">
-              {!user ? (
-                <>
-                  <div className="p-4 rounded-2xl bg-secondary-soft mb-3">
-                    <p className="text-sm font-medium text-ink">登入以保存資料</p>
-                    <p className="text-xs text-ink-muted">使用 Google 帳號登入</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={onSignIn}
-                    className="btn-secondary w-full"
-                  >
-                    <img
-                      src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                      alt="Google"
-                      className="w-5 h-5"
-                    />
-                    <span>使用 Google 登入</span>
-                  </button>
-                </>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <img
-                    src={user.photoURL || '/default-avatar.png'}
-                    alt={user.displayName || '用戶'}
-                    className="w-12 h-12 rounded-full"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-ink truncate">
-                      {user.displayName || '用戶'}
-                    </p>
-                    <p className="text-sm text-ink-muted truncate">{user.email}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={onSignOut}
-                    className="btn-icon"
-                    title="登出"
-                    aria-label="登出"
-                  >
-                    <LogOut className="w-5 h-5" />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Child Profiles Section */}
-            <div className="p-4 border-b border-ink/5">
-              <h3 className={GROUP_LABEL}>我的寶寶</h3>
-              <div className="space-y-2">
-                {childProfiles.length === 0 && (
-                  <p className="text-ink-muted text-sm px-2">尚未新增寶寶資料</p>
-                )}
-                {childProfiles.map((child) => (
-                  <div
-                    key={child.id}
-                    className={`flex items-center gap-1 p-2 pl-3 rounded-2xl transition-colors ${
-                      child.id === currentChildId
-                        ? 'bg-primary-light'
-                        : 'bg-ink/5 hover:bg-ink/10'
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      className="flex-1 min-w-0 flex items-center gap-2 min-h-tap text-left"
-                      onClick={() => setCurrentChildId(child.id)}
-                    >
-                      <span className="font-medium text-ink truncate">{child.name}</span>
-                      {/* 孕期檔案的 birthday 是預產期，外觀上與寶寶檔案無異；
-                          沒有這個標記，切換器裡兩者分不出來。 */}
-                      {isPregnancyProfile(child) && (
-                        <span className="tag bg-bloom-dusty-rose/15 text-bloom-dusty-rose-ink shrink-0">
-                          孕期
-                        </span>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSharingChild(child);
-                        setShowShareModal(true);
-                      }}
-                      className="btn-icon"
-                      title="分享寶寶資料給家人"
-                      aria-label={`分享 ${child.name} 的資料給家人`}
-                    >
-                      <Share2 className="w-5 h-5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingChild(child);
-                        setShowAddChildModal(true);
-                      }}
-                      className="btn-icon"
-                      title="編輯寶寶資料"
-                      aria-label={`編輯 ${child.name} 的資料`}
-                    >
-                      <Edit className="w-5 h-5" />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (canAddChild) {
-                      setEditingChild(null); // Ensure we're adding, not editing
-                      setShowAddChildModal(true);
-                    }
-                  }}
-                  disabled={!canAddChild}
-                  className={`w-full min-h-tap mt-3 rounded-2xl text-sm font-medium transition-colors ${
-                    canAddChild
-                      ? 'bg-secondary-light text-secondary-dark hover:bg-secondary-light/70'
-                      : 'bg-ink/5 text-ink-faint cursor-not-allowed'
-                  }`}
-                  title={!canAddChild ? '免費版最多只能新增 2 個寶寶，升級付費會員可新增更多' : '新增寶寶'}
-                >
-                  新增寶寶
-                </button>
-              </div>
-            </div>
+            {/* 帳號與寶寶切換不在這裡了。它們是全站脈絡，但這個抽屜只在
+                LittleSteps 的路由下渲染，等於另外四個服務都登不出、也換不了
+                孩子。現在由每個 AppBar 上的 AccountButton 提供，這裡只留
+                LittleSteps 自己的頁面導覽。 */}
 
             {/* Menu Items - Grouped by Function */}
             <motion.div
@@ -419,32 +244,6 @@ export default function Sidebar({
             </div>
           </motion.div>
 
-          {/*
-            Add/Edit Child Modal.
-
-            沒有「懷孕中」分頁：孕期檔案由 LittleBloom 自己新增。要求家長先進
-            LittleSteps 的側邊欄才能開始用 LittleBloom，是把兩個服務綁在一起；
-            共用的應該只有帳號與孩子資料。
-          */}
-          <AddChildModal
-            isOpen={showAddChildModal}
-            onClose={() => setShowAddChildModal(false)}
-            onSave={handleSaveChild}
-            onJoin={joinChild}
-            editingChild={editingChild}
-            onDelete={editingChild ? () => handleDeleteChild(editingChild.id) : undefined}
-            modes={['create', 'join']}
-          />
-
-          {/* Share Child UUID Modal */}
-          <ShareChildUuidModal
-            isOpen={showShareModal}
-            onClose={() => {
-              setShowShareModal(false);
-              setSharingChild(null);
-            }}
-            child={sharingChild}
-          />
         </>
       )}
     </AnimatePresence>

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import AppBar from '../../common/ui/AppBar';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import AppHomeButton from '../../common/components/AppHomeButton';
+import AccountButton from '../../common/components/AccountButton';
 import type { Page } from '../../types/routes';
 
 interface BloomShellProps {
@@ -32,7 +33,10 @@ export default function BloomShell({ title, subtitle, backTo, children }: BloomS
         subtitle={subtitle}
         backTo={backTo}
         actions={
-          <AppHomeButton className="bg-bloom-dusty-rose/15 hover:bg-bloom-dusty-rose/25 text-bloom-dusty-rose-ink" />
+          <>
+            <AccountButton service="littlebloom" className="bg-bloom-dusty-rose/15 hover:bg-bloom-dusty-rose/25 text-bloom-dusty-rose-ink" />
+            <AppHomeButton className="bg-bloom-dusty-rose/15 hover:bg-bloom-dusty-rose/25 text-bloom-dusty-rose-ink" />
+          </>
         }
       />
 

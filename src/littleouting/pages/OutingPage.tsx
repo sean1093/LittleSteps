@@ -4,6 +4,7 @@ import { Search, X } from 'lucide-react';
 import type { Venue, VenueKind } from '../../types';
 import AppBar from '../../common/ui/AppBar';
 import AppHomeButton from '../../common/components/AppHomeButton';
+import AccountButton from '../../common/components/AccountButton';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { fadeInUp, stagger, tap } from '../../common/ui/motion';
@@ -107,7 +108,12 @@ export default function OutingPage() {
         theme={theme}
         title={theme.name}
         subtitle={theme.role}
-        actions={<AppHomeButton className="bg-outing-light hover:bg-outing/40 text-outing-ink" />}
+        actions={
+          <>
+            <AccountButton service="littleouting" className="bg-outing-light hover:bg-outing/40 text-outing-ink" />
+            <AppHomeButton className="bg-outing-light hover:bg-outing/40 text-outing-ink" />
+          </>
+        }
       />
 
       <main className="screen-body space-y-4">

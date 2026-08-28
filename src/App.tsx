@@ -6,12 +6,13 @@ import { useDocumentMeta } from './common/seo/useDocumentMeta';
 import { splitOverdueByProfileStart } from './common/utils/profileHistory';
 import { logPageView } from './lib/firebase';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { useChildStoreContext, ChildStoreProvider } from './common/contexts/ChildStoreContext';
 import { useDailyLogs } from './littlesteps/hooks/useDailyLogs';
-import { useChildStore } from './common/hooks/useChildStore';
 import { useCareTasks } from './littleexplorer/hooks/useCareTasks';
 import { useDiary } from './littleexplorer/hooks/useDiary';
 import Sidebar from './common/components/Sidebar';
 import AppHomeButton from './common/components/AppHomeButton';
+import AccountButton from './common/components/AccountButton';
 import AppBar from './common/ui/AppBar';
 import { SERVICE_THEME } from './common/ui/serviceTheme';
 import LandingPage, { landingKindFor, isStandaloneLanding } from './common/landing/LandingPage';
@@ -40,7 +41,7 @@ import FeedbackButton from './common/components/FeedbackButton';
 import { toLocalDateKey } from './common/utils/dateHelpers';
 
 function AppContent() {
-  const { user, loading, signInWithGoogle, signOut } = useAuth();
+  const { user, loading, signInWithGoogle } = useAuth();
 
   const {
     childProfiles,
@@ -53,8 +54,6 @@ function AppContent() {
     toggleVaccineDose,
     addChild,
     joinChild,
-    updateChild,
-    deleteChild,
     currentChildDevelopmentProgress,
     currentChildToothProgress,
     toggleDevelopmentCheck,
@@ -67,8 +66,7 @@ function AppContent() {
     addDiaryEntry,
     updateDiaryEntry,
     deleteDiaryEntry,
-    setCurrentChild: handleSetCurrentChild,
-  } = useChildStore(user);
+  } = useChildStoreContext();
 
   const [currentPage, setCurrentPage] = useState<Page>(() => pageFromPath(window.location.pathname));
 
@@ -110,13 +108,6 @@ function AppContent() {
     logPageView(page);
   };
 
-  // 登出後網址會留在原本的路由上。若那是需要登入的 LittleSteps 頁，畫面會
-  // 換成 LittleSteps 的介紹頁——使用者看起來像是「登出後被丟回 LittleSteps」，
-  // 而不是回到五個服務的入口。所以登出一併把路由帶回服務集合首頁。
-  const handleSignOut = async () => {
-    await signOut();
-    navigateToPage('home');
-  };
 
 
   const getPageTitle = () => {
@@ -237,16 +228,7 @@ function AppContent() {
           onClose={() => setSidebarOpen(false)}
           currentPage={currentPage as LittleStepsPage}
           onNavigate={navigateToPage}
-          childProfiles={childProfiles}
-          currentChildId={currentChildId}
-          setCurrentChildId={handleSetCurrentChild}
-          addChild={addChild}
-          joinChild={joinChild}
-          updateChild={updateChild}
-          deleteChild={deleteChild}
           user={user}
-          onSignIn={signInWithGoogle}
-          onSignOut={handleSignOut}
         />
       )}
 
@@ -274,6 +256,7 @@ function AppContent() {
               >
                 <Home className="w-5 h-5" />
               </button>
+              <AccountButton service="littlesteps" />
               <AppHomeButton />
             </>
           }
@@ -455,7 +438,11 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      {/* 孩子資料與帳號一樣是全站脈絡：五個服務的 AppBar 都要拿得到，
+          不然登出與切換寶寶就只會存在於能拿到 prop 的那一個服務裡。 */}
+      <ChildStoreProvider>
+        <AppContent />
+      </ChildStoreProvider>
     </AuthProvider>
   );
 }

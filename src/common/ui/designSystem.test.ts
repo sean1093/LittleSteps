@@ -333,13 +333,17 @@ describe('鍵盤可達性', () => {
   );
 
   /**
-   * 八片 modal 遮罩，逐一列名。例外要是只寫成一條判斷式，任何人只要在可點的
-   * 列上加一個 `fixed inset-0` 就能繞過整條規則；列成白名單，第九片遮罩出現
+   * 九片 modal 遮罩，逐一列名。例外要是只寫成一條判斷式，任何人只要在可點的
+   * 列上加一個 `fixed inset-0` 就能繞過整條規則；列成白名單，第十片遮罩出現
    * 時得有人來這裡簽名。
+   *
+   * 第九片是 AccountSheet：登入登出與切換寶寶原本鎖在 LittleSteps 的側邊
+   * 抽屜裡，另外四個服務碰不到，所以搬成每個 AppBar 都有的一張 sheet。
    *
    * 只釘檔名不釘行號：行號會被無關的修改推走，那種紅燈只會教人放寬規則。
    */
   const KNOWN_BACKDROPS = [
+    'src/common/components/AccountSheet.tsx',
     'src/common/components/ModalFrame.tsx',
     'src/common/components/Sidebar.tsx',
     'src/littlesteps/components/dailylog/LogEntryModal.tsx',

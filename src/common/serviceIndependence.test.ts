@@ -78,10 +78,20 @@ describe('服務獨立性', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('LittleSteps 的側邊欄不再提供孕期分頁——那是 LittleBloom 的入口', () => {
+  it('新增／加入寶寶的入口用 create+join，不提供孕期分頁——那是 LittleBloom 的入口', () => {
+    // 這個入口原本長在 LittleSteps 的側邊抽屜裡。抽屜只在 LittleSteps 的
+    // 路由下渲染，所以帳號與寶寶切換等於被關在一個服務裡；現在搬到每個
+    // AppBar 都有的 AccountSheet，斷言跟著搬，守的規則沒變。
+    const sheet = readFileSync(join(SRC, 'common/components/AccountSheet.tsx'), 'utf8');
+    expect(sheet).toMatch(/modes=\{\['create', 'join'\]\}/);
+    expect(sheet).not.toContain("'pregnancy'");
+  });
+
+  it('側邊抽屜只剩 LittleSteps 自己的頁面導覽', () => {
+    // 帳號與寶寶留在這裡的話就是兩個入口，其中一個還只有一個服務看得到。
     const sidebar = readFileSync(join(SRC, 'common/components/Sidebar.tsx'), 'utf8');
-    expect(sidebar).toMatch(/modes=\{\['create', 'join'\]\}/);
-    expect(sidebar).not.toContain("'pregnancy'");
+    expect(sidebar).not.toContain('AddChildModal');
+    expect(sidebar).not.toContain('onSignOut');
   });
 
   it('每個需要建資料的服務都有自己的新增入口', () => {

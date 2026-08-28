@@ -3,6 +3,7 @@ import ExplorerTabBar from './ExplorerTabBar';
 import AppBar from '../../common/ui/AppBar';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import AppHomeButton from '../../common/components/AppHomeButton';
+import AccountButton from '../../common/components/AccountButton';
 import type { ExplorerTab } from './ExplorerTabBar';
 
 interface ExplorerShellProps {
@@ -43,7 +44,13 @@ export default function ExplorerShell({
         actions={
           /* explorer-sand (#FDF8EE) is almost white, so the default neutral
              tint would disappear against the bar. */
-          <AppHomeButton className="bg-explorer-sunbeam/25 hover:bg-explorer-sunbeam/40 text-explorer-sunbeam-ink" />
+          <>
+            <AccountButton
+              service="littleexplorer"
+              className="bg-explorer-sunbeam/25 hover:bg-explorer-sunbeam/40 text-explorer-sunbeam-ink"
+            />
+            <AppHomeButton className="bg-explorer-sunbeam/25 hover:bg-explorer-sunbeam/40 text-explorer-sunbeam-ink" />
+          </>
         }
       />
 

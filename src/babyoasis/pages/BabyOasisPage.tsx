@@ -20,6 +20,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { NursingRoom } from '../../types';
 import AppHomeButton from '../../common/components/AppHomeButton';
+import AccountButton from '../../common/components/AccountButton';
 import AppBar from '../../common/ui/AppBar';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { sheet, tap } from '../../common/ui/motion';
@@ -348,7 +349,12 @@ const BabyOasisPage = () => {
           subtitle={
             nursingRooms.length ? `全台 ${nursingRooms.length} 處哺乳室` : '找到最近的哺乳室'
           }
-          actions={<AppHomeButton />}
+          actions={
+            <>
+              <AccountButton service="babyoasis" />
+              <AppHomeButton />
+            </>
+          }
         />
 
         {/* 搜尋列掛在標題列下方，畫面下緣要留給定位鈕與地圖的資料來源標註。
