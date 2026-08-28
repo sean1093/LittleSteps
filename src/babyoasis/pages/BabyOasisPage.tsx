@@ -24,6 +24,7 @@ import AppBar from '../../common/ui/AppBar';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { sheet, tap } from '../../common/ui/motion';
 import { createSpatialIndex } from '../utils/spatialIndex';
+import RoomSearch from '../components/RoomSearch';
 
 // Import leaflet CSS
 import 'leaflet/dist/leaflet.css';
@@ -253,6 +254,35 @@ const NEARBY_RADIUS_KM = 10;
 const TAIWAN_CENTER: [number, number] = [23.75, 120.95];
 const TAIWAN_ZOOM = 8;
 
+/**
+ * 個別標記出現的倍率。同一個值同時給 disableClusteringAtZoom 與選定後的飛行
+ * 目標用：飛到比它更遠的倍率，那一筆會被併回叢集裡，家長點了卻看不到自己選的點。
+ */
+const MARKER_ZOOM = 16;
+
+/**
+ * 選定的哺乳室把地圖帶過去。
+ *
+ * MapContainer 的 center/zoom 只是初始值，之後改它不會動；要移動地圖只能像
+ * LocationMarker 那樣拿 useMap 的實例。掛在 selectedRoom 上而不是另開一個
+ * 「搜尋選中的那筆」狀態：一個選取只該有一種地圖反應，搜尋結果、附近清單、
+ * 直接點標記三條路徑因此完全一致。
+ *
+ * 只放大不縮小（Math.max）：已經放大到街道層的家長不該因為點一筆而被拉遠。
+ */
+const SelectedRoomFocus = ({ room }: { room: NursingRoom | null }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!room) return;
+    map.flyTo([room.latitude, room.longitude], Math.max(map.getZoom(), MARKER_ZOOM), {
+      duration: 1,
+    });
+  }, [room, map]);
+
+  return null;
+};
+
 const BabyOasisPage = () => {
   const theme = SERVICE_THEME.babyoasis;
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
@@ -320,6 +350,12 @@ const BabyOasisPage = () => {
           }
           actions={<AppHomeButton />}
         />
+
+        {/* 搜尋列掛在標題列下方，畫面下緣要留給定位鈕與地圖的資料來源標註。
+            外層不吃指標事件，否則搜尋列旁邊的透明留白會把地圖的拖曳攔下來。 */}
+        <div className="max-w-2xl mx-auto px-4 pt-3 pointer-events-none">
+          <RoomSearch rooms={nursingRooms} theme={theme} onSelect={setSelectedRoom} />
+        </div>
       </div>
 
       {/* Map */}
@@ -337,6 +373,9 @@ const BabyOasisPage = () => {
         {/* User location marker */}
         <LocationMarker position={userLocation} />
 
+        {/* 選了哪一筆，地圖就跟到哪一筆 */}
+        <SelectedRoomFocus room={selectedRoom} />
+
         {/*
           全台近四千個點必須分群，否則低倍率下會糊成一片而且互相遮蔽。
           maxClusterRadius 由 50 放大到 80（Leaflet 預設值）：先前的值是為
@@ -346,7 +385,7 @@ const BabyOasisPage = () => {
         <MarkerClusterGroup
           chunkedLoading
           maxClusterRadius={80}
-          disableClusteringAtZoom={16}
+          disableClusteringAtZoom={MARKER_ZOOM}
           showCoverageOnHover={false}
         >
           {nursingRooms.map((room) => (
