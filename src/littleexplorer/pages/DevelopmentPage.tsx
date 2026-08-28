@@ -25,6 +25,7 @@ import { TODDLER_MAX_MONTHS, TODDLER_MIN_MONTHS, bandForMonths } from '../utils/
 import ExplorerShell from '../components/ExplorerShell';
 import NoChildNotice from '../components/NoChildNotice';
 import AgeBandPicker from '../components/AgeBandPicker';
+import GrowthCurveLink from '../components/GrowthCurveLink';
 import ToothChart from '../components/ToothChart';
 import { goTo } from '../../common/navigate';
 
@@ -165,6 +166,12 @@ export default function DevelopmentPage({
           <motion.div variants={listItem}>
             <AgeBandPicker selected={band} onSelect={setBand} />
           </motion.div>
+
+          {/* 這個分頁叫「成長」卻沒有身高體重。WHO 標準到 36 個月都適用，
+              但那張圖住在 LittleSteps，而這裡從來沒提過。
+              滿 3 歲之後就不顯示：WHO 這份資料只到 36 個月，再往後那張圖
+              算不出百分位，而這張卡片正是拿百分位當賣點。 */}
+          {ageMonths < TODDLER_MAX_MONTHS && <GrowthCurveLink />}
 
           <motion.section variants={listItem} className="panel">
             <div className="flex items-baseline justify-between mb-3">
