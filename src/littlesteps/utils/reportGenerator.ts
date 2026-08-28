@@ -274,10 +274,12 @@ function buildGrowthData(growthRecords: GrowthRecord[], days: number) {
       ? Math.round((last.height - first.height) * 10) / 10
       : 0;
 
+  // 沒有性別就算不出百分位，percentile 整個物件會不存在——由 LittleBloom
+  // 登記出生轉過來的孩子一律如此，recordBirth 不會補 gender。
   const latestPercentiles: Record<string, number> = {};
-  if (last.percentile.weight != null) latestPercentiles['weight'] = last.percentile.weight;
-  if (last.percentile.height != null) latestPercentiles['height'] = last.percentile.height;
-  if (last.percentile.headCircumference != null)
+  if (last.percentile?.weight != null) latestPercentiles['weight'] = last.percentile.weight;
+  if (last.percentile?.height != null) latestPercentiles['height'] = last.percentile.height;
+  if (last.percentile?.headCircumference != null)
     latestPercentiles['headCircumference'] = last.percentile.headCircumference;
 
   return {

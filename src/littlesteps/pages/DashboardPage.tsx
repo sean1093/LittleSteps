@@ -165,7 +165,12 @@ export default function DashboardPage({
             重複的頁面標題與寶寶頭像圖示已移除。 */}
         <motion.div variants={listItem} className="panel mb-4">
           <h1 className="mb-1">{ageDisplay}</h1>
-          <p className="text-sm text-ink-muted">出生: {formatDate(currentChild.birthday)}</p>
+          {/* 孕期檔案的 birthday 是預產期。標題已經說了「尚未出生」，
+              下一行再寫「出生: …」會自相矛盾。 */}
+          <p className="text-sm text-ink-muted">
+            {isPregnancyProfile(currentChild) ? '預產期' : '出生'}:{' '}
+            {formatDate(currentChild.birthday)}
+          </p>
         </motion.div>
 
         {activeAlerts.length > 0 && (

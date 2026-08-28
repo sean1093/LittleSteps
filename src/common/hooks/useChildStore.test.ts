@@ -156,6 +156,70 @@ describe('useChildStore (Firebase mode)', () => {
     expect(h.firebaseChildren.clearPrenatalRecord).toHaveBeenCalledWith('p1', 'visit-1');
   });
 
+  it('改孕期檔案的日期時，pregnancyData 跟著改', async () => {
+    // birthday 對孕期檔案來說就是預產期，但週數與 14 次產檢時程算的是
+    // lastPeriodDate。只改 birthday 的話，照超音波修正預產期之後，
+    // LittleBloom 會永遠停在舊的末次月經上。
+    const bump = child({
+      id: 'p1',
+      isPregnancy: true,
+      pregnancyData: {
+        childId: 'p1',
+        dueDate: '2026-11-20',
+        lastPeriodDate: '2026-02-13',
+        status: 'active',
+      },
+    });
+    h.userChildren = { children: [bump], currentChildId: 'p1', loading: false };
+    const { result } = renderHook(() => useChildStore(user));
+
+    await act(async () => {
+      await result.current.updateChild('p1', '寶寶', '2026-12-01');
+    });
+
+    expect(h.firebaseChildren.updateChild).toHaveBeenCalledWith(
+      'p1',
+      '寶寶',
+      '2026-12-01',
+      undefined,
+      true,
+    );
+  });
+
+  it('一般寶寶檔案不會被當成孕期檔案改寫', async () => {
+    h.userChildren = { children: [child()], currentChildId: 'c1', loading: false };
+    const { result } = renderHook(() => useChildStore(user));
+
+    await act(async () => {
+      await result.current.updateChild('c1', '小明', '2026-02-02');
+    });
+
+    expect(h.firebaseChildren.updateChild).toHaveBeenCalledWith(
+      'c1',
+      '小明',
+      '2026-02-02',
+      undefined,
+      false,
+    );
+  });
+
+  it('刪除當下選取的孩子時，把選取交給還在的那一個', async () => {
+    // 少了這一步，currentChildId 會繼續指著已刪除的 id，明明還有另一個
+    // 孩子，每一頁卻都顯示「還沒有寶寶資料，請新增」。
+    h.userChildren = {
+      children: [child(), child({ id: 'c2', name: '小樹' })],
+      currentChildId: 'c1',
+      loading: false,
+    };
+    const { result } = renderHook(() => useChildStore(user));
+
+    await act(async () => {
+      await result.current.deleteChild('c1');
+    });
+
+    expect(h.firebaseChildren.deleteChild).toHaveBeenCalledWith('c1', ['c1', 'c2']);
+  });
+
   it('toggles a milestone, deriving the new achieved state', async () => {
     h.userChildren = {
       children: [child({ milestoneProgress: { m1: { achieved: false } } })],
@@ -192,7 +256,9 @@ describe('useChildStore (Firebase mode)', () => {
     });
 
     expect(h.firebaseChildren.setCurrentChild).toHaveBeenCalledWith('c1');
-    expect(h.firebaseChildren.deleteChild).toHaveBeenCalledWith('c1');
+    // 第二個參數是刪除當下還存在的 id 清單，資料層據此把 currentChildId
+    // 交給還在的孩子。
+    expect(h.firebaseChildren.deleteChild).toHaveBeenCalledWith('c1', ['c1']);
   });
 
   it('toggles a development check, deriving the new achieved state', async () => {

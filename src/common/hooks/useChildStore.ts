@@ -11,7 +11,7 @@ import type {
   ToothProgress,
   VaccineProgress,
 } from '../../types';
-import { resolvePregnancyChild } from '../pregnancy';
+import { isPregnancyProfile, resolvePregnancyChild } from '../pregnancy';
 import { useUserChildren } from './useUserChildren';
 import { useFirebaseChildren } from './useFirebaseChildren';
 import {
@@ -174,7 +174,13 @@ export function useChildStore(user: User | null): ChildStore {
   const updateChild = async (id: string, name: string, birthday: string, gender?: Gender) => {
     if (!user) return;
     try {
-      await firebaseChildren.updateChild(id, name, birthday, gender);
+      await firebaseChildren.updateChild(
+        id,
+        name,
+        birthday,
+        gender,
+        isPregnancyProfile(childProfiles.find((child) => child.id === id)),
+      );
       logChildProfileAction('update');
     } catch (error) {
       console.error('更新寶寶資料失敗:', error);
@@ -185,7 +191,10 @@ export function useChildStore(user: User | null): ChildStore {
   const deleteChild = async (id: string) => {
     if (!user) return;
     try {
-      await firebaseChildren.deleteChild(id);
+      await firebaseChildren.deleteChild(
+        id,
+        childProfiles.map((child) => child.id),
+      );
       logChildProfileAction('delete');
     } catch (error) {
       console.error('刪除寶寶失敗:', error);

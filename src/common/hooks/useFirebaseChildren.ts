@@ -133,11 +133,38 @@ export function useFirebaseChildren(userId: string | null) {
     await remove(userChildRef);
   };
 
-  const updateChild = async (childId: string, name: string, birthday: string, gender?: Gender) => {
+  /**
+   * 編輯既有檔案。
+   *
+   * 孕期檔案的 birthday 欄位存的是預產期，而 LittleBloom 的週數、孕期指南
+   * 與 14 次產檢時程全部是從 pregnancyData.lastPeriodDate 推出來的。只改
+   * birthday 的話兩者會永久脫鉤：畫面上的預產期改了，週數與產檢時程卻還用
+   * 舊的末次月經——照超音波修正預產期正是最常見的操作。
+   */
+  const updateChild = async (
+    childId: string,
+    name: string,
+    birthday: string,
+    gender?: Gender,
+    isPregnancy?: boolean,
+  ) => {
     if (!userId) throw new Error('User not authenticated');
 
     const childRef = ref(database, `children/${childId}`);
-    await update(childRef, removeUndefined({ name, birthday, gender }));
+    await update(
+      childRef,
+      removeUndefined({
+        name,
+        birthday,
+        gender,
+        ...(isPregnancy
+          ? {
+              'pregnancyData/dueDate': birthday,
+              'pregnancyData/lastPeriodDate': lmpFromDueDate(birthday),
+            }
+          : {}),
+      }),
+    );
   };
 
   /**
@@ -146,12 +173,23 @@ export function useFirebaseChildren(userId: string | null) {
    * - Removes from all users' childrenIds (TODO: may need to iterate users)
    * Note: For simplicity, we only remove from current user's childrenIds
    */
-  const deleteChild = async (childId: string) => {
+  /**
+   * 刪除檔案。
+   *
+   * 一併把 currentChildId 移到另一個還在的孩子身上。少了這一步，刪掉當下
+   * 選取的檔案之後 currentChildId 仍然指著已經不存在的 id，currentChild
+   * 變成 undefined——即使還有另一個孩子，每一頁都會顯示「還沒有寶寶資料，
+   * 請新增」，等於叫家長去建一個他明明已經有的檔案。
+   */
+  const deleteChild = async (childId: string, remainingChildIds: string[] = []) => {
     if (!userId) throw new Error('User not authenticated');
 
     // Remove from user's childrenIds
     const userChildRef = ref(database, `users/${userId}/childrenIds/${childId}`);
     await remove(userChildRef);
+
+    const nextChildId = remainingChildIds.find((id) => id !== childId) ?? null;
+    await update(ref(database, `users/${userId}`), { currentChildId: nextChildId });
 
     // Check if user is the creator
     const childRef = ref(database, `children/${childId}`);

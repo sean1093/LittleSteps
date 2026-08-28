@@ -141,21 +141,21 @@ export default function ClinicSummaryPage({
                   <MeasurementCard
                     label="體重"
                     value={`${data.latestGrowth.weight} kg`}
-                    percentile={data.latestGrowth.percentile.weight}
+                    percentile={data.latestGrowth.percentile?.weight}
                   />
                 )}
                 {data.latestGrowth.height !== undefined && (
                   <MeasurementCard
                     label="身高"
                     value={`${data.latestGrowth.height} cm`}
-                    percentile={data.latestGrowth.percentile.height}
+                    percentile={data.latestGrowth.percentile?.height}
                   />
                 )}
                 {data.latestGrowth.headCircumference !== undefined && (
                   <MeasurementCard
                     label="頭圍"
                     value={`${data.latestGrowth.headCircumference} cm`}
-                    percentile={data.latestGrowth.percentile.headCircumference}
+                    percentile={data.latestGrowth.percentile?.headCircumference}
                   />
                 )}
               </div>

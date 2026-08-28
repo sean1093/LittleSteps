@@ -160,7 +160,9 @@ export default function AddChildModal({
             </div>
             <div>
               <label htmlFor="childBirthday" className={LABEL}>
-                寶寶生日
+                {/* 孕期檔案的這個欄位存的是預產期。標成「寶寶生日」會讓家長
+                    以為填錯了，或者不敢改。 */}
+                {editingChild?.isPregnancy ? '預產期' : '寶寶生日'}
               </label>
               <input
                 type="date"

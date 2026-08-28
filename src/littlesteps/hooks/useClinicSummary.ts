@@ -93,8 +93,12 @@ export function useClinicSummary(
     // --- Vaccine records ---
     const administeredVaccines: ClinicSummaryData['administeredVaccines'] = [];
 
+    // Firebase 不存空物件，所以剛建立、還沒勾過任何一劑的孩子讀回來
+    // 根本沒有 vaccineProgress 這個欄位——型別說必填，線上資料說沒有。
+    const vaccineProgress = currentChild.vaccineProgress ?? {};
+
     vaccineSchedules.forEach((vaccine) => {
-      const progress = currentChild.vaccineProgress[vaccine.id];
+      const progress = vaccineProgress[vaccine.id];
       if (!progress) return;
       Object.entries(progress.doses).forEach(([doseNum, doseInfo]) => {
         if (doseInfo.administered) {
@@ -115,7 +119,7 @@ export function useClinicSummary(
       return b.date.localeCompare(a.date);
     });
 
-    const vaccineSummary = calculateVaccineSummary(currentChild.vaccineProgress);
+    const vaccineSummary = calculateVaccineSummary(vaccineProgress);
     const nextVaccine = vaccineSummary.nextVaccine
       ? {
           name: vaccineSummary.nextVaccine.name,

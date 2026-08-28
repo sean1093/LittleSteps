@@ -13,6 +13,7 @@ import { useDiary } from './littleexplorer/hooks/useDiary';
 import Sidebar from './common/components/Sidebar';
 import AppHomeButton from './common/components/AppHomeButton';
 import AccountButton from './common/components/AccountButton';
+import PregnancyGate from './littlesteps/components/PregnancyGate';
 import AppBar from './common/ui/AppBar';
 import { SERVICE_THEME } from './common/ui/serviceTheme';
 import LandingPage, { landingKindFor, isStandaloneLanding } from './common/landing/LandingPage';
@@ -300,38 +301,48 @@ function AppContent() {
           />
         )}
         {currentPage === 'littlesteps/milestones' && (
-          <MilestonesPage
-            // 篩選器要從孩子現在的月齡起跑，所以這兩頁需要孩子本身，
-            // 不只是進度資料。
-            currentChild={currentChild}
-            progress={currentChildMilestoneProgress}
-            onToggleMilestone={toggleMilestone}
-          />
+          <PregnancyGate currentChild={currentChild}>
+            <MilestonesPage
+              // 篩選器要從孩子現在的月齡起跑，所以這兩頁需要孩子本身，
+              // 不只是進度資料。
+              currentChild={currentChild}
+              progress={currentChildMilestoneProgress}
+              onToggleMilestone={toggleMilestone}
+            />
+          </PregnancyGate>
         )}
         {currentPage === 'littlesteps/care-guide' && (
           <CareGuidePage />
         )}
         {currentPage === 'littlesteps/vaccine-tracking' && (
-          <VaccineTrackingPage
-            currentChild={currentChild}
-            vaccineProgress={currentChildVaccineProgress}
-            onToggleVaccineDose={toggleVaccineDose}
-          />
+          <PregnancyGate currentChild={currentChild}>
+            <VaccineTrackingPage
+              currentChild={currentChild}
+              vaccineProgress={currentChildVaccineProgress}
+              onToggleVaccineDose={toggleVaccineDose}
+            />
+          </PregnancyGate>
         )}
         {currentPage === 'littlesteps/complementary-food' && (
-          <ComplementaryFoodPage
-            currentChild={currentChild}
-            user={user}
-          />
+          <PregnancyGate currentChild={currentChild}>
+            <ComplementaryFoodPage
+              currentChild={currentChild}
+              user={user}
+            />
+          </PregnancyGate>
         )}
         {currentPage === 'littlesteps/daily-log' && (
-          <DailyLogPage currentChild={currentChild} user={user} />
+          <PregnancyGate currentChild={currentChild}>
+            <DailyLogPage currentChild={currentChild} user={user} />
+          </PregnancyGate>
         )}
         {currentPage === 'littlesteps/growth-charts' && (
-          <GrowthChartsPage
-            currentChild={currentChild}
-            user={user}
-          />
+          <PregnancyGate currentChild={currentChild}>
+            <GrowthChartsPage
+              currentChild={currentChild}
+              user={user}
+            />
+          </PregnancyGate>
         )}
         {currentPage === 'littlesteps/sleep-training' && (
           <SleepTrainingPage />
