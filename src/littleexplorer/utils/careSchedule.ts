@@ -5,21 +5,9 @@ import type {
   ResolvedCareTask,
   VaccineProgress,
 } from '../../types';
+import { parseLocalDate, toLocalDateKey } from '../../common/utils/dateHelpers';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-/** 將 YYYY-MM-DD 解析為當地時區正午的 Date，避開 UTC 位移造成的差一天。 */
-function parseLocalDate(iso: string): Date {
-  const [year, month, day] = iso.split('-').map(Number);
-  return new Date(year, month - 1, day, 12, 0, 0, 0);
-}
-
-function formatLocalDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
 
 /**
  * 在 YYYY-MM-DD 上加指定月數。
@@ -40,7 +28,7 @@ export function addMonths(isoDate: string, months: number): string {
   ).getDate();
   result.setDate(Math.min(targetDay, daysInTargetMonth));
 
-  return formatLocalDate(result);
+  return toLocalDateKey(result);
 }
 
 function daysBetween(from: Date, to: Date): number {
@@ -84,7 +72,7 @@ export function resolveCareTasks(
 ): ResolvedCareTask[] {
   if (!birthday) return [];
 
-  const todayLocal = parseLocalDate(formatLocalDate(today));
+  const todayLocal = parseLocalDate(toLocalDateKey(today));
 
   return templates
     .map((template) => {

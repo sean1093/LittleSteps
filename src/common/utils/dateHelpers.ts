@@ -30,7 +30,17 @@ export const GESTATION_DAYS = 280;
  * 位移都吃得下，日期不會跳。帶時間的完整 ISO 字串本來就有時區資訊，原樣交給
  * Date 解析即可。
  */
-function parseLocalDate(value: string): Date {
+/**
+ * 把日期字串解析成「本地時區的那一天中午」。
+ *
+ * 中午而不是午夜：日光節約或時區偏移把午夜推前推後幾小時，日期就會跳到
+ * 前一天或後一天；從中午起算，任何 ±12 小時內的偏移都還落在同一個日曆日。
+ *
+ * 匯出的原因是它被抄過三次（prenatalSchedule、careSchedule、icsExport），
+ * 而那三份都是 `iso.split('-').map(Number)`，遇到完整 ISO 時間戳會產出
+ * Invalid Date，也認不得單位數月份。同一個概念留一份實作就好。
+ */
+export function parseLocalDate(value: string): Date {
   const pureDate = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(value);
   if (!pureDate) return new Date(value);
   return new Date(Number(pureDate[1]), Number(pureDate[2]) - 1, Number(pureDate[3]), 12);

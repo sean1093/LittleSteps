@@ -11,6 +11,7 @@ import {
   getCurrentDateTimeLocal,
   dateTimeLocalToISO,
   lmpFromDueDate,
+  parseLocalDate,
 } from './dateHelpers';
 
 /**
@@ -380,6 +381,38 @@ describe('dateHelpers', () => {
         vi.setSystemTime(new Date(iso));
         expect(getCurrentDateTimeLocal()).toBe(dateTimeLocal);
       });
+    });
+  });
+
+  describe('parseLocalDate', () => {
+    /**
+     * 這個函式原本被抄成三份私有版本（prenatalSchedule、careSchedule、
+     * icsExport），三份都是 iso.split('-').map(Number)。那個寫法對純日期
+     * 字串是對的，但遇到完整 ISO 時間戳會算出 Invalid Date，也認不得
+     * 單位數月份。這幾條就是釘住「為什麼只留一份實作」。
+     */
+    it('純日期字串以本地正午為基準，不會因為時區偏移跳一天', () => {
+      const date = parseLocalDate('2026-06-15');
+      expect(date.getFullYear()).toBe(2026);
+      expect(date.getMonth()).toBe(5);
+      expect(date.getDate()).toBe(15);
+      expect(date.getHours()).toBe(12);
+    });
+
+    it('完整 ISO 時間戳也解得開——抄過去的 split 版本在這裡是 Invalid Date', () => {
+      const date = parseLocalDate('2026-06-15T02:00:00.000Z');
+      expect(Number.isNaN(date.getTime())).toBe(false);
+    });
+
+    it('認得單位數的月和日', () => {
+      const date = parseLocalDate('2026-6-5');
+      expect(date.getMonth()).toBe(5);
+      expect(date.getDate()).toBe(5);
+    });
+
+    it('和 toLocalDateKey 來回轉換不會漂移', () => {
+      expect(toLocalDateKey(parseLocalDate('2026-06-15'))).toBe('2026-06-15');
+      expect(toLocalDateKey(parseLocalDate('2026-1-1'))).toBe('2026-01-01');
     });
   });
 });

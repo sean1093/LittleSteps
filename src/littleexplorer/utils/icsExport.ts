@@ -1,4 +1,5 @@
 import type { ResolvedCareTask } from '../../types';
+import { parseLocalDate, toLocalDateKey } from '../../common/utils/dateHelpers';
 
 const CRLF = '\r\n';
 
@@ -18,14 +19,9 @@ function toIcsDate(isoDate: string): string {
 
 /** 全天事件的 DTEND 為 exclusive，需為隔日。 */
 function nextDay(isoDate: string): string {
-  const [year, month, day] = isoDate.split('-').map(Number);
-  const date = new Date(year, month - 1, day, 12, 0, 0, 0);
+  const date = parseLocalDate(isoDate);
   date.setDate(date.getDate() + 1);
-  return [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, '0'),
-    String(date.getDate()).padStart(2, '0'),
-  ].join('-');
+  return toLocalDateKey(date);
 }
 
 function eventTitle(task: ResolvedCareTask, childName: string): string {

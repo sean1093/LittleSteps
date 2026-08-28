@@ -1,4 +1,9 @@
-import { dueDateFromLmp, lmpFromDueDate } from '../../common/utils/dateHelpers';
+import {
+  dueDateFromLmp,
+  lmpFromDueDate,
+  parseLocalDate,
+  toLocalDateKey,
+} from '../../common/utils/dateHelpers';
 import type { PrenatalCheckupTemplate } from '../data/prenatalCheckups';
 
 /**
@@ -27,24 +32,11 @@ export interface ResolvedPrenatalItem {
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const DAYS_PER_WEEK = 7;
 
-/** 將 YYYY-MM-DD 解析為當地時區正午的 Date，避開 UTC 位移造成的差一天。 */
-function parseLocalDate(iso: string): Date {
-  const [year, month, day] = iso.split('-').map(Number);
-  return new Date(year, month - 1, day, 12, 0, 0, 0);
-}
-
-function formatLocalDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
 /** 在 YYYY-MM-DD 上加指定天數。以當地正午為基準，跨日光節約時間也不會差一天。 */
 function addDays(isoDate: string, days: number): string {
   const date = parseLocalDate(isoDate);
   date.setDate(date.getDate() + days);
-  return formatLocalDate(date);
+  return toLocalDateKey(date);
 }
 
 /**
@@ -57,7 +49,7 @@ function addDays(isoDate: string, days: number): string {
 export function weeksPregnant(lastPeriodDate: string, today: Date = new Date()): number {
   if (!lastPeriodDate) return 0;
   const days = Math.round(
-    (parseLocalDate(formatLocalDate(today)).getTime() -
+    (parseLocalDate(toLocalDateKey(today)).getTime() -
       parseLocalDate(lastPeriodDate).getTime()) /
       MS_PER_DAY,
   );
@@ -92,7 +84,7 @@ export function resolvePrenatalItems(
   if (!lastPeriodDate) return [];
 
   // 丟掉時分秒，只比日期。
-  const todayLocal = parseLocalDate(formatLocalDate(today));
+  const todayLocal = parseLocalDate(toLocalDateKey(today));
   const currentWeek = weeksPregnant(lastPeriodDate, todayLocal);
 
   return templates
