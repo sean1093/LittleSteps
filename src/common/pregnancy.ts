@@ -26,7 +26,7 @@ export function isPregnancyProfile(child: ChildProfile | null | undefined): bool
  * 沒有的話，才退回「currentChild 帶著已封存的孕期資料」——那是剛生完的媽媽，
  * 需要看到「寶寶已經出生了」而不是空狀態。
  *
- * 兩份進行中的孕期檔案取第一份。免費版上限是 2 個檔案，理論上做得到，
+ * 兩份進行中的孕期檔案取第一份。一個帳號上限是 2 個檔案，理論上做得到，
  * 但同時追兩個孕期不是這個 app 的情境。
  */
 export function resolvePregnancyChild(

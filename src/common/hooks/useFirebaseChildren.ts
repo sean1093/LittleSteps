@@ -3,6 +3,7 @@ import { database } from '../../lib/firebase';
 import { CareTaskRecord, ChildProfile, DailyLog, DiaryEntry, FoodTrialRecord, Gender } from '../../types';
 import { removeUndefined } from '../utils/firebaseData';
 import { lmpFromDueDate, toLocalDateKey } from '../utils/dateHelpers';
+import { CHILD_LIMIT_MESSAGE, MAX_CHILDREN } from '../childLimits';
 
 // Helper function to generate UUID v4
 function generateUUID(): string {
@@ -30,9 +31,9 @@ export function useFirebaseChildren(userId: string | null) {
   ) => {
     if (!userId) throw new Error('User not authenticated');
 
-    // 免費版限制：最多 2 個寶寶
-    if (currentChildCount >= 2) {
-      throw new Error('免費版最多只能新增 2 個寶寶，請升級付費會員');
+    // 帳號層級的上限，見 common/childLimits。
+    if (currentChildCount >= MAX_CHILDREN) {
+      throw new Error(CHILD_LIMIT_MESSAGE);
     }
 
     const childId = generateUUID();
@@ -86,9 +87,9 @@ export function useFirebaseChildren(userId: string | null) {
   const joinChild = async (childUuid: string, currentChildCount: number) => {
     if (!userId) throw new Error('User not authenticated');
 
-    // 免費版限制：最多 2 個寶寶
-    if (currentChildCount >= 2) {
-      throw new Error('免費版最多只能新增 2 個寶寶，請升級付費會員');
+    // 帳號層級的上限，見 common/childLimits。
+    if (currentChildCount >= MAX_CHILDREN) {
+      throw new Error(CHILD_LIMIT_MESSAGE);
     }
 
     // Verify child exists

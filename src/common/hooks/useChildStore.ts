@@ -12,6 +12,7 @@ import type {
   VaccineProgress,
 } from '../../types';
 import { isPregnancyProfile, resolvePregnancyChild } from '../pregnancy';
+import { CHILD_LIMIT_MESSAGE, MAX_CHILDREN } from '../childLimits';
 import { useUserChildren } from './useUserChildren';
 import { useFirebaseChildren } from './useFirebaseChildren';
 import {
@@ -20,7 +21,6 @@ import {
   logChildProfileAction,
 } from '../../lib/firebase';
 
-const MAX_FREE_CHILDREN = 2;
 
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
@@ -143,8 +143,8 @@ export function useChildStore(user: User | null): ChildStore {
     dueDate?: string,
   ) => {
     if (!user) return;
-    if (childProfiles.length >= MAX_FREE_CHILDREN) {
-      alert('免費版最多只能新增 2 個寶寶，請升級付費會員');
+    if (childProfiles.length >= MAX_CHILDREN) {
+      alert(CHILD_LIMIT_MESSAGE);
       return;
     }
     try {
@@ -158,8 +158,8 @@ export function useChildStore(user: User | null): ChildStore {
 
   const joinChild = async (childUuid: string) => {
     if (!user) return;
-    if (childProfiles.length >= MAX_FREE_CHILDREN) {
-      alert('免費版最多只能新增 2 個寶寶，請升級付費會員');
+    if (childProfiles.length >= MAX_CHILDREN) {
+      alert(CHILD_LIMIT_MESSAGE);
       return;
     }
     try {

@@ -8,6 +8,7 @@ import type { ChildProfile, Gender } from '../../types';
 import { backdrop, sheet } from '../ui/motion';
 import { goTo } from '../navigate';
 import { SERVICE_THEME, type ServiceId } from '../ui/serviceTheme';
+import { CHILD_LIMIT_MESSAGE, MAX_CHILDREN } from '../childLimits';
 import AddChildModal from './AddChildModal';
 import ShareChildUuidModal from './ShareChildUuidModal';
 
@@ -24,8 +25,6 @@ const SERVICE_USES_CHILD: Record<ServiceId, boolean> = {
   littleouting: false,
   babyoasis: false,
 };
-
-const MAX_FREE_CHILDREN = 2;
 
 interface AccountSheetProps {
   service: ServiceId;
@@ -44,7 +43,7 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
 
   const theme = SERVICE_THEME[service];
   const showChildren = SERVICE_USES_CHILD[service] && store !== null;
-  const canAddChild = childProfiles.length < MAX_FREE_CHILDREN;
+  const canAddChild = childProfiles.length < MAX_CHILDREN;
 
   const handleSaveChild = (
     name: string,
@@ -191,7 +190,7 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
                   }}
                   disabled={!canAddChild}
                   className="btn-secondary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={canAddChild ? '新增寶寶' : `目前最多 ${MAX_FREE_CHILDREN} 個寶寶`}
+                  title={canAddChild ? '新增寶寶' : CHILD_LIMIT_MESSAGE}
                 >
                   新增寶寶
                 </button>
