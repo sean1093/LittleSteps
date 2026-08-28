@@ -10,9 +10,19 @@ interface LogTimelineProps {
   logs: DailyLog[];
   onEdit: (log: DailyLog) => void;
   onDelete: (logId: string) => void;
+  /**
+   * 目前登入者的 uid。只有別人記的那幾筆會標出記錄者——一個人自己用的時候，
+   * 每一列都掛上自己的名字只是噪音。
+   */
+  currentUserId?: string | null;
 }
 
-export default function LogTimeline({ logs, onEdit, onDelete }: LogTimelineProps) {
+export default function LogTimeline({
+  logs,
+  onEdit,
+  onDelete,
+  currentUserId,
+}: LogTimelineProps) {
   // Filter today's logs and sort by time (newest first)
   const todayLogs = logs
     .filter((log) => isSameDay(log.timestamp, new Date()))
@@ -125,6 +135,12 @@ export default function LogTimeline({ logs, onEdit, onDelete }: LogTimelineProps
 
               {log.data.notes && (
                 <p className="text-xs text-ink-faint mt-1">備註：{log.data.notes}</p>
+              )}
+
+              {/* 「上一餐誰餵的」是兩個人輪流照顧時最常問的問題。只在確定是
+                  別人記的時候才顯示：舊紀錄沒有這個欄位，不能因為缺值就猜。 */}
+              {log.createdByName && log.createdBy && log.createdBy !== currentUserId && (
+                <p className="text-xs text-ink-faint mt-1">由 {log.createdByName} 記錄</p>
               )}
             </div>
 

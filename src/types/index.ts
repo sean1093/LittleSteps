@@ -241,6 +241,22 @@ export interface DailyLog {
   data: FeedingData | SleepData | DiaperData;
   createdAt: string; // ISO 8601 format
   updatedAt?: string; // ISO 8601 format
+  /**
+   * 記錄這一筆的人。餵奶、睡眠、換尿布本來就是兩個人輪流做的事，孩子也可以
+   * 用 joinChild 共享——但先前沒有任何一筆紀錄留下是誰做的，「上一餐誰餵的」
+   * 在 app 裡問不出答案。
+   *
+   * 兩個欄位都選填：既有的紀錄沒有這些值，不能因此壞掉。
+   */
+  createdBy?: string;
+  /**
+   * 寫入當下的顯示名稱快照。
+   *
+   * 不能只存 uid：安全規則裡 users/$userId 只有本人讀得到，所以事後沒有任何
+   * 辦法把別人的 uid 換成名字。對方改名後這裡會留著舊名字，那是這個限制下
+   * 可接受的代價。
+   */
+  createdByName?: string;
 }
 
 export interface FeedingData {

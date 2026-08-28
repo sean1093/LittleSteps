@@ -51,6 +51,13 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
       const completeLogData = {
         ...logData,
         childId: currentChild.id,
+        // 編輯時保留原本的記錄者：改一筆別人記的紀錄不該把它變成自己記的。
+        ...(editingLog
+          ? {}
+          : {
+              createdBy: user?.uid,
+              createdByName: user?.displayName ?? undefined,
+            }),
       };
 
       if (editingLog) {
@@ -146,7 +153,12 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
 
         <motion.div variants={listItem}>
           <h2 className="mb-3">今日記錄</h2>
-          <LogTimeline logs={logs} onEdit={handleEdit} onDelete={handleDelete} />
+          <LogTimeline
+            logs={logs}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            currentUserId={user?.uid}
+          />
         </motion.div>
 
         {modalType && (
