@@ -89,15 +89,21 @@ describe('growthChartData', () => {
       }
     });
 
-    it('should use standing height-for-age past 24 months', () => {
-      // WHO switches from recumbent length (0-24mo) to standing height (24-60mo),
-      // which is ~0.7cm shorter. The 24mo row is the last length value; 27mo is
-      // the first height value, so the 24->27 gain is smaller than 21->24.
-      const male21 = getWHOStandard(21, 'height', 'male');
+    it('should use standing height-for-age from 24 months', () => {
+      // 這個測試原本斷言 24→27 的增幅小於 21→24，把「24 個月那一列是身長、
+      // 27 個月那一列是身高」當成正確行為記了下來。描述是對的，結論不對：
+      // 那代表 24 到 27 個月之間的插值橫跨兩套標準，25 個月大的孩子拿到一條
+      // 兩邊都不認的曲線。現在 24 個月起直接改用站姿身高表。
       const male24 = getWHOStandard(24, 'height', 'male');
       const male27 = getWHOStandard(27, 'height', 'male');
 
-      expect(male24.M - male21.M).toBeGreaterThan(male27.M - male24.M);
+      // 24 與 27 都在站姿身高表上，插值不再跨標準。
+      expect(male24.M).toBeCloseTo(87.1303, 4);
+      expect(male27.M).toBeCloseTo(89.6197, 4);
+
+      // 24 個月前一刻仍是躺姿身長，比站姿高約 0.67 公分。
+      expect(getWHOStandard(23.99, 'height', 'male').M - male24.M).toBeGreaterThan(0.6);
+
       // 3-year-old boy median standing height, WHO hfa 2-5y month 36
       expect(getWHOStandard(36, 'height', 'male').M).toBeCloseTo(96.0835, 4);
       expect(getWHOStandard(36, 'height', 'female').M).toBeCloseTo(95.0515, 4);
