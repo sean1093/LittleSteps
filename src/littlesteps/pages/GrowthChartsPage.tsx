@@ -10,6 +10,7 @@ import GrowthChartDisplay from '../components/growth/GrowthChartDisplay';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem } from '../../common/ui/motion';
+import { formatDate } from '../../common/utils/dateHelpers';
 
 interface GrowthChartsPageProps {
   currentChild?: ChildProfile;
@@ -51,6 +52,7 @@ export default function GrowthChartsPage({
   }
 
   const latestRecord = records[0]; // Already sorted newest first
+  const hasRecords = records.length > 0;
 
   return (
     <div className="screen">
@@ -70,7 +72,7 @@ export default function GrowthChartsPage({
         {/* Latest Record Summary */}
         {latestRecord && (
           <motion.div variants={listItem} className="panel mb-6">
-            <p className="text-sm text-ink-muted mb-4">最新記錄: {latestRecord.date}</p>
+            <p className="text-sm text-ink-muted mb-4">最新記錄: {formatDate(latestRecord.date)}</p>
             <div className="grid grid-cols-3 gap-3">
               {latestRecord.weight !== undefined && (
                 <div className="flex flex-col items-center p-4 bg-primary-soft rounded-2xl">
@@ -115,28 +117,37 @@ export default function GrowthChartsPage({
           </motion.div>
         )}
 
-        {/* Chart Tabs */}
-        <motion.div variants={listItem} className="row-bleed flex gap-2 pb-2 mb-4">
-          {CHART_TABS.map((chartTab) => (
-            <button
-              key={chartTab.value}
-              onClick={() => setSelectedChart(chartTab.value)}
-              className={`chip ${selectedChart === chartTab.value ? 'chip-on' : ''}`}
-            >
-              {chartTab.label}
-            </button>
-          ))}
-        </motion.div>
+        {/*
+          Chart and its metric tabs only exist once there is something to plot.
+          With no records at all, GrowthChartDisplay's 無法顯示圖表 card and
+          GrowthRecordList's 尚無記錄 card stacked up saying the same thing; the
+          list's card is the one that names the next step. A record that misses
+          the selected metric still falls through to the chart's own message.
+        */}
+        {hasRecords && (
+          <>
+            <motion.div variants={listItem} className="row-bleed flex gap-2 pb-2 mb-4">
+              {CHART_TABS.map((chartTab) => (
+                <button
+                  key={chartTab.value}
+                  onClick={() => setSelectedChart(chartTab.value)}
+                  className={`chip ${selectedChart === chartTab.value ? 'chip-on' : ''}`}
+                >
+                  {chartTab.label}
+                </button>
+              ))}
+            </motion.div>
 
-        {/* Growth Chart */}
-        <motion.div variants={listItem} className="mb-6">
-          <GrowthChartDisplay
-            records={records}
-            measurementType={selectedChart}
-            gender={currentChild.gender}
-            birthday={currentChild.birthday}
-          />
-        </motion.div>
+            <motion.div variants={listItem} className="mb-6">
+              <GrowthChartDisplay
+                records={records}
+                measurementType={selectedChart}
+                gender={currentChild.gender}
+                birthday={currentChild.birthday}
+              />
+            </motion.div>
+          </>
+        )}
 
         {/* Records List */}
         <motion.div variants={listItem}>
