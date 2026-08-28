@@ -15,6 +15,8 @@ interface LogTimelineProps {
    * 每一列都掛上自己的名字只是噪音。
    */
   currentUserId?: string | null;
+  /** 要顯示哪一天。省略時是今天。 */
+  date?: Date;
 }
 
 export default function LogTimeline({
@@ -22,10 +24,13 @@ export default function LogTimeline({
   onEdit,
   onDelete,
   currentUserId,
+  date,
 }: LogTimelineProps) {
   // Filter today's logs and sort by time (newest first)
+  const shownDate = date ?? new Date();
+  const isToday = isSameDay(shownDate, new Date());
   const todayLogs = logs
-    .filter((log) => isSameDay(log.timestamp, new Date()))
+    .filter((log) => isSameDay(log.timestamp, shownDate))
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   const handleDelete = (log: DailyLog) => {
@@ -105,8 +110,8 @@ export default function LogTimeline({
     return (
       <EmptyState
         theme={SERVICE_THEME.littlesteps}
-        title="今天還沒有記錄"
-        description="點擊上方按鈕開始記錄吧！"
+        title={isToday ? '今天還沒有記錄' : '這天沒有記錄'}
+        description={isToday ? '點擊上方按鈕開始記錄吧！' : '這一天沒有留下任何紀錄'}
       />
     );
   }

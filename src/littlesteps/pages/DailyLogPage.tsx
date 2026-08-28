@@ -8,6 +8,7 @@ import { isSameDay } from '../../common/utils/dateHelpers';
 import QuickLogButtons from '../components/dailylog/QuickLogButtons';
 import LogEntryModal from '../components/dailylog/LogEntryModal';
 import LogTimeline from '../components/dailylog/LogTimeline';
+import DaySelector from '../components/dailylog/DaySelector';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem } from '../../common/ui/motion';
@@ -23,13 +24,14 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState<'feeding' | 'sleep' | 'diaper' | null>(null);
   const [editingLog, setEditingLog] = useState<DailyLog | null>(null);
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
 
   // Load data
   const { logs, loading } = useDailyLogs(currentChild?.id || null, user);
   const firebaseChildren = useFirebaseChildren(user?.uid || null);
 
-  // Calculate today's statistics
-  const todayLogs = logs.filter((log) => isSameDay(log.timestamp, new Date()));
+  const isToday = isSameDay(selectedDate, new Date());
+  const todayLogs = logs.filter((log) => isSameDay(log.timestamp, selectedDate));
   const feedingCount = todayLogs.filter((l) => l.type === 'feeding').length;
   const sleepCount = todayLogs.filter((l) => l.type === 'sleep').length;
   const diaperCount = todayLogs.filter((l) => l.type === 'diaper').length;
@@ -66,6 +68,9 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
         await firebaseChildren.addDailyLog(currentChild.id, completeLogData);
       }
 
+      // 補記昨天的餵奶時，紀錄不會落在目前這一天。跳到它真正落在的日子，
+      // 不然使用者剛存的東西會憑空消失。
+      setSelectedDate(new Date(completeLogData.timestamp));
       setShowModal(false);
       setEditingLog(null);
     } catch (error) {
@@ -134,8 +139,12 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
         initial="hidden"
         animate="visible"
       >
+        <motion.div variants={listItem} className="card mb-4">
+          <DaySelector value={selectedDate} onChange={setSelectedDate} />
+        </motion.div>
+
         <motion.div variants={listItem} className="card mb-6">
-          <h2 className="mb-3">今日統計</h2>
+          <h2 className="mb-3">{isToday ? '今日統計' : '這天的統計'}</h2>
           <div className="flex justify-around">
             {stats.map((stat) => (
               <div key={stat.label} className="text-center">
@@ -152,12 +161,13 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
         </motion.div>
 
         <motion.div variants={listItem}>
-          <h2 className="mb-3">今日記錄</h2>
+          <h2 className="mb-3">{isToday ? '今日記錄' : '這天的記錄'}</h2>
           <LogTimeline
             logs={logs}
             onEdit={handleEdit}
             onDelete={handleDelete}
             currentUserId={user?.uid}
+            date={selectedDate}
           />
         </motion.div>
 

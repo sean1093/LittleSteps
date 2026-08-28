@@ -71,6 +71,59 @@ describe('LogTimeline 的記錄者', () => {
   });
 });
 
+describe('看得到別的日子', () => {
+  const dayOf = (d: Date, hour: number) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate(), hour, 40).toISOString();
+
+  it('半夜打開時，昨天深夜那一餐不會消失', () => {
+    // 原本的 bug：這一頁硬寫成 new Date()，00:10 打開就看不到 23:40 那一餐，
+    // 而那正是新生兒餵奶最常發生的時間。
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    render(
+      <LogTimeline
+        logs={[log({ timestamp: dayOf(yesterday, 23) })]}
+        onEdit={noop}
+        onDelete={noop}
+        date={yesterday}
+      />,
+    );
+
+    expect(screen.getByText('餵奶')).toBeInTheDocument();
+  });
+
+  it('只顯示指定那一天的紀錄', () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    render(
+      <LogTimeline
+        logs={[
+          log({ id: 'y', timestamp: dayOf(yesterday, 23) }),
+          log({ id: 't', type: 'diaper', data: { type: 'pee' }, timestamp: dayOf(new Date(), 9) }),
+        ]}
+        onEdit={noop}
+        onDelete={noop}
+        date={yesterday}
+      />,
+    );
+
+    expect(screen.getByText('餵奶')).toBeInTheDocument();
+    expect(screen.queryByText('尿布')).toBeNull();
+  });
+
+  it('過去的空白日子不會叫人去按按鈕——按鈕記的是現在', () => {
+    const lastWeek = new Date();
+    lastWeek.setDate(lastWeek.getDate() - 7);
+
+    render(<LogTimeline logs={[]} onEdit={noop} onDelete={noop} date={lastWeek} />);
+
+    expect(screen.getByText('這天沒有記錄')).toBeInTheDocument();
+    expect(screen.queryByText(/開始記錄吧/)).toBeNull();
+  });
+});
+
 describe('編輯別人的紀錄', () => {
   it('不會把記錄者換成自己', () => {
     // handleSave 只在新增時蓋上記錄者；改一筆別人記的紀錄不該把它變成自己記的。
