@@ -359,7 +359,6 @@ export interface GrowthRecord {
 export type MeasurementType = 'weight' | 'height' | 'headCircumference';
 export type Gender = 'male' | 'female';
 export type PercentileCategory = 'low' | 'normal' | 'high';
-export type GrowthTrend = 'increasing' | 'decreasing' | 'stable' | 'insufficient-data';
 
 // WHO Growth Chart Standards (LMS method)
 export interface WHOStandard {

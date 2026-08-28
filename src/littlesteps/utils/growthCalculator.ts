@@ -1,10 +1,4 @@
-import type {
-  GrowthRecord,
-  MeasurementType,
-  Gender,
-  PercentileCategory,
-  GrowthTrend,
-} from '../../types';
+import type { MeasurementType, Gender, PercentileCategory } from '../../types';
 import { getWHOStandard } from '../data/growthChartData';
 
 /**
@@ -60,56 +54,6 @@ export function getPercentileCategory(
   if (percentile < 15) return 'low';
   if (percentile > 85) return 'high';
   return 'normal';
-}
-
-/**
- * Analyze growth trend from multiple records
- *
- * @param records - Array of growth records (sorted by date)
- * @param measurementType - Which measurement to analyze
- * @returns Trend: increasing, decreasing, stable, or insufficient-data
- */
-export function getGrowthTrend(
-  records: GrowthRecord[],
-  measurementType: MeasurementType
-): GrowthTrend {
-  // Filter records with the specified measurement
-  const validRecords = records.filter((r) => {
-    const value = r[measurementType];
-    return value !== undefined && value !== null;
-  });
-
-  if (validRecords.length < 2) {
-    return 'insufficient-data';
-  }
-
-  // Sort by date
-  const sorted = [...validRecords].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
-
-  // Calculate average change
-  let totalChange = 0;
-  for (let i = 1; i < sorted.length; i++) {
-    const prev = sorted[i - 1][measurementType]!;
-    const curr = sorted[i][measurementType]!;
-    totalChange += curr - prev;
-  }
-
-  const avgChange = totalChange / (sorted.length - 1);
-
-  // Define thresholds based on measurement type
-  const thresholds = {
-    weight: 0.1, // 100g
-    height: 0.5, // 0.5cm
-    headCircumference: 0.2, // 2mm
-  };
-
-  const threshold = thresholds[measurementType] || 0.1;
-
-  if (avgChange > threshold) return 'increasing';
-  if (avgChange < -threshold) return 'decreasing';
-  return 'stable';
 }
 
 /**

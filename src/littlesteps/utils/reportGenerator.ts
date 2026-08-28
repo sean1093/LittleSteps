@@ -21,8 +21,9 @@ export interface WeeklyReport {
     dailyAmounts: number[];
     avgDailyCount: number;
     avgDailyAmount: number;
-    maxDay: { date: string; amount: number };
-    minDay: { date: string; amount: number };
+    /** 一天餵奶都沒記過就沒有「最高日」可言 */
+    maxDay?: { date: string; amount: number };
+    minDay?: { date: string; amount: number };
   };
   sleep: {
     dailyDurations: number[];
@@ -114,17 +115,22 @@ function buildFeedingData(logs: DailyLog[], days: number) {
     dailyAmounts.push(dayAmount);
     dailyCounts.push(dayCount);
 
-    if (dayAmount > maxDay.amount) {
-      maxDay = { date, amount: dayAmount };
-    }
-    if (dayAmount < minDay.amount) {
-      minDay = { date, amount: dayAmount };
+    // 只有真的記了餵奶的日子才能當「最多／最少的一天」。沒記的那天算進來，
+    // 最少的一天永遠是 0 ml，而報告會指名道姓說是哪一天——家長讀到的是
+    // 「那天寶寶沒喝奶」，不是「那天沒記」。
+    if (feedingLogs.length > 0) {
+      if (dayAmount > maxDay.amount) {
+        maxDay = { date, amount: dayAmount };
+      }
+      if (dayAmount < minDay.amount) {
+        minDay = { date, amount: dayAmount };
+      }
     }
   }
 
-  // Handle edge case where no data exists
-  if (maxDay.amount === -Infinity) maxDay = { date: getDateNDaysAgo(0), amount: 0 };
-  if (minDay.amount === Infinity) minDay = { date: getDateNDaysAgo(0), amount: 0 };
+  // 整段期間都沒記過餵奶時，沒有哪一天可以指。回一個隨便挑的日期加 0 ml，
+  // 等於憑空生出一個「那天寶寶只喝了 0」的說法。
+  const logged = maxDay.amount !== -Infinity;
 
   const avgDailyCount = dailyCounts.reduce((sum, v) => sum + v, 0) / days;
   const avgDailyAmount = dailyAmounts.reduce((sum, v) => sum + v, 0) / days;
@@ -133,8 +139,8 @@ function buildFeedingData(logs: DailyLog[], days: number) {
     dailyAmounts,
     avgDailyCount: Math.round(avgDailyCount * 10) / 10,
     avgDailyAmount: Math.round(avgDailyAmount),
-    maxDay,
-    minDay,
+    maxDay: logged ? maxDay : undefined,
+    minDay: logged ? minDay : undefined,
   };
 }
 
@@ -143,7 +149,7 @@ function buildFeedingData(logs: DailyLog[], days: number) {
  */
 function buildSleepData(logs: DailyLog[], days: number, ageMonths: number) {
   const dailyDurations: number[] = [];
-  const nightWakingsPerDay: number[] = [];
+  const nightWakingsPerDay: Array<number | null> = [];
   let longestContinuous = 0;
 
   for (let i = days - 1; i >= 0; i--) {
@@ -153,6 +159,9 @@ function buildSleepData(logs: DailyLog[], days: number, ageMonths: number) {
     const sleepLogs = dayLogs.filter(log => log.type === 'sleep');
     let dayTotalMinutes = 0;
     let dayNightWakings = 0;
+    // 那天完全沒記睡眠，夜醒次數就是不知道，不是 0。當成 0 會讓「太累沒記」
+    // 看起來跟「夜醒變少了」一模一樣，而後者是家長最想聽到的消息。
+    const logged = sleepLogs.length > 0;
 
     sleepLogs.forEach(log => {
       const data = log.data as SleepData;
@@ -169,7 +178,7 @@ function buildSleepData(logs: DailyLog[], days: number, ageMonths: number) {
     });
 
     dailyDurations.push(Math.round((dayTotalMinutes / 60) * 10) / 10); // hours
-    nightWakingsPerDay.push(dayNightWakings);
+    nightWakingsPerDay.push(logged ? dayNightWakings : null);
   }
 
   const avgDailyHours = dailyDurations.reduce((sum, v) => sum + v, 0) / days;

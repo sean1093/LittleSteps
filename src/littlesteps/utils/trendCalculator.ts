@@ -3,7 +3,15 @@ import { filterLogsByDate, calculateSleepDuration } from './logHelpers';
 import { getSleepRequirementForAge } from '../data/sleep';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
-export type TrendDirection = 'increasing' | 'decreasing' | 'stable';
+/**
+ * 'insufficient-data' 和 'stable' 不一樣：一個是「沒得說」，一個是「沒變」。
+ * 少了前者，沒記錄的日子會被當成 0，於是「這幾天太累沒記」和「真的變好了」
+ * 在報告上長得一模一樣。
+ */
+export type TrendDirection = 'increasing' | 'decreasing' | 'stable' | 'insufficient-data';
+
+/** 報告上那四張趨勢卡的指標 */
+export type MetricType = 'feeding_count' | 'feeding_amount' | 'sleep_duration' | 'poop_count';
 
 export interface TrendData {
   direction: TrendDirection;
@@ -11,6 +19,47 @@ export interface TrendData {
   currentValue: number;
   averageValue: number;
   sparklinePoints: number[];
+}
+
+/** 一個指標要看哪一種紀錄才算「那天有記」 */
+const LOG_TYPE_FOR: Record<MetricType, DailyLog['type']> = {
+  feeding_count: 'feeding',
+  feeding_amount: 'feeding',
+  sleep_duration: 'sleep',
+  poop_count: 'diaper',
+};
+
+/**
+ * 那一天的觀測值；那天沒有這一類的紀錄就是 null。
+ *
+ * 判準是「有沒有記那一類」而不是「有沒有記任何東西」：只記餵奶不記尿布的
+ * 家長，他的排便趨勢不是「都是 0」，是根本沒有資料。反過來，有記尿布但那天
+ * 沒有大便，就是真的 0，要算進去。
+ */
+function getDailyObservation(
+  logs: DailyLog[],
+  date: string,
+  type: MetricType,
+): number | null {
+  const dayLogs = filterLogsByDate(logs, date);
+  if (!dayLogs.some((log) => log.type === LOG_TYPE_FOR[type])) return null;
+
+  return getDailyValue(logs, date, type);
+}
+
+/**
+ * 每天一格的觀測序列，沒記錄的那天是 null。
+ */
+export function generateDailySeries(
+  logs: DailyLog[],
+  days: number,
+  type: MetricType,
+): Array<number | null> {
+  const points: Array<number | null> = [];
+  for (let i = days - 1; i >= 0; i -= 1) {
+    points.push(getDailyObservation(logs, getDateNDaysAgo(i), type));
+  }
+  return points;
 }
 
 /**
@@ -28,7 +77,7 @@ function getDateNDaysAgo(daysAgo: number): string {
 function getDailyValue(
   logs: DailyLog[],
   date: string,
-  type: 'feeding_count' | 'feeding_amount' | 'sleep_duration' | 'poop_count'
+  type: MetricType
 ): number {
   const dayLogs = filterLogsByDate(logs, date);
 
@@ -73,7 +122,7 @@ function getDailyValue(
 export function calculateDailyAverage(
   logs: DailyLog[],
   days: number,
-  type: 'feeding_count' | 'feeding_amount' | 'sleep_duration' | 'poop_count'
+  type: MetricType
 ): number {
   if (days <= 0) return 0;
 
@@ -93,12 +142,16 @@ export function calculateDailyAverage(
  * 'decreasing' if < -10%
  * otherwise 'stable'
  */
-export function calculateTrend(dailyValues: number[]): TrendDirection {
-  if (dailyValues.length < 2) return 'stable';
+export function calculateTrend(dailyValues: Array<number | null>): TrendDirection {
+  if (dailyValues.length < 2) return 'insufficient-data';
 
   const midpoint = Math.floor(dailyValues.length / 2);
-  const firstHalf = dailyValues.slice(0, midpoint);
-  const secondHalf = dailyValues.slice(midpoint);
+  // 沒記錄的日子不能當成 0 參與平均：停記三天和「真的變好了」會算出同一個答案。
+  const firstHalf = dailyValues.slice(0, midpoint).filter((v): v is number => v !== null);
+  const secondHalf = dailyValues.slice(midpoint).filter((v): v is number => v !== null);
+
+  // 任一半少於兩天有記錄，就沒有可比的兩段。硬要比只是把雜訊講成趨勢。
+  if (firstHalf.length < 2 || secondHalf.length < 2) return 'insufficient-data';
 
   const firstAvg = firstHalf.reduce((sum, v) => sum + v, 0) / firstHalf.length;
   const secondAvg = secondHalf.reduce((sum, v) => sum + v, 0) / secondHalf.length;
@@ -134,7 +187,7 @@ export function calculateChangeRate(
 export function generateSparklineData(
   logs: DailyLog[],
   days: number,
-  type: 'feeding_count' | 'feeding_amount' | 'sleep_duration' | 'poop_count'
+  type: MetricType
 ): number[] {
   const points: number[] = [];
   // Iterate from oldest day to most recent (i = days-1 is oldest, i = 0 is today)
@@ -180,12 +233,14 @@ export function getRecommendedSleepHours(ageMonths: number): { min: number; max:
 function buildTrendData(
   logs: DailyLog[],
   days: number,
-  type: 'feeding_count' | 'feeding_amount' | 'sleep_duration' | 'poop_count'
+  type: MetricType
 ): TrendData {
-  const sparklinePoints = generateSparklineData(logs, days, type);
+  const series = generateDailySeries(logs, days, type);
+  // 圖照畫，沒記錄的那天畫成 0；但趨勢的判斷不能用這個補過的版本。
+  const sparklinePoints = series.map((v) => v ?? 0);
   const todayValue = sparklinePoints[sparklinePoints.length - 1] || 0;
   const averageValue = calculateDailyAverage(logs, days, type);
-  const direction = calculateTrend(sparklinePoints);
+  const direction = calculateTrend(series);
   const changeRate = calculateChangeRate(todayValue, averageValue);
 
   return {

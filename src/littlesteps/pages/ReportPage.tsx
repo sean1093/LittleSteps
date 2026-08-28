@@ -52,6 +52,8 @@ function TrendIcon({ direction }: { direction: TrendDirection }) {
   if (direction === 'decreasing') {
     return <TrendingDown className="w-4 h-4 text-mint-dark" />;
   }
+  // 「資料不足」和「穩定」都用中性符號，但下面的文字必須分得出來——
+  // 把沒記錄的日子講成「穩定」，等於拿沒有的資料下結論。
   return <Minus className="w-4 h-4 text-ink-faint" />;
 }
 
@@ -61,6 +63,7 @@ function TrendIcon({ direction }: { direction: TrendDirection }) {
 function trendLabel(direction: TrendDirection): string {
   if (direction === 'increasing') return '上升';
   if (direction === 'decreasing') return '下降';
+  if (direction === 'insufficient-data') return '記錄不足';
   return '穩定';
 }
 
@@ -226,24 +229,28 @@ export default function ReportPage({
                   </div>
                   <div className="text-sm text-ink-muted">平均每日總量</div>
                 </div>
-                <div className="bg-warm-white rounded-xl p-3 text-center">
-                  <div className="text-sm font-bold text-ink">
-                    {report.feeding.maxDay.amount}
-                    <span className="text-xs font-normal ml-0.5">ml</span>
+                {report.feeding.maxDay && (
+                  <div className="bg-warm-white rounded-xl p-3 text-center">
+                    <div className="text-sm font-bold text-ink">
+                      {report.feeding.maxDay.amount}
+                      <span className="text-xs font-normal ml-0.5">ml</span>
+                    </div>
+                    <div className="text-sm text-ink-muted">
+                      最高日 ({formatDateShort(report.feeding.maxDay.date)})
+                    </div>
                   </div>
-                  <div className="text-sm text-ink-muted">
-                    最高日 ({formatDateShort(report.feeding.maxDay.date)})
+                )}
+                {report.feeding.minDay && (
+                  <div className="bg-warm-white rounded-xl p-3 text-center">
+                    <div className="text-sm font-bold text-ink">
+                      {report.feeding.minDay.amount}
+                      <span className="text-xs font-normal ml-0.5">ml</span>
+                    </div>
+                    <div className="text-sm text-ink-muted">
+                      最低日 ({formatDateShort(report.feeding.minDay.date)})
+                    </div>
                   </div>
-                </div>
-                <div className="bg-warm-white rounded-xl p-3 text-center">
-                  <div className="text-sm font-bold text-ink">
-                    {report.feeding.minDay.amount}
-                    <span className="text-xs font-normal ml-0.5">ml</span>
-                  </div>
-                  <div className="text-sm text-ink-muted">
-                    最低日 ({formatDateShort(report.feeding.minDay.date)})
-                  </div>
-                </div>
+                )}
               </div>
             </motion.div>
 

@@ -80,10 +80,28 @@ describe('trendCalculator', () => {
   });
 
   describe('calculateTrend', () => {
-    it('returns stable for empty and single-point series', () => {
-      expect(calculateTrend([])).toBe('stable');
-      expect(calculateTrend([42])).toBe('stable');
-      expect(calculateTrend([0])).toBe('stable');
+    it('沒有兩段可比時說「資料不足」，不說「穩定」', () => {
+      // 空的序列不是「沒變」，是「不知道」。原本兩者都回 'stable'，
+      // 於是報告會拿沒有的資料講出一個結論。
+      expect(calculateTrend([])).toBe('insufficient-data');
+      expect(calculateTrend([42])).toBe('insufficient-data');
+      expect(calculateTrend([0])).toBe('insufficient-data');
+      // 每一半至少要有兩天有記錄，否則就是拿雜訊當趨勢
+      expect(calculateTrend([10, 11])).toBe('insufficient-data');
+      expect(calculateTrend([1, null, null, 5])).toBe('insufficient-data');
+    });
+
+    it('沒記錄的那幾天不會被當成 0 拉低平均', () => {
+      // 這就是原本的 bug：停記三天和「夜醒真的變少」算出同一個答案，
+      // 而後者正是家長最想聽到的消息。
+      const steady = [3, 3, 3, 3, 3, 3, 3];
+      const stoppedLogging = [3, 3, 3, 3, null, null, null];
+
+      expect(calculateTrend(steady)).toBe('stable');
+      expect(calculateTrend(stoppedLogging)).toBe('insufficient-data');
+
+      // 真的變少還是要看得出來
+      expect(calculateTrend([5, 5, 5, 5, 3, 3, 3])).toBe('decreasing');
     });
 
     it('detects an increasing series (second half > first half by more than 10%)', () => {
@@ -102,22 +120,23 @@ describe('trendCalculator', () => {
     });
 
     it('uses a strict >10% / <-10% threshold, so exactly +/-10% stays stable', () => {
-      expect(calculateTrend([10, 11])).toBe('stable'); // exactly +10%
-      expect(calculateTrend([10, 9])).toBe('stable'); // exactly -10%
-      expect(calculateTrend([10, 11.5])).toBe('increasing'); // +15%
-      expect(calculateTrend([10, 8.5])).toBe('decreasing'); // -15%
+      expect(calculateTrend([10, 10, 11, 11])).toBe('stable'); // exactly +10%
+      expect(calculateTrend([10, 10, 9, 9])).toBe('stable'); // exactly -10%
+      expect(calculateTrend([10, 10, 11.5, 11.5])).toBe('increasing'); // +15%
+      expect(calculateTrend([10, 10, 8.5, 8.5])).toBe('decreasing'); // -15%
     });
 
     it('puts the middle sample of an odd-length series in the second half', () => {
-      // midpoint = floor(3/2) = 1 -> first [10] avg 10, second [30,10] avg 20 -> +100%.
-      // Had the middle sample landed in the first half the result would be 'decreasing'.
-      expect(calculateTrend([10, 30, 10])).toBe('increasing');
+      // midpoint = floor(5/2) = 2 -> first [10,10] avg 10, second [30,10,10] avg ~16.7 -> +67%.
+      // Had the middle sample landed in the first half the result would be 'stable'.
+      expect(calculateTrend([10, 10, 30, 10, 10])).toBe('increasing');
     });
 
     it('treats a zero first half as increasing only when the second half is positive', () => {
-      expect(calculateTrend([0, 10, 20])).toBe('increasing');
-      expect(calculateTrend([0, 0])).toBe('stable');
-      expect(calculateTrend([0, 0, 0])).toBe('stable');
+      expect(calculateTrend([0, 0, 10, 20])).toBe('increasing');
+      expect(calculateTrend([0, 0, 0, 0])).toBe('stable');
+      // 記了但真的是 0，跟沒記不一樣：前者是「沒變」，後者是「不知道」
+      expect(calculateTrend([0, 0, null, null])).toBe('insufficient-data');
     });
 
     it('reports a drop to zero as decreasing', () => {
@@ -315,7 +334,8 @@ describe('trendCalculator', () => {
       expect(trend.sparklinePoints).toEqual([0, 0, 0, 0, 0, 0, 0]);
       expect(trend.currentValue).toBe(0);
       expect(trend.averageValue).toBe(0);
-      expect(trend.direction).toBe('stable');
+      // 一筆紀錄都沒有不是「穩定」，是沒有東西可談
+      expect(trend.direction).toBe('insufficient-data');
       expect(trend.changeRate).toBe(0);
     });
 
@@ -325,7 +345,8 @@ describe('trendCalculator', () => {
       expect(trend.sparklinePoints).toEqual([]);
       expect(trend.currentValue).toBe(0);
       expect(trend.averageValue).toBe(0);
-      expect(trend.direction).toBe('stable');
+      // 零天的視窗裡沒有任何一天，同樣是沒有東西可談
+      expect(trend.direction).toBe('insufficient-data');
       expect(trend.changeRate).toBe(0);
     });
   });
@@ -369,13 +390,27 @@ describe('trendCalculator', () => {
     });
 
     it('reports zeros when only pee diapers were logged', () => {
-      const peeOnly = [diaper(TODAY, 'pee'), diaper(DAY_1_AGO, 'pee')];
-      const trend = getPoopTrend(peeOnly, 2);
+      // 有記尿布但那幾天沒大便，是真的 0——跟「沒記尿布」不一樣，
+      // 所以這裡要看得出「穩定」，而不是「記錄不足」。
+      const peeOnly = [
+        diaper(TODAY, 'pee'),
+        diaper(DAY_1_AGO, 'pee'),
+        diaper(DAY_2_AGO, 'pee'),
+        diaper(DAY_3_AGO, 'pee'),
+      ];
+      const trend = getPoopTrend(peeOnly, 4);
 
-      expect(trend.sparklinePoints).toEqual([0, 0]);
+      expect(trend.sparklinePoints).toEqual([0, 0, 0, 0]);
       expect(trend.averageValue).toBe(0);
       expect(trend.direction).toBe('stable');
       expect(trend.changeRate).toBe(0);
+    });
+
+    it('完全沒記尿布時說記錄不足，不說沒有大便', () => {
+      // 只記餵奶的家長，他的排便趨勢不是「都是 0」，是根本沒有資料。
+      const feedsOnly = getPoopTrend([], 7);
+
+      expect(feedsOnly.direction).toBe('insufficient-data');
     });
   });
 });

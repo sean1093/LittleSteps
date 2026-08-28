@@ -130,13 +130,15 @@ describe('reportGenerator', () => {
       expect(report.feeding.avgDailyCount).toBe(0);
       expect(report.feeding.avgDailyAmount).toBe(0);
       // With no data every day ties at 0, so the first day scanned (the oldest) wins both.
-      expect(report.feeding.maxDay).toEqual({ date: '2026-06-09', amount: 0 });
-      expect(report.feeding.minDay).toEqual({ date: '2026-06-09', amount: 0 });
+      // 整週一筆餵奶都沒記，就沒有「最高日／最低日」可以指
+      expect(report.feeding.maxDay).toBeUndefined();
+      expect(report.feeding.minDay).toBeUndefined();
 
       expect(report.sleep.dailyDurations).toEqual([0, 0, 0, 0, 0, 0, 0]);
       expect(report.sleep.avgDailyHours).toBe(0);
       expect(report.sleep.longestContinuous).toBe(0);
-      expect(report.sleep.nightWakingsTrend).toBe('stable');
+      // 一筆睡眠都沒記，夜醒趨勢不是「穩定」，是沒有東西可談
+      expect(report.sleep.nightWakingsTrend).toBe('insufficient-data');
       expect(report.sleep.recommendedHours).toBe(13); // 4 months -> "13-15 小時"
 
       expect(report.poop.dailyCounts).toEqual([0, 0, 0, 0, 0, 0, 0]);
@@ -171,6 +173,7 @@ describe('reportGenerator', () => {
       expect(report.sleep.dailyDurations).toEqual([12, 12, 12, 12, 12, 12, 12]);
       expect(report.sleep.avgDailyHours).toBe(12);
       expect(report.sleep.longestContinuous).toBe(720); // minutes, not hours
+      // 每天都有記睡眠，夜醒次數是實際觀測到的 0——這才是真的「穩定」
       expect(report.sleep.nightWakingsTrend).toBe('stable');
 
       expect(report.poop.dailyCounts).toEqual([1, 1, 1, 1, 1, 1, 1]);
@@ -286,15 +289,17 @@ describe('reportGenerator', () => {
       expect(report.feeding.dailyAmounts.slice(23)).toEqual(Array(7).fill(240));
       expect(report.feeding.avgDailyAmount).toBe(56); // 1680 / 30
       expect(report.feeding.avgDailyCount).toBe(0.5); // 14 / 30 = 0.466... -> 0.5
-      // The first day scanned holds the 0 minimum; the max moves to the first active day.
+      // 最高／最低只看有記餵奶的那幾天。原本會把 5/17（完全沒記）當成
+      // 「最低日 0 ml」寫在報告上，讀起來像那天寶寶沒喝奶。
       expect(report.feeding.maxDay).toEqual({ date: '2026-06-09', amount: 240 });
-      expect(report.feeding.minDay).toEqual({ date: '2026-05-17', amount: 0 });
+      expect(report.feeding.minDay).toEqual({ date: '2026-06-09', amount: 240 });
 
       expect(report.sleep.dailyDurations).toHaveLength(30);
       expect(report.sleep.avgDailyHours).toBe(2.8); // 84 / 30
       expect(report.sleep.longestContinuous).toBe(720);
-      // Empty first half vs. a populated second half reads as rising wakings.
-      expect(report.sleep.nightWakingsTrend).toBe('increasing');
+      // 原本這裡斷言 'increasing'，註解還寫著「空的前半段對上有資料的後半段
+      // 讀起來就是夜醒變多」——那不是趨勢，是 23 天沒記錄被當成 23 天沒夜醒。
+      expect(report.sleep.nightWakingsTrend).toBe('insufficient-data');
 
       expect(report.poop.avgDailyCount).toBe(0.2); // 7 / 30 = 0.233... -> 0.2
       expect(report.poop.longestGap).toBe(24);

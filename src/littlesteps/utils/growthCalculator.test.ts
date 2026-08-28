@@ -3,9 +3,7 @@ import {
   calculatePercentile,
   calculateZScore,
   getPercentileCategory,
-  getGrowthTrend,
 } from './growthCalculator';
-import type { GrowthRecord } from '../../types';
 
 describe('growthCalculator', () => {
   describe('calculateZScore', () => {
@@ -105,82 +103,4 @@ describe('growthCalculator', () => {
     });
   });
 
-  describe('getGrowthTrend', () => {
-    const baseRecord: GrowthRecord = {
-      id: '1',
-      childId: 'child1',
-      date: '2026-01-01',
-      weight: 8,
-      height: 70,
-      headCircumference: 43,
-      percentile: {
-        weight: 50,
-        height: 50,
-        headCircumference: 50,
-      },
-    };
-
-    it('should detect increasing trend when measurements go up', () => {
-      const records: GrowthRecord[] = [
-        { ...baseRecord, id: '1', date: '2026-01-01', weight: 8, height: 70 },
-        { ...baseRecord, id: '2', date: '2026-02-01', weight: 8.5, height: 72 },
-        { ...baseRecord, id: '3', date: '2026-03-01', weight: 9, height: 74 },
-      ];
-
-      const trend = getGrowthTrend(records, 'weight');
-      expect(trend).toBe('increasing');
-    });
-
-    it('should detect decreasing trend when measurements go down', () => {
-      const records: GrowthRecord[] = [
-        { ...baseRecord, id: '1', date: '2026-01-01', weight: 9 },
-        { ...baseRecord, id: '2', date: '2026-02-01', weight: 8.5 },
-        { ...baseRecord, id: '3', date: '2026-03-01', weight: 8 },
-      ];
-
-      const trend = getGrowthTrend(records, 'weight');
-      expect(trend).toBe('decreasing');
-    });
-
-    it('should detect stable trend when measurements stay similar', () => {
-      const records: GrowthRecord[] = [
-        { ...baseRecord, id: '1', date: '2026-01-01', weight: 8 },
-        { ...baseRecord, id: '2', date: '2026-02-01', weight: 8.1 },
-        { ...baseRecord, id: '3', date: '2026-03-01', weight: 8.05 },
-      ];
-
-      const trend = getGrowthTrend(records, 'weight');
-      expect(trend).toBe('stable');
-    });
-
-    it('should return insufficient data when less than 2 records', () => {
-      const records: GrowthRecord[] = [
-        { ...baseRecord, id: '1', date: '2026-01-01', weight: 8 },
-      ];
-
-      const trend = getGrowthTrend(records, 'weight');
-      expect(trend).toBe('insufficient-data');
-    });
-
-    it('should handle missing measurements in records', () => {
-      const records: GrowthRecord[] = [
-        { ...baseRecord, id: '1', date: '2026-01-01', weight: 8, height: undefined },
-        { ...baseRecord, id: '2', date: '2026-02-01', weight: 8.5, height: undefined },
-      ];
-
-      const trend = getGrowthTrend(records, 'height');
-      expect(trend).toBe('insufficient-data');
-    });
-
-    it('should detect no growth warning when measurements dont increase over 2 months', () => {
-      const records: GrowthRecord[] = [
-        { ...baseRecord, id: '1', date: '2026-01-01', weight: 8 },
-        { ...baseRecord, id: '2', date: '2026-02-01', weight: 8 },
-        { ...baseRecord, id: '3', date: '2026-03-01', weight: 8 },
-      ];
-
-      const trend = getGrowthTrend(records, 'weight');
-      expect(trend).toBe('stable'); // Should be flagged as concerning if no growth
-    });
-  });
 });
