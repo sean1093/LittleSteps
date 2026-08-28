@@ -126,19 +126,34 @@ describe('useChildStore (Firebase mode)', () => {
     );
   });
 
-  it('delegates prenatal record upsert and clear', async () => {
-    h.userChildren = { children: [child()], currentChildId: 'c1', loading: false };
+  it('產檢紀錄寫向孕期檔案，即使現在選的是另一個寶寶', async () => {
+    // 回報的情境：已經有寶寶檔案的家長新增孕期檔案，currentChildId 仍然
+    // 指著寶寶。若寫入跟著 currentChild 走，產檢紀錄會落在寶寶的檔案上。
+    const bump = child({
+      id: 'p1',
+      name: '寶寶',
+      isPregnancy: true,
+      pregnancyData: {
+        childId: 'p1',
+        dueDate: '2026-11-20',
+        lastPeriodDate: '2026-02-13',
+        status: 'active',
+      },
+    });
+    h.userChildren = { children: [child(), bump], currentChildId: 'c1', loading: false };
     const { result } = renderHook(() => useChildStore(user));
+
+    expect(result.current.pregnancyChild?.id).toBe('p1');
 
     await act(async () => {
       await result.current.upsertPrenatalRecord('visit-1', { completedDate: '2026-03-01' });
       await result.current.clearPrenatalRecord('visit-1');
     });
 
-    expect(h.firebaseChildren.upsertPrenatalRecord).toHaveBeenCalledWith('c1', 'visit-1', {
+    expect(h.firebaseChildren.upsertPrenatalRecord).toHaveBeenCalledWith('p1', 'visit-1', {
       completedDate: '2026-03-01',
     });
-    expect(h.firebaseChildren.clearPrenatalRecord).toHaveBeenCalledWith('c1', 'visit-1');
+    expect(h.firebaseChildren.clearPrenatalRecord).toHaveBeenCalledWith('p1', 'visit-1');
   });
 
   it('toggles a milestone, deriving the new achieved state', async () => {

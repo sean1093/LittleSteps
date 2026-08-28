@@ -11,6 +11,7 @@ import type {
   ToothProgress,
   VaccineProgress,
 } from '../../types';
+import { resolvePregnancyChild } from '../pregnancy';
 import { useUserChildren } from './useUserChildren';
 import { useFirebaseChildren } from './useFirebaseChildren';
 import {
@@ -43,7 +44,12 @@ export interface ChildStore {
   setCurrentChild: (id: string) => Promise<void>;
   toggleDevelopmentCheck: (checkItemId: string) => Promise<void>;
   toggleTooth: (toothId: string) => Promise<void>;
-  currentChildPrenatalProgress: PrenatalCheckupProgress;
+  /**
+   * LittleBloom 這一頁是關於哪一份檔案。與「現在選了誰」無關——見
+   * resolvePregnancyChild。
+   */
+  pregnancyChild: ChildProfile | undefined;
+  pregnancyPrenatalProgress: PrenatalCheckupProgress;
   upsertPrenatalRecord: (
     templateId: string,
     record: { completedDate: string; clinicName?: string; notes?: string },
@@ -96,9 +102,14 @@ export function useChildStore(user: User | null): ChildStore {
     [currentChild],
   );
 
-  const currentChildPrenatalProgress: PrenatalCheckupProgress = useMemo(
-    () => (currentChild ? currentChild.prenatalProgress || {} : {}),
-    [currentChild],
+  const pregnancyChild = useMemo(
+    () => resolvePregnancyChild(childProfiles, currentChild),
+    [childProfiles, currentChild],
+  );
+
+  const pregnancyPrenatalProgress: PrenatalCheckupProgress = useMemo(
+    () => pregnancyChild?.prenatalProgress || {},
+    [pregnancyChild],
   );
 
   const toggleMilestone = async (id: string) => {
@@ -216,27 +227,27 @@ export function useChildStore(user: User | null): ChildStore {
     templateId: string,
     record: { completedDate: string; clinicName?: string; notes?: string },
   ) => {
-    if (!user || !currentChild) return;
+    if (!user || !pregnancyChild) return;
     try {
-      await firebaseChildren.upsertPrenatalRecord(currentChild.id, templateId, record);
+      await firebaseChildren.upsertPrenatalRecord(pregnancyChild.id, templateId, record);
     } catch (error) {
       console.error('更新產檢記錄失敗:', error);
     }
   };
 
   const clearPrenatalRecord = async (templateId: string) => {
-    if (!user || !currentChild) return;
+    if (!user || !pregnancyChild) return;
     try {
-      await firebaseChildren.clearPrenatalRecord(currentChild.id, templateId);
+      await firebaseChildren.clearPrenatalRecord(pregnancyChild.id, templateId);
     } catch (error) {
       console.error('取消產檢記錄失敗:', error);
     }
   };
 
   const recordBirth = async (birthday: string) => {
-    if (!user || !currentChild) return;
+    if (!user || !pregnancyChild) return;
     try {
-      await firebaseChildren.recordBirth(currentChild.id, birthday);
+      await firebaseChildren.recordBirth(pregnancyChild.id, birthday);
       logChildProfileAction('update');
     } catch (error) {
       console.error('登記出生失敗:', error);
@@ -303,7 +314,8 @@ export function useChildStore(user: User | null): ChildStore {
     setCurrentChild,
     toggleDevelopmentCheck,
     toggleTooth,
-    currentChildPrenatalProgress,
+    pregnancyChild,
+    pregnancyPrenatalProgress,
     upsertPrenatalRecord,
     clearPrenatalRecord,
     recordBirth,

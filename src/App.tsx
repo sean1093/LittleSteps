@@ -58,7 +58,8 @@ function AppContent() {
     currentChildToothProgress,
     toggleDevelopmentCheck,
     toggleTooth,
-    currentChildPrenatalProgress,
+    pregnancyChild,
+    pregnancyPrenatalProgress,
     upsertPrenatalRecord,
     clearPrenatalRecord,
     recordBirth,
@@ -359,8 +360,8 @@ function AppContent() {
         {/* LittleBloom Route */}
         {currentPage === 'littlebloom' && (
           <LittleBloomPage
-            currentChild={currentChild}
-            progress={currentChildPrenatalProgress}
+            currentChild={pregnancyChild}
+            progress={pregnancyPrenatalProgress}
             onRecordBirth={recordBirth}
             // 孕期檔案就是「還沒出生的孩子」，所以走同一個 addChild；帶了
             // 預產期，資料層就會標成孕期檔案。共用資料層，不共用畫面。
@@ -369,8 +370,8 @@ function AppContent() {
         )}
         {currentPage === 'littlebloom/prenatal' && (
           <PrenatalPage
-            currentChild={currentChild}
-            progress={currentChildPrenatalProgress}
+            currentChild={pregnancyChild}
+            progress={pregnancyPrenatalProgress}
             onComplete={upsertPrenatalRecord}
             onUndo={clearPrenatalRecord}
           />
