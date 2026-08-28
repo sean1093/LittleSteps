@@ -10,7 +10,7 @@ import type {
   Gender,
 } from '../../types';
 import { isPregnancyProfile } from '../../common/pregnancy';
-import { calculateAge, toLocalDateKey } from '../../common/utils/dateHelpers';
+import { calculateAge, formatDate, toLocalDateKey } from '../../common/utils/dateHelpers';
 import { calculateAgeDisplay } from '../../common/utils/summaryCalculator';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
@@ -168,7 +168,7 @@ export default function RemindersPage({
                             <div className="flex-1 min-w-0">
                               <h3 className={THEME.body}>{task.template.title}</h3>
                               <p className={`text-sm mt-0.5 ${THEME.muted}`}>
-                                {task.dueDate}
+                                {formatDate(task.dueDate)}
                                 {' · '}
                                 {task.daysUntilDue >= 0
                                   ? `還有 ${task.daysUntilDue} 天`

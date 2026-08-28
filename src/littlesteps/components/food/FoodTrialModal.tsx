@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X } from 'lucide-react';
 import { backdrop, sheet } from '../../../common/ui/motion';
 import { FoodTrialRecord, AllergyReaction, AllergyReactionType, AllergySeverity, FoodPreference } from '../../../types';
-import { toLocalDateKey } from '../../../common/utils/dateHelpers';
+import { formatDate, toLocalDateKey } from '../../../common/utils/dateHelpers';
 
 interface FoodTrialModalProps {
   isOpen: boolean;
@@ -266,7 +266,7 @@ export default function FoodTrialModal({
                              reaction.severity === 'moderate' ? '中度' :
                              '嚴重'}
                           </div>
-                          <div className="text-sm text-red-700">{reaction.date}</div>
+                          <div className="text-sm text-red-700">{formatDate(reaction.date)}</div>
                           {reaction.description && (
                             <p className="text-sm text-red-800 mt-1">{reaction.description}</p>
                           )}
@@ -351,7 +351,7 @@ export default function FoodTrialModal({
                   <div className="flex flex-wrap gap-2 mb-3">
                     {trialDates.map((date, index) => (
                       <span key={index} className="tag bg-secondary-light text-secondary-dark">
-                        {date}
+                        {formatDate(date)}
                       </span>
                     ))}
                   </div>

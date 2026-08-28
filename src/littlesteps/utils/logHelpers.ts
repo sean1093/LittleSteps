@@ -119,23 +119,11 @@ export function formatTime(isoString: string): string {
 }
 
 /**
- * 格式化日期顯示（YYYY/MM/DD）
+ * 格式化日期顯示（2026年6月15日）與時長顯示。
+ * Single canonical implementations live in dateHelpers; re-exported here so the
+ * whole app formats dates and durations consistently.
  */
-export function formatDate(isoString: string): string {
-  const date = new Date(isoString);
-  return date.toLocaleDateString('zh-TW', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  });
-}
-
-/**
- * 格式化時長顯示（例如: "1小時30分鐘", "30分鐘"）。
- * Single canonical implementation lives in dateHelpers; re-exported here so the
- * whole app formats durations consistently.
- */
-export { formatDuration } from '../../common/utils/dateHelpers';
+export { formatDate, formatDuration } from '../../common/utils/dateHelpers';
 
 /**
  * 獲取餵奶類型的中文顯示名稱

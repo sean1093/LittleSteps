@@ -7,6 +7,7 @@ import { listItem, stagger } from '../../../common/ui/motion';
 import { pressable } from '../../../common/ui/pressable';
 import { FoodTrialRecord, FoodPreference, AllergySeverity } from '../../../types';
 import type { FoodStats } from '../../hooks/useFoodTracking';
+import { formatDate } from '../../../common/utils/dateHelpers';
 
 interface FoodTrackingTabProps {
   foodTrials: FoodTrialRecord[];
@@ -174,7 +175,7 @@ export default function FoodTrackingTab({
                   )}
 
                   <div className="flex items-center gap-3 text-xs text-ink-muted mb-2">
-                    <span>首次：{food.firstTriedDate}</span>
+                    <span>首次：{formatDate(food.firstTriedDate)}</span>
                     <span>嘗試 {trialCount} 次</span>
                   </div>
 

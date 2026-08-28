@@ -10,7 +10,7 @@ import { developmentCheckItems } from '../data/developmentChecks';
 import { groupEntriesByMonth } from '../utils/diaryHelpers';
 import ExplorerShell from '../components/ExplorerShell';
 import NoChildNotice from '../components/NoChildNotice';
-import { toLocalDateKey } from '../../common/utils/dateHelpers';
+import { formatDate, toLocalDateKey } from '../../common/utils/dateHelpers';
 
 const THEME = SERVICE_THEME.littleexplorer;
 
@@ -230,7 +230,7 @@ export default function DiaryPage({
                   return (
                     <li key={entry.id} className="panel">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className={`text-sm ${THEME.muted}`}>{entry.date}</span>
+                        <span className={`text-sm ${THEME.muted}`}>{formatDate(entry.date)}</span>
                         <span className="flex-1" />
                         <button
                           type="button"

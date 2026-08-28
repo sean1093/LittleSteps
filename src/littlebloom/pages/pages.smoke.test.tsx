@@ -171,7 +171,7 @@ describe('PrenatalPage', () => {
 
     const doneHeading = screen.getByRole('heading', { name: /已完成/ });
     const doneSection = doneHeading.closest('section')!;
-    expect(within(doneSection).getByText(/已於 2026-05-25 完成/)).toBeInTheDocument();
+    expect(within(doneSection).getByText(/已於 2026年5月25日 完成/)).toBeInTheDocument();
 
     await user.click(within(doneSection).getByRole('button', { name: '取消完成' }));
     expect(onUndo).toHaveBeenCalledWith('prenatal-visit-1');

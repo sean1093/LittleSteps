@@ -5,7 +5,7 @@ import { SERVICE_THEME } from '../../../common/ui/serviceTheme';
 import { listItem, stagger } from '../../../common/ui/motion';
 import { pressable } from '../../../common/ui/pressable';
 import { FoodTrialRecord } from '../../../types';
-import { toLocalDateKey } from '../../../common/utils/dateHelpers';
+import { formatDate, toLocalDateKey } from '../../../common/utils/dateHelpers';
 
 interface FourByThreeTrackerProps {
   foodTrials: FoodTrialRecord[];
@@ -163,13 +163,13 @@ export default function FourByThreeTracker({
               <div className="flex flex-wrap gap-1 mb-2">
                 {(food.trialDates || []).map((date, idx) => (
                   <span key={idx} className="tag bg-secondary-light text-secondary-dark">
-                    Day {idx + 1}: {date}
+                    Day {idx + 1}: {formatDate(date)}
                   </span>
                 ))}
               </div>
 
               {!canTry && (
-                <p className="text-xs text-ink-muted">下次嘗試：{getNextTrialDate(food)}</p>
+                <p className="text-xs text-ink-muted">下次嘗試：{formatDate(getNextTrialDate(food))}</p>
               )}
 
               {canTry && (

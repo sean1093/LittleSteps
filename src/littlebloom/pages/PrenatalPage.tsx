@@ -14,7 +14,7 @@ import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { listItem, stagger, tap } from '../../common/ui/motion';
 import { isPregnancyProfile } from '../../common/pregnancy';
-import { toLocalDateKey } from '../../common/utils/dateHelpers';
+import { formatDate, toLocalDateKey } from '../../common/utils/dateHelpers';
 import { goTo } from '../../common/navigate';
 
 const THEME = SERVICE_THEME.littlebloom;
@@ -123,7 +123,7 @@ export default function PrenatalPage({
   return (
     <BloomShell
       title="產檢時程"
-      subtitle={`第 ${weeks + 1} 週 · 預產期 ${currentChild?.pregnancyData?.dueDate ?? ''}`}
+      subtitle={`第 ${weeks + 1} 週 · 預產期 ${formatDate(currentChild?.pregnancyData?.dueDate)}`}
       backTo="littlebloom"
     >
       <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-4">
@@ -160,7 +160,7 @@ export default function PrenatalPage({
                             {template.title}
                           </h3>
                           <p className={`text-sm mt-0.5 ${THEME.muted}`}>
-                            建議第 {template.dueWeek} 週 · {item.dueDate}
+                            建議第 {template.dueWeek} 週 · {formatDate(item.dueDate)}
                             {status !== 'done' &&
                               (item.weeksUntilDue >= 0
                                 ? ` · 還有 ${item.weeksUntilDue} 週`
@@ -171,7 +171,7 @@ export default function PrenatalPage({
                           </p>
                           {item.completedDate && (
                             <p className="text-sm text-bloom-sage-ink mt-2">
-                              已於 {item.completedDate} 完成
+                              已於 {formatDate(item.completedDate)} 完成
                             </p>
                           )}
                         </div>

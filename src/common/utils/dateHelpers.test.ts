@@ -5,6 +5,7 @@ import {
   calculateAge,
   calculateDuration,
   dueDateFromLmp,
+  formatDate,
   formatTime,
   formatDuration,
   getCurrentDateTimeLocal,
@@ -191,6 +192,41 @@ describe('dateHelpers', () => {
     it('should return NaN when an input is unparseable', () => {
       expect(calculateDuration('not-a-date', '2026-06-15T08:00:00.000Z')).toBeNaN();
       expect(calculateDuration('2026-06-15T08:00:00.000Z', 'not-a-date')).toBeNaN();
+    });
+  });
+
+  describe('formatDate', () => {
+    it('以家長讀得懂的中文長格式顯示日期', () => {
+      expect(formatDate('2026-06-15')).toBe('2026年6月15日');
+    });
+
+    it('YYYY-MM-DD 以本地時區解析，在 UTC 以西的時區也不會少一天', () => {
+      // new Date('2026-06-15') 是「UTC 午夜」，在 UTC 以西的時區會退回 6/14。
+      // 測試套件把 TZ 釘在 Asia/Taipei（UTC+8），剛好蓋不到這個方向的錯誤，
+      // 所以這裡臨時搬到紐約才測得出來。生日與完成日期差一天是真的 bug。
+      vi.stubEnv('TZ', 'America/New_York');
+      try {
+        expect(formatDate('2026-06-15')).toBe('2026年6月15日');
+        expect(formatDate('2026-01-01')).toBe('2026年1月1日');
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
+
+    it('帶時間的 ISO 字串換算成本地日期再顯示', () => {
+      // 台灣是 UTC+8：這個瞬間的本地時間已經是隔天早上 07:00。
+      expect(formatDate('2026-06-15T23:00:00.000Z')).toBe('2026年6月16日');
+    });
+
+    it('Date 物件與同一天的日期字串顯示一致', () => {
+      expect(formatDate(localDate(2026, 6, 15))).toBe(formatDate('2026-06-15'));
+    });
+
+    it('沒有日期時留白，不把 Invalid Date 印到畫面上', () => {
+      expect(formatDate('')).toBe('');
+      expect(formatDate(undefined)).toBe('');
+      expect(formatDate(null)).toBe('');
+      expect(formatDate('not-a-date')).toBe('');
     });
   });
 

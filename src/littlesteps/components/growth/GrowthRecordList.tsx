@@ -5,6 +5,7 @@ import { getPercentileCategory } from '../../utils/growthCalculator';
 import EmptyState from '../../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../../common/ui/serviceTheme';
 import { listItem, stagger, tap } from '../../../common/ui/motion';
+import { formatDate } from '../../../common/utils/dateHelpers';
 
 interface GrowthRecordListProps {
   records: GrowthRecord[];
@@ -76,7 +77,7 @@ export default function GrowthRecordList({
               className="border border-ink/10 rounded-xl p-4"
             >
               <div className="flex items-start justify-between mb-3">
-                <span className="font-semibold">{record.date}</span>
+                <span className="font-semibold">{formatDate(record.date)}</span>
                 <motion.button
                   whileTap={tap}
                   onClick={() => handleDelete(record.id)}

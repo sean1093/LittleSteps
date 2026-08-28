@@ -389,11 +389,9 @@ describe('logHelpers', () => {
   });
 
   describe('formatDate', () => {
-    it('formats an instant as a slash-separated numeric date', () => {
-      const formatted = formatDate('2026-06-15T12:00:00.000Z');
-
-      expect(formatted).toMatch(/^\d{2,4}\/\d{2}\/\d{2,4}$/);
-      expect(formatted).toContain('2026');
+    it('formats an instant as a Chinese long-form date', () => {
+      // Taipei is UTC+8, so the 12:00Z instant is still the 15th locally.
+      expect(formatDate('2026-06-15T12:00:00.000Z')).toBe('2026年6月15日');
     });
 
     it('produces different output for instants a day apart', () => {

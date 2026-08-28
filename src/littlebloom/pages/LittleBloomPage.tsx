@@ -12,7 +12,7 @@ import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { hoverLift, listItem, stagger, tap } from '../../common/ui/motion';
 import type { Page } from '../../types/routes';
 import { isPregnancyProfile } from '../../common/pregnancy';
-import { toLocalDateKey } from '../../common/utils/dateHelpers';
+import { formatDate, toLocalDateKey } from '../../common/utils/dateHelpers';
 import { goTo } from '../../common/navigate';
 
 interface LittleBloomPageProps {
@@ -134,7 +134,7 @@ export default function LittleBloomPage({
   }
 
   return (
-    <BloomShell title="LittleBloom" subtitle={`第 ${displayWeek} 週 · 預產期 ${dueDate}`}>
+    <BloomShell title="LittleBloom" subtitle={`第 ${displayWeek} 週 · 預產期 ${formatDate(dueDate)}`}>
       <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-4">
         <motion.section variants={listItem} className="panel text-center">
           <p className={`text-sm ${THEME.muted}`}>{TRIMESTER_LABEL[trimesterOf(displayWeek)]}</p>
@@ -197,7 +197,7 @@ export default function LittleBloomPage({
                 {nextItem.template.title}
               </p>
               <p className={`text-sm mt-1 ${THEME.muted}`}>
-                建議第 {nextItem.template.dueWeek} 週 · {nextItem.dueDate}
+                建議第 {nextItem.template.dueWeek} 週 · {formatDate(nextItem.dueDate)}
                 {nextItem.status === 'overdue' && ' · 已過建議週數'}
               </p>
             </motion.button>

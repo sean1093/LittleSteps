@@ -1,5 +1,6 @@
 import { Milestone } from '../../../types';
 import { Check, ChevronRight } from 'lucide-react';
+import { formatDate } from '../../../common/utils/dateHelpers';
 
 interface MilestoneCardProps {
   milestone: Milestone;
@@ -47,7 +48,7 @@ export default function MilestoneCard({
           </h3>
           {isCompleted && achievedDate && (
             <p className="text-xs text-ink-faint mt-0.5">
-              完成日期: {achievedDate}
+              完成日期: {formatDate(achievedDate)}
             </p>
           )}
           <p className="text-sm text-ink-muted line-clamp-2">

@@ -4,6 +4,7 @@ import { Milestone } from '../../../types';
 import { X, Check, Share2 } from 'lucide-react';
 import { backdrop, sheet } from '../../../common/ui/motion';
 import { shareMilestone } from '../../utils/share';
+import { formatDate } from '../../../common/utils/dateHelpers';
 
 interface MilestoneModalProps {
   milestone: Milestone | null;
@@ -59,7 +60,7 @@ export default function MilestoneModal({
                 <h2>{milestone.title}</h2>
                 {isCompleted && achievedDate && (
                   <p className="text-sm text-ink-faint mt-1">
-                    完成日期: {achievedDate}
+                    完成日期: {formatDate(achievedDate)}
                   </p>
                 )}
               </div>

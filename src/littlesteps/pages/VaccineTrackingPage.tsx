@@ -12,7 +12,7 @@ import {
   vaccineTypes,
   vaccineGuidelines
 } from '../data/vaccines';
-import { toLocalDateKey } from '../../common/utils/dateHelpers';
+import { formatDate, toLocalDateKey } from '../../common/utils/dateHelpers';
 import { stagger, listItem, sheet, backdrop, tap } from '../../common/ui/motion';
 
 type FundingFilter = 'all' | 'public' | 'private';
@@ -300,7 +300,7 @@ export default function VaccineTrackingPage({
                                     className="inline-flex items-center gap-1 text-sm text-mint-dark font-medium hover:underline"
                                   >
                                     <Check className="w-4 h-4" />
-                                    {doseDate}
+                                    {formatDate(doseDate)}
                                   </button>
                                 )}
                                 {!isAdministered && (

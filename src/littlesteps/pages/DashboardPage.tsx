@@ -7,6 +7,7 @@ import { useChildSummary } from '../hooks/useChildSummary';
 import { useSleepAnalytics } from '../hooks/useSleepAnalytics';
 import { useFoodTracking } from '../hooks/useFoodTracking';
 import { calculateAgeDisplay } from '../../common/utils/summaryCalculator';
+import { formatDate } from '../../common/utils/dateHelpers';
 import { getActiveAlerts } from '../utils/alertEngine';
 import MilestoneSummaryCard from '../components/milestone/MilestoneSummaryCard';
 import VaccineSummaryCard from '../components/vaccine/VaccineSummaryCard';
@@ -164,7 +165,7 @@ export default function DashboardPage({
             重複的頁面標題與寶寶頭像圖示已移除。 */}
         <motion.div variants={listItem} className="panel mb-4">
           <h1 className="mb-1">{ageDisplay}</h1>
-          <p className="text-sm text-ink-muted">出生: {currentChild.birthday}</p>
+          <p className="text-sm text-ink-muted">出生: {formatDate(currentChild.birthday)}</p>
         </motion.div>
 
         {activeAlerts.length > 0 && (

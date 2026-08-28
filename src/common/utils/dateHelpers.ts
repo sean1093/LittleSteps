@@ -22,9 +22,22 @@ export function calculateAge(birthday: string): number {
 /** Naegele 法則：預產期為末次月經第一天起算 280 天。 */
 export const GESTATION_DAYS = 280;
 
+/**
+ * 以「本地時區」解析日期。
+ *
+ * 純日期字串（YYYY-MM-DD）不能直接丟給 `new Date()`：那會被當成 UTC 午夜，
+ * 在 UTC 以西的時區會整整差一天。錨在中午 12 點，連日光節約時間的 ±1 小時
+ * 位移都吃得下，日期不會跳。帶時間的完整 ISO 字串本來就有時區資訊，原樣交給
+ * Date 解析即可。
+ */
+function parseLocalDate(value: string): Date {
+  const pureDate = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(value);
+  if (!pureDate) return new Date(value);
+  return new Date(Number(pureDate[1]), Number(pureDate[2]) - 1, Number(pureDate[3]), 12);
+}
+
 function shiftDays(isoDate: string, days: number): string {
-  const [year, month, day] = isoDate.split('-').map(Number);
-  const date = new Date(year, month - 1, day, 12);
+  const date = parseLocalDate(isoDate);
   date.setDate(date.getDate() + days);
   return [
     date.getFullYear(),
@@ -86,6 +99,24 @@ export function calculateDuration(startTime: string, endTime: string): number {
   const start = new Date(startTime).getTime();
   const end = new Date(endTime).getTime();
   return Math.floor((end - start) / (1000 * 60));
+}
+
+/**
+ * 格式化日期顯示（2026年6月15日）。
+ *
+ * 全 app 唯一的日期顯示入口：家長看到的永遠是中文日期，畫面上不該出現
+ * 2026-06-15 這種給機器讀的格式。
+ */
+export function formatDate(value?: string | Date | null): string {
+  if (!value) return '';
+  const date = typeof value === 'string' ? parseLocalDate(value) : value;
+  // 壞資料寧可留白，也不要在畫面上印出 Invalid Date 嚇到家長。
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('zh-TW', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 }
 
 /**

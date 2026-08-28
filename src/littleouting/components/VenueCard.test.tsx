@@ -86,13 +86,13 @@ describe('VenueCard 的出處', () => {
     // 整份資料設計就是為了避免「有人推薦過、但沒人知道是哪一年」的清單。
     render(<VenueCard venue={venue({ verifiedOn: '2026-08-28' })} />);
 
-    expect(screen.getByText(/資料查證於 2026-08-28/)).toBeInTheDocument();
+    expect(screen.getByText(/資料查證於 2026年8月28日/)).toBeInTheDocument();
   });
 
   it('查證日期跟著資料走，不是寫死的字串', () => {
     render(<VenueCard venue={venue({ verifiedOn: '2025-01-09' })} />);
 
-    expect(screen.getByText(/資料查證於 2025-01-09/)).toBeInTheDocument();
+    expect(screen.getByText(/資料查證於 2025年1月9日/)).toBeInTheDocument();
   });
 });
 

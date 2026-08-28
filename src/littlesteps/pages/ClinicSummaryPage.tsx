@@ -11,6 +11,7 @@ import { User } from 'firebase/auth';
 import type { ChildProfile, DailyLog } from '../../types';
 import { useClinicSummary } from '../hooks/useClinicSummary';
 import { formatDuration } from '../utils/logHelpers';
+import { formatDate, formatTime } from '../../common/utils/dateHelpers';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem } from '../../common/ui/motion';
@@ -21,25 +22,9 @@ interface ClinicSummaryPageProps {
   user: User | null;
 }
 
+/** 這份摘要要帶去診間，所以產生時間必須連時刻一起顯示；日期部分沿用全站格式。 */
 function formatDateTime(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleString('zh-TW', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
-}
-
-function formatDateShort(dateStr: string): string {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('zh-TW', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
+  return `${formatDate(iso)} ${formatTime(iso)}`;
 }
 
 function genderLabel(gender?: string): string {
@@ -142,14 +127,14 @@ export default function ClinicSummaryPage({
           <div className="grid grid-cols-2 gap-4 mt-4">
             <InfoItem label="姓名" value={data.childName} />
             <InfoItem label="性別" value={genderLabel(data.gender)} />
-            <InfoItem label="生日" value={formatDateShort(data.birthday)} />
+            <InfoItem label="生日" value={formatDate(data.birthday)} />
             <InfoItem label="目前年齡" value={data.ageDisplay} />
           </div>
 
           {data.latestGrowth && (
             <div className="mt-5 pt-4 border-t border-ink/10">
               <p className="text-sm text-ink-muted mb-3">
-                最新測量（{formatDateShort(data.latestGrowth.date)}）
+                最新測量（{formatDate(data.latestGrowth.date)}）
               </p>
               <div className="grid grid-cols-3 gap-3">
                 {data.latestGrowth.weight !== undefined && (
@@ -200,7 +185,7 @@ export default function ClinicSummaryPage({
                     const prev = idx > 0 ? growthRows[idx - 1] : undefined;
                     return (
                       <tr key={row.date} className="border-b border-ink/5 last:border-0">
-                        <td className="py-2.5 pr-3 text-ink">{formatDateShort(row.date)}</td>
+                        <td className="py-2.5 pr-3 text-ink">{formatDate(row.date)}</td>
                         <td className="py-2.5 pr-3 text-ink">
                           {row.weight !== undefined ? (
                             <span className="inline-flex items-center gap-1">
@@ -260,7 +245,7 @@ export default function ClinicSummaryPage({
                 >
                   <span className="text-ink">{v.name}</span>
                   <span className="text-ink-muted">
-                    {v.date ? formatDateShort(v.date) : '日期未記錄'}
+                    {v.date ? formatDate(v.date) : '日期未記錄'}
                   </span>
                 </li>
               ))}

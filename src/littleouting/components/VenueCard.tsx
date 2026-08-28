@@ -3,6 +3,7 @@ import { MapPin, Phone } from 'lucide-react';
 import type { Venue } from '../../types';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { listItem, tap } from '../../common/ui/motion';
+import { formatDate } from '../../common/utils/dateHelpers';
 import { venueTagLabels } from '../data/venueTags';
 
 interface VenueCardProps {
@@ -99,7 +100,7 @@ export default function VenueCard({ venue }: VenueCardProps) {
       </div>
 
       <p className="text-xs text-ink-faint mt-3">
-        資料查證於 {venue.verifiedOn}，出發前請再確認
+        資料查證於 {formatDate(venue.verifiedOn)}，出發前請再確認
       </p>
     </motion.div>
   );
