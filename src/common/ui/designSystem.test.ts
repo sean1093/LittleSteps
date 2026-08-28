@@ -402,10 +402,10 @@ describe('鍵盤可達性', () => {
     'src/common/components/ModalFrame.tsx',
     'src/common/components/Sidebar.tsx',
     'src/littlesteps/components/dailylog/LogEntryModal.tsx',
+    'src/littlesteps/components/food/FoodSheet.tsx',
     'src/littlesteps/components/food/FoodTrialModal.tsx',
     'src/littlesteps/components/growth/AddGrowthRecordModal.tsx',
     'src/littlesteps/components/milestone/MilestoneModal.tsx',
-    'src/littlesteps/pages/ComplementaryFoodPage.tsx',
     'src/littlesteps/pages/VaccineTrackingPage.tsx',
   ];
 

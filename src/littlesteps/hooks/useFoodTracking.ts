@@ -4,6 +4,15 @@ import { FoodTrackingProgress } from '../../types';
 import { useFirebaseCollection } from '../../common/hooks/useFirebaseCollection';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
+/** 食物嘗試的統計；追蹤頁與主頁概況共用同一份形狀。 */
+export interface FoodStats {
+  total: number;
+  withAllergy: number;
+  loved: number;
+  disliked: number;
+  noAllergy: number;
+}
+
 /**
  * Realtime listener + derived views for a child's complementary-food tracking
  * (Firebase). Writes go through useFirebaseChildren in the calling component.
@@ -25,7 +34,7 @@ export function useFoodTracking(childId: string | null, user: User | null) {
     [foodProgress],
   );
 
-  const stats = useMemo(() => {
+  const stats = useMemo<FoodStats>(() => {
     const total = foodTrials.length;
     const withAllergy = foodTrials.filter((f) => f.hasAllergy).length;
     const loved = foodTrials.filter((f) => f.preference === 'love' || f.preference === 'like').length;

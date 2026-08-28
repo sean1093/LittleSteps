@@ -6,16 +6,11 @@ import { SERVICE_THEME } from '../../../common/ui/serviceTheme';
 import { listItem, stagger } from '../../../common/ui/motion';
 import { pressable } from '../../../common/ui/pressable';
 import { FoodTrialRecord, FoodPreference, AllergySeverity } from '../../../types';
+import type { FoodStats } from '../../hooks/useFoodTracking';
 
 interface FoodTrackingTabProps {
   foodTrials: FoodTrialRecord[];
-  stats: {
-    total: number;
-    withAllergy: number;
-    loved: number;
-    disliked: number;
-    noAllergy: number;
-  };
+  stats: FoodStats;
   onAddFood: () => void;
   onEditFood: (food: FoodTrialRecord) => void;
   onDeleteFood: (foodId: string) => void;
