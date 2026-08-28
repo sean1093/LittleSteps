@@ -4,7 +4,7 @@ A mobile-first PWA for Taiwanese parents, covering pregnancy through the toddler
 years. Traditional Chinese UI. React 18 + TypeScript (strict) + Vite + Tailwind
 + Framer Motion, on Firebase Auth and Realtime Database.
 
-**Read `README.md` first.** It is the source of truth for the four services, the
+**Read `README.md` first.** It is the source of truth for the five services, the
 auth model, the database shape and the design system. This file covers only how
 to work in the repo.
 
@@ -17,7 +17,7 @@ its own palette and its own navigation shape.
 
 ```
 src/
-├── common/          shared by all four services
+├── common/          shared by all five services
 │   ├── ui/          THE design system — read before writing any UI
 │   ├── components/  Sidebar, ModalFrame, modals, wiki browser
 │   ├── landing/     entry point + per-service intro pages

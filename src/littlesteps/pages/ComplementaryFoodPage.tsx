@@ -30,6 +30,7 @@ import FoodTrialModal from '../components/food/FoodTrialModal';
 import FourByThreeTracker from '../components/food/FourByThreeTracker';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
 import { stagger, listItem, fadeInUp, sheet, backdrop, collapse, tap, hoverLift } from '../../common/ui/motion';
+import { pressable } from '../../common/ui/pressable';
 
 type ViewMode = 'home' | 'my-tracking' | 'guide-overview' | 'guide-stages' | 'guide-menu' | 'guide-safety';
 type TrackingTab = 'foods' | 'tracker';
@@ -420,7 +421,7 @@ export default function ComplementaryFoodPage({
                         layout
                         variants={listItem}
                         className="card-tap"
-                        onClick={() => setExpandedStage(isExpanded ? null : stage.level)}
+                        {...pressable(() => setExpandedStage(isExpanded ? null : stage.level), isExpanded)}
                       >
                         <div className="flex items-start gap-3">
                           <div className="w-16 h-16 rounded-full bg-primary-light flex flex-col items-center justify-center text-primary-dark font-bold flex-shrink-0">

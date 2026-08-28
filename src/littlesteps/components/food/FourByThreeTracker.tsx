@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import EmptyState from '../../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../../common/ui/serviceTheme';
 import { listItem, stagger } from '../../../common/ui/motion';
+import { pressable } from '../../../common/ui/pressable';
 import { FoodTrialRecord } from '../../../types';
 import { toLocalDateKey } from '../../../common/utils/dateHelpers';
 
@@ -124,7 +125,7 @@ export default function FourByThreeTracker({
               key={food.id}
               variants={listItem}
               className={`card-tap border ${canTry ? 'bg-mint-light/50 border-mint' : 'border-ink/10'}`}
-              onClick={() => onViewFood(food)}
+              {...pressable(() => onViewFood(food))}
             >
               <div className="flex items-start justify-between gap-2 mb-2">
                 <div className="min-w-0">

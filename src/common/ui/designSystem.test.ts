@@ -102,6 +102,63 @@ function classNameValues(file: SourceFile): { line: number; value: string }[] {
   return values;
 }
 
+/**
+ * 開頭標籤自己的那個 `>` 的位置。
+ *
+ * 屬性裡有 `{...pressable(() => setExpanded(isExpanded ? null : id), isExpanded)}`
+ * 這種帶箭頭函式與巢狀大括號的表達式、`className={`…${x}…`}` 這種 template
+ * literal，還有像 `label=">"` 的字串；直接 regex 找第一個 `>` 這三種都會切錯。
+ * 沿用 classNameValues 的數括號做法，另外跳過字串。
+ */
+function endOfOpeningTag(code: string, from: number): number {
+  let depth = 0;
+  let quote: string | null = null;
+  for (let cursor = from; cursor < code.length; cursor += 1) {
+    const char = code[cursor];
+    if (quote) {
+      if (char === '\\') cursor += 1;
+      else if (char === quote) quote = null;
+      continue;
+    }
+    if (char === '"' || char === "'" || char === '`') quote = char;
+    else if (char === '{') depth += 1;
+    else if (char === '}') depth -= 1;
+    else if (char === '>' && depth === 0) return cursor;
+  }
+  return code.length;
+}
+
+/** 標籤名稱之後、`>` 之前的整段屬性；標籤跨行也拿得到。 */
+function attrsOf(code: string, afterName: number): { attrs: string; end: number } {
+  const end = endOfOpeningTag(code, afterName);
+  return { attrs: code.slice(afterName, end), end };
+}
+
+/**
+ * 元素的內容：開頭標籤的 `>` 之後，到成對的 `</name>`。
+ *
+ * 同名的巢狀標籤要一起數——一張卡片裡通常還疊了好幾層 div，看到第一個
+ * `</div>` 就收手會把子樹切在半路。
+ */
+function childrenOf(code: string, name: string, contentStart: number): string {
+  const escaped = name.replace('.', '\\.');
+  const scan = new RegExp(`<${escaped}(?=[\\s/>])|</${escaped}\\s*>`, 'g');
+  scan.lastIndex = contentStart;
+  let depth = 1;
+  for (let match = scan.exec(code); match; match = scan.exec(code)) {
+    if (match[0].startsWith('</')) {
+      depth -= 1;
+      if (depth === 0) return code.slice(contentStart, match.index);
+      continue;
+    }
+    // 從屬性段的尾巴繼續找，免得屬性字串裡的角括號被當成標籤。
+    const { attrs, end } = attrsOf(code, match.index + match[0].length);
+    if (!/\/\s*$/.test(attrs)) depth += 1;
+    scan.lastIndex = end;
+  }
+  return code.slice(contentStart);
+}
+
 const TSX = collect(SRC, ['.tsx']);
 const TS_AND_TSX = collect(SRC, ['.ts', '.tsx']);
 
@@ -246,5 +303,158 @@ describe('動效詞彙', () => {
     expect(offenders(TS_AND_TSX, /(?<![\w$])staggerChildren(?![\w$])/g, [MOTION_OWNER, SELF])).toEqual(
       [],
     );
+  });
+});
+
+/**
+ * 可點、但鍵盤到不了的元素。
+ *
+ * 曾經有五列是只掛 onClick 的 motion.div：wiki 文章卡、睡眠訓練法手風琴、
+ * 副食品階段手風琴，以及兩處食物記錄列。滑鼠按得動，鍵盤完全進不去；光是
+ * wiki 那一張就擋住三個知識庫共 84 篇文章——看得到，但沒有指標裝置就永遠
+ * 打不開。
+ *
+ * 掃的是 div / li / span / section（含 motion. 版本）。button 與 a 天生就有
+ * 鍵盤，不在範圍內；把這些列改成 button 也不是解法，它們裡面有標題、清單與
+ * 自己的巢狀按鈕，而 button 不能包互動內容或 heading。
+ */
+describe('鍵盤可達性', () => {
+  interface Clickable {
+    file: string;
+    line: number;
+    attrs: string;
+    /** 子樹延後算：只有走到「靠巢狀 button 代打」那一支才需要。 */
+    children: () => string;
+  }
+
+  /** motion. 前綴一定要抓：出事的那五個全都是 motion.div。 */
+  const NON_INTERACTIVE = /<(motion\.)?(div|li|span|section)(?=[\s/>])/g;
+
+  const hasAttr = (attrs: string, name: string) =>
+    new RegExp(`(?<![\\w$])${name}\\s*=`).test(attrs);
+
+  const spreadsPressable = (attrs: string) => /\{\s*\.\.\.\s*pressable\s*\(/.test(attrs);
+
+  /**
+   * modal 遮罩是唯一的例外，而且判準要有牙齒：認得出來的條件是「spread 了
+   * motion.ts 的 backdrop」或「class 是 fixed inset-0」，不是一句註解說它是。
+   *
+   * 它們不走 pressable：點遮罩關閉只是順手，每個 modal 都另外有一顆聚焦得到
+   * 的關閉鈕；把整片覆蓋層變成 tabbable，只會在對話框前面多一個沒有意義的
+   * tab 停留點。
+   */
+  const isBackdrop = (attrs: string) =>
+    /\{\s*\.\.\.\s*backdrop\s*\}/.test(attrs) ||
+    /(?<![\w-])fixed\s+inset-0(?![\w-])/.test(attrs);
+
+  /**
+   * HubLanding 的服務卡：整張卡是點擊區，裡面那顆 CTA 按鈕自己沒有 onClick，
+   * 靠冒泡觸發外層。鍵盤 tab 到那顆按鈕按 Enter，冒泡上去執行的就是卡片的
+   * 動作，路徑是通的，所以不需要再包一層 pressable。
+   *
+   * 條件收在「巢狀 button 自己沒有 onClick，也沒有 disabled」：有自己 handler
+   * 的按鈕做的是別的事，disabled 的按鈕連 tab 都停不了，兩種情況下外層那個
+   * 動作依然沒有鍵盤入口，要照樣紅。
+   */
+  function delegatesToNestedButton(children: string): boolean {
+    for (const match of children.matchAll(/<(motion\.)?button(?=[\s/>])/g)) {
+      const { attrs } = attrsOf(children, match.index + match[0].length);
+      if (hasAttr(attrs, 'onClick')) continue;
+      if (/(?<![\w$])disabled(?![\w$])/.test(attrs)) continue;
+      return true;
+    }
+    return false;
+  }
+
+  const CLICKABLE: Clickable[] = TSX.flatMap((file) =>
+    [...file.code.matchAll(NON_INTERACTIVE)].flatMap((match) => {
+      const name = `${match[1] ?? ''}${match[2]}`;
+      const { attrs, end } = attrsOf(file.code, match.index + match[0].length);
+      // pressable 是 spread 進去的，標籤上不會有字面的 onClick；兩種都要收，
+      // 否則五個已經修好的元素會整批掉出掃描範圍，非空檢查就失去意義。
+      if (!hasAttr(attrs, 'onClick') && !spreadsPressable(attrs)) return [];
+      return [
+        {
+          file: file.name,
+          line: lineOf(file.code, match.index),
+          attrs,
+          children: () =>
+            /\/\s*$/.test(attrs) ? '' : childrenOf(file.code, name, end + 1),
+        },
+      ];
+    }),
+  );
+
+  const at = (tag: Clickable) => `${tag.file}:${tag.line}`;
+  const PRESSABLE = CLICKABLE.filter((tag) => spreadsPressable(tag.attrs));
+  const BACKDROPS = CLICKABLE.filter(
+    (tag) => !spreadsPressable(tag.attrs) && isBackdrop(tag.attrs),
+  );
+
+  /**
+   * 八片 modal 遮罩，逐一列名。例外要是只寫成一條判斷式，任何人只要在可點的
+   * 列上加一個 `fixed inset-0` 就能繞過整條規則；列成白名單，第九片遮罩出現
+   * 時得有人來這裡簽名。
+   *
+   * 只釘檔名不釘行號：行號會被無關的修改推走，那種紅燈只會教人放寬規則。
+   */
+  const KNOWN_BACKDROPS = [
+    'src/common/components/ModalFrame.tsx',
+    'src/common/components/Sidebar.tsx',
+    'src/littlesteps/components/dailylog/LogEntryModal.tsx',
+    'src/littlesteps/components/food/FoodTrialModal.tsx',
+    'src/littlesteps/components/growth/AddGrowthRecordModal.tsx',
+    'src/littlesteps/components/milestone/MilestoneModal.tsx',
+    'src/littlesteps/pages/ComplementaryFoodPage.tsx',
+    'src/littlesteps/pages/VaccineTrackingPage.tsx',
+  ];
+
+  it('標籤解析真的解得開，沒有整批漏掉', () => {
+    // 解析一壞，CLICKABLE 就是空陣列，下面那條規則會安靜地永遠通過。
+    expect(CLICKABLE.length, '一個可點的元素都沒掃到，標籤解析壞了').toBeGreaterThan(10);
+    expect(
+      PRESSABLE.length,
+      `只掃到 ${PRESSABLE.length} 個 pressable：${PRESSABLE.map(at).join(', ')}`,
+    ).toBeGreaterThanOrEqual(5);
+    expect(
+      BACKDROPS.length,
+      `只掃到 ${BACKDROPS.length} 片遮罩：${BACKDROPS.map(at).join(', ')}`,
+    ).toBeGreaterThanOrEqual(8);
+
+    // 屬性段要真的跨行吃到底：WikiArticleCard 那個標籤有四行。
+    const card = PRESSABLE.find(
+      (tag) => tag.file === 'src/common/components/wiki/WikiArticleCard.tsx',
+    );
+    expect(card, '找不到 WikiArticleCard 的 pressable').toBeDefined();
+    expect(card?.attrs, '屬性只吃到第一行，跨行標籤會被判成沒有鍵盤路徑').toContain('className');
+
+    // 子樹要真的往下走：HubLanding 的服務卡靠最底下那顆 CTA 按鈕代打。
+    const hubCard = CLICKABLE.find((tag) => tag.file === 'src/common/landing/HubLanding.tsx');
+    expect(hubCard, '找不到 HubLanding 的服務卡').toBeDefined();
+    expect(hubCard?.children(), '子樹被切在半路，抓不到巢狀 button').toContain('<button');
+  });
+
+  it('遮罩例外就是那八片，一片不多', () => {
+    expect([...new Set(BACKDROPS.map((tag) => tag.file))].sort()).toEqual(
+      [...KNOWN_BACKDROPS].sort(),
+    );
+  });
+
+  it('可點的 div / li / span / section 都進得了鍵盤', () => {
+    const unreachable = CLICKABLE.filter(
+      (tag) =>
+        !spreadsPressable(tag.attrs) &&
+        !isBackdrop(tag.attrs) &&
+        // 自己寫齊 role + tabIndex + onKeyDown，等於手工版的 pressable。
+        !(
+          hasAttr(tag.attrs, 'role') &&
+          hasAttr(tag.attrs, 'tabIndex') &&
+          hasAttr(tag.attrs, 'onKeyDown')
+        ) &&
+        !delegatesToNestedButton(tag.children()),
+    );
+    expect(
+      unreachable.map((tag) => `${at(tag)}: onClick 但鍵盤到不了，改用 pressable()`),
+    ).toEqual([]);
   });
 });

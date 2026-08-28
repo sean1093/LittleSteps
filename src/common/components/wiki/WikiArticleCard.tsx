@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { getLucideIcon } from '../../lucideIcons';
 import { collapse } from '../../ui/motion';
+import { pressable } from '../../ui/pressable';
 import type { WikiArticle, WikiCategoryColors } from '../../../types';
 import type { ServiceTheme } from '../../ui/serviceTheme';
 
@@ -38,7 +39,11 @@ export default function WikiArticleCard({
   const IconComponent = getLucideIcon(article.icon);
 
   return (
-    <motion.div layout className="card-tap overflow-hidden" onClick={onToggle}>
+    <motion.div
+      layout
+      className="card-tap overflow-hidden"
+      {...pressable(onToggle, isExpanded)}
+    >
       <div className="flex items-start gap-3">
         <IconComponent className={`w-5 h-5 shrink-0 mt-0.5 ${categoryColors.text}`} />
 

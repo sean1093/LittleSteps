@@ -1,6 +1,6 @@
 # LittleSteps
 
-> 從懷孕到幼兒，四個服務陪台灣爸媽走過每個階段。
+> 從懷孕到幼兒，五個服務陪台灣爸媽走過每個階段。
 > A mobile-first PWA covering pregnancy, the first year, the toddler years, and
 > finding somewhere to feed the baby when you are out.
 
@@ -236,7 +236,7 @@ downloaded by someone who never opens BabyOasis.
 
 ```
 src/
-├── common/                  shared across all four services
+├── common/                  shared across all five services
 │   ├── ui/                  design system: serviceTheme, AppBar, EmptyState, motion
 │   ├── components/          Sidebar, ModalFrame, modals, AppHomeButton, wiki browser
 │   ├── landing/             entry point + per-service intro pages
@@ -300,7 +300,7 @@ npm run build && firebase deploy --only hosting   # manual
 
 ## Roadmap
 
-- **Now** — all four services live, multi-device sync, feedback reporting
+- **Now** — all five services live, multi-device sync, feedback reporting
 - **Next** — premium tier, richer analytics, LittleBloom weekly content depth
 - **Later** — milestone photos, community, English and Simplified Chinese, dark mode
 

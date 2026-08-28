@@ -12,7 +12,7 @@ export default defineConfig({
       manifest: {
         name: 'LittleSteps - 孕期到幼兒的育兒陪伴',
         short_name: 'LittleSteps',
-        description: '從懷孕、新生兒到 1-3 歲幼兒，四個服務陪台灣爸媽走過每個階段',
+        description: '從懷孕、新生兒到 1-3 歲幼兒，五個服務陪台灣爸媽走過每個階段',
         lang: 'zh-TW',
         theme_color: '#FDFBF7',
         background_color: '#FDFBF7',

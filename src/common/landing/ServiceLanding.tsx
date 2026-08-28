@@ -38,7 +38,7 @@ const SERVICE_INTRO: Record<IntroService, ServiceIntro> = {
     features: [
       { title: '成長檢核', detail: '12-36 個月分五個階段，看孩子這個年紀會了什麼、還在練什麼。' },
       { title: '照護提醒', detail: '健檢、疫苗、塗氟依出生日自動排程，可一鍵匯出到行事曆。' },
-      { title: '幼兒百科', detail: '如廁、語言、情緒、挑食、生病，44 篇對照官方指引的照顧指南。' },
+      { title: '幼兒百科', detail: '如廁、語言、情緒、挑食、生病，45 篇對照官方指引的照顧指南。' },
       { title: '成長日記', detail: '記下那些不會出現在數據裡的時刻。' },
     ],
     publicLink: { label: '先看幼兒百科', hash: '#/littleexplorer/wiki' },

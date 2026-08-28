@@ -5,7 +5,7 @@ import { SERVICE_ORDER, SERVICE_THEME } from '../ui/serviceTheme';
 import type { ServiceId } from '../ui/serviceTheme';
 
 /**
- * HubLanding - Entry point for all four services
+ * HubLanding - Entry point for all five services
  *
  * Public: reachable without signing in, so a first-time visitor can see what
  * the collection offers before deciding to hand over an account.

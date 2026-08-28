@@ -4,6 +4,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import EmptyState from '../../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../../common/ui/serviceTheme';
 import { listItem, stagger } from '../../../common/ui/motion';
+import { pressable } from '../../../common/ui/pressable';
 import { FoodTrialRecord, FoodPreference, AllergySeverity } from '../../../types';
 
 interface FoodTrackingTabProps {
@@ -154,7 +155,7 @@ export default function FoodTrackingTab({
               key={food.id}
               variants={listItem}
               className="card-tap"
-              onClick={() => onEditFood(food)}
+              {...pressable(() => onEditFood(food))}
             >
               <div className="flex items-start gap-3">
                 <div className="flex-1 min-w-0">

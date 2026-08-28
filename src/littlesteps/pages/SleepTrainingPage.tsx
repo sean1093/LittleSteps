@@ -11,6 +11,7 @@ import {
   trainingTips
 } from '../data/sleep';
 import { stagger, listItem, collapse, tap } from '../../common/ui/motion';
+import { pressable } from '../../common/ui/pressable';
 
 export default function SleepTrainingPage() {
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
@@ -229,7 +230,7 @@ export default function SleepTrainingPage() {
                 layout
                 variants={listItem}
                 className="card-tap"
-                onClick={() => setSelectedMethod(isExpanded ? null : method.id)}
+                {...pressable(() => setSelectedMethod(isExpanded ? null : method.id), isExpanded)}
               >
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <h3>{method.title}</h3>
