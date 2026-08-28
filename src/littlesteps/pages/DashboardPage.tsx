@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { isPregnancyProfile } from '../../common/pregnancy';
+import ToddlerHandoff from '../components/ToddlerHandoff';
 import { ChildProfile, DailyLog } from '../../types';
 import { User } from 'firebase/auth';
 import { useChildSummary } from '../hooks/useChildSummary';
@@ -177,6 +178,12 @@ export default function DashboardPage({
           <motion.div variants={listItem} className="mb-4">
             <AlertBanner alerts={activeAlerts} />
           </motion.div>
+        )}
+
+        {/* 滿一歲之後，LittleSteps 的里程碑資料就到頂了；幼兒期的檢核與
+            健檢提醒在 LittleExplorer，而這裡從來沒提過它存在。 */}
+        {ageMonths >= 12 && !isPregnancyProfile(currentChild) && (
+          <ToddlerHandoff childName={currentChild.name} />
         )}
 
         {/* Summary Cards Grid */}
