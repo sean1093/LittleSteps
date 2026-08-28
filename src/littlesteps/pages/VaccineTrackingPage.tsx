@@ -1,9 +1,9 @@
 import { useState, useMemo, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, BookOpen, Check, Pill, ShieldAlert, X } from 'lucide-react';
+import { AlertTriangle, BookOpen, Check, ChevronDown, Pill, ShieldAlert, X } from 'lucide-react';
 import { getLucideIcon } from '../../common/lucideIcons';
 
-import { VaccineProgress } from '../../types';
+import { ChildProfile, VaccineProgress } from '../../types';
 import {
   vaccineSchedules,
   vaccineSideEffects,
@@ -13,12 +13,16 @@ import {
   vaccineGuidelines
 } from '../data/vaccines';
 import { formatDate, toLocalDateKey } from '../../common/utils/dateHelpers';
-import { stagger, listItem, sheet, backdrop, tap } from '../../common/ui/motion';
+import { stagger, listItem, sheet, backdrop, tap, collapse } from '../../common/ui/motion';
+import { useCentreSelectedChip } from '../../common/ui/useCentreSelectedChip';
+import { pressable } from '../../common/ui/pressable';
+import { vaccineMonthForChild } from '../utils/ageDefaults';
 
 type FundingFilter = 'all' | 'public' | 'private';
 type MonthFilter = 'all' | number;
 
 interface VaccineTrackingPageProps {
+  currentChild?: ChildProfile | null;
   vaccineProgress: VaccineProgress;
   onToggleVaccineDose: (vaccineId: string, doseNumber: number, customDate?: string) => void;
 }
@@ -61,23 +65,32 @@ function Sheet({
   );
 }
 
+/** 月齡分組是靜態資料推導出來的，元件外算一次就好。 */
+const AVAILABLE_MONTHS = Array.from(
+  new Set(vaccineSchedules.map((v) => v.ageInMonths || 0)),
+).sort((a, b) => a - b);
+
 export default function VaccineTrackingPage({
+  currentChild,
   vaccineProgress,
-  onToggleVaccineDose
+  onToggleVaccineDose,
 }: VaccineTrackingPageProps) {
   const [fundingFilter, setFundingFilter] = useState<FundingFilter>('all');
-  const [monthFilter, setMonthFilter] = useState<MonthFilter>('all');
+  // 從孩子已經到期的最後一個月齡起跑。停在「全部」的話，8 個月大寶寶的家長
+  // 每次都得先滑過出生 24 小時內那一劑才會看到現在該打的。
+  const [monthFilter, setMonthFilter] = useState<MonthFilter>(() =>
+    vaccineMonthForChild(currentChild, AVAILABLE_MONTHS),
+  );
+  const [showReferences, setShowReferences] = useState(false);
   const [showEmergencies, setShowEmergencies] = useState(false);
   const [showContraindications, setShowContraindications] = useState(false);
   const [showVaccineTypes, setShowVaccineTypes] = useState(false);
   const [showGuidelines, setShowGuidelines] = useState(false);
   const [editingDose, setEditingDose] = useState<{ vaccineId: string; doseNumber: number; currentDate?: string } | null>(null);
 
-  // Get unique months for filter
-  const availableMonths = useMemo(() => {
-    const months = Array.from(new Set(vaccineSchedules.map(v => v.ageInMonths || 0))).sort((a, b) => a - b);
-    return months;
-  }, []);
+  const { scrollerRef, selectedRef } = useCentreSelectedChip(monthFilter);
+
+  const availableMonths = AVAILABLE_MONTHS;
 
   const filteredVaccines = useMemo(() => {
     let filtered = vaccineSchedules;
@@ -134,37 +147,56 @@ export default function VaccineTrackingPage({
   return (
     <div className="screen">
       <div className="screen-body">
-        <p className="text-sm text-ink-muted mb-4">
-          依照衛福部建議時程，記錄寶寶的疫苗接種狀況
-        </p>
+        {/* 四張參考表原本是四顆固定按鈕，加上兩排篩選器，在 390px 上吃掉
+            將近一半的畫面才看到第一劑疫苗。參考表是偶爾才查的東西，收進
+            一個可展開的列；篩選器留在外面，因為它們每次都要用。 */}
+        <div className="card p-0 overflow-hidden mb-4">
+          <div
+            className="flex items-center justify-between gap-2 px-4 min-h-tap"
+            {...pressable(() => setShowReferences(!showReferences), showReferences)}
+          >
+            <span className="font-medium text-sm">參考資料</span>
+            <ChevronDown
+              className={`w-5 h-5 text-ink-faint transition-transform ${
+                showReferences ? 'rotate-180' : ''
+              }`}
+            />
+          </div>
 
-        {/* Quick Action Buttons */}
-        <div className="grid grid-cols-2 gap-2 mb-6">
-          <button onClick={() => setShowEmergencies(true)} className="btn-secondary w-full text-sm">
-            <AlertTriangle className="w-4 h-4" />
-            <span>緊急狀況處理</span>
-          </button>
-          <button onClick={() => setShowContraindications(true)} className="btn-secondary w-full text-sm">
-            <ShieldAlert className="w-4 h-4" />
-            <span>接種注意事項</span>
-          </button>
-          <button onClick={() => setShowVaccineTypes(true)} className="btn-secondary w-full text-sm">
-            <Pill className="w-4 h-4" />
-            <span>疫苗種類說明</span>
-          </button>
-          <button onClick={() => setShowGuidelines(true)} className="btn-secondary w-full text-sm">
-            <BookOpen className="w-4 h-4" />
-            <span>接種指南</span>
-          </button>
+          <AnimatePresence initial={false}>
+            {showReferences && (
+              <motion.div {...collapse} className="overflow-hidden">
+                <div className="grid grid-cols-2 gap-2 px-4 pb-4">
+                  <button onClick={() => setShowEmergencies(true)} className="btn-secondary w-full text-sm">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span>緊急狀況處理</span>
+                  </button>
+                  <button onClick={() => setShowContraindications(true)} className="btn-secondary w-full text-sm">
+                    <ShieldAlert className="w-4 h-4" />
+                    <span>接種注意事項</span>
+                  </button>
+                  <button onClick={() => setShowVaccineTypes(true)} className="btn-secondary w-full text-sm">
+                    <Pill className="w-4 h-4" />
+                    <span>疫苗種類說明</span>
+                  </button>
+                  <button onClick={() => setShowGuidelines(true)} className="btn-secondary w-full text-sm">
+                    <BookOpen className="w-4 h-4" />
+                    <span>接種指南</span>
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* Funding Filter */}
-        <h3 className="mb-2">篩選疫苗類型</h3>
-        <div className="flex gap-2 mb-4">
+        {/* 兩排篩選器的標題（「篩選疫苗類型」「月齡篩選」）拿掉了：chip 本身
+            就說明了它在篩什麼，標題只是多佔兩行。 */}
+        <div className="flex gap-2 mb-2">
           {FUNDING_FILTERS.map((option) => (
             <button
               key={option.value}
               onClick={() => setFundingFilter(option.value)}
+              aria-pressed={fundingFilter === option.value}
               className={`chip flex-1 justify-center ${fundingFilter === option.value ? 'chip-on' : ''}`}
             >
               {option.label}
@@ -172,11 +204,11 @@ export default function VaccineTrackingPage({
           ))}
         </div>
 
-        {/* Month Filter */}
-        <h3 className="mb-2">月齡篩選</h3>
-        <div className="row-bleed flex gap-2 pb-2 mb-6">
+        <div ref={scrollerRef} className="row-bleed flex gap-2 pb-2 mb-4">
           <button
+            ref={monthFilter === 'all' ? selectedRef : undefined}
             onClick={() => setMonthFilter('all')}
+            aria-pressed={monthFilter === 'all'}
             className={`chip flex-shrink-0 ${monthFilter === 'all' ? 'chip-on' : ''}`}
           >
             全部
@@ -184,7 +216,9 @@ export default function VaccineTrackingPage({
           {availableMonths.map(month => (
             <button
               key={month}
+              ref={monthFilter === month ? selectedRef : undefined}
               onClick={() => setMonthFilter(month)}
+              aria-pressed={monthFilter === month}
               className={`chip flex-shrink-0 ${monthFilter === month ? 'chip-on' : ''}`}
             >
               {month}個月

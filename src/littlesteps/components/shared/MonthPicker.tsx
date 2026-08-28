@@ -1,4 +1,5 @@
 import { MonthRange } from '../../../types';
+import { useCentreSelectedChip } from '../../../common/ui/useCentreSelectedChip';
 
 interface MonthPickerProps {
   ranges: { value: MonthRange; label: string }[];
@@ -7,17 +8,24 @@ interface MonthPickerProps {
 }
 
 export default function MonthPicker({ ranges, selected, onChange }: MonthPickerProps) {
+  const { scrollerRef, selectedRef } = useCentreSelectedChip(selected);
+
   return (
-    <div className="row-bleed flex gap-2 pb-2">
-      {ranges.map((range) => (
-        <button
-          key={range.value}
-          onClick={() => onChange(range.value)}
-          className={`chip shrink-0 ${selected === range.value ? 'chip-on' : ''}`}
-        >
-          {range.label}
-        </button>
-      ))}
+    <div ref={scrollerRef} className="row-bleed flex gap-2 pb-2">
+      {ranges.map((range) => {
+        const isSelected = selected === range.value;
+        return (
+          <button
+            key={range.value}
+            ref={isSelected ? selectedRef : undefined}
+            onClick={() => onChange(range.value)}
+            aria-pressed={isSelected}
+            className={`chip shrink-0 ${isSelected ? 'chip-on' : ''}`}
+          >
+            {range.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { MonthRange, Category, MilestoneProgress } from '../../types';
+import { ChildProfile, MonthRange, Category, MilestoneProgress } from '../../types';
 import { milestones, monthRanges, categories } from '../data/milestones';
 import MonthPicker from '../components/shared/MonthPicker';
 import CategoryFilter from '../components/food/CategoryFilter';
@@ -10,14 +10,24 @@ import MilestoneModal from '../components/milestone/MilestoneModal';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem, fadeInUp } from '../../common/ui/motion';
+import { monthRangeForChild } from '../utils/ageDefaults';
 
 interface MilestonesPageProps {
+  currentChild?: ChildProfile | null;
   progress: MilestoneProgress;
   onToggleMilestone: (id: string) => void;
 }
 
-export default function MilestonesPage({ progress, onToggleMilestone }: MilestonesPageProps) {
-  const [selectedMonth, setSelectedMonth] = useState<MonthRange>("0-2");
+export default function MilestonesPage({
+  currentChild,
+  progress,
+  onToggleMilestone,
+}: MilestonesPageProps) {
+  // 從孩子現在的月齡起跑，而不是從 0-2 個月。停在出生那一段對任何滿三個月
+  // 以上的寶寶都是錯的起點，家長每次進來都得自己滑過去。
+  const [selectedMonth, setSelectedMonth] = useState<MonthRange>(() =>
+    monthRangeForChild(currentChild),
+  );
   const [selectedCategory, setSelectedCategory] = useState<Category>("all");
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
 
@@ -37,11 +47,7 @@ export default function MilestonesPage({ progress, onToggleMilestone }: Mileston
     <div className="screen">
       <div className="screen-body">
         <div className="mb-4">
-          <MonthPicker
-            ranges={monthRanges}
-            selected={selectedMonth}
-            onChange={setSelectedMonth}
-          />
+          <MonthPicker ranges={monthRanges} selected={selectedMonth} onChange={setSelectedMonth} />
         </div>
 
         <div className="mb-4">

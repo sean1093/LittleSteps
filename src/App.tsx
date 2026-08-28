@@ -314,6 +314,9 @@ function AppContent() {
         )}
         {currentPage === 'littlesteps/milestones' && (
           <MilestonesPage
+            // 篩選器要從孩子現在的月齡起跑，所以這兩頁需要孩子本身，
+            // 不只是進度資料。
+            currentChild={currentChild}
             progress={currentChildMilestoneProgress}
             onToggleMilestone={toggleMilestone}
           />
@@ -323,6 +326,7 @@ function AppContent() {
         )}
         {currentPage === 'littlesteps/vaccine-tracking' && (
           <VaccineTrackingPage
+            currentChild={currentChild}
             vaccineProgress={currentChildVaccineProgress}
             onToggleVaccineDose={toggleVaccineDose}
           />
