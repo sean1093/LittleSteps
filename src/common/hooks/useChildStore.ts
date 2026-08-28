@@ -55,7 +55,7 @@ export interface ChildStore {
     record: { completedDate: string; clinicName?: string; notes?: string },
   ) => Promise<void>;
   clearPrenatalRecord: (templateId: string) => Promise<void>;
-  recordBirth: (birthday: string) => Promise<void>;
+  recordBirth: (birthday: string, gender?: Gender) => Promise<void>;
   upsertCareTaskRecord: (record: CareTaskRecord) => Promise<void>;
   addDiaryEntry: (
     entry: Omit<DiaryEntry, 'id' | 'childId' | 'createdAt'>,
@@ -253,10 +253,10 @@ export function useChildStore(user: User | null): ChildStore {
     }
   };
 
-  const recordBirth = async (birthday: string) => {
+  const recordBirth = async (birthday: string, gender?: Gender) => {
     if (!user || !pregnancyChild) return;
     try {
-      await firebaseChildren.recordBirth(pregnancyChild.id, birthday);
+      await firebaseChildren.recordBirth(pregnancyChild.id, birthday, gender);
       logChildProfileAction('update');
     } catch (error) {
       console.error('登記出生失敗:', error);

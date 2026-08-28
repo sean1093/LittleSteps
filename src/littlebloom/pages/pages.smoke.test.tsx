@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ChildProfile } from '../../types';
+import type { ChildProfile, Gender } from '../../types';
 import { pregnancyGuides } from '../data/pregnancyGuides';
 import LittleBloomPage from './LittleBloomPage';
 import PrenatalPage from './PrenatalPage';
@@ -102,7 +102,7 @@ describe('LittleBloomPage', () => {
   // archived——孕期檔案永遠停在孕期，寶寶出生後無處可去。
   it('可以登記出生，並把實際出生日期交出去', async () => {
     const user = userEvent.setup();
-    const onRecordBirth = vi.fn(async (_birthday: string) => {});
+    const onRecordBirth = vi.fn(async (_birthday: string, _gender?: Gender) => {});
 
     render(
       <LittleBloomPage
@@ -115,7 +115,28 @@ describe('LittleBloomPage', () => {
     await user.click(screen.getByRole('button', { name: /登記出生/ }));
     await user.click(screen.getByRole('button', { name: '確認出生' }));
 
-    expect(onRecordBirth).toHaveBeenCalledWith('2026-08-27');
+    // 性別可以留空，之後在編輯寶寶資料補。
+    expect(onRecordBirth).toHaveBeenCalledWith('2026-08-27', undefined);
+  });
+
+  it('登記出生時填的性別會一起送出——沒有它就算不出成長曲線百分位', async () => {
+    const user = userEvent.setup();
+    const onRecordBirth = vi.fn(async (_birthday: string, _gender?: Gender) => {});
+
+    render(
+      <LittleBloomPage
+        currentChild={pregnant()}
+        progress={{}}
+        onRecordBirth={onRecordBirth}
+        onAddPregnancy={noopAdd}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /登記出生/ }));
+    await user.selectOptions(screen.getByRole('combobox'), 'female');
+    await user.click(screen.getByRole('button', { name: '確認出生' }));
+
+    expect(onRecordBirth).toHaveBeenCalledWith('2026-08-27', 'female');
   });
 
   it('說明出生後孕期紀錄會保留', () => {

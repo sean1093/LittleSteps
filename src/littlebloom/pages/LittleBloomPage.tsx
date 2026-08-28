@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Baby, Book, Calendar } from 'lucide-react';
-import type { ChildProfile, PrenatalCheckupProgress } from '../../types';
+import type { ChildProfile, Gender, PrenatalCheckupProgress } from '../../types';
 import { PREGNANCY_TOTAL_WEEKS, pregnancyGuides, trimesterOf } from '../data/pregnancyGuides';
 import { prenatalCheckupSchedule } from '../data/prenatalCheckups';
 import { resolvePrenatalItems, weeksPregnant } from '../utils/prenatalSchedule';
@@ -18,7 +18,7 @@ import { goTo } from '../../common/navigate';
 interface LittleBloomPageProps {
   currentChild?: ChildProfile | null;
   progress: PrenatalCheckupProgress;
-  onRecordBirth: (birthday: string) => Promise<void>;
+  onRecordBirth: (birthday: string, gender?: Gender) => Promise<void>;
   /**
    * 建立孕期檔案。傳預產期進去，資料層就會把它標成孕期檔案並用 Naegele
    * 法則回推末次月經。
@@ -48,6 +48,9 @@ export default function LittleBloomPage({
   const dueDate = currentChild?.pregnancyData?.dueDate ?? '';
   const [birthOpen, setBirthOpen] = useState(false);
   const [birthDate, setBirthDate] = useState(() => toLocalDateKey());
+  // 性別在這裡收，不是額外欄位：沒有它就算不出成長曲線的百分位，而出生
+  // 當下正是知道的時候。可以留空，之後在編輯寶寶資料補。
+  const [birthGender, setBirthGender] = useState<Gender | ''>('');
   const [birthSaving, setBirthSaving] = useState(false);
   const [birthError, setBirthError] = useState('');
 
@@ -57,7 +60,7 @@ export default function LittleBloomPage({
     setBirthSaving(true);
     setBirthError('');
     try {
-      await onRecordBirth(birthDate);
+      await onRecordBirth(birthDate, birthGender || undefined);
       setBirthOpen(false);
     } catch (error) {
       console.error('登記出生失敗:', error);
@@ -241,6 +244,18 @@ export default function LittleBloomPage({
                   onChange={(e) => setBirthDate(e.target.value)}
                   className="mt-1 w-full px-3 min-h-tap rounded-xl border border-bloom-sand text-sm text-bloom-stone-ink"
                 />
+              </label>
+              <label className={`block text-xs ${THEME.muted}`}>
+                性別（用來計算成長曲線百分位，可稍後補）
+                <select
+                  value={birthGender}
+                  onChange={(e) => setBirthGender(e.target.value as Gender | '')}
+                  className="mt-1 w-full px-3 min-h-tap rounded-xl border border-bloom-sand text-sm text-bloom-stone-ink bg-white"
+                >
+                  <option value="">先不填</option>
+                  <option value="male">男寶寶</option>
+                  <option value="female">女寶寶</option>
+                </select>
               </label>
               {birthError && (
                 <p role="alert" className="text-sm text-red-600">
