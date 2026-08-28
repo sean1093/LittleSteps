@@ -14,9 +14,10 @@ import Sidebar from './common/components/Sidebar';
 import AppHomeButton from './common/components/AppHomeButton';
 import AccountButton from './common/components/AccountButton';
 import PregnancyGate from './littlesteps/components/PregnancyGate';
+import LandingPage, { landingKindFor, isStandaloneLanding } from './common/landing/LandingPage';
+import ErrorBoundary from './common/components/ErrorBoundary';
 import AppBar from './common/ui/AppBar';
 import { SERVICE_THEME } from './common/ui/serviceTheme';
-import LandingPage, { landingKindFor, isStandaloneLanding } from './common/landing/LandingPage';
 const DashboardPage = lazy(() => import('./littlesteps/pages/DashboardPage'));
 const MilestonesPage = lazy(() => import('./littlesteps/pages/MilestonesPage'));
 const CareGuidePage = lazy(() => import('./littlesteps/pages/CareGuidePage'));
@@ -267,6 +268,9 @@ function AppContent() {
 
       {/* Main Content */}
       <main className={showHeader ? "pb-6" : ""}>
+        {/* key 綁 currentPage：一頁壞掉之後換頁就會重掛，不會把家長困在
+            錯誤畫面裡直到重新整理。 */}
+        <ErrorBoundary key={currentPage} scope={currentPage}>
         <Suspense
           fallback={
             <div className="min-h-[50vh] flex items-center justify-center">
@@ -439,6 +443,7 @@ function AppContent() {
         {currentPage === 'littleouting' && <OutingPage />}
         {currentPage === 'babyoasis' && <BabyOasisPage />}
         </Suspense>
+        </ErrorBoundary>
       </main>
 
       {/* Feedback Button */}
@@ -449,13 +454,17 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      {/* 孩子資料與帳號一樣是全站脈絡：五個服務的 AppBar 都要拿得到，
-          不然登出與切換寶寶就只會存在於能拿到 prop 的那一個服務裡。 */}
-      <ChildStoreProvider>
-        <AppContent />
-      </ChildStoreProvider>
-    </AuthProvider>
+    // 外層這道攔的是頁首、側邊欄、context provider 之類的外框錯誤——那些
+    // 在 <main> 之外，裡面那道 boundary 看不到。
+    <ErrorBoundary scope="app">
+      <AuthProvider>
+        {/* 孩子資料與帳號一樣是全站脈絡：五個服務的 AppBar 都要拿得到，
+            不然登出與切換寶寶就只會存在於能拿到 prop 的那一個服務裡。 */}
+        <ChildStoreProvider>
+          <AppContent />
+        </ChildStoreProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
