@@ -1,5 +1,11 @@
 import type { DailyLog, SleepData, SleepAnalytics, SleepRecommendation, SleepPattern } from '../../types';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
+import {
+  circularTimeStats,
+  formatMinutesOfDay,
+  minutesOfDay,
+} from '../../common/utils/circularTime';
+import { isNightSleep } from './sleepAnalysis';
 
 /**
  * Filter sleep logs from daily logs
@@ -130,119 +136,61 @@ export function calculateSleepQualityScore(logs: DailyLog[]): number {
 }
 
 /**
+ * 夜間就寢時刻（當日分鐘數）。
+ *
+ * 只取夜間睡眠：小睡的開始時間不是就寢時間。原本的寫法是「每一天最早的那次
+ * 睡眠」，對會小睡的孩子——也就是這個 app 的每一個孩子——取到的都是早上那次
+ * 小睡。也不再按日曆日分組：夜間睡眠一晚一次，分組只是為了濾掉小睡，
+ * 而那件事現在由 isNightSleep 正確地做。
+ */
+function nightSleepBedtimes(logs: DailyLog[], days: number, baseDate: Date): number[] {
+  return getSleepLogsInRange(logs, days, baseDate)
+    .filter((log) => isNightSleep((log.data as SleepData).startTime))
+    .map((log) => minutesOfDay(new Date((log.data as SleepData).startTime)));
+}
+
+/**
  * Calculate routine score (0-100)
  * Measures consistency of sleep start times
  */
 export function calculateRoutineScore(logs: DailyLog[], days: number = 7, baseDate: Date = new Date()): number {
-  const sleepLogs = getSleepLogsInRange(logs, days, baseDate);
-  if (sleepLogs.length < 3) return 0; // Need at least 3 data points
+  const bedtimes = nightSleepBedtimes(logs, days, baseDate);
+  if (bedtimes.length < 3) return 0; // Need at least 3 data points
 
-  // Group by date and find first sleep of each day
-  const dailyFirstSleeps: { [date: string]: Date } = {};
+  const stats = circularTimeStats(bedtimes);
+  if (!stats) return 0;
 
-  sleepLogs.forEach(log => {
-    const sleepData = log.data as SleepData;
-    const startTime = new Date(sleepData.startTime);
-    const dateKey = toLocalDateKey(startTime);
+  // 標準差 30 分鐘以內算完全規律，超過 2 小時是 0 分。
+  const { stdDevMinutes } = stats;
+  if (stdDevMinutes <= 30) return 100;
 
-    if (!dailyFirstSleeps[dateKey] || startTime < dailyFirstSleeps[dateKey]) {
-      dailyFirstSleeps[dateKey] = startTime;
-    }
-  });
-
-  const firstSleeps = Object.values(dailyFirstSleeps);
-  if (firstSleeps.length < 2) return 0;
-
-  // Calculate variance in sleep start times (in minutes from midnight)
-  const minutesFromMidnight = firstSleeps.map(date => {
-    return date.getHours() * 60 + date.getMinutes();
-  });
-
-  const avg = minutesFromMidnight.reduce((a, b) => a + b, 0) / minutesFromMidnight.length;
-  const variance = minutesFromMidnight.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / minutesFromMidnight.length;
-  const stdDev = Math.sqrt(variance);
-
-  // Convert standard deviation to score
-  // Low std dev (< 30 min) = high score
-  // High std dev (> 120 min) = low score
-  let score = 100;
-  if (stdDev > 30) {
-    score = Math.max(0, 100 - ((stdDev - 30) / 90 * 100));
-  }
-
-  return Math.round(score);
+  return Math.round(Math.max(0, 100 - ((stdDevMinutes - 30) / 90) * 100));
 }
 
 /**
  * Calculate average bedtime (first sleep of the day)
  */
 export function calculateAverageBedtime(logs: DailyLog[], days: number = 7, baseDate: Date = new Date()): string | undefined {
-  const sleepLogs = getSleepLogsInRange(logs, days, baseDate);
-  if (sleepLogs.length === 0) return undefined;
+  const stats = circularTimeStats(nightSleepBedtimes(logs, days, baseDate));
 
-  // Group by date and find first sleep of each day
-  const dailyFirstSleeps: { [date: string]: Date } = {};
-
-  sleepLogs.forEach(log => {
-    const sleepData = log.data as SleepData;
-    const startTime = new Date(sleepData.startTime);
-    const dateKey = toLocalDateKey(startTime);
-
-    if (!dailyFirstSleeps[dateKey] || startTime < dailyFirstSleeps[dateKey]) {
-      dailyFirstSleeps[dateKey] = startTime;
-    }
-  });
-
-  const firstSleeps = Object.values(dailyFirstSleeps);
-  if (firstSleeps.length === 0) return undefined;
-
-  // Calculate average time
-  const totalMinutes = firstSleeps.reduce((sum, date) => {
-    return sum + (date.getHours() * 60 + date.getMinutes());
-  }, 0);
-
-  const avgMinutes = Math.round(totalMinutes / firstSleeps.length);
-  const hours = Math.floor(avgMinutes / 60);
-  const minutes = avgMinutes % 60;
-
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  return stats ? formatMinutesOfDay(stats.meanMinutes) : undefined;
 }
 
 /**
- * Calculate average wake time (last sleep end of the day)
+ * 夜間睡醒的平均時刻。原本取的是「每一天最後一次睡眠的結束」，那是下午小睡
+ * 醒來的時間，不是早上起床的時間。
  */
 export function calculateAverageWakeTime(logs: DailyLog[], days: number = 7, baseDate: Date = new Date()): string | undefined {
-  const sleepLogs = getSleepLogsInRange(logs, days, baseDate);
-  if (sleepLogs.length === 0) return undefined;
+  const wakeTimes = getSleepLogsInRange(logs, days, baseDate)
+    .filter((log) => {
+      const data = log.data as SleepData;
+      return data.endTime && isNightSleep(data.startTime);
+    })
+    .map((log) => minutesOfDay(new Date((log.data as SleepData).endTime!)));
 
-  // Group by date and find last sleep end of each day
-  const dailyLastWakes: { [date: string]: Date } = {};
+  const stats = circularTimeStats(wakeTimes);
 
-  sleepLogs.forEach(log => {
-    const sleepData = log.data as SleepData;
-    if (!sleepData.endTime) return; // Skip ongoing sleep
-
-    const endTime = new Date(sleepData.endTime);
-    const dateKey = toLocalDateKey(endTime);
-
-    if (!dailyLastWakes[dateKey] || endTime > dailyLastWakes[dateKey]) {
-      dailyLastWakes[dateKey] = endTime;
-    }
-  });
-
-  const lastWakes = Object.values(dailyLastWakes);
-  if (lastWakes.length === 0) return undefined;
-
-  // Calculate average time
-  const totalMinutes = lastWakes.reduce((sum, date) => {
-    return sum + (date.getHours() * 60 + date.getMinutes());
-  }, 0);
-
-  const avgMinutes = Math.round(totalMinutes / lastWakes.length);
-  const hours = Math.floor(avgMinutes / 60);
-  const minutes = avgMinutes % 60;
-
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  return stats ? formatMinutesOfDay(stats.meanMinutes) : undefined;
 }
 
 /**

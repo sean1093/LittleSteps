@@ -1,4 +1,9 @@
 import { DailyLog, SleepData } from '../../types';
+import {
+  circularTimeStats,
+  formatMinutesOfDay,
+  minutesOfDay,
+} from '../../common/utils/circularTime';
 import { getSleepRequirementForAge } from '../data/sleep';
 
 // 睡眠統計介面
@@ -18,8 +23,10 @@ export interface SleepStats {
 export interface SleepRegularity {
   bedtimeRegularity: number; // 0-100 分數，越高越規律
   wakeTimeRegularity: number; // 0-100 分數，越高越規律
-  averageBedtime: string; // "21:30" 格式
-  averageWakeTime: string; // "07:30" 格式
+  /** 夜間就寢的平均時刻；只記過小睡時沒有這個數字 */
+  averageBedtime?: string;
+  /** 夜間睡醒的平均時刻；只記過小睡時沒有這個數字 */
+  averageWakeTime?: string;
 }
 
 // 睡眠建議介面
@@ -153,29 +160,22 @@ export function calculateSleepStats(
 /**
  * 計算時間的平均值與標準差（用於規律性評分）
  */
-function calculateTimeStats(times: number[]): { mean: number; stdDev: number; score: number } {
-  if (times.length === 0) {
-    return { mean: 0, stdDev: 0, score: 0 };
-  }
-
-  const mean = times.reduce((a, b) => a + b, 0) / times.length;
-  const variance = times.reduce((sum, time) => sum + Math.pow(time - mean, 2), 0) / times.length;
-  const stdDev = Math.sqrt(variance);
-
-  // 標準差轉換為 0-100 分數
-  // 標準差 < 0.5 小時 = 100分，> 2 小時 = 0分
-  const score = Math.max(0, Math.min(100, 100 - (stdDev / 2) * 100));
-
-  return { mean, stdDev, score: Math.round(score) };
-}
-
 /**
- * 將小時數轉換為 "HH:MM" 格式
+ * 一組時刻的平均與規律性評分。
+ *
+ * 時刻是環狀的，所以平均與標準差都交給 circularTimeStats——夜間就寢時間必然
+ * 跨過午夜，用線性平均會把 23:50 與 00:10 算成中午。
+ *
+ * 評分曲線：標準差 0 是 100 分、30 分鐘約 75 分、1 小時 50 分、2 小時以上 0 分。
  */
-function hoursToTimeString(hours: number): string {
-  const h = Math.floor(hours);
-  const m = Math.round((hours - h) * 60);
-  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+function calculateTimeStats(times: number[]): { time?: string; score: number } {
+  const stats = circularTimeStats(times);
+  if (!stats) return { score: 0 };
+
+  const stdDevHours = stats.stdDevMinutes / 60;
+  const score = Math.max(0, Math.min(100, 100 - (stdDevHours / 2) * 100));
+
+  return { time: formatMinutesOfDay(stats.meanMinutes), score: Math.round(score) };
 }
 
 /**
@@ -191,21 +191,19 @@ export function calculateSleepRegularity(logs: DailyLog[]): SleepRegularity {
     return data.endTime && data.duration;
   });
 
-  // 提取入睡時間（小時數，含小數）
+  // 只算夜間睡眠。小睡混進來的話，早上 09:30 的小睡和晚上 20:00 的就寢會被
+  // 平均成 14:45，而每個這個年紀的孩子都在小睡——那個數字對每一位使用者都是錯的。
+  const nightSleeps = completedSleeps.filter((log) =>
+    isNightSleep((log.data as SleepData).startTime),
+  );
+
   const bedtimes: number[] = [];
   const wakeTimes: number[] = [];
 
-  completedSleeps.forEach((log) => {
+  nightSleeps.forEach((log) => {
     const data = log.data as SleepData;
-
-    const startDate = new Date(data.startTime);
-    const endDate = new Date(data.endTime!);
-
-    const bedtimeHours = startDate.getHours() + startDate.getMinutes() / 60;
-    const wakeTimeHours = endDate.getHours() + endDate.getMinutes() / 60;
-
-    bedtimes.push(bedtimeHours);
-    wakeTimes.push(wakeTimeHours);
+    bedtimes.push(minutesOfDay(new Date(data.startTime)));
+    wakeTimes.push(minutesOfDay(new Date(data.endTime!)));
   });
 
   const bedtimeStats = calculateTimeStats(bedtimes);
@@ -214,8 +212,8 @@ export function calculateSleepRegularity(logs: DailyLog[]): SleepRegularity {
   return {
     bedtimeRegularity: bedtimeStats.score,
     wakeTimeRegularity: wakeTimeStats.score,
-    averageBedtime: hoursToTimeString(bedtimeStats.mean),
-    averageWakeTime: hoursToTimeString(wakeTimeStats.mean),
+    averageBedtime: bedtimeStats.time,
+    averageWakeTime: wakeTimeStats.time,
   };
 }
 

@@ -238,50 +238,53 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
           </motion.div>
         )}
 
-        {/* Sleep Regularity */}
-        {sleepLogs.length >= 3 && (
+        {/* 規律性只算夜間睡眠。只記過小睡的話沒有就寢時間可談，0 顆星會被讀成
+            「很不規律」，而事實是「還沒有這項資料」。 */}
+        {sleepLogs.length >= 3 && (regularity.averageBedtime || regularity.averageWakeTime) && (
           <motion.div variants={listItem} className="panel mb-4">
             <h2 className="mb-4">睡眠規律性</h2>
 
-            {/* Bedtime Regularity */}
-            <div className="mb-4">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-ink">入睡時間規律性</span>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <Star
-                      key={i}
-                      className={`w-4 h-4 ${
-                        i <= bedtimeStars ? 'text-butter fill-butter' : 'text-ink/20'
-                      }`}
-                    />
-                  ))}
+            {regularity.averageBedtime && (
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-ink">入睡時間規律性</span>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Star
+                        key={i}
+                        className={`w-4 h-4 ${
+                          i <= bedtimeStars ? 'text-butter fill-butter' : 'text-ink/20'
+                        }`}
+                      />
+                    ))}
+                  </div>
                 </div>
+                <p className="text-sm text-ink-muted">
+                  平均入睡時間：{regularity.averageBedtime}
+                </p>
               </div>
-              <p className="text-sm text-ink-muted">
-                平均入睡時間：{regularity.averageBedtime}
-              </p>
-            </div>
+            )}
 
-            {/* Wake Time Regularity */}
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-ink">清醒時間規律性</span>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <Star
-                      key={i}
-                      className={`w-4 h-4 ${
-                        i <= wakeTimeStars ? 'text-butter fill-butter' : 'text-ink/20'
-                      }`}
-                    />
-                  ))}
+            {regularity.averageWakeTime && (
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-ink">清醒時間規律性</span>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Star
+                        key={i}
+                        className={`w-4 h-4 ${
+                          i <= wakeTimeStars ? 'text-butter fill-butter' : 'text-ink/20'
+                        }`}
+                      />
+                    ))}
+                  </div>
                 </div>
+                <p className="text-sm text-ink-muted">
+                  平均清醒時間：{regularity.averageWakeTime}
+                </p>
               </div>
-              <p className="text-sm text-ink-muted">
-                平均清醒時間：{regularity.averageWakeTime}
-              </p>
-            </div>
+            )}
           </motion.div>
         )}
 

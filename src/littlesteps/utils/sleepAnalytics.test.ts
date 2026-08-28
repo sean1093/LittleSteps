@@ -272,38 +272,61 @@ describe('sleepAnalytics', () => {
   });
 
   describe('calculateAverageBedtime', () => {
-    it('should calculate average bedtime', () => {
+    // 原本的 fixture 寫 '...T22:00:00Z'，在 Asia/Taipei 是早上 06:00，也就是
+    // 一次小睡而不是就寢。而且只斷言 /^\d{2}:\d{2}$/ 的格式，不斷言數值，
+    // 所以會小睡的孩子被算成 14:45 也照樣通過。
+    const bedtimeAt = (day: number, hour: number, minute: number) =>
+      createSleepLog(new Date(2026, 3, day, hour, minute).toISOString(), 480);
+
+    it('算的是夜間就寢的平均時刻', () => {
       const logs: DailyLog[] = [
-        createSleepLog('2026-04-01T22:00:00Z', 120),
-        createSleepLog('2026-04-02T22:30:00Z', 120),
-        createSleepLog('2026-04-03T22:15:00Z', 120)
+        bedtimeAt(1, 21, 0),
+        bedtimeAt(2, 21, 30),
+        bedtimeAt(3, 21, 15),
       ];
-      const baseDate = new Date('2026-04-07T00:00:00Z');
 
-      const avgBedtime = calculateAverageBedtime(logs, 7, baseDate);
-      expect(avgBedtime).toBeDefined();
-      expect(avgBedtime).toMatch(/^\d{2}:\d{2}$/); // HH:mm format
-      });
+      expect(calculateAverageBedtime(logs, 7, new Date(2026, 3, 5))).toBe('21:15');
+    });
 
-      it('should return undefined for empty logs', () => {
+    it('小睡不算就寢——每個這個年紀的孩子都在小睡', () => {
+      const logs: DailyLog[] = [
+        bedtimeAt(1, 9, 30), // 早上小睡
+        bedtimeAt(1, 20, 0),
+        bedtimeAt(2, 9, 30),
+        bedtimeAt(2, 20, 0),
+      ];
+
+      expect(calculateAverageBedtime(logs, 7, new Date(2026, 3, 5))).toBe('20:00');
+    });
+
+    it('跨午夜的就寢時間平均在午夜附近，不是中午', () => {
+      const logs: DailyLog[] = [bedtimeAt(1, 23, 50), bedtimeAt(3, 0, 10)];
+
+      expect(calculateAverageBedtime(logs, 7, new Date(2026, 3, 5))).toBe('00:00');
+    });
+
+    it('只有小睡時沒有就寢時間可報', () => {
+      expect(calculateAverageBedtime([bedtimeAt(1, 13, 0)], 7, new Date(2026, 3, 5))).toBeUndefined();
+    });
+
+    it('should return undefined for empty logs', () => {
       expect(calculateAverageBedtime([], 7)).toBeUndefined();
-      });
-      });
+    });
+  });
 
-      describe('calculateAverageWakeTime', () => {
-      it('should calculate average wake time', () => {
+  describe('calculateAverageWakeTime', () => {
+    const sleepFrom = (day: number, hour: number, minutes: number) =>
+      createSleepLog(new Date(2026, 3, day, hour, 0).toISOString(), minutes);
+
+    it('算的是早上起床，不是下午小睡醒來', () => {
       const logs: DailyLog[] = [
-        createSleepLog('2026-04-01T22:00:00Z', 480), // 8 hours sleep
-        createSleepLog('2026-04-02T22:00:00Z', 480),
-        createSleepLog('2026-04-03T22:00:00Z', 480)
+        sleepFrom(1, 20, 600), // 20:00 睡到 06:00
+        sleepFrom(2, 20, 600),
+        sleepFrom(2, 13, 90), // 下午小睡到 14:30——原本會被當成起床時間
       ];
-      const baseDate = new Date('2026-04-07T00:00:00Z');
 
-      const avgWakeTime = calculateAverageWakeTime(logs, 7, baseDate);
-      expect(avgWakeTime).toBeDefined();
-      expect(avgWakeTime).toMatch(/^\d{2}:\d{2}$/); // HH:mm format
-      });
-
+      expect(calculateAverageWakeTime(logs, 7, new Date(2026, 3, 5))).toBe('06:00');
+    });
 
     it('should return undefined for empty logs', () => {
       expect(calculateAverageWakeTime([], 7)).toBeUndefined();
