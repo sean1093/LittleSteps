@@ -39,6 +39,7 @@ export default function BabyWikiPage() {
           categoryIcons={CATEGORY_ICONS}
           searchPlaceholder="搜尋症狀、關鍵字..."
           theme={SERVICE_THEME.littlesteps}
+          crossSearchService="littlesteps"
         />
       </div>
     </div>

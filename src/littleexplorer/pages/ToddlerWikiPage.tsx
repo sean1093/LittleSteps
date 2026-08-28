@@ -141,6 +141,7 @@ export default function ToddlerWikiPage({ currentChild, reminderBadge }: Toddler
           searchPlaceholder="搜尋幼兒照顧問題"
           articleTag={tagFor}
           theme={theme}
+          crossSearchService="littleexplorer"
         />
       </motion.div>
     </ExplorerShell>

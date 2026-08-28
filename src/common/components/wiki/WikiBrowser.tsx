@@ -7,6 +7,10 @@ import { listItem, stagger } from '../../ui/motion';
 import type { ServiceTheme } from '../../ui/serviceTheme';
 import type { WikiArticle, WikiCategoryColors } from '../../../types';
 import WikiArticleCard from './WikiArticleCard';
+import CrossWikiResults from './CrossWikiResults';
+import { matchesKeyword } from '../../wiki/matchesKeyword';
+import { queryFromLocation } from '../../wiki/crossWikiSearch';
+import type { ServiceId } from '../../ui/serviceTheme';
 
 /**
  * 三個知識庫的瀏覽介面：搜尋、分類篩選、篇數、空狀態、展開卡片。
@@ -48,21 +52,13 @@ interface WikiBrowserProps<
    */
   articleTag?: (article: Article) => string | undefined;
   theme: ServiceTheme;
-}
-
-function matchesKeyword(article: WikiArticle<string>, keyword: string) {
-  if (keyword === '') return true;
-  return (
-    article.title.toLowerCase().includes(keyword) ||
-    article.summary.toLowerCase().includes(keyword) ||
-    article.causes.some((cause) => cause.toLowerCase().includes(keyword)) ||
-    article.solutions.some(
-      (solution) =>
-        solution.step.toLowerCase().includes(keyword) ||
-        solution.detail.toLowerCase().includes(keyword),
-    ) ||
-    article.warningSignals.some((signal) => signal.toLowerCase().includes(keyword))
-  );
+  /**
+   * 有給就一併搜其他兩個知識庫，並把結果列在自己的結果下面。
+   *
+   * 家長的問題不管服務邊界——在幼兒百科搜「發燒」卻看不到寶寶百科那幾篇，
+   * 是把 84 篇查證過的文章切成三份互不相通的直接後果。
+   */
+  crossSearchService?: ServiceId;
 }
 
 export default function WikiBrowser<
@@ -77,8 +73,10 @@ export default function WikiBrowser<
   searchPlaceholder,
   articleTag,
   theme,
+  crossSearchService,
 }: WikiBrowserProps<Category, Article>) {
-  const [query, setQuery] = useState('');
+  // 從別的知識庫帶著關鍵字跳過來時，要落在搜尋中間，不是從空白開始。
+  const [query, setQuery] = useState(() => queryFromLocation(window.location.search));
   const [category, setCategory] = useState<Category | 'all'>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -174,6 +172,10 @@ export default function WikiBrowser<
             ))}
           </AnimatePresence>
         </motion.div>
+      )}
+
+      {crossSearchService && (
+        <CrossWikiResults query={query} service={crossSearchService} theme={theme} />
       )}
     </div>
   );

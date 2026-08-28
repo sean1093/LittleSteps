@@ -16,11 +16,15 @@ const NAVIGATION_EVENT = 'littlesteps:navigate';
  * 吃 Page 而不是字串：以前每個呼叫點都自己寫 '#/littlesteps/vaccine-tracking'
  * 這種字面值，打錯不會有任何錯誤訊息，只會靜靜地掉回首頁。現在打錯是編譯失敗。
  */
-export function goTo(page: Page): void {
-  const path = ROUTE_PATH[page];
-  if (window.location.pathname === path) return;
+export function goTo(page: Page, options?: { search?: string }): void {
+  const search = options?.search ? `?${options.search}` : '';
+  const target = `${ROUTE_PATH[page]}${search}`;
 
-  window.history.pushState(null, '', path);
+  // 比對含 query 的完整網址。只比 pathname 的話，帶著不同關鍵字跳到同一個
+  // 知識庫會被當成「已經在那裡了」而直接 return——網址變了、畫面沒動。
+  if (`${window.location.pathname}${window.location.search}` === target) return;
+
+  window.history.pushState(null, '', target);
   window.dispatchEvent(new Event(NAVIGATION_EVENT));
 }
 

@@ -38,6 +38,7 @@ export default function LittleBloomWikiPage() {
           categoryIcons={CATEGORY_ICONS}
           searchPlaceholder="搜尋孕期症狀、關鍵字..."
           theme={SERVICE_THEME.littlebloom}
+          crossSearchService="littlebloom"
         />
       </motion.div>
     </BloomShell>
