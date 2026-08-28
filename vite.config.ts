@@ -1,6 +1,52 @@
-import { defineConfig } from 'vite'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import {
+  pagesToPrerender,
+  renderPageHtml,
+  renderRobotsTxt,
+  renderSitemap,
+} from './src/common/seo/staticHead'
+
+/**
+ * 建置後補上 SEO 需要的靜態檔案。
+ *
+ * Vite 用 esbuild 編譯自己的設定檔，所以這裡可以直接 import TypeScript 的
+ * 路由表與 metadata——不必再寫一份 Node 版本，也就不會有第二份事實來源。
+ *
+ * Firebase Hosting 會先找真實檔案，找不到才套 `**` → /index.html 的 rewrite。
+ * 因此 dist/littleexplorer/wiki/index.html 一存在，該網址就會拿到自己的
+ * title 與 og 標籤，不需要先執行 JS。
+ */
+function seoStaticFiles(): Plugin {
+  return {
+    name: 'littlesteps-seo-static',
+    apply: 'build',
+    closeBundle() {
+      const dist = join(process.cwd(), 'dist')
+      const template = readFileSync(join(dist, 'index.html'), 'utf8')
+
+      for (const { page, outDir } of pagesToPrerender()) {
+        const target = join(dist, outDir, 'index.html')
+        mkdirSync(dirname(target), { recursive: true })
+        writeFileSync(target, renderPageHtml(template, page))
+      }
+
+      // 首頁本身也要換成自己的 head，否則它還是原始樣板。
+      writeFileSync(join(dist, 'index.html'), renderPageHtml(template, 'home'))
+
+      const today = new Date().toISOString().slice(0, 10)
+      writeFileSync(join(dist, 'sitemap.xml'), renderSitemap(today))
+
+      // robots.txt 也從路由表產生，而不是放在 public/ 手動維護：手寫的版本
+      // 是 fail-open 的，新增一個需登入的頁面卻忘了補 Disallow，那一頁就會
+      // 被爬進索引。
+      writeFileSync(join(dist, 'robots.txt'), renderRobotsTxt())
+    },
+  }
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -60,7 +106,9 @@ export default defineConfig({
           },
         ],
       }
-    })
+    }),
+    // PWA 之後跑：它會產生 index.html 的最終樣貌，這裡才能拿到正確的樣板。
+    seoStaticFiles()
   ],
   base: '/',
   server: {

@@ -1,7 +1,8 @@
 import { useState, useEffect, Suspense, lazy } from 'react';
 import { Menu, Home } from 'lucide-react';
-import { pageFromHash, type Page, type LittleStepsPage } from './types/routes';
-import { goTo } from './common/navigate';
+import { pageFromPath, type Page, type LittleStepsPage } from './types/routes';
+import { goTo, subscribeToNavigation } from './common/navigate';
+import { useDocumentMeta } from './common/seo/useDocumentMeta';
 import { logPageView } from './lib/firebase';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useDailyLogs } from './littlesteps/hooks/useDailyLogs';
@@ -68,7 +69,7 @@ function AppContent() {
     setCurrentChild: handleSetCurrentChild,
   } = useChildStore(user);
 
-  const [currentPage, setCurrentPage] = useState<Page>(() => pageFromHash(window.location.hash));
+  const [currentPage, setCurrentPage] = useState<Page>(() => pageFromPath(window.location.pathname));
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -85,16 +86,17 @@ function AppContent() {
   // 「什麼都還沒有」的畫面與登入後的去向都由 common/landing/LandingPage 決定，
   // 包含未登入被擋下時該顯示哪一張服務介紹頁。這裡不再各自判斷。
 
-  // 瀏覽器上一頁／下一頁只會改 hash，不會重新掛載，所以要自己跟著換頁。
-  useEffect(() => {
-    const handleHashChange = () => {
-      setCurrentPage(pageFromHash(window.location.hash));
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
+  // 瀏覽器上一頁／下一頁與 app 內部換頁都不會重新掛載，所以要自己跟著換頁。
+  useEffect(
+    () =>
+      subscribeToNavigation(() => {
+        setCurrentPage(pageFromPath(window.location.pathname));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }),
+    [],
+  );
 
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  useDocumentMeta(currentPage);
 
   const navigateToPage = (page: Page) => {
     goTo(page);
@@ -105,7 +107,7 @@ function AppContent() {
     logPageView(page);
   };
 
-  // 登出後 hash 會留在原本的路由上。若那是需要登入的 LittleSteps 頁，畫面會
+  // 登出後網址會留在原本的路由上。若那是需要登入的 LittleSteps 頁，畫面會
   // 換成 LittleSteps 的介紹頁——使用者看起來像是「登出後被丟回 LittleSteps」，
   // 而不是回到五個服務的入口。所以登出一併把路由帶回服務集合首頁。
   const handleSignOut = async () => {

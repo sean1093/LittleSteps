@@ -10,8 +10,8 @@ import ServiceLanding from './ServiceLanding';
  */
 describe('ServiceLanding', () => {
   const SERVICES = [
-    { id: 'littlebloom', name: 'LittleBloom', publicLink: '先看孕期知識庫', hash: '#/littlebloom/wiki' },
-    { id: 'littleexplorer', name: 'LittleExplorer', publicLink: '先看幼兒百科', hash: '#/littleexplorer/wiki' },
+    { id: 'littlebloom', name: 'LittleBloom', publicLink: '先看孕期知識庫', path: '/littlebloom/wiki' },
+    { id: 'littleexplorer', name: 'LittleExplorer', publicLink: '先看幼兒百科', path: '/littleexplorer/wiki' },
   ] as const;
 
   it.each(SERVICES)('$name 介紹自己並提供登入', async ({ id, name }) => {
@@ -24,24 +24,24 @@ describe('ServiceLanding', () => {
     expect(onSignIn).toHaveBeenCalled();
   });
 
-  it.each(SERVICES)('$name 提供不需登入就能看的內容入口', async ({ id, publicLink, hash }) => {
+  it.each(SERVICES)('$name 提供不需登入就能看的內容入口', async ({ id, publicLink, path }) => {
     const user = userEvent.setup();
-    window.location.hash = '#/';
+    window.history.replaceState(null, '', '/');
     render(<ServiceLanding service={id} onSignIn={vi.fn()} />);
 
     await user.click(screen.getByRole('button', { name: new RegExp(publicLink) }));
 
-    expect(window.location.hash).toBe(hash);
+    expect(window.location.pathname).toBe(path);
   });
 
   it.each(SERVICES)('$name 可回到服務集合的進入點', async ({ id }) => {
     const user = userEvent.setup();
-    window.location.hash = '#/littleexplorer';
+    window.history.replaceState(null, '', '/littleexplorer');
     render(<ServiceLanding service={id} onSignIn={vi.fn()} />);
 
     await user.click(screen.getByRole('button', { name: '所有服務' }));
 
-    expect(window.location.hash).toBe('#/');
+    expect(window.location.pathname).toBe('/');
   });
 
   it('說明哪些功能需要登入，哪些不用', () => {

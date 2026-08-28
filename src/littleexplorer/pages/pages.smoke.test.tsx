@@ -76,22 +76,22 @@ describe('ExplorerShell 與 tab bar', () => {
   // 頁首的「所有服務」再往上一級回到 app 進入點。兩者不可互相取代。
   it('tab bar 通往本服務首頁', async () => {
     const user = userEvent.setup();
-    window.location.hash = '#/littleexplorer/wiki';
+    window.history.replaceState(null, '', '/littleexplorer/wiki');
 
     render(<ToddlerWikiPage currentChild={child()} />);
     await user.click(within(screen.getByRole('navigation')).getByText('成長'));
 
-    expect(window.location.hash).toBe('#/littleexplorer');
+    expect(window.location.pathname).toBe('/littleexplorer');
   });
 
   it('頁首通往所有服務的進入點', async () => {
     const user = userEvent.setup();
-    window.location.hash = '#/littleexplorer/wiki';
+    window.history.replaceState(null, '', '/littleexplorer/wiki');
 
     render(<ToddlerWikiPage currentChild={child()} />);
     await user.click(screen.getByRole('button', { name: '所有服務' }));
 
-    expect(window.location.hash).toBe('#/');
+    expect(window.location.pathname).toBe('/');
   });
 });
 

@@ -88,12 +88,12 @@ describe('LittleBloomPage', () => {
 
   it('產檢時程按鈕真的會導航（原本是空的 onClick）', async () => {
     const user = userEvent.setup();
-    window.location.hash = '#/littlebloom';
+    window.history.replaceState(null, '', '/littlebloom');
     render(<LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} onAddPregnancy={noopAdd} />);
 
     await user.click(screen.getByRole('button', { name: /產檢時程/ }));
 
-    expect(window.location.hash).toBe('#/littlebloom/prenatal');
+    expect(window.location.pathname).toBe('/littlebloom/prenatal');
   });
 
   // PregnancyData.status 從設計出來就存在，卻沒有任何流程會把它改成

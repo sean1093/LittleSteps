@@ -14,7 +14,7 @@ import StepsLanding from './StepsLanding';
  */
 describe('StepsLanding', () => {
   beforeEach(() => {
-    window.location.hash = '#/littlesteps/dashboard';
+    window.history.replaceState(null, '', '/littlesteps/dashboard');
   });
 
   const renderPage = () =>
@@ -31,6 +31,6 @@ describe('StepsLanding', () => {
 
     await user.click(screen.getByRole('button', { name: '所有服務' }));
 
-    expect(window.location.hash).toBe('#/');
+    expect(window.location.pathname).toBe('/');
   });
 });

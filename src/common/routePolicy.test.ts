@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ROUTE_HASH, pageFromHash, type Page } from '../types/routes';
+import { ROUTE_PATH, pageFromPath, type Page } from '../types/routes';
 import type { ServiceId } from './routePolicy';
 import { SERVICE_HOME, requiresAuth, serviceOf } from './routePolicy';
 
@@ -7,13 +7,13 @@ import { SERVICE_HOME, requiresAuth, serviceOf } from './routePolicy';
  * 執行期的 Page 清單，直接從路由表推導。
  *
  * 以前這張表是手抄的，而且靠正規表示式去 App.tsx 撈出兩張路由字典來對帳——
- * 路由真相散在三個地方，抄漏一個就會有頁面靜靜地連不進來。現在 ROUTE_HASH
+ * 路由真相散在三個地方，抄漏一個就會有頁面靜靜地連不進來。現在 ROUTE_PATH
  * 是唯一來源，Page 型別也由它推導，所以這裡不可能過期。
  *
  * 剩下要人決定的只有一件事：新的路由公開還是需登入。下面的 PUBLIC/GATED
  * 仍然手寫，漏了就會在「每條路由不是公開就是需登入」那條失敗。
  */
-const ALL_PAGES = Object.keys(ROUTE_HASH) as Page[];
+const ALL_PAGES = Object.keys(ROUTE_PATH) as Page[];
 
 /**
  * 公開範圍是產品決定，不是實作細節。判準是「這一頁需不需要某個孩子的資料
@@ -70,21 +70,27 @@ const ALL_SERVICES = Object.keys({
 describe('路由表同步', () => {
   it('每條路由都能從網址列直接進來', () => {
     // 導得過去卻連不進來的頁面 = 分享出去的連結會靜靜掉回首頁。
-    // 反查表由 ROUTE_HASH 推導，所以這條現在是結構保證，不是巧合。
+    // 反查表由 ROUTE_PATH 推導，所以這條現在是結構保證，不是巧合。
     for (const page of ALL_PAGES) {
-      expect(pageFromHash(ROUTE_HASH[page])).toBe(page);
+      expect(pageFromPath(ROUTE_PATH[page])).toBe(page);
     }
   });
 
-  it('沒有兩頁共用同一個 hash', () => {
+  it('沒有兩頁共用同一個路徑', () => {
     // 撞號的話後面那頁永遠進不去，而型別不會抱怨——Record 的值沒有唯一性限制。
-    const hashes = Object.values(ROUTE_HASH);
-    expect(new Set(hashes).size).toBe(hashes.length);
+    const paths = Object.values(ROUTE_PATH);
+    expect(new Set(paths).size).toBe(paths.length);
   });
 
-  it('認不得的 hash 回服務集合首頁', () => {
-    expect(pageFromHash('#/nope')).toBe('home');
-    expect(pageFromHash('')).toBe('home');
+  it('結尾多一條斜線還是同一頁', () => {
+    // 分享連結時多一個斜線很常見，不該因此掉回首頁。
+    expect(pageFromPath('/littleouting/')).toBe('littleouting');
+    expect(pageFromPath('/')).toBe('home');
+  });
+
+  it('認不得的路徑回服務集合首頁', () => {
+    expect(pageFromPath('/nope')).toBe('home');
+    expect(pageFromPath('')).toBe('home');
   });
 
   it('每條路由不是公開就是需登入，沒有第三種狀態', () => {
