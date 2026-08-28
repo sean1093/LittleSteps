@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { CareTaskRecord, ChildProfile, DiaryEntry } from '../../types';
+import type { CareTaskRecord, ChildProfile, DiaryEntry, ResolvedCareTask } from '../../types';
 import { careTaskTemplates } from '../data/careTasks';
 import { developmentCheckItems } from '../data/developmentChecks';
 import { resolveCareTasks } from '../utils/careSchedule';
@@ -312,6 +312,101 @@ describe('RemindersPage', () => {
       />,
     );
     expect(screen.getByText('寶寶還不到 1 歲')).toBeInTheDocument();
+  });
+
+  /** 手捏逾期任務：要同時擺出「建檔前到期」與「建檔後到期」兩筆才比得出待遇差別。 */
+  const overdueTask = (id: string, dueDate: string): ResolvedCareTask => ({
+    template: {
+      id,
+      kind: 'health-check',
+      title: `健檢 ${id}`,
+      description: '說明',
+      dueMonth: 18,
+      fromMonth: 18,
+      toMonth: 24,
+      source: '國民健康署',
+    },
+    dueDate,
+    windowEnd: dueDate,
+    status: 'overdue',
+    daysUntilDue: -400,
+  });
+
+  it('替兩歲寶寶當天建檔：一項都不算真的逾期，全部收進建檔前的區塊', () => {
+    // 390px 稽核抓到的畫面：開場一整面「已逾期 425 天」。那些是 app 沒有的
+    // 歷史，不是家長漏掉的預約，所以「已經逾期」一項都不該有。
+    const all = tasks();
+    const overdue = all.filter((task) => task.status === 'overdue');
+    const overdueCount = overdue.length;
+    expect(overdueCount).toBeGreaterThan(0);
+
+    render(
+      <RemindersPage
+        onAddChild={noopAddChild}
+        currentChild={child({ createdAt: '2026-08-27T09:00:00.000Z' })}
+        tasks={all}
+        onCompleteTask={noop}
+      />,
+    );
+
+    expect(screen.queryByText('已經逾期')).not.toBeInTheDocument();
+    expect(screen.getByText('開始使用前就到期的項目')).toBeInTheDocument();
+    expect(screen.getByText(`${overdueCount} 項`)).toBeInTheDocument();
+    // 預設收合：件數看得到，425 天的卡片一張都沒攤開。
+    expect(screen.queryByText(overdue[0].template.title)).not.toBeInTheDocument();
+  });
+
+  it('建檔後才到期的仍是已經逾期，建檔前的收起來且不喊逾期天數', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <RemindersPage
+        onAddChild={noopAddChild}
+        currentChild={child({ createdAt: '2026-06-01T00:00:00.000Z' })}
+        tasks={[overdueTask('old', '2025-09-01'), overdueTask('new', '2026-06-15')]}
+        onCompleteTask={noop}
+      />,
+    );
+
+    // 建檔後才到期的那筆留在原本的顯眼分區，連逾期天數都照舊。
+    const overdueSection = screen.getByText('已經逾期').closest('section')!;
+    expect(within(overdueSection).getByText('健檢 new')).toBeInTheDocument();
+    expect(within(overdueSection).getByText(/已逾期 400 天/)).toBeInTheDocument();
+    expect(within(overdueSection).queryByText('健檢 old')).not.toBeInTheDocument();
+
+    // 建檔前那筆收合著，只露出件數。
+    expect(screen.getByText('1 項')).toBeInTheDocument();
+    expect(screen.queryByText('健檢 old')).not.toBeInTheDocument();
+
+    await user.click(screen.getByText('開始使用前就到期的項目'));
+
+    // 展開後只給建議日期：對建檔前的項目講「已逾期 400 天」是在責怪家長。
+    expect(screen.getByText('健檢 old')).toBeInTheDocument();
+    expect(screen.getByText('建議日期 2025年9月1日')).toBeInTheDocument();
+    expect(screen.queryByText(/健檢 old[\s\S]*已逾期/)).not.toBeInTheDocument();
+  });
+
+  it('收合區塊用鍵盤也打得開', async () => {
+    // 這一列是 div 不是 button（裡面有標題），沒有 pressable() 就只有滑鼠進得去。
+    const user = userEvent.setup();
+
+    render(
+      <RemindersPage
+        onAddChild={noopAddChild}
+        currentChild={child({ createdAt: '2026-06-01T00:00:00.000Z' })}
+        tasks={[overdueTask('old', '2025-09-01')]}
+        onCompleteTask={noop}
+      />,
+    );
+
+    const toggle = screen.getByText('開始使用前就到期的項目').closest('[role="button"]') as HTMLElement;
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+    toggle.focus();
+    await user.keyboard('{Enter}');
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('健檢 old')).toBeInTheDocument();
   });
 });
 

@@ -3,6 +3,7 @@ import { Menu, Home } from 'lucide-react';
 import { pageFromPath, type Page, type LittleStepsPage } from './types/routes';
 import { goTo, subscribeToNavigation } from './common/navigate';
 import { useDocumentMeta } from './common/seo/useDocumentMeta';
+import { splitOverdueByProfileStart } from './common/utils/profileHistory';
 import { logPageView } from './lib/firebase';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useDailyLogs } from './littlesteps/hooks/useDailyLogs';
@@ -78,9 +79,11 @@ function AppContent() {
   const { logs: dailyLogs } = useDailyLogs(currentChildId, user);
   const { tasks: careTasks } = useCareTasks(currentChild);
   const { entries: diaryEntries } = useDiary(currentChildId, user);
-  const reminderBadge = careTasks.filter(
-    (task) => task.status === 'overdue' || task.status === 'due',
-  ).length;
+  // 建檔之前就到期的項目不算逾期——app 只是沒有那段紀錄，不是家長漏掉了。
+  // 把它們算進紅點，會讓新增一個既有的兩歲孩子立刻背上十幾筆「未完成」。
+  const reminderBadge =
+    splitOverdueByProfileStart(careTasks, currentChild?.createdAt).overdue.length +
+    careTasks.filter((task) => task.status === 'due').length;
 
 
   // 「什麼都還沒有」的畫面與登入後的去向都由 common/landing/LandingPage 決定，

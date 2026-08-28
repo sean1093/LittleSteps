@@ -7,6 +7,8 @@ import LittleBloomPage from './LittleBloomPage';
 import PrenatalPage from './PrenatalPage';
 import LittleBloomWikiPage from './LittleBloomWikiPage';
 import { pregnancyWikiArticles } from '../data/wiki';
+import { prenatalCheckupSchedule } from '../data/prenatalCheckups';
+import { dueDateFromLmp, resolvePrenatalItems } from '../utils/prenatalSchedule';
 
 /**
  * LittleBloom shipped as a shell: no code path wrote pregnancyData, so every
@@ -187,6 +189,61 @@ describe('PrenatalPage', () => {
       />,
     );
     expect(screen.getByText('還沒有孕期資料')).toBeInTheDocument();
+  });
+
+  /** 末次月經 2026-02-05 → 2026-08-27 恰滿 29 整週，也就是稽核裡那位第 29 週才建檔的孕婦。 */
+  const LATE_LMP = '2026-02-05';
+
+  const startedLate = () =>
+    pregnant({
+      pregnancyData: {
+        childId: 'c1',
+        dueDate: dueDateFromLmp(LATE_LMP),
+        lastPeriodDate: LATE_LMP,
+        status: 'active',
+      },
+      createdAt: '2026-08-27T09:00:00.000Z',
+    });
+
+  it('第 29 週才開始用：沒有已過建議週數那一區，前面的產檢收在建檔前的區塊', async () => {
+    // 稽核抓到的畫面：一開場就是一疊過期產檢。那是 app 沒有的病歷，
+    // 不是她漏掉的產檢，不該用警示色擺在最前面。
+    const user = userEvent.setup();
+    const historyCount = resolvePrenatalItems(LATE_LMP, prenatalCheckupSchedule, {}, NOW).filter(
+      (item) => item.status === 'overdue',
+    ).length;
+    expect(historyCount).toBeGreaterThan(0);
+
+    render(
+      <PrenatalPage currentChild={startedLate()} progress={{}} onComplete={noop} onUndo={noop} />,
+    );
+
+    expect(screen.queryByText('已過建議週數')).not.toBeInTheDocument();
+    expect(screen.getByText(`${historyCount} 項`)).toBeInTheDocument();
+
+    // 預設收合：件數看得到，第 1 次產檢那張卡沒攤開。
+    const toggle = screen.getByText('開始使用前就到期的項目').closest('[role="button"]') as HTMLElement;
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText(/^第 1 次 · /)).not.toBeInTheDocument();
+
+    await user.click(toggle);
+
+    expect(screen.getByText(/^第 1 次 · /)).toBeInTheDocument();
+    // 展開後也不講落後幾週，只留建議週數與日期。
+    const history = toggle.closest('section')!;
+    expect(within(history).queryByText(/已超過建議週數/)).not.toBeInTheDocument();
+    expect(within(history).getAllByText(/^建議第 \d+ 週 · /).length).toBe(historyCount);
+  });
+
+  it('落後的項目講「已超過建議週數 N 週」，不留可以兩種讀法的「已過 N 週」', () => {
+    // 「已過 20 週」既可讀成「已經過了第 20 週」，也可讀成「晚了 20 週」。
+    render(
+      <PrenatalPage currentChild={pregnant()} progress={{}} onComplete={noop} onUndo={noop} />,
+    );
+
+    const overdue = screen.getByText('已過建議週數').closest('section')!;
+    expect(within(overdue).getAllByText(/已超過建議週數 \d+ 週/).length).toBeGreaterThan(0);
+    expect(within(overdue).queryByText(/· 已過 \d+ 週/)).not.toBeInTheDocument();
   });
 });
 

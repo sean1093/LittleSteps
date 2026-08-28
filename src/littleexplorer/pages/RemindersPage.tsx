@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
-import { CalendarPlus, Check, Download, Syringe } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { CalendarPlus, Check, ChevronDown, Download, History, Syringe } from 'lucide-react';
 import type {
   CareTaskRecord,
   ChildProfile,
@@ -12,9 +12,11 @@ import type {
 import { isPregnancyProfile } from '../../common/pregnancy';
 import { calculateAge, formatDate, toLocalDateKey } from '../../common/utils/dateHelpers';
 import { calculateAgeDisplay } from '../../common/utils/summaryCalculator';
+import { splitOverdueByProfileStart } from '../../common/utils/profileHistory';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
-import { listItem, stagger, tap } from '../../common/ui/motion';
+import { collapse, listItem, stagger, tap } from '../../common/ui/motion';
+import { pressable } from '../../common/ui/pressable';
 import { careTaskKindLabels } from '../data/careTasks';
 import { tipCategoryLabels, toddlerCareTips } from '../data/monthlyTips';
 import { buildGoogleCalendarUrl, downloadIcs } from '../utils/icsExport';
@@ -30,7 +32,10 @@ const CATEGORY_ORDER: ToddlerTipCategory[] = ['safety', 'feeding', 'behavior', '
 
 const UPCOMING_HORIZON_DAYS = 90;
 
-/* 逾期是唯一需要靠卡片本身喊出來的狀態，所以只有它帶顏色與框線。 */
+/*
+ * 逾期是唯一需要靠卡片本身喊出來的狀態，所以只有它帶顏色與框線。
+ * 這一區只放建檔之後才到期的項目；建檔前就到期的另外收在下方的收合區。
+ */
 const SECTIONS: { status: ResolvedCareTask['status']; title: string; accent: string }[] = [
   { status: 'overdue', title: '已經逾期', accent: 'bg-explorer-clay/10 border border-explorer-clay/40' },
   { status: 'due', title: '現在可以做', accent: '' },
@@ -72,6 +77,8 @@ export default function RemindersPage({
   const [completedDate, setCompletedDate] = useState(today);
   const [location, setLocation] = useState('');
   const [notes, setNotes] = useState('');
+  /* 建檔前那一區預設收合：重點是「有這些東西」，不是逐條看完。 */
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const visible = useMemo(
     () =>
@@ -83,6 +90,26 @@ export default function RemindersPage({
       ),
     [tasks],
   );
+
+  /* 建檔之後才到期的才是真的逾期；建檔前的只是 app 沒有那段紀錄。 */
+  const { overdue, missingHistory } = useMemo(
+    () => splitOverdueByProfileStart(visible, currentChild?.createdAt),
+    [visible, currentChild?.createdAt],
+  );
+
+  const sections = useMemo(
+    () =>
+      SECTIONS.map(({ status, title, accent }) => ({
+        status,
+        title,
+        accent,
+        rows: status === 'overdue' ? overdue : visible.filter((task) => task.status === status),
+      })).filter(({ rows }) => rows.length > 0),
+    [overdue, visible],
+  );
+
+  /* 空狀態與匯出都只看可行動的項目：建檔前的舊項目不該塞進家長的行事曆。 */
+  const actionable = useMemo(() => sections.flatMap(({ rows }) => rows), [sections]);
 
   const bandTips = useMemo(
     () => toddlerCareTips.filter((tip) => tip.ageBand === band),
@@ -128,6 +155,117 @@ export default function RemindersPage({
     setFormFor(null);
   };
 
+  /**
+   * 一列待辦。beforeProfile 的列不講「已逾期 N 天」，也不給加入日曆：那兩件事
+   * 是給家長用 app 期間漏掉的項目用的，套在建檔前的舊項目上等於指責家長沒做錯
+   * 的事，還會把一年前的行程塞進行事曆。
+   */
+  const taskRow = (task: ResolvedCareTask, accent: string, beforeProfile = false) => {
+    const isVaccine = Boolean(task.template.vaccineId);
+    const showForm = formFor === task.template.id;
+
+    return (
+      <li key={task.template.id} className={`card ${accent}`}>
+        <div className="flex items-start gap-3">
+          <span className={`tag shrink-0 bg-explorer-sand ${THEME.muted}`}>
+            {careTaskKindLabels[task.template.kind]}
+          </span>
+          <div className="flex-1 min-w-0">
+            <h3 className={THEME.body}>{task.template.title}</h3>
+            <p className={`text-sm mt-0.5 ${THEME.muted}`}>
+              {/* 「已逾期」只給真正逾期的列。狀態是 due 的項目施打窗口還開著，
+                  在「現在可以做」底下寫「已逾期 365 天」自相矛盾，也把一件
+                  還來得及的事說成錯誤。 */}
+              {beforeProfile
+                ? `建議日期 ${formatDate(task.dueDate)}`
+                : task.status === 'overdue'
+                  ? `${formatDate(task.dueDate)} · 已逾期 ${Math.abs(task.daysUntilDue)} 天`
+                  : task.daysUntilDue >= 0
+                    ? `${formatDate(task.dueDate)} · 還有 ${task.daysUntilDue} 天`
+                    : `建議日期 ${formatDate(task.dueDate)}`}
+            </p>
+            <p className={`text-sm mt-2 leading-relaxed ${THEME.body}`}>
+              {task.template.description}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {isVaccine ? (
+            <motion.button
+              type="button"
+              whileTap={tap}
+              onClick={() => {
+                goTo('littlesteps/vaccine-tracking');
+              }}
+              className="btn-secondary px-4 text-sm text-explorer-sky-ink"
+            >
+              <Syringe className="w-4 h-4" />
+              到疫苗追蹤勾選
+            </motion.button>
+          ) : (
+            <motion.button
+              type="button"
+              whileTap={tap}
+              onClick={() => (showForm ? setFormFor(null) : openForm(task.template.id))}
+              className="btn-secondary px-4 text-sm text-explorer-meadow-ink"
+            >
+              <Check className="w-4 h-4" />
+              標記完成
+            </motion.button>
+          )}
+
+          {!beforeProfile && (
+            <a
+              href={buildGoogleCalendarUrl(task, currentChild?.name ?? '寶寶')}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-ghost text-sm"
+            >
+              <CalendarPlus className="w-4 h-4" />
+              加入 Google 日曆
+            </a>
+          )}
+        </div>
+
+        {showForm && (
+          <div className="mt-3 pt-3 border-t border-explorer-sand space-y-2">
+            <label className={`block text-xs ${THEME.muted}`}>
+              完成日期
+              <input
+                type="date"
+                value={completedDate}
+                onChange={(e) => setCompletedDate(e.target.value)}
+                className="mt-1 w-full px-3 min-h-tap rounded-xl border border-explorer-sand text-sm text-explorer-bark"
+              />
+            </label>
+            <input
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="院所（選填）"
+              className="w-full px-3 min-h-tap rounded-xl border border-explorer-sand text-sm text-explorer-bark"
+            />
+            <input
+              type="text"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="備註（選填）"
+              className="w-full px-3 min-h-tap rounded-xl border border-explorer-sand text-sm text-explorer-bark"
+            />
+            <button
+              type="button"
+              onClick={() => submitForm(task.template.id)}
+              className={`btn-primary w-full ${THEME.fill} ${THEME.fillText}`}
+            >
+              儲存
+            </button>
+          </div>
+        )}
+      </li>
+    );
+  };
+
   return (
     <ExplorerShell
       active="reminders"
@@ -137,7 +275,7 @@ export default function RemindersPage({
     >
       {outOfRange ?? (
         <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-4">
-          {visible.length === 0 ? (
+          {actionable.length === 0 ? (
             <motion.div variants={listItem}>
               <EmptyState
                 theme={THEME}
@@ -147,124 +285,60 @@ export default function RemindersPage({
               />
             </motion.div>
           ) : (
-            SECTIONS.map(({ status, title, accent }) => {
-              const rows = visible.filter((task) => task.status === status);
-              if (rows.length === 0) return null;
-
-              return (
-                <motion.section key={status} variants={listItem}>
-                  <h2 className={`px-1 mb-2 ${THEME.body}`}>{title}</h2>
-                  <ul className="space-y-3">
-                    {rows.map((task) => {
-                      const isVaccine = Boolean(task.template.vaccineId);
-                      const showForm = formFor === task.template.id;
-
-                      return (
-                        <li key={task.template.id} className={`card ${accent}`}>
-                          <div className="flex items-start gap-3">
-                            <span className={`tag shrink-0 bg-explorer-sand ${THEME.muted}`}>
-                              {careTaskKindLabels[task.template.kind]}
-                            </span>
-                            <div className="flex-1 min-w-0">
-                              <h3 className={THEME.body}>{task.template.title}</h3>
-                              <p className={`text-sm mt-0.5 ${THEME.muted}`}>
-                                {formatDate(task.dueDate)}
-                                {' · '}
-                                {task.daysUntilDue >= 0
-                                  ? `還有 ${task.daysUntilDue} 天`
-                                  : `已逾期 ${Math.abs(task.daysUntilDue)} 天`}
-                              </p>
-                              <p className={`text-sm mt-2 leading-relaxed ${THEME.body}`}>
-                                {task.template.description}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="mt-3 flex flex-wrap items-center gap-2">
-                            {isVaccine ? (
-                              <motion.button
-                                type="button"
-                                whileTap={tap}
-                                onClick={() => {
-                                  goTo('littlesteps/vaccine-tracking');
-                                }}
-                                className="btn-secondary px-4 text-sm text-explorer-sky-ink"
-                              >
-                                <Syringe className="w-4 h-4" />
-                                到疫苗追蹤勾選
-                              </motion.button>
-                            ) : (
-                              <motion.button
-                                type="button"
-                                whileTap={tap}
-                                onClick={() => (showForm ? setFormFor(null) : openForm(task.template.id))}
-                                className="btn-secondary px-4 text-sm text-explorer-meadow-ink"
-                              >
-                                <Check className="w-4 h-4" />
-                                標記完成
-                              </motion.button>
-                            )}
-
-                            <a
-                              href={buildGoogleCalendarUrl(task, currentChild?.name ?? '寶寶')}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="btn-ghost text-sm"
-                            >
-                              <CalendarPlus className="w-4 h-4" />
-                              加入 Google 日曆
-                            </a>
-                          </div>
-
-                          {showForm && (
-                            <div className="mt-3 pt-3 border-t border-explorer-sand space-y-2">
-                              <label className={`block text-xs ${THEME.muted}`}>
-                                完成日期
-                                <input
-                                  type="date"
-                                  value={completedDate}
-                                  onChange={(e) => setCompletedDate(e.target.value)}
-                                  className="mt-1 w-full px-3 min-h-tap rounded-xl border border-explorer-sand text-sm text-explorer-bark"
-                                />
-                              </label>
-                              <input
-                                type="text"
-                                value={location}
-                                onChange={(e) => setLocation(e.target.value)}
-                                placeholder="院所（選填）"
-                                className="w-full px-3 min-h-tap rounded-xl border border-explorer-sand text-sm text-explorer-bark"
-                              />
-                              <input
-                                type="text"
-                                value={notes}
-                                onChange={(e) => setNotes(e.target.value)}
-                                placeholder="備註（選填）"
-                                className="w-full px-3 min-h-tap rounded-xl border border-explorer-sand text-sm text-explorer-bark"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => submitForm(task.template.id)}
-                                className={`btn-primary w-full ${THEME.fill} ${THEME.fillText}`}
-                              >
-                                儲存
-                              </button>
-                            </div>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </motion.section>
-              );
-            })
+            sections.map(({ status, title, accent, rows }) => (
+              <motion.section key={status} variants={listItem}>
+                <h2 className={`px-1 mb-2 ${THEME.body}`}>{title}</h2>
+                <ul className="space-y-3">{rows.map((task) => taskRow(task, accent))}</ul>
+              </motion.section>
+            ))
           )}
 
-          {visible.length > 0 && (
+          {missingHistory.length > 0 && (
+            <motion.section variants={listItem}>
+              <div
+                className="card-tap"
+                {...pressable(() => setHistoryOpen((open) => !open), historyOpen)}
+              >
+                <div className="flex items-start gap-3">
+                  <History className={`w-5 h-5 mt-0.5 shrink-0 ${THEME.muted}`} />
+                  <div className="flex-1 min-w-0">
+                    <h2 className={THEME.body}>
+                      開始使用前就到期的項目
+                      <span className={`ml-2 text-sm font-normal ${THEME.muted}`}>
+                        {missingHistory.length} 項
+                      </span>
+                    </h2>
+                    <p className={`text-sm mt-1 leading-relaxed ${THEME.muted}`}>
+                      {'這些項目在你開始使用之前就到期了，app 沒有那段紀錄，不代表沒做。手邊有兒童健康手冊的話可以照著補登；不補也不會影響之後的提醒。'}
+                    </p>
+                  </div>
+                  <motion.div
+                    animate={{ rotate: historyOpen ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown className={`w-5 h-5 shrink-0 ${THEME.muted}`} />
+                  </motion.div>
+                </div>
+              </div>
+
+              <AnimatePresence initial={false}>
+                {historyOpen && (
+                  <motion.div {...collapse} className="overflow-hidden">
+                    <ul className="space-y-3 pt-3">
+                      {missingHistory.map((task) => taskRow(task, '', true))}
+                    </ul>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.section>
+          )}
+
+          {actionable.length > 0 && (
             <motion.button
               variants={listItem}
               type="button"
               whileTap={tap}
-              onClick={() => downloadIcs(visible, currentChild?.name ?? '寶寶')}
+              onClick={() => downloadIcs(actionable, currentChild?.name ?? '寶寶')}
               className="btn-secondary w-full text-explorer-bark"
             >
               <Download className="w-5 h-5" />
