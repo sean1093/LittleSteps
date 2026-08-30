@@ -26,6 +26,11 @@ interface HubLandingProps {
   onNavigate: (page: ServiceId) => void;
   user?: User | null;
   onSignIn?: () => Promise<void>;
+  /**
+   * 目前孩子所在階段對應的服務。沒有孩子（含未登入）時省略，這一頁就和以前
+   * 完全一樣——入口頁是公開的，不能因為新增了這個標記而對訪客改變。
+   */
+  currentService?: ServiceId;
 }
 
 /**
@@ -65,7 +70,12 @@ const JOURNEY: { id: ServiceId; label: string; range: string }[] = [
   { id: 'littleexplorer', label: '幼兒期', range: '1-3 歲' },
 ];
 
-export default function HubLanding({ onNavigate, user, onSignIn }: HubLandingProps) {
+export default function HubLanding({
+  onNavigate,
+  user,
+  onSignIn,
+  currentService,
+}: HubLandingProps) {
   return (
     <div className="screen-body-wide space-y-10">
       {/* Hero */}
@@ -139,6 +149,9 @@ export default function HubLanding({ onNavigate, user, onSignIn }: HubLandingPro
                   {/* 角色標籤放在 h2 外面：標題的可及名稱要正好是服務名。 */}
                   <h2 className={theme.ink}>{theme.name}</h2>
                   <span className={`text-xs ${theme.muted}`}>{theme.role}</span>
+                  {/* 五個服務並列時，家長第一個問題是「哪一個是我的」。
+                      標記回答它；順序刻意不動，見 serviceForStage。 */}
+                  {id === currentService && <span className="tag">目前階段</span>}
                 </div>
                 <p className={`text-sm ${theme.body} leading-snug mt-1`}>
                   {SERVICE_FEATURES[id].join(' · ')}

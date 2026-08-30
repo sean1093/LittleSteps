@@ -3,7 +3,7 @@ import type { User } from 'firebase/auth';
 import type { Page } from '../../types/routes';
 import { requiresAuth, serviceOf } from '../routePolicy';
 import EmptyState from '../ui/EmptyState';
-import { SERVICE_THEME } from '../ui/serviceTheme';
+import { SERVICE_THEME, type ServiceId } from '../ui/serviceTheme';
 import HubLanding from './HubLanding';
 import StepsLanding from './StepsLanding';
 import ServiceLanding from './ServiceLanding';
@@ -58,6 +58,10 @@ interface LandingPageProps {
   page: Page;
   user: User | null;
   hasChildren: boolean;
+  /** 登入完成後要去的那一頁，依目前孩子的階段決定 */
+  entryPage: Page;
+  /** 入口頁用來標出「目前階段」的服務；沒有孩子時省略 */
+  currentService?: ServiceId;
   onSignIn: () => Promise<void>;
   onNavigate: (page: Page) => void;
   /** 「先新增寶寶」需要它來開啟側邊欄的新增流程 */
@@ -69,20 +73,25 @@ export default function LandingPage({
   page,
   user,
   hasChildren,
+  entryPage,
+  currentService,
   onSignIn,
   onNavigate,
   onAddChild,
 }: LandingPageProps) {
-  // 登入完成的瞬間帶去儀表板，但只在真的有孩子時——否則會落在一個沒有資料的
-  // 儀表板上，而不是「先新增寶寶」。用 ref 比對前一次的 user 才能區分「剛登入」
-  // 與「本來就是登入狀態」。
+  // 登入完成的瞬間帶去這個孩子該去的那一頁，但只在真的有孩子時——否則會落在
+  // 一個沒有資料的頁面上，而不是「先新增寶寶」。用 ref 比對前一次的 user 才能
+  // 區分「剛登入」與「本來就是登入狀態」。
+  //
+  // 原本寫死 littlesteps/dashboard，只看 hasChildren 這個布林值，所以只有
+  // 孕期檔案的使用者登入後會落在嬰兒儀表板上。目的地現在由 App 依孩子的階段算出。
   const wasSignedIn = useRef(user !== null);
   useEffect(() => {
     if (!wasSignedIn.current && user && hasChildren) {
-      onNavigate('littlesteps/dashboard');
+      onNavigate(entryPage);
     }
     wasSignedIn.current = user !== null;
-  }, [user, hasChildren, onNavigate]);
+  }, [user, hasChildren, entryPage, onNavigate]);
 
   if (kind === 'service-intro') {
     const service = serviceOf(page);
@@ -97,7 +106,12 @@ export default function LandingPage({
   }
 
   if (kind === 'hub') {
-    return <HubLanding onNavigate={onNavigate} user={user} onSignIn={onSignIn} />;
+    return <HubLanding
+        onNavigate={onNavigate}
+        user={user}
+        onSignIn={onSignIn}
+        currentService={currentService}
+      />;
   }
 
   return (

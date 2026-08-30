@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { User } from 'firebase/auth';
 import { render, waitFor } from '@testing-library/react';
+import type { Page } from '../../types/routes';
 import LandingPage, { landingKindFor, isStandaloneLanding } from './LandingPage';
 
 const signedIn = { uid: 'u1' } as User;
@@ -51,13 +52,19 @@ describe('isStandaloneLanding', () => {
 });
 
 describe('登入後的去向', () => {
-  const renderAt = (user: User | null, hasChildren: boolean, onNavigate = vi.fn()) => {
+  const renderAt = (
+    user: User | null,
+    hasChildren: boolean,
+    onNavigate = vi.fn(),
+    entryPage: Page = 'littlesteps/dashboard',
+  ) => {
     const view = render(
       <LandingPage
         kind="steps-intro"
         page="littlesteps"
         user={user}
         hasChildren={hasChildren}
+        entryPage={entryPage}
         onSignIn={vi.fn()}
         onNavigate={onNavigate}
         onAddChild={vi.fn()}
@@ -66,7 +73,7 @@ describe('登入後的去向', () => {
     return { view, onNavigate };
   };
 
-  it('剛登入且已有孩子時前往儀表板', async () => {
+  it('剛登入且已有孩子時前往該孩子的那一頁', async () => {
     const { view, onNavigate } = renderAt(null, true);
     view.rerender(
       <LandingPage
@@ -74,12 +81,31 @@ describe('登入後的去向', () => {
         page="littlesteps"
         user={signedIn}
         hasChildren
+        entryPage="littlesteps/dashboard"
         onSignIn={vi.fn()}
         onNavigate={onNavigate}
         onAddChild={vi.fn()}
       />,
     );
     await waitFor(() => expect(onNavigate).toHaveBeenCalledWith('littlesteps/dashboard'));
+  });
+
+  it('目的地由外面決定，不再寫死嬰兒儀表板', async () => {
+    // 只有孕期檔案的使用者原本會落在嬰兒儀表板上。
+    const { view, onNavigate } = renderAt(null, true, vi.fn(), 'littlebloom');
+    view.rerender(
+      <LandingPage
+        kind="steps-intro"
+        page="littlesteps"
+        user={signedIn}
+        hasChildren
+        entryPage="littlebloom"
+        onSignIn={vi.fn()}
+        onNavigate={onNavigate}
+        onAddChild={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(onNavigate).toHaveBeenCalledWith('littlebloom'));
   });
 
   it('剛登入但還沒有孩子時不跳走，否則會落在空的儀表板', async () => {
@@ -90,6 +116,7 @@ describe('登入後的去向', () => {
         page="littlesteps"
         user={signedIn}
         hasChildren={false}
+        entryPage="littlesteps/dashboard"
         onSignIn={vi.fn()}
         onNavigate={onNavigate}
         onAddChild={vi.fn()}

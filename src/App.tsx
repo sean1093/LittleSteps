@@ -1,6 +1,7 @@
 import { useState, useEffect, Suspense, lazy } from 'react';
 import { Menu, Home } from 'lucide-react';
 import { pageFromPath, type Page, type LittleStepsPage } from './types/routes';
+import { entryPageForChild, serviceForStage, stageOfChild } from './common/stageEntry';
 import { goTo, subscribeToNavigation } from './common/navigate';
 import { useDocumentMeta } from './common/seo/useDocumentMeta';
 import { splitOverdueByProfileStart } from './common/utils/profileHistory';
@@ -212,6 +213,8 @@ function AppContent() {
       page={currentPage}
       user={user}
       hasChildren={childProfiles.length > 0}
+      entryPage={entryPageForChild(currentChild)}
+      currentService={serviceForStage(stageOfChild(currentChild))}
       onSignIn={signInWithGoogle}
       onNavigate={navigateToPage}
       onAddChild={() => setSidebarOpen(true)}
