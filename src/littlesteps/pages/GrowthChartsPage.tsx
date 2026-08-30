@@ -10,7 +10,8 @@ import GrowthChartDisplay from '../components/growth/GrowthChartDisplay';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem } from '../../common/ui/motion';
-import { formatDate } from '../../common/utils/dateHelpers';
+import { calculateAge, formatDate } from '../../common/utils/dateHelpers';
+import { WHO_MAX_AGE_MONTHS } from '../data/growthChartData';
 
 interface GrowthChartsPageProps {
   currentChild?: ChildProfile;
@@ -53,6 +54,8 @@ export default function GrowthChartsPage({
 
   const latestRecord = records[0]; // Already sorted newest first
   const hasRecords = records.length > 0;
+  // 孩子已經超出 WHO 的涵蓋範圍。只在這時候說，還沒滿三歲的家長不需要看到。
+  const pastWhoRange = calculateAge(currentChild.birthday) > WHO_MAX_AGE_MONTHS;
 
   return (
     <div className="screen">
@@ -147,6 +150,20 @@ export default function GrowthChartsPage({
               />
             </motion.div>
           </>
+        )}
+
+        {/*
+          WHO 的標準只到 36 個月。過了以後 calculateZScore 會丟錯，
+          useGrowthTracking 把它接住並略過百分位——紀錄照樣存下來，但畫面上
+          那個 P 值就消失了，沒有任何說明。家長會以為是自己輸入有問題。
+        */}
+        {pastWhoRange && (
+          <motion.div variants={listItem} className="card mb-6">
+            <p className="text-sm text-ink-muted">
+              WHO 生長標準涵蓋 0-{WHO_MAX_AGE_MONTHS} 個月。滿{' '}
+              {WHO_MAX_AGE_MONTHS} 個月之後的紀錄只保留測量值，不再顯示百分位。
+            </p>
+          </motion.div>
         )}
 
         {/* Records List */}
