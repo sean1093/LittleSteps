@@ -210,15 +210,6 @@ export interface PregnancyData {
   status: 'active' | 'archived';
 }
 
-export interface PrenatalCheckup {
-  id: string;
-  childId: string;
-  date: string; // YYYY-MM-DD
-  clinicName: string;
-  notes: string;
-  completed: boolean;
-}
-
 /** 產檢與篩檢項目的完成記錄，鍵為 prenatalCheckupSchedule 的 template id。 */
 export interface PrenatalCheckupProgress {
   [templateId: string]: {
@@ -391,28 +382,6 @@ export interface FoodTrialRecord {
 
 export interface FoodTrackingProgress {
   [foodId: string]: FoodTrialRecord;
-}
-
-// Meal Plan Types (菜單計劃)
-export interface MealPlanDay {
-  date: string; // YYYY-MM-DD
-  meals: {
-    breakfast?: string[];
-    lunch?: string[];
-    dinner?: string[];
-    snacks?: string[];
-  };
-}
-
-export interface WeeklyMealPlan {
-  id: string;
-  childId: string;
-  weekStartDate: string; // YYYY-MM-DD (Monday)
-  childAgeMonths: number; // For age-appropriate menu generation
-  days: MealPlanDay[];
-  shoppingList?: string[]; // Generated shopping list
-  createdAt: string;
-  updatedAt?: string;
 }
 
 // BabyOasis - Nursing Room Map Types
