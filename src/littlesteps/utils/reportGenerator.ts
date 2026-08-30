@@ -21,6 +21,8 @@ export interface WeeklyReport {
     dailyAmounts: number[];
     avgDailyCount: number;
     avgDailyAmount: number;
+    /** 這幾個平均是用幾天算的。沒記錄的日子不算，否則平均會被稀釋成假數字 */
+    loggedDays: number;
     /** 一天餵奶都沒記過就沒有「最高日」可言 */
     maxDay?: { date: string; amount: number };
     minDay?: { date: string; amount: number };
@@ -28,6 +30,8 @@ export interface WeeklyReport {
   sleep: {
     dailyDurations: number[];
     avgDailyHours: number;
+    /** 這個平均是用幾天算的 */
+    loggedDays: number;
     longestContinuous: number;
     nightWakingsTrend: TrendDirection;
     recommendedHours: number;
@@ -35,6 +39,8 @@ export interface WeeklyReport {
   poop: {
     dailyCounts: number[];
     avgDailyCount: number;
+    /** 這個平均是用幾天算的 */
+    loggedDays: number;
     longestGap: number; // hours
     consistencyDistribution: Record<string, number>;
   };
@@ -100,6 +106,9 @@ function buildFeedingData(logs: DailyLog[], days: number) {
   const dailyCounts: number[] = [];
   let maxDay = { date: '', amount: -Infinity };
   let minDay = { date: '', amount: Infinity };
+  let loggedDays = 0;
+  let feedingCountTotal = 0;
+  let feedingAmountTotal = 0;
 
   for (let i = days - 1; i >= 0; i--) {
     const date = getDateNDaysAgo(i);
@@ -114,6 +123,12 @@ function buildFeedingData(logs: DailyLog[], days: number) {
 
     dailyAmounts.push(dayAmount);
     dailyCounts.push(dayCount);
+
+    if (feedingLogs.length > 0) {
+      loggedDays += 1;
+      feedingCountTotal += dayCount;
+      feedingAmountTotal += dayAmount;
+    }
 
     // 只有真的記了餵奶的日子才能當「最多／最少的一天」。沒記的那天算進來，
     // 最少的一天永遠是 0 ml，而報告會指名道姓說是哪一天——家長讀到的是
@@ -132,13 +147,16 @@ function buildFeedingData(logs: DailyLog[], days: number) {
   // 等於憑空生出一個「那天寶寶只喝了 0」的說法。
   const logged = maxDay.amount !== -Infinity;
 
-  const avgDailyCount = dailyCounts.reduce((sum, v) => sum + v, 0) / days;
-  const avgDailyAmount = dailyAmounts.reduce((sum, v) => sum + v, 0) / days;
+  // 沒記錄的日子不是「那天喝 0 ml」，是不知道。除以整段天數會把 7 天記錄
+  // 稀釋成 30 天的平均——1680 ml 變成每日 56 ml，而一個寶寶一天喝 700-900 ml。
+  const avgDailyCount = loggedDays > 0 ? feedingCountTotal / loggedDays : 0;
+  const avgDailyAmount = loggedDays > 0 ? feedingAmountTotal / loggedDays : 0;
 
   return {
     dailyAmounts,
     avgDailyCount: Math.round(avgDailyCount * 10) / 10,
     avgDailyAmount: Math.round(avgDailyAmount),
+    loggedDays,
     maxDay: logged ? maxDay : undefined,
     minDay: logged ? minDay : undefined,
   };
@@ -151,6 +169,8 @@ function buildSleepData(logs: DailyLog[], days: number, ageMonths: number) {
   const dailyDurations: number[] = [];
   const nightWakingsPerDay: Array<number | null> = [];
   let longestContinuous = 0;
+  let loggedDays = 0;
+  let sleepMinutesTotal = 0;
 
   for (let i = days - 1; i >= 0; i--) {
     const date = getDateNDaysAgo(i);
@@ -179,15 +199,23 @@ function buildSleepData(logs: DailyLog[], days: number, ageMonths: number) {
 
     dailyDurations.push(Math.round((dayTotalMinutes / 60) * 10) / 10); // hours
     nightWakingsPerDay.push(logged ? dayNightWakings : null);
+
+    if (logged) {
+      loggedDays += 1;
+      sleepMinutesTotal += dayTotalMinutes;
+    }
   }
 
-  const avgDailyHours = dailyDurations.reduce((sum, v) => sum + v, 0) / days;
+  // 沒記睡眠的日子不是「那天沒睡」。除以整段天數，會讓漏記幾天的家長看到
+  // 一個遠低於實際的時數，然後對照「建議時數」以為孩子睡太少。
+  const avgDailyHours = loggedDays > 0 ? sleepMinutesTotal / 60 / loggedDays : 0;
   const nightWakingsTrend = calculateTrend(nightWakingsPerDay);
   const recommended = getRecommendedSleepHours(ageMonths);
 
   return {
     dailyDurations,
     avgDailyHours: Math.round(avgDailyHours * 10) / 10,
+    loggedDays,
     longestContinuous: Math.round(longestContinuous), // minutes
     nightWakingsTrend,
     recommendedHours: recommended.min,
@@ -203,6 +231,8 @@ function buildPoopData(logs: DailyLog[], days: number) {
 
   // Collect all poop-related logs from the period for gap calculation
   const allPoopLogs: DailyLog[] = [];
+  let loggedDays = 0;
+  let poopCountTotal = 0;
 
   for (let i = days - 1; i >= 0; i--) {
     const date = getDateNDaysAgo(i);
@@ -217,6 +247,12 @@ function buildPoopData(logs: DailyLog[], days: number) {
     dailyCounts.push(poopLogs.length);
     allPoopLogs.push(...poopLogs);
 
+    // 判準是「那天有沒有記尿布」，不是「有沒有大便」：有記但沒大便是真的 0。
+    if (dayLogs.some((log) => log.type === 'diaper')) {
+      loggedDays += 1;
+      poopCountTotal += poopLogs.length;
+    }
+
     poopLogs.forEach(log => {
       const data = log.data as DiaperData;
       if (data.consistency) {
@@ -226,7 +262,7 @@ function buildPoopData(logs: DailyLog[], days: number) {
     });
   }
 
-  const avgDailyCount = dailyCounts.reduce((sum, v) => sum + v, 0) / days;
+  const avgDailyCount = loggedDays > 0 ? poopCountTotal / loggedDays : 0;
 
   // Calculate longest gap between consecutive poops (in hours)
   let longestGap = 0;
@@ -248,6 +284,7 @@ function buildPoopData(logs: DailyLog[], days: number) {
   return {
     dailyCounts,
     avgDailyCount: Math.round(avgDailyCount * 10) / 10,
+    loggedDays,
     longestGap: Math.round(longestGap * 10) / 10,
     consistencyDistribution,
   };

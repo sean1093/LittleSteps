@@ -42,6 +42,16 @@ function generateDateLabels(days: number): string[] {
 }
 
 /**
+ * 平均只用「有記錄的日子」算。天數比整段期間少的時候要講出來，否則
+ * 「平均每日」這句話的分母會悄悄換掉，而讀數字的人不知道。
+ */
+function LoggedDaysNote({ loggedDays, periodDays }: { loggedDays: number; periodDays: number }) {
+  if (loggedDays === 0 || loggedDays >= periodDays) return null;
+
+  return <div className="text-xs text-ink-faint mt-0.5">{loggedDays} 天有記錄</div>;
+}
+
+/**
  * Helper: render trend icon. Colour and shape together encode the value, so
  * this one stays.
  */
@@ -221,6 +231,10 @@ export default function ReportPage({
                     {report.feeding.avgDailyCount}
                   </div>
                   <div className="text-sm text-ink-muted">平均每日次數</div>
+                  <LoggedDaysNote
+                    loggedDays={report.feeding.loggedDays}
+                    periodDays={days}
+                  />
                 </div>
                 <div className="bg-primary-soft rounded-xl p-3 text-center">
                   <div className="text-lg font-bold text-primary-dark">
@@ -228,6 +242,10 @@ export default function ReportPage({
                     <span className="text-sm font-normal ml-0.5">ml</span>
                   </div>
                   <div className="text-sm text-ink-muted">平均每日總量</div>
+                  <LoggedDaysNote
+                    loggedDays={report.feeding.loggedDays}
+                    periodDays={days}
+                  />
                 </div>
                 {report.feeding.maxDay && (
                   <div className="bg-warm-white rounded-xl p-3 text-center">
@@ -271,6 +289,7 @@ export default function ReportPage({
                     <span className="text-xs font-normal ml-0.5">h</span>
                   </div>
                   <div className="text-sm text-ink-muted">平均每日時數</div>
+                  <LoggedDaysNote loggedDays={report.sleep.loggedDays} periodDays={days} />
                 </div>
                 <div className="bg-secondary-soft rounded-xl p-3 text-center">
                   <div className="text-lg font-bold text-secondary-dark">
@@ -308,6 +327,7 @@ export default function ReportPage({
                     {report.poop.avgDailyCount}
                   </div>
                   <div className="text-sm text-ink-muted">平均每日次數</div>
+                  <LoggedDaysNote loggedDays={report.poop.loggedDays} periodDays={days} />
                 </div>
                 <div className="bg-butter-soft rounded-xl p-3 text-center">
                   <div className="text-lg font-bold text-butter-dark">

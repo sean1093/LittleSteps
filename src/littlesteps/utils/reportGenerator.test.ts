@@ -212,8 +212,10 @@ describe('reportGenerator', () => {
       const monthly = generateMonthlyReport(logs, [], 4);
       // 2026-06-05 is 10 days ago -> index 29 - 10 = 19 in the oldest-first array
       expect(monthly.feeding.dailyAmounts[19]).toBe(999);
-      // (7 * 240 + 999) / 30 = 89.3 -> 89
-      expect(monthly.feeding.avgDailyAmount).toBe(89);
+      // 有記餵奶的是 8 天：(7 * 240 + 999) / 8 = 334.875 -> 335。
+      // 原本除以 30 得到 89，那是把 22 個沒記錄的日子當成「那天喝 0 ml」。
+      expect(monthly.feeding.avgDailyAmount).toBe(335);
+      expect(monthly.feeding.loggedDays).toBe(8);
     });
   });
 
@@ -253,7 +255,10 @@ describe('reportGenerator', () => {
 
       expect(report.sleep.nightWakingsTrend).toBe('decreasing'); // 4 -> 1 is a 75% drop
       expect(report.poop.dailyCounts).toEqual([1, 0, 0, 1, 0, 0, 1]);
-      expect(report.poop.avgDailyCount).toBe(0.4); // 3 / 7 = 0.428... -> 0.4
+      // 有記尿布的是 3 天，共 3 次：3 / 3 = 1。除以 7 得到 0.4，
+      // 那是把沒記尿布的 4 天當成「那天沒大便」。
+      expect(report.poop.avgDailyCount).toBe(1);
+      expect(report.poop.loggedDays).toBe(3); // 3 / 7 = 0.428... -> 0.4
       expect(report.poop.longestGap).toBe(72); // three days between poops
       // 'both' counts as a poop and contributes its consistency
       expect(report.poop.consistencyDistribution).toEqual({ normal: 1, soft: 1, hard: 1 });
@@ -287,21 +292,31 @@ describe('reportGenerator', () => {
       expect(report.feeding.dailyAmounts).toHaveLength(30);
       expect(report.feeding.dailyAmounts.slice(0, 23)).toEqual(Array(23).fill(0));
       expect(report.feeding.dailyAmounts.slice(23)).toEqual(Array(7).fill(240));
-      expect(report.feeding.avgDailyAmount).toBe(56); // 1680 / 30
-      expect(report.feeding.avgDailyCount).toBe(0.5); // 14 / 30 = 0.466... -> 0.5
+      // 只記了 7 天，就用那 7 天算：1680 / 7 = 240 ml。原本除以 30 得到 56 ml，
+      // 而一個寶寶一天喝 700-900 ml——那個數字不會讓人以為記漏了，會讓人以為
+      // 孩子喝太少。
+      expect(report.feeding.avgDailyAmount).toBe(240);
+      expect(report.feeding.avgDailyCount).toBe(2); // 14 次 / 7 天
+      expect(report.feeding.loggedDays).toBe(7);
       // 最高／最低只看有記餵奶的那幾天。原本會把 5/17（完全沒記）當成
       // 「最低日 0 ml」寫在報告上，讀起來像那天寶寶沒喝奶。
       expect(report.feeding.maxDay).toEqual({ date: '2026-06-09', amount: 240 });
       expect(report.feeding.minDay).toEqual({ date: '2026-06-09', amount: 240 });
 
       expect(report.sleep.dailyDurations).toHaveLength(30);
-      expect(report.sleep.avgDailyHours).toBe(2.8); // 84 / 30
+      // 有記睡眠的是 7 天，共 84 小時：84 / 7 = 12。原本除以 30 得到 2.8 小時，
+      // 家長對照「建議 12-15 小時」會以為孩子嚴重睡不足。
+      expect(report.sleep.avgDailyHours).toBe(12);
+      expect(report.sleep.loggedDays).toBe(7); // 84 / 30
       expect(report.sleep.longestContinuous).toBe(720);
       // 原本這裡斷言 'increasing'，註解還寫著「空的前半段對上有資料的後半段
       // 讀起來就是夜醒變多」——那不是趨勢，是 23 天沒記錄被當成 23 天沒夜醒。
       expect(report.sleep.nightWakingsTrend).toBe('insufficient-data');
 
-      expect(report.poop.avgDailyCount).toBe(0.2); // 7 / 30 = 0.233... -> 0.2
+      // 有記尿布的是 7 天，共 7 次：7 / 7 = 1。原本除以 30 得到 0.2 次，
+      // 讀起來像五天才大一次。
+      expect(report.poop.avgDailyCount).toBe(1);
+      expect(report.poop.loggedDays).toBe(7); // 7 / 30 = 0.233... -> 0.2
       expect(report.poop.longestGap).toBe(24);
       expect(report.poop.consistencyDistribution).toEqual({ normal: 7 });
     });
@@ -455,12 +470,14 @@ describe('reportGenerator', () => {
         dailyAmounts: [],
         avgDailyCount: 0,
         avgDailyAmount: 0,
+        loggedDays: 0,
         maxDay: { date: '', amount: 0 },
         minDay: { date: '', amount: 0 },
       },
       sleep: {
         dailyDurations: [],
         avgDailyHours: 0,
+        loggedDays: 0,
         longestContinuous: 0,
         nightWakingsTrend: 'stable',
         recommendedHours: 13,
@@ -468,6 +485,7 @@ describe('reportGenerator', () => {
       poop: {
         dailyCounts: [],
         avgDailyCount: 0,
+        loggedDays: 0,
         longestGap: 0,
         consistencyDistribution: {},
       },
