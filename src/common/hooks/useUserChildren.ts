@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ref, onValue, remove } from 'firebase/database';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ref, onValue, remove, set } from 'firebase/database';
 import { database } from '../../lib/firebase';
 import { ChildProfile } from '../../types';
 import { User } from 'firebase/auth';
@@ -26,6 +26,8 @@ export function useUserChildren(user: User | null) {
   const [currentChildId, setCurrentChildId] = useState<string | null>(null);
   const [childrenById, setChildrenById] = useState<Record<string, ChildProfile>>({});
   const [reportedIds, setReportedIds] = useState<string[]>([]);
+  // 同一個孩子只補一次索引，不必每次快照都送一筆布林值。
+  const indexedRef = useRef<Set<string>>(new Set());
   const [userLoaded, setUserLoaded] = useState(false);
 
   // 這個帳號有哪些孩子、現在選了誰。
@@ -65,6 +67,20 @@ export function useUserChildren(user: User | null) {
       onValue(ref(database, `children/${childId}`), (childSnapshot) => {
         if (childSnapshot.exists()) {
           setChildrenById((prev) => ({ ...prev, [childId]: childSnapshot.val() as ChildProfile }));
+
+          // 補上加入用的公開索引。
+          //
+          // childIndex 之前不存在，所以既有的孩子都沒有條目——共享出去的代碼
+          // 會查不到。規則要求寫索引的人已經是成員，而這個 listener 跑的正是
+          // 「每一個我有權限的孩子」，所以這裡是唯一辦得到的一端。與下面清理
+          // 殘留 childrenIds 是同一個自癒模式。
+          if (!indexedRef.current.has(childId)) {
+            indexedRef.current.add(childId);
+            set(ref(database, `childIndex/${childId}`), true).catch(() => {
+              // 補索引失敗不影響這一頁能不能用；放回去讓下次快照再試。
+              indexedRef.current.delete(childId);
+            });
+          }
         } else {
           // 這個孩子不在了（例如建立者刪掉了共享的孩子）。安全規則只允許每個
           // 使用者寫自己的 childrenIds，所以殘留的參照只能由這一端清掉。

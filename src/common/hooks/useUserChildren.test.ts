@@ -45,6 +45,8 @@ vi.mock('firebase/database', () => ({
     return () => listeners.get(path)!.delete(listener);
   },
   remove: vi.fn().mockResolvedValue(undefined),
+  // 補 childIndex 用的；缺這一個，listener 一跑就整組炸掉。
+  set: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../lib/firebase', () => ({ database: {} }));

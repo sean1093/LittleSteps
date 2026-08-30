@@ -68,6 +68,10 @@ export function useFirebaseChildren(userId: string | null) {
     const userChildRef = ref(database, `users/${userId}/childrenIds/${childId}`);
     await set(userChildRef, true);
 
+    // 加入用的公開索引，見 childIndex 的說明。必須排在授權之後：
+    // 規則要求寫入者已經是成員。
+    await set(ref(database, `childIndex/${childId}`), true);
+
     // 如果是第一個孩子，自動設為 currentChildId
     if (currentChildCount === 0) {
       const userRef = ref(database, `users/${userId}`);
@@ -92,11 +96,15 @@ export function useFirebaseChildren(userId: string | null) {
       throw new Error(CHILD_LIMIT_MESSAGE);
     }
 
-    // Verify child exists
-    const childRef = ref(database, `children/${childUuid}`);
-    const childSnapshot = await get(childRef);
+    // 只讀 childIndex，不讀 children。
+    //
+    // 以前這裡讀的是 children/{uuid} 本體，而那需要 children 的 .read 對任何
+    // 登入者開放——於是任何人只要有 UUID 就能讀到別人孩子的完整健康紀錄，而
+    // 這個 app 的共享機制正是把 UUID 傳給對方。childIndex 只存一個 true，
+    // 恰好是加入流程唯一需要知道的事：這個代碼存不存在。
+    const indexSnapshot = await get(ref(database, `childIndex/${childUuid}`));
 
-    if (!childSnapshot.exists()) {
+    if (!indexSnapshot.exists()) {
       throw new Error('找不到此寶寶代碼，請確認代碼是否正確');
     }
 
@@ -188,14 +196,9 @@ export function useFirebaseChildren(userId: string | null) {
   const deleteChild = async (childId: string, remainingChildIds: string[] = []) => {
     if (!userId) throw new Error('User not authenticated');
 
-    // Remove from user's childrenIds
-    const userChildRef = ref(database, `users/${userId}/childrenIds/${childId}`);
-    await remove(userChildRef);
-
-    const nextChildId = remainingChildIds.find((id) => id !== childId) ?? null;
-    await update(ref(database, `users/${userId}`), { currentChildId: nextChildId });
-
-    // Check if user is the creator
+    // 順序不能反：children 的讀寫都要求成員身分，所以先看完、刪完孩子資料，
+    // 最後才退掉自己的成員資格。原本是先退再刪，在 .read 收緊之後那會讓
+    // 建立者的刪除靜靜失敗，留下一份沒有人能再讀到的健康紀錄。
     const childRef = ref(database, `children/${childId}`);
     const childSnapshot = await get(childRef);
 
@@ -205,8 +208,17 @@ export function useFirebaseChildren(userId: string | null) {
       // Only creator can fully delete the child
       if (childData.createdBy === userId) {
         await remove(childRef);
+        // 索引跟著本體走，否則代碼還查得到、加入後卻是一份空資料。
+        await remove(ref(database, `childIndex/${childId}`));
       }
     }
+
+    // Remove from user's childrenIds
+    const userChildRef = ref(database, `users/${userId}/childrenIds/${childId}`);
+    await remove(userChildRef);
+
+    const nextChildId = remainingChildIds.find((id) => id !== childId) ?? null;
+    await update(ref(database, `users/${userId}`), { currentChildId: nextChildId });
   };
 
   const setCurrentChild = async (childId: string) => {

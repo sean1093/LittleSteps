@@ -8,14 +8,14 @@
     },
     "children": {
       "$childId": {
-        ".read": "auth != null",
+        ".read": "root.child('users').child(auth.uid).child('childrenIds').child($childId).val() === true",
         ".write": "root.child('users').child(auth.uid).child('childrenIds').child($childId).val() === true || (!data.exists() && auth != null)"
       }
     },
-    "families": {
-      "$familyId": {
-        ".read": "root.child('users').child(auth.uid).child('families').child($familyId).exists()",
-        ".write": "(!data.exists() && newData.child('createdBy').val() === auth.uid) || root.child('users').child(auth.uid).child('families').child($familyId).child('role').val() === 'admin' || root.child('users').child(auth.uid).child('families').child($familyId).child('role').val() === 'member'"
+    "childIndex": {
+      "$childId": {
+        ".read": "auth != null",
+        ".write": "root.child('users').child(auth.uid).child('childrenIds').child($childId).val() === true"
       }
     },
     "feedbacks": {
