@@ -289,6 +289,31 @@ export default function ClinicSummaryPage({
           </div>
         </motion.section>
 
+        {/* ===== 完整健康時間軸 =====
+            上面幾段是分項摘要，這一段是一條線：產檢、疫苗、成長、兒童健檢
+            按日期排在一起。這份摘要原本只涵蓋四種紀錄裡的兩種，講到出生就斷了，
+            而醫師想看的正是連續。 */}
+        {data.healthTimeline.length > 0 && (
+          <motion.section variants={listItem} className="panel mb-4">
+            <h2>完整健康紀錄</h2>
+            <ul className="mt-4 space-y-2">
+              {data.healthTimeline.map((event) => (
+                <li key={event.id} className="flex items-baseline gap-3 text-sm">
+                  <span className="text-ink-faint shrink-0 tabular-nums">
+                    {event.date || '未記日期'}
+                  </span>
+                  <span className="text-ink">
+                    {event.title}
+                    {event.location && (
+                      <span className="text-ink-muted">（{event.location}）</span>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </motion.section>
+        )}
+
         {/* ===== Section 5: 特殊事項 ===== */}
         <motion.section variants={listItem} className="panel mb-4">
           <h2>特殊事項</h2>

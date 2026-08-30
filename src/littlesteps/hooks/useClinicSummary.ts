@@ -4,6 +4,9 @@ import { useGrowthTracking } from './useGrowthTracking';
 import { getRecentLogs, calculateSleepDuration } from '../utils/logHelpers';
 import { calculateAgeDisplay, calculateVaccineSummary } from '../../common/utils/summaryCalculator';
 import { vaccineSchedules } from '../data/vaccines';
+import { careTaskTemplates } from '../../littleexplorer/data/careTasks';
+import { prenatalCheckupSchedule } from '../../littlebloom/data/prenatalCheckups';
+import { buildHealthTimeline, type HealthEvent } from '../../common/health/healthTimeline';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
 export interface ClinicSummaryData {
@@ -12,6 +15,14 @@ export interface ClinicSummaryData {
   birthday: string;
   gender?: string;
   ageDisplay: string;
+
+  /**
+   * 產檢、疫苗、成長、兒童健檢併成的一條時間軸。
+   *
+   * 這份摘要原本只涵蓋四種形狀裡的兩種（成長與疫苗），缺產檢與兒童健檢——
+   * 而它是要拿去給醫師看的東西，斷在出生那一刻。
+   */
+  healthTimeline: HealthEvent[];
 
   // Latest growth
   latestGrowth?: {
@@ -197,6 +208,13 @@ export function useClinicSummary(
     };
 
     return {
+      healthTimeline: buildHealthTimeline({
+        child: currentChild,
+        growthRecords,
+        vaccineSchedules,
+        careTaskTemplates,
+        prenatalTemplates: prenatalCheckupSchedule,
+      }),
       childName: currentChild.name,
       birthday: currentChild.birthday,
       gender: currentChild.gender,
