@@ -4,7 +4,8 @@ import type {
   CareTaskTemplate,
   VaccineProgress,
 } from '../../types';
-import { addMonths, resolveCareTasks } from './careSchedule';
+import { resolveCareTasks } from './careSchedule';
+import { addMonths } from '../../common/utils/dateHelpers';
 
 const BIRTHDAY = '2024-01-15';
 

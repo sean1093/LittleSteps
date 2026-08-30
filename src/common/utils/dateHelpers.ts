@@ -177,3 +177,25 @@ export function getCurrentDateTimeLocal(): string {
 export function dateTimeLocalToISO(dateTimeLocal: string): string {
   return new Date(dateTimeLocal).toISOString();
 }
+
+/**
+ * 在 YYYY-MM-DD 上加指定月數。
+ * 目標月份沒有該日時（例：1/31 + 1 個月、2/29 + 12 個月）退回當月最後一日，
+ * 而非 JS Date 預設的溢位到下個月。
+ */
+export function addMonths(isoDate: string, months: number): string {
+  const source = parseLocalDate(isoDate);
+  const targetDay = source.getDate();
+  const result = new Date(source);
+  result.setDate(1);
+  result.setMonth(result.getMonth() + months);
+
+  const daysInTargetMonth = new Date(
+    result.getFullYear(),
+    result.getMonth() + 1,
+    0,
+  ).getDate();
+  result.setDate(Math.min(targetDay, daysInTargetMonth));
+
+  return toLocalDateKey(result);
+}

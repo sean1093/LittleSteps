@@ -4,6 +4,10 @@ import {
   parseLocalDate,
   toLocalDateKey,
 } from '../../common/utils/dateHelpers';
+import {
+  resolveScheduleStatus,
+  type ScheduleStatus,
+} from '../../common/utils/scheduleStatus';
 import type { PrenatalCheckupTemplate } from '../data/prenatalCheckups';
 
 /**
@@ -13,7 +17,11 @@ import type { PrenatalCheckupTemplate } from '../data/prenatalCheckups';
  */
 export { dueDateFromLmp, lmpFromDueDate };
 
-export type PrenatalItemStatus = 'upcoming' | 'due' | 'overdue' | 'done';
+/**
+ * 產檢項目的狀態就是共用的排程狀態，別名保留是為了不動既有的匯入點；
+ * 成員不再各寫一份，改了共用型別這裡會跟著變。
+ */
+export type PrenatalItemStatus = ScheduleStatus;
 
 export interface ResolvedPrenatalItem {
   template: PrenatalCheckupTemplate;
@@ -57,18 +65,6 @@ export function weeksPregnant(lastPeriodDate: string, today: Date = new Date()):
   return Math.floor(days / DAYS_PER_WEEK);
 }
 
-function resolveStatus(
-  completedDate: string | undefined,
-  today: Date,
-  dueDate: Date,
-  windowEnd: Date,
-): PrenatalItemStatus {
-  if (completedDate !== undefined) return 'done';
-  if (today.getTime() > windowEnd.getTime()) return 'overdue';
-  if (today.getTime() >= dueDate.getTime()) return 'due';
-  return 'upcoming';
-}
-
 /**
  * 依末次月經將靜態時程展開為帶狀態的產檢清單，依建議日期遞增排序。
  * 完全無 I/O；today 可注入以利測試。
@@ -103,7 +99,7 @@ export function resolvePrenatalItems(
         dueDate,
         windowStart,
         windowEnd,
-        status: resolveStatus(
+        status: resolveScheduleStatus(
           completedDate,
           todayLocal,
           parseLocalDate(dueDate),

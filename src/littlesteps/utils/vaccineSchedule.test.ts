@@ -1,0 +1,196 @@
+import { describe, it, expect } from 'vitest';
+import type { VaccineProgress, VaccineSchedule } from '../../types';
+import { toLocalDateKey } from '../../common/utils/dateHelpers';
+import { vaccineSchedules } from '../data/vaccines';
+import {
+  DUE_WINDOW_DAYS,
+  OVERDUE_LOOKBACK_DAYS,
+  actionableVaccineDoses,
+  resolveVaccineDoses,
+} from './vaccineSchedule';
+
+/**
+ * 22 of 32 doses fall inside LittleSteps' own 0-12 month window, and before this
+ * existed the page only filtered by month band — the parent had to know their
+ * baby's age and go looking. LittleExplorer, holding 8 linked doses, already
+ * computed due dates from the birthday. These tests pin the engine that closes
+ * that gap.
+ */
+
+const BIRTHDAY = '2026-01-15';
+const at = (iso: string) => new Date(`${iso}T12:00:00`);
+
+const vaccine = (over: Partial<VaccineSchedule> = {}): VaccineSchedule =>
+  ({
+    id: 'v1',
+    name: '測試疫苗 第1劑',
+    timing: '出生滿 2 個月',
+    fundingType: 'public',
+    ageInMonths: 2,
+    ageLabel: '2個月',
+    doses: 1,
+    currentDose: 1,
+    sideEffects: [],
+    ...over,
+  }) as VaccineSchedule;
+
+describe('resolveVaccineDoses', () => {
+  it('到期日就是出生日加月齡', () => {
+    const [dose] = resolveVaccineDoses(BIRTHDAY, [vaccine()], {}, at('2026-01-20'));
+
+    expect(dose.dueDate).toBe('2026-03-15');
+  });
+
+  it('還沒到就是 upcoming，到了就是 due', () => {
+    const before = resolveVaccineDoses(BIRTHDAY, [vaccine()], {}, at('2026-03-14'));
+    const onDay = resolveVaccineDoses(BIRTHDAY, [vaccine()], {}, at('2026-03-15'));
+
+    expect(before[0].status).toBe('upcoming');
+    expect(onDay[0].status).toBe('due');
+  });
+
+  it('寬容期內仍算 due，過了才 overdue', () => {
+    // 診所要預約、孩子當天可能感冒。抓太緊會把正常的一兩週延後畫成逾期，
+    // 而一片紅字的下一步就是家長學會忽略它。
+    const lastDay = resolveVaccineDoses(BIRTHDAY, [vaccine()], {}, at('2026-04-14'));
+    const dayAfter = resolveVaccineDoses(BIRTHDAY, [vaccine()], {}, at('2026-04-16'));
+
+    expect(DUE_WINDOW_DAYS).toBe(30);
+    expect(lastDay[0].status).toBe('due');
+    expect(dayAfter[0].status).toBe('overdue');
+  });
+
+  it('接種過就是 done，即使已經逾期很久', () => {
+    const progress: VaccineProgress = {
+      v1: { doses: { 1: { administered: true, administeredDate: '2026-03-20' } } },
+    };
+    const [dose] = resolveVaccineDoses(BIRTHDAY, [vaccine()], progress, at('2026-12-01'));
+
+    expect(dose.status).toBe('done');
+    expect(dose.administeredDate).toBe('2026-03-20');
+  });
+
+  it('勾了接種但沒填日期，仍然算完成', () => {
+    // 勾了就是打了。因為沒填日期而顯示逾期，等於逼家長去補一個他不記得的日子。
+    const progress: VaccineProgress = { v1: { doses: { 1: { administered: true } } } };
+    const [dose] = resolveVaccineDoses(BIRTHDAY, [vaccine()], progress, at('2026-12-01'));
+
+    expect(dose.status).toBe('done');
+    expect(dose.administeredDate).toBeUndefined();
+  });
+
+  it('多劑疫苗各自用自己的 currentDose 對帳', () => {
+    const first = vaccine({ id: 'multi', currentDose: 1, ageInMonths: 2 });
+    const second = vaccine({ id: 'multi', currentDose: 2, ageInMonths: 4 });
+    const progress: VaccineProgress = {
+      multi: { doses: { 1: { administered: true, administeredDate: '2026-03-16' } } },
+    };
+
+    // 第 2 劑到期日 2026-05-15，寬容期到 06-14，所以要挑一個真的過了的日子。
+    const doses = resolveVaccineDoses(BIRTHDAY, [first, second], progress, at('2026-07-01'));
+
+    expect(doses.find((d) => d.doseNumber === 1)?.status).toBe('done');
+    expect(doses.find((d) => d.doseNumber === 2)?.status).toBe('overdue');
+  });
+
+  it('沒有月齡的劑次直接跳過，不假裝算得出日期', () => {
+    const relative = vaccine({ id: 'rel', ageInMonths: undefined, timing: '與公費同時接種' });
+
+    expect(resolveVaccineDoses(BIRTHDAY, [relative], {}, at('2026-06-01'))).toEqual([]);
+  });
+
+  it('沒有生日就什麼都算不出來', () => {
+    expect(resolveVaccineDoses('', [vaccine()], {}, at('2026-06-01'))).toEqual([]);
+  });
+
+  it('依到期日遞增排序', () => {
+    const doses = resolveVaccineDoses(
+      BIRTHDAY,
+      [vaccine({ id: 'c', ageInMonths: 12 }), vaccine({ id: 'a', ageInMonths: 0 }), vaccine({ id: 'b', ageInMonths: 6 })],
+      {},
+      at('2026-06-01'),
+    );
+
+    expect(doses.map((d) => d.vaccineId)).toEqual(['a', 'b', 'c']);
+  });
+});
+
+describe('actionableVaccineDoses', () => {
+  it('只留該打的：到期與剛逾期', () => {
+    const doses = resolveVaccineDoses(BIRTHDAY, vaccineSchedules, {}, at('2026-07-15'));
+    const actionable = actionableVaccineDoses(doses, at('2026-07-15'));
+
+    expect(actionable.length).toBeGreaterThan(0);
+    actionable.forEach((dose) => expect(['due', 'overdue']).toContain(dose.status));
+  });
+
+  it('未來的劑次不進清單——把半年後的每一劑都列出來等於沒有重點', () => {
+    const doses = resolveVaccineDoses(BIRTHDAY, vaccineSchedules, {}, at('2026-01-16'));
+    const actionable = actionableVaccineDoses(doses, at('2026-01-16'));
+
+    expect(actionable.every((dose) => dose.dueDate <= '2026-01-16')).toBe(true);
+  });
+
+  it('久到不能再回頭補的劑次不再出現在提醒裡', () => {
+    // 第一版沒有上限：5 個月大、從來沒記過的孩子拿到 13 筆紅字，第一筆是
+    // 「出生24小時內」那一劑。那不是提醒，是一面沒有下一步的牆。
+    const doses = resolveVaccineDoses(BIRTHDAY, vaccineSchedules, {}, at('2026-06-15'));
+    const actionable = actionableVaccineDoses(doses, at('2026-06-15'));
+
+    expect(OVERDUE_LOOKBACK_DAYS).toBe(90);
+    // 出生當天那一劑早就超出回顧範圍
+    expect(actionable.some((dose) => dose.vaccineId === 'hepb-birth')).toBe(false);
+
+    // 真正的規則不是「幾筆」，是「每一筆都還在回顧範圍內」。
+    // 5 個月大沒記過會列出 6 筆——2 個月與 4 個月那幾劑加上剛到期的卡介苗，
+    // 這些是真的可以帶去補打的，和出生 24 小時內那一劑不同。
+    // 比字串而不是比毫秒：實作把今天正規化到當地午夜（全 repo 的慣例），
+    // 拿中午的時間戳去減會差 12 小時，剛好把邊界那一劑判成超出範圍。
+    const oldest = new Date(2026, 5, 15);
+    oldest.setDate(oldest.getDate() - (OVERDUE_LOOKBACK_DAYS + DUE_WINDOW_DAYS));
+    const oldestKey = toLocalDateKey(oldest);
+
+    expect(actionable.length).toBeGreaterThan(0);
+    actionable.forEach((dose) => {
+      expect(dose.dueDate >= oldestKey, `${dose.name} ${dose.dueDate} < ${oldestKey}`).toBe(true);
+    });
+  });
+
+  it('自費疫苗不算漏打——那是選擇，不是時程', () => {
+    // 把 RSV 單株抗體畫成「你漏打了」，家長會以為自己欠了一劑國家規定的疫苗。
+    const doses = resolveVaccineDoses(BIRTHDAY, vaccineSchedules, {}, at('2026-06-15'));
+    const actionable = actionableVaccineDoses(doses, at('2026-06-15'));
+
+    expect(doses.some((dose) => dose.fundingType === 'private')).toBe(true);
+    actionable.forEach((dose) => expect(dose.fundingType).toBe('public'));
+  });
+
+  it('剛出生時仍然提醒出生那幾劑', () => {
+    // 上限是為了擋掉補不回來的歷史，不是擋掉新生兒真正該打的那一劑。
+    const doses = resolveVaccineDoses(BIRTHDAY, vaccineSchedules, {}, at('2026-01-18'));
+    const actionable = actionableVaccineDoses(doses, at('2026-01-18'));
+
+    expect(actionable.some((dose) => dose.vaccineId === 'hepb-birth')).toBe(true);
+  });
+});
+
+describe('真實時程', () => {
+  it('0-12 個月確實是重心：22 劑落在這個服務自己的範圍', () => {
+    // 這個數字就是這個引擎存在的理由。變了要重新想清楚它該放哪個服務。
+    const withAge = vaccineSchedules.filter((v) => v.ageInMonths !== undefined);
+    const early = withAge.filter((v) => v.ageInMonths! <= 12);
+
+    expect(withAge).toHaveLength(32);
+    expect(early).toHaveLength(22);
+  });
+
+  it('一歲生日當天，出生那一劑早就逾期，一歲那幾劑剛到期', () => {
+    const doses = resolveVaccineDoses(BIRTHDAY, vaccineSchedules, {}, at('2027-01-15'));
+    const birth = doses.find((d) => d.vaccineId === 'hepb-birth');
+    const twelve = doses.filter((d) => d.dueDate === '2027-01-15');
+
+    expect(birth?.status).toBe('overdue');
+    expect(twelve.length).toBeGreaterThan(0);
+    twelve.forEach((dose) => expect(dose.status).toBe('due'));
+  });
+});

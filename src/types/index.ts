@@ -1,3 +1,4 @@
+import type { ScheduleStatus } from '../common/utils/scheduleStatus';
 export type MonthRange = "0-2" | "3-4" | "5-6" | "7-9" | "10-12";
 
 export interface Milestone {
@@ -575,7 +576,11 @@ export interface CareTaskProgress {
   [taskId: string]: CareTaskRecord;
 }
 
-export type CareTaskStatus = 'upcoming' | 'due' | 'overdue' | 'done';
+/**
+ * 照護任務的狀態就是共用的排程狀態（common/utils/scheduleStatus）。
+ * 別名保留是為了不動既有的匯入點；成員不再各寫一份。
+ */
+export type CareTaskStatus = ScheduleStatus;
 
 export interface ResolvedCareTask {
   template: CareTaskTemplate;

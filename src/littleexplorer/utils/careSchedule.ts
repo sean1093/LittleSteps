@@ -1,35 +1,15 @@
 import type {
   CareTaskProgress,
-  CareTaskStatus,
   CareTaskTemplate,
   ResolvedCareTask,
   VaccineProgress,
 } from '../../types';
-import { parseLocalDate, toLocalDateKey } from '../../common/utils/dateHelpers';
+import { addMonths, parseLocalDate, toLocalDateKey } from '../../common/utils/dateHelpers';
+import { resolveScheduleStatus } from '../../common/utils/scheduleStatus';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-/**
- * 在 YYYY-MM-DD 上加指定月數。
- * 目標月份沒有該日時（例：1/31 + 1 個月、2/29 + 12 個月）退回當月最後一日，
- * 而非 JS Date 預設的溢位到下個月。
- */
-export function addMonths(isoDate: string, months: number): string {
-  const source = parseLocalDate(isoDate);
-  const targetDay = source.getDate();
-  const result = new Date(source);
-  result.setDate(1);
-  result.setMonth(result.getMonth() + months);
 
-  const daysInTargetMonth = new Date(
-    result.getFullYear(),
-    result.getMonth() + 1,
-    0,
-  ).getDate();
-  result.setDate(Math.min(targetDay, daysInTargetMonth));
-
-  return toLocalDateKey(result);
-}
 
 function daysBetween(from: Date, to: Date): number {
   return Math.round((to.getTime() - from.getTime()) / MS_PER_DAY);
@@ -45,18 +25,6 @@ function vaccineCompletionDate(
   if (!dose?.administered) return undefined;
   // 已接種但未記日期時回空字串，讓呼叫端仍能判定為 done。
   return dose.administeredDate ?? '';
-}
-
-function resolveStatus(
-  completedDate: string | undefined,
-  today: Date,
-  dueDate: Date,
-  windowEnd: Date,
-): CareTaskStatus {
-  if (completedDate !== undefined) return 'done';
-  if (today.getTime() > windowEnd.getTime()) return 'overdue';
-  if (today.getTime() >= dueDate.getTime()) return 'due';
-  return 'upcoming';
 }
 
 /**
@@ -86,7 +54,7 @@ export function resolveCareTasks(
         template,
         dueDate,
         windowEnd,
-        status: resolveStatus(
+        status: resolveScheduleStatus(
           completedDate,
           todayLocal,
           parseLocalDate(dueDate),

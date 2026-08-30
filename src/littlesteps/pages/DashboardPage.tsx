@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { isPregnancyProfile } from '../../common/pregnancy';
 import ToddlerHandoff from '../components/ToddlerHandoff';
+import VaccineDueCard from '../components/vaccine/VaccineDueCard';
 import { ChildProfile, DailyLog } from '../../types';
 import { User } from 'firebase/auth';
 import { useChildSummary } from '../hooks/useChildSummary';
@@ -178,6 +179,15 @@ export default function DashboardPage({
           <motion.div variants={listItem} className="mb-4">
             <AlertBanner alerts={activeAlerts} />
           </motion.div>
+        )}
+
+        {/* 該打的疫苗排在行為警示之後、里程碑之前：它比「昨天少喝一餐」重要，
+            但不像餵食警示那樣需要今天就處理。沒有到期的劑次時整張不出現。 */}
+        {!isPregnancyProfile(currentChild) && (
+          <VaccineDueCard
+            child={currentChild}
+            onOpen={() => onNavigate('littlesteps/vaccine-tracking')}
+          />
         )}
 
         {/* 滿一歲之後，LittleSteps 的里程碑資料就到頂了；幼兒期的檢核與
