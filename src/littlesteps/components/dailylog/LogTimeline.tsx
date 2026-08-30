@@ -5,6 +5,7 @@ import { formatTime, formatDuration, isSameDay } from '../../../common/utils/dat
 import EmptyState from '../../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../../common/ui/serviceTheme';
 import { listItem, stagger } from '../../../common/ui/motion';
+import { confirmDelete } from '../../../common/ui/confirmDelete';
 
 interface LogTimelineProps {
   logs: DailyLog[];
@@ -34,7 +35,7 @@ export default function LogTimeline({
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   const handleDelete = (log: DailyLog) => {
-    if (window.confirm('確定要刪除此記錄嗎？')) {
+    if (confirmDelete(`${getLogTitle(log.type)}記錄`)) {
       onDelete(log.id);
     }
   };

@@ -11,6 +11,7 @@ import { SERVICE_THEME, type ServiceId } from '../ui/serviceTheme';
 import { CHILD_LIMIT_MESSAGE, MAX_CHILDREN } from '../childLimits';
 import AddChildModal from './AddChildModal';
 import ShareChildUuidModal from './ShareChildUuidModal';
+import { confirmDelete } from '../ui/confirmDelete';
 
 /**
  * 讀不讀某個孩子的資料，決定這個服務該不該顯示切換器。
@@ -61,7 +62,7 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
   };
 
   const handleDeleteChild = (id: string) => {
-    if (window.confirm('確定要刪除這位寶寶的資料嗎？所有里程碑進度也將一併刪除。')) {
+    if (confirmDelete('這位寶寶的資料', '所有里程碑進度')) {
       store?.deleteChild(id);
       setShowChildModal(false);
       setEditingChild(null);

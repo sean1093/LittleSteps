@@ -8,6 +8,7 @@ import { pressable } from '../../../common/ui/pressable';
 import { FoodTrialRecord, FoodPreference, AllergySeverity } from '../../../types';
 import type { FoodStats } from '../../hooks/useFoodTracking';
 import { formatDate } from '../../../common/utils/dateHelpers';
+import { confirmDelete } from '../../../common/ui/confirmDelete';
 
 interface FoodTrackingTabProps {
   foodTrials: FoodTrialRecord[];
@@ -219,7 +220,7 @@ export default function FoodTrackingTab({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (window.confirm(`確定要刪除「${food.foodName}」的記錄嗎？`)) {
+                    if (confirmDelete(`「${food.foodName}」的記錄`)) {
                       onDeleteFood(food.id);
                     }
                   }}

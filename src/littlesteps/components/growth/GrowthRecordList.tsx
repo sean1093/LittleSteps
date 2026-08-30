@@ -7,6 +7,7 @@ import { SERVICE_THEME } from '../../../common/ui/serviceTheme';
 import { listItem, stagger, tap } from '../../../common/ui/motion';
 import { formatDate } from '../../../common/utils/dateHelpers';
 import { useToast } from '../../../common/ui/toast';
+import { confirmDelete } from '../../../common/ui/confirmDelete';
 
 interface GrowthRecordListProps {
   records: GrowthRecord[];
@@ -23,7 +24,7 @@ export default function GrowthRecordList({
 }: GrowthRecordListProps) {
   const toast = useToast();
   const handleDelete = async (recordId: string) => {
-    if (window.confirm('確定要刪除這筆記錄嗎？')) {
+    if (confirmDelete('這筆成長記錄')) {
       try {
         await onDelete(recordId);
       } catch (error) {

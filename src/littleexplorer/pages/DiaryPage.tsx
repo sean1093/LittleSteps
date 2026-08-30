@@ -11,6 +11,7 @@ import { groupEntriesByMonth } from '../utils/diaryHelpers';
 import ExplorerShell from '../components/ExplorerShell';
 import NoChildNotice from '../components/NoChildNotice';
 import { formatDate, toLocalDateKey } from '../../common/utils/dateHelpers';
+import { confirmDelete } from '../../common/ui/confirmDelete';
 
 const THEME = SERVICE_THEME.littleexplorer;
 
@@ -102,7 +103,7 @@ export default function DiaryPage({
   };
 
   const remove = async (entry: DiaryEntry) => {
-    if (!window.confirm('刪除這則紀錄？刪除後無法復原。')) return;
+    if (!confirmDelete('這則日記')) return;
     await onDelete(entry.id);
     if (editingId === entry.id) resetForm();
   };
