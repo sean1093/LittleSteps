@@ -79,8 +79,16 @@ export function useChildStore(user: User | null): ChildStore {
   } = useUserChildren(user);
   const firebaseChildren = useFirebaseChildren(user?.uid || null);
 
+  /**
+   * currentChildId 可能指著一個已經不存在的孩子：共享的孩子被建立者刪掉之後，
+   * 這一端的 childrenIds 會自癒，但 currentChildId 不會——安全規則只允許
+   * 每個使用者寫自己那份，執行刪除的人碰不到別人的 currentChildId。
+   *
+   * 少了這個 fallback，畫面會說「還沒有選擇寶寶」，即使家長明明還有另一個孩子。
+   * 名單真的空的時候維持 undefined：那時候「沒有孩子」是事實。
+   */
   const currentChild = useMemo(
-    () => childProfiles.find((child) => child.id === currentChildId),
+    () => childProfiles.find((child) => child.id === currentChildId) ?? childProfiles[0],
     [childProfiles, currentChildId],
   );
 

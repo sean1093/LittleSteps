@@ -77,6 +77,7 @@ export function useUserChildren(user: User | null) {
           remove(ref(database, `users/${user.uid}/childrenIds/${childId}`)).catch(() => {
             /* best-effort cleanup; ignore */
           });
+
         }
 
         setReportedIds((prev) => (prev.includes(childId) ? prev : [...prev, childId]));
@@ -98,6 +99,26 @@ export function useUserChildren(user: User | null) {
   // 每個 id 都回報過一次（存在或不存在）才算載入完成。用「回報過」而不是
   // 「拿到資料」，殘留的孤兒 id 才不會讓載入狀態卡住。
   const loading = !userLoaded || childIds.some((id) => !reportedIds.includes(id));
+
+  /**
+   * currentChildId 指向一個已經回報「不存在」的孩子時，把它清掉。
+   *
+   * 上面清的是 childrenIds，但選取狀態是另一個欄位。留著它，切換器會沒有任何
+   * 一列被標示為選取中，而畫面其實已經退到另一個孩子上——兩邊講的不是同一件事。
+   *
+   * 條件必須是「回報過且不存在」，不能只看 childrenById 有沒有：載入中的孩子
+   * 也還不在裡面，那時候清掉會把正常的選取狀態一起清掉。
+   */
+  useEffect(() => {
+    if (!user || !currentChildId) return;
+    if (!reportedIds.includes(currentChildId)) return;
+    if (currentChildId in childrenById) return;
+
+    setCurrentChildId(null);
+    remove(ref(database, `users/${user.uid}/currentChildId`)).catch(() => {
+      /* best-effort cleanup; ignore */
+    });
+  }, [user, currentChildId, reportedIds, childrenById]);
 
   return {
     children,

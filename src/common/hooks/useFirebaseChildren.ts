@@ -169,10 +169,13 @@ export function useFirebaseChildren(userId: string | null) {
   };
 
   /**
-   * Delete child (only creator can delete)
-   * - Removes child data from children/{childId}
-   * - Removes from all users' childrenIds (TODO: may need to iterate users)
-   * Note: For simplicity, we only remove from current user's childrenIds
+   * 只移除自己那份 childrenIds，不去動別人的——這不是簡化，是規則決定的。
+   * database.rules.json 只允許每個使用者寫 users/$uid，所以「順手清掉共享對象
+   * 的名單」在客戶端做不到。共享的孩子被刪掉之後，對方殘留的參照由對方那端的
+   * useUserChildren 自癒（連 currentChildId 一起）。
+   *
+   * 原本這裡寫著 TODO: may need to iterate users。那條路走不通，留著只會讓
+   * 下一個人去撞同一道規則。
    */
   /**
    * 刪除檔案。

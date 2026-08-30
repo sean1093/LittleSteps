@@ -220,6 +220,47 @@ describe('useChildStore (Firebase mode)', () => {
     expect(h.firebaseChildren.deleteChild).toHaveBeenCalledWith('c1', ['c1', 'c2']);
   });
 
+  it('選到第二個孩子就給第二個，不是名單第一個', async () => {
+    // 沒有這條，「永遠回傳第一個」也會全綠——而那正是切換器存在的理由。
+    h.userChildren = {
+      children: [child({ id: 'c1', name: '小明' }), child({ id: 'c2', name: '小華' })],
+      currentChildId: 'c2',
+      loading: false,
+    };
+
+    const { result } = renderHook(() => useChildStore(user));
+
+    expect(result.current.currentChild?.id).toBe('c2');
+    expect(result.current.currentChild?.name).toBe('小華');
+  });
+
+  it('currentChildId 指向已刪除的孩子時，改用還在的第一個', async () => {
+    /**
+     * 共享的孩子被建立者刪掉時，另一位家長的 childrenIds 由他自己那端自癒，
+     * 但 currentChildId 仍然指著那個不存在的 id。currentChild 於是變成
+     * undefined，每一頁都顯示「還沒有選擇寶寶」——即使他還有另一個孩子。
+     *
+     * 這正是 deleteChild 註解裡描述的情境，之前只在「執行刪除的那一端」修好。
+     */
+    h.userChildren = {
+      children: [child({ id: 'c2', name: '小華' })],
+      currentChildId: 'c1', // 已被建立者刪除
+      loading: false,
+    };
+
+    const { result } = renderHook(() => useChildStore(user));
+
+    expect(result.current.currentChild?.id).toBe('c2');
+  });
+
+  it('真的沒有孩子時不硬湊一個', async () => {
+    h.userChildren = { children: [], currentChildId: 'c1', loading: false };
+
+    const { result } = renderHook(() => useChildStore(user));
+
+    expect(result.current.currentChild).toBeUndefined();
+  });
+
   it('toggles a milestone, deriving the new achieved state', async () => {
     h.userChildren = {
       children: [child({ milestoneProgress: { m1: { achieved: false } } })],
