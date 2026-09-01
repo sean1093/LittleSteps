@@ -37,7 +37,7 @@ shape.
 ### LittleSteps — 寶寶成長追蹤
 - **成長總覽** — one screen summarising milestones, vaccines, sleep, nappies and food
 - **里程碑追蹤** — 33 milestones across 體格 / 動作 / 認知 / 餵食
-- **疫苗追蹤** — 37 doses on Taiwan's MOHW schedule, 公費 and 自費, with side-effect and emergency guidance
+- **疫苗追蹤** — 32 doses on Taiwan's MOHW schedule (21 公費, 11 自費), with side-effect and emergency guidance
 - **快速日誌** — feeding, sleep and nappies in a couple of taps
 - **睡眠分析** — patterns, quality scoring and advice from the logs
 - **睡眠指南** — 0-3 歲 sleep needs, safety rules and training methods
@@ -86,11 +86,11 @@ Knowledge content is not.
 `src/common/routePolicy.ts` holds a **public allowlist**, deliberately not a
 "needs auth" blocklist: this app stores children's health data, so forgetting to
 mark a new page should fail closed. Public pages are the entry point, the three
-knowledge bases, 照顧重點, 睡眠指南 and BabyOasis. Everything else needs an
-account.
+knowledge bases, 照顧重點, 睡眠指南, LittleOuting and BabyOasis. Everything else
+needs an account.
 
 A signed-out visitor hitting a private route gets that service's intro page at
-the same URL — the hash is preserved, so after signing in they land where they
+the same URL — the path is preserved, so after signing in they land where they
 were going.
 
 - **Auth**: Firebase Authentication, Google sign-in
@@ -187,7 +187,7 @@ Motion, Lucide icons, React Hooks + Context, Leaflet with clustering.
 
 **Backend** — Firebase Authentication, Realtime Database and Analytics.
 
-**Tooling** — Vitest + Testing Library (616 tests), ESLint, Husky pre-commit,
+**Tooling** — Vitest + Testing Library, ESLint, Husky pre-commit,
 `vite-plugin-pwa`, GitHub Actions.
 
 ---
@@ -258,7 +258,8 @@ src/
 └── index.css                design tokens as classes
 ```
 
-Routing is hash-based so every screen is shareable. Sub-routes:
+Routing is path-based (History API, with a SPA rewrite in `firebase.json`) so
+every screen is shareable and crawlable. Sub-routes:
 `littlesteps/{dashboard,milestones,vaccine-tracking,daily-log,growth-charts,sleep-training,sleep-analysis,complementary-food,care-guide,baby-wiki,clinic-summary,report}`,
 `littlebloom/{prenatal,wiki}`, `littleexplorer/{reminders,diary,wiki}`,
 `littleouting`, `babyoasis`.

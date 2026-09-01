@@ -12,7 +12,7 @@ to work in the repo.
 
 ## Architecture
 
-Four services share one shell, one design system and one data layer. Each keeps
+Five services share one shell, one design system and one data layer. Each keeps
 its own palette and its own navigation shape.
 
 ```
@@ -26,9 +26,10 @@ src/
 ├── littlesteps/     pages/ components/<feature>/ hooks/ data/
 ├── littlebloom/     pages/ components/ data/ utils/
 ├── littleexplorer/  pages/ components/ hooks/ data/ utils/
+├── littleouting/    venue page + card, 親子館/親子餐廳 data, checklist
 ├── babyoasis/       map page + spatial index
 ├── contexts/  lib/  types/
-├── App.tsx          hash routing, shell, lazy pages
+├── App.tsx          path routing, shell, lazy pages
 └── index.css        design tokens as classes
 ```
 
@@ -44,10 +45,10 @@ one.
 
 `common/routePolicy.ts` is a **public allowlist**, not a "needs auth" blocklist.
 This app stores children's health data, so a page nobody classified must fail
-closed. Only the entry point, the three knowledge bases, 照顧重點, 睡眠指南 and
-BabyOasis are public.
+closed. Only the entry point, the three knowledge bases, 照顧重點, 睡眠指南,
+LittleOuting and BabyOasis are public.
 
-A blocked visitor sees that service's intro page **at the same URL** — the hash
+A blocked visitor sees that service's intro page **at the same URL** — the path
 is preserved so signing in lands them where they were going. Never redirect.
 
 ---
@@ -134,7 +135,7 @@ Short entrances, small offsets, nothing looping. Import from `common/ui/motion`
 npm run dev            # localhost:5173
 npm run build          # tsc && vite build — must pass
 npm run lint           # zero warnings allowed
-npm run test           # 531 tests
+npm run test           # watch mode; `npx vitest run` for one pass
 ```
 
 Before claiming a UI change works, **look at it** at 390px. Type-checking is not
