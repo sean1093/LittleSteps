@@ -47,6 +47,13 @@ export function useFirebaseChildren(userId: string | null) {
       name,
       birthday,
       gender,
+      // 授權名單，不是 users/{uid}/childrenIds。建立者必須在同一筆寫入裡就是
+      // 成員，否則規則擋下這筆——連他自己都讀不回這個孩子。
+      members: { [userId]: true },
+      // 一律寫成布林值，不留空。規則驗的是 isBoolean，欄位缺著的話分享視窗
+      // 讀到的是 undefined，切換開關時就會以為自己在改一個本來存在的設定。
+      // 預設關：代碼是 UUID，但 UUID 會流過聊天軟體與截圖。
+      joinOpen: false,
       milestoneProgress: {},
       vaccineProgress: {},
       // 孕期檔案在這裡就要把 pregnancyData 寫進去。先前這兩個參數在
@@ -65,11 +72,11 @@ export function useFirebaseChildren(userId: string | null) {
       createdBy: userId,
     };
 
-    // 一次寫完，不是三筆循序 set。
+    // 一次寫完，不是兩筆循序 set。
     //
-    // 原本先寫 children/{id} 再寫 childrenIds：第二筆沒落地就沒有任何人是
-    // 成員，database.rules.json 從此拒絕這個 childId 的每一次讀與寫——那份
-    // 健康紀錄再也讀不到、也刪不掉，帳號卻已經被它佔掉一個名額。
+    // 孩子本體與自己的名單索引要嘛都在、要嘛都不在。只有本體落地的話，那份
+    // 檔案讀得到（我還在 members 裡）卻沒有任何入口指得到它——名單上沒有、
+    // 切換器裡沒有，只剩當初那個 UUID，而家長從來沒看過它。
     const updates: Record<string, unknown> = {
       [`children/${childId}`]: removeUndefined(newChild),
       [`users/${userId}/childrenIds/${childId}`]: true,
@@ -92,9 +99,11 @@ export function useFirebaseChildren(userId: string | null) {
   };
 
   /**
-   * Join an existing child profile using UUID
-   * - Verifies the child exists
-   * - Adds UUID to users/{userId}/childrenIds
+   * 用代碼加入一份既有的檔案。
+   *
+   * 兩筆寫入，順序不能反：先寫 children/{id}/members/{我}，才寫自己的
+   * childrenIds。成員資格是授權的來源，先落地的話，第二筆掉了也還有一位成員，
+   * 那一端的 listener 補得回索引；反過來則是在名單上留一個永遠讀不到的 id。
    */
   const joinChild = async (childUuid: string, currentChildCount: number) => {
     if (!userId) throw new Error('User not authenticated');
@@ -124,7 +133,16 @@ export function useFirebaseChildren(userId: string | null) {
       throw new Error('您已經加入此寶寶');
     }
 
-    // Add child UUID to user's childrenIds
+    try {
+      await set(ref(database, `children/${childUuid}/members/${userId}`), true);
+    } catch (error) {
+      // 代碼查得到，成員資格卻寫不進去，就只剩一個原因：對方沒有開放加入。
+      // 這跟「代碼打錯」是兩件事；講成同一句話，家長會一直去核對一組沒有錯的
+      // 代碼，而真正該做的是請對方把共享打開。
+      console.error('加入寶寶失敗（成員資格被拒）:', error);
+      throw new Error('這個寶寶目前未開放加入，請對方在分享視窗中開啟共享後再試');
+    }
+
     await set(userChildRef, true);
 
     // 如果是第一個孩子，自動設為 currentChildId
@@ -136,18 +154,6 @@ export function useFirebaseChildren(userId: string | null) {
     }
 
     return childUuid;
-  };
-
-  /**
-   * Leave (unlink) from a child profile
-   * - Removes UUID from users/{userId}/childrenIds
-   * - Does NOT delete child data (other family members may still have access)
-   */
-  const leaveChild = async (childId: string) => {
-    if (!userId) throw new Error('User not authenticated');
-
-    const userChildRef = ref(database, `users/${userId}/childrenIds/${childId}`);
-    await remove(userChildRef);
   };
 
   /**
@@ -185,48 +191,85 @@ export function useFirebaseChildren(userId: string | null) {
   };
 
   /**
-   * 只移除自己那份 childrenIds，不去動別人的——這不是簡化，是規則決定的。
-   * database.rules.json 只允許每個使用者寫 users/$uid，所以「順手清掉共享對象
-   * 的名單」在客戶端做不到。共享的孩子被刪掉之後，對方殘留的參照由對方那端的
-   * useUserChildren 自癒（連 currentChildId 一起）。
-   *
-   * 原本這裡寫著 TODO: may need to iterate users。那條路走不通，留著只會讓
-   * 下一個人去撞同一道規則。
-   */
-  /**
    * 刪除檔案。
    *
-   * 一併把 currentChildId 移到另一個還在的孩子身上。少了這一步，刪掉當下
-   * 選取的檔案之後 currentChildId 仍然指著已經不存在的 id，currentChild
-   * 變成 undefined——即使還有另一個孩子，每一頁都會顯示「還沒有寶寶資料，
-   * 請新增」，等於叫家長去建一個他明明已經有的檔案。
+   * 一筆 root fan-out，不是一連串 remove。規則裡的 root 指的是「寫入前」的
+   * 資料庫，而 childRecords/{childId} 與 childIndex/{childId} 的授權都是去
+   * children/{childId}/members 查我在不在。所以先刪掉孩子本體，後面兩筆就會
+   * 被拒——留下一份沒有任何人是成員、再也讀不到也刪不掉的健康紀錄，以及一個
+   * 查得到卻加入不了的殘留代碼。同一筆裡每個路徑都對寫入前的狀態驗證，
+   * 順序問題就不存在了。
+   *
+   * 只有建立者能整份刪除。其他成員刪掉的是自己的成員資格——那才是真的交回
+   * 讀寫權限，光清掉自己的 childrenIds 只是從自己的名單上藏起來。建立者的
+   * 成員資格規則上刪不掉（否則孩子本體會沒有人碰得到），所以建立者沒有
+   * 「離開」這條路，只有刪除。
+   *
+   * currentChildId 一起帶進同一筆。少了它，刪掉當下選取的檔案之後它仍然指著
+   * 已經不存在的 id，currentChild 變成 undefined——即使還有另一個孩子，每一頁
+   * 都會顯示「還沒有寶寶資料，請新增」，等於叫家長去建一個他明明已經有的檔案。
+   *
+   * 別人的 childrenIds 動不了：users/$uid 只有本人寫得動。共享的孩子被刪掉
+   * 之後，對方殘留的參照由對方那端的 useUserChildren 自癒。
    */
   const deleteChild = async (childId: string, remainingChildIds: string[] = []) => {
     if (!userId) throw new Error('User not authenticated');
 
-    // 順序不能反：children 的讀寫都要求成員身分，所以先看完、刪完孩子資料，
-    // 最後才退掉自己的成員資格。原本是先退再刪，在 .read 收緊之後那會讓
-    // 建立者的刪除靜靜失敗，留下一份沒有人能再讀到的健康紀錄。
-    const childRef = ref(database, `children/${childId}`);
-    const childSnapshot = await get(childRef);
+    // 讀不到本體有兩種可能：已經被建立者刪掉，或自己的成員資格被收回了。兩種
+    // 都還是要清掉自己這一端的名單，否則被收回的家長會永遠卡著一個讀不到、
+    // 又刪不掉的項目。
+    const childSnapshot = await get(ref(database, `children/${childId}`)).catch(() => null);
+    const childData = childSnapshot?.exists() ? (childSnapshot.val() as ChildProfile) : null;
 
-    if (childSnapshot.exists()) {
-      const childData = childSnapshot.val() as ChildProfile;
+    const updates: Record<string, unknown> = {
+      [`users/${userId}/childrenIds/${childId}`]: null,
+      [`users/${userId}/currentChildId`]: remainingChildIds.find((id) => id !== childId) ?? null,
+    };
 
-      // Only creator can fully delete the child
-      if (childData.createdBy === userId) {
-        await remove(childRef);
-        // 索引跟著本體走，否則代碼還查得到、加入後卻是一份空資料。
-        await remove(ref(database, `childIndex/${childId}`));
-      }
+    if (childData?.createdBy === userId) {
+      updates[`children/${childId}`] = null;
+      // 紀錄搬出孩子本體之後，刪孩子不會再把它們一起帶走。少了這一筆，
+      // childRecords/{childId} 會留在資料庫裡，而且沒有人是成員、沒有任何人
+      // 讀得到或刪得掉——一份孩子的健康紀錄就這樣漏在那裡。
+      updates[`childRecords/${childId}`] = null;
+      // 索引跟著本體走，否則代碼還查得到、加入時卻只換到一則講不出原因的錯誤。
+      updates[`childIndex/${childId}`] = null;
+    } else if (childData) {
+      updates[`children/${childId}/members/${userId}`] = null;
     }
 
-    // Remove from user's childrenIds
-    const userChildRef = ref(database, `users/${userId}/childrenIds/${childId}`);
-    await remove(userChildRef);
+    await update(ref(database), updates);
+  };
 
-    const nextChildId = remainingChildIds.find((id) => id !== childId) ?? null;
-    await update(ref(database, `users/${userId}`), { currentChildId: nextChildId });
+  /**
+   * 收回分享：把其他成員移出名單，並關掉加入。
+   *
+   * 代碼已經在對方手上，所以「收回」不是換一組代碼而是刪成員；joinOpen 要一起
+   * 關掉，否則對方下一秒就用手上的同一組代碼加回來。同一筆 update，不會只成功
+   * 一半。
+   *
+   * 建立者留著。規則上他的成員資格刪不掉，混進同一筆會讓整筆被拒——共同照顧者
+   * 按下收回時，畫面上什麼都不會發生。
+   */
+  const revokeOtherMembers = async (childId: string) => {
+    if (!userId) throw new Error('User not authenticated');
+
+    const childSnapshot = await get(ref(database, `children/${childId}`));
+    const childData = childSnapshot.exists() ? (childSnapshot.val() as ChildProfile) : null;
+    if (!childData) throw new Error('找不到這個寶寶的資料，請重新整理後再試');
+
+    const updates: Record<string, unknown> = { joinOpen: false };
+    for (const memberUid of Object.keys(childData.members ?? {})) {
+      if (memberUid === userId || memberUid === childData.createdBy) continue;
+      updates[`members/${memberUid}`] = null;
+    }
+    await update(ref(database, `children/${childId}`), updates);
+  };
+
+  const setJoinOpen = async (childId: string, open: boolean) => {
+    if (!userId) throw new Error('User not authenticated');
+
+    await set(ref(database, `children/${childId}/joinOpen`), open);
   };
 
   const setCurrentChild = async (childId: string) => {
@@ -337,7 +380,7 @@ export function useFirebaseChildren(userId: string | null) {
   const addDiaryEntry = async (childId: string, entry: Omit<DiaryEntry, 'id'>) => {
     if (!userId) throw new Error('User not authenticated');
 
-    const { recordRef, id } = newRecordRef(`children/${childId}/diaryEntries`);
+    const { recordRef, id } = newRecordRef(`childRecords/${childId}/diaryEntries`);
     const newEntry: DiaryEntry = { ...entry, id };
     await set(recordRef, removeUndefined(newEntry));
 
@@ -347,7 +390,7 @@ export function useFirebaseChildren(userId: string | null) {
   const updateDiaryEntry = async (childId: string, entryId: string, updates: Partial<DiaryEntry>) => {
     if (!userId) throw new Error('User not authenticated');
 
-    const entryRef = ref(database, `children/${childId}/diaryEntries/${entryId}`);
+    const entryRef = ref(database, `childRecords/${childId}/diaryEntries/${entryId}`);
     await update(entryRef, removeUndefined({
       ...updates,
       updatedAt: new Date().toISOString(),
@@ -357,7 +400,7 @@ export function useFirebaseChildren(userId: string | null) {
   const deleteDiaryEntry = async (childId: string, entryId: string) => {
     if (!userId) throw new Error('User not authenticated');
 
-    const entryRef = ref(database, `children/${childId}/diaryEntries/${entryId}`);
+    const entryRef = ref(database, `childRecords/${childId}/diaryEntries/${entryId}`);
     await remove(entryRef);
   };
 
@@ -365,7 +408,7 @@ export function useFirebaseChildren(userId: string | null) {
   const addDailyLog = async (childId: string, log: Omit<DailyLog, 'id'>) => {
     if (!userId) throw new Error('User not authenticated');
 
-    const { recordRef, id } = newRecordRef(`children/${childId}/dailyLogs`);
+    const { recordRef, id } = newRecordRef(`childRecords/${childId}/dailyLogs`);
     const newLog: DailyLog = { ...log, id };
     await set(recordRef, removeUndefined(newLog));
 
@@ -375,7 +418,7 @@ export function useFirebaseChildren(userId: string | null) {
   const updateDailyLog = async (childId: string, logId: string, updates: Partial<DailyLog>) => {
     if (!userId) throw new Error('User not authenticated');
 
-    const logRef = ref(database, `children/${childId}/dailyLogs/${logId}`);
+    const logRef = ref(database, `childRecords/${childId}/dailyLogs/${logId}`);
     await update(logRef, removeUndefined({
       ...updates,
       updatedAt: new Date().toISOString(),
@@ -385,7 +428,7 @@ export function useFirebaseChildren(userId: string | null) {
   const deleteDailyLog = async (childId: string, logId: string) => {
     if (!userId) throw new Error('User not authenticated');
 
-    const logRef = ref(database, `children/${childId}/dailyLogs/${logId}`);
+    const logRef = ref(database, `childRecords/${childId}/dailyLogs/${logId}`);
     await remove(logRef);
   };
 
@@ -446,9 +489,10 @@ export function useFirebaseChildren(userId: string | null) {
   return {
     addChild,
     joinChild, // New: join existing child via UUID
-    leaveChild, // New: leave/unlink from child
     updateChild,
     deleteChild,
+    revokeOtherMembers,
+    setJoinOpen,
     setCurrentChild,
     updateMilestoneProgress,
     updateVaccineProgress,

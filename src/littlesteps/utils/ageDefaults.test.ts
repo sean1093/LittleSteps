@@ -19,6 +19,7 @@ const childAged = (months: number, overrides: Partial<ChildProfile> = {}): Child
     vaccineProgress: {},
     createdAt: new Date().toISOString(),
     createdBy: 'u1',
+    members: { u1: true },
     ...overrides,
   };
 };

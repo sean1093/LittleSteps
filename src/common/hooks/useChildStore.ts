@@ -47,6 +47,12 @@ export interface ChildStore {
   joinChild: (childUuid: string) => Promise<void>;
   updateChild: (id: string, name: string, birthday: string, gender?: Gender) => Promise<void>;
   deleteChild: (id: string) => Promise<void>;
+  /**
+   * 收回分享：把其他成員移出這個孩子的名單，並關掉加入。分享視窗自己出訊息，
+   * 所以這兩個跟表單那一組一樣往上丟。
+   */
+  revokeOtherMembers: (childId: string) => Promise<void>;
+  setJoinOpen: (childId: string, open: boolean) => Promise<void>;
   setCurrentChild: (id: string) => Promise<void>;
   toggleDevelopmentCheck: (checkItemId: string) => Promise<void>;
   toggleTooth: (toothId: string) => Promise<void>;
@@ -236,6 +242,26 @@ export function useChildStore(user: User | null): ChildStore {
     }
   };
 
+  const revokeOtherMembers = async (childId: string) => {
+    if (!user) return;
+    try {
+      await firebaseChildren.revokeOtherMembers(childId);
+    } catch (error) {
+      console.error('收回共享失敗:', error);
+      throw error;
+    }
+  };
+
+  const setJoinOpen = async (childId: string, open: boolean) => {
+    if (!user) return;
+    try {
+      await firebaseChildren.setJoinOpen(childId, open);
+    } catch (error) {
+      console.error('更新共享開關失敗:', error);
+      throw error;
+    }
+  };
+
   const setCurrentChild = async (id: string) => {
     if (!user) return;
     try {
@@ -374,6 +400,8 @@ export function useChildStore(user: User | null): ChildStore {
     joinChild,
     updateChild,
     deleteChild,
+    revokeOtherMembers,
+    setJoinOpen,
     setCurrentChild,
     toggleDevelopmentCheck,
     toggleTooth,

@@ -147,6 +147,17 @@ export interface ChildProfile {
   prenatalProgress?: PrenatalCheckupProgress;
   createdAt: string; // ISO string
   createdBy: string; // User ID who created this child profile
+  /**
+   * 誰讀得到、寫得了這份健康紀錄——授權就存在這裡。
+   *
+   * users/{uid}/childrenIds 只剩「我要訂閱哪幾個孩子」的索引；那份節點只有
+   * 本人寫得動，所以代碼一旦傳出去就永遠收不回來，唯一的補救是把紀錄整份
+   * 刪掉、連另一位家長的一起。成員名單搬進孩子本體之後，任何一位成員都能把
+   * 另一位移掉，分享才真的是可撤回的。
+   */
+  members: Record<string, true>;
+  /** 拿到代碼的人能不能把自己加進 members。關掉之後，流出去的舊代碼就加入不了。 */
+  joinOpen?: boolean;
 }
 
 // Complementary Food Additional Types

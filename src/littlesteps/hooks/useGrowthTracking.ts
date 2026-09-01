@@ -21,6 +21,9 @@ interface UseGrowthTrackingResult {
 /**
  * Hook for managing growth records (weight, height, head circumference)
  * backed by Firebase. Login is mandatory; without a user it yields no records.
+ *
+ * 紀錄住在 childRecords/{childId}/growthRecords，不在孩子本體裡：測量筆數沒有
+ * 上限，跟著檔案走的話，每一次勾里程碑都會把整份成長史再推送一次給每位家長。
  */
 export function useGrowthTracking(
   childId: string | null,
@@ -46,7 +49,7 @@ export function useGrowthTracking(
     setRecords([]);
     setError(false);
     setLoading(true);
-    const recordsRef = ref(database, `children/${childId}/growthRecords`);
+    const recordsRef = ref(database, `childRecords/${childId}/growthRecords`);
     const unsubscribe = onValue(
       recordsRef,
       (snapshot) => {
@@ -73,7 +76,7 @@ export function useGrowthTracking(
       ...recordWithPercentiles,
       id: crypto.randomUUID(),
     };
-    const recordRef = ref(database, `children/${childId}/growthRecords/${newRecord.id}`);
+    const recordRef = ref(database, `childRecords/${childId}/growthRecords/${newRecord.id}`);
     await set(recordRef, removeUndefined(newRecord));
   };
 
@@ -91,7 +94,7 @@ export function useGrowthTracking(
     const updated = { ...existing, ...updates };
     validateRecord(updated);
     const updatedWithPercentiles = await calculatePercentiles(updated, childGender, childBirthday);
-    const recordRef = ref(database, `children/${childId}/growthRecords/${recordId}`);
+    const recordRef = ref(database, `childRecords/${childId}/growthRecords/${recordId}`);
     await set(recordRef, removeUndefined({ ...updatedWithPercentiles, id: recordId }));
   };
 
@@ -99,7 +102,7 @@ export function useGrowthTracking(
     if (!childId) {
       throw new Error('No child selected');
     }
-    const recordRef = ref(database, `children/${childId}/growthRecords/${recordId}`);
+    const recordRef = ref(database, `childRecords/${childId}/growthRecords/${recordId}`);
     await remove(recordRef);
   };
 

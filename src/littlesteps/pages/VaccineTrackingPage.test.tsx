@@ -22,6 +22,7 @@ const child: ChildProfile = {
   vaccineProgress: {},
   createdAt: '2026-01-01T00:00:00.000Z',
   createdBy: 'u1',
+  members: { u1: true },
 };
 
 /** 出生那一劑 B 肝，doses 3 / currentDose 1。 */

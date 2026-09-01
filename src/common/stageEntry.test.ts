@@ -23,6 +23,7 @@ const child = (over: Partial<ChildProfile> = {}): ChildProfile => ({
   vaccineProgress: {},
   createdAt: monthsAgo(3),
   createdBy: 'u1',
+  members: { u1: true },
   ...over,
 });
 

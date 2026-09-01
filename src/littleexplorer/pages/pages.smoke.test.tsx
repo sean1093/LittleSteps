@@ -34,6 +34,7 @@ const child = (overrides: Partial<ChildProfile> = {}): ChildProfile => ({
   vaccineProgress: {},
   createdAt: '2024-08-27T00:00:00.000Z',
   createdBy: 'u1',
+  members: { u1: true },
   ...overrides,
 });
 

@@ -28,6 +28,7 @@ const child: ChildProfile = {
   vaccineProgress: {},
   createdAt: '2026-02-01T00:00:00.000Z',
   createdBy: 'u1',
+  members: { u1: true },
 };
 
 /** 只量了體重、沒量身高的一筆——足以讓「有記錄」與「缺這項」同時成立。 */

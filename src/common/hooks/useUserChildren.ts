@@ -88,7 +88,14 @@ export function useUserChildren(user: User | null) {
         ref(database, `children/${childId}`),
         (childSnapshot) => {
           if (childSnapshot.exists()) {
-            setChildrenById((prev) => ({ ...prev, [childId]: childSnapshot.val() as ChildProfile }));
+            const profile = childSnapshot.val() as ChildProfile;
+            // members 一定是個物件。分享視窗直接數 Object.keys(members).length，
+            // 而搬遷之前建立的孩子還沒有這個節點——少了這一行，那份檔案一打開
+            // 分享視窗就是一片白畫面。
+            setChildrenById((prev) => ({
+              ...prev,
+              [childId]: { ...profile, members: profile.members ?? {} },
+            }));
 
             // 補上加入用的公開索引。
             //
@@ -121,9 +128,12 @@ export function useUserChildren(user: User | null) {
           setReportedIds((prev) => (prev.includes(childId) ? prev : [...prev, childId]));
         },
         (error) => {
-          // 讀取失敗與「這個孩子不存在」必須分開處理：上面那條會順手把殘留的
-          // childrenIds 與 currentChildId 清掉，而權限或網路錯誤時那等於自己
-          // 把孩子退掉。這裡只回報「問過了」讓載入狀態走完，並記下是哪一個。
+          // 讀取失敗與「這個孩子不存在」必須分開處理，而可撤回的共享讓這件事
+          // 更要緊：成員資格被別人移掉之後，這裡收到的就是一個
+          // permission_denied，跟斷線長得一模一樣。上面那條分支會順手清掉
+          // childrenIds 與 currentChildId，走錯邊就是一次斷線把孩子退掉；而共享
+          // 真的被收回時，家長只會看到孩子無聲消失，連問對方都不知道要問什麼。
+          // 這裡只回報「問過了」讓載入狀態走完，並記下是哪一個。
           console.error(`讀取寶寶資料失敗 (${childId}):`, error);
           setFailedIds((prev) => (prev.includes(childId) ? prev : [...prev, childId]));
           setReportedIds((prev) => (prev.includes(childId) ? prev : [...prev, childId]));

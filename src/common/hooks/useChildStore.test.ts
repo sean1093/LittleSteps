@@ -19,6 +19,8 @@ const h = vi.hoisted(() => ({
     joinChild: vi.fn().mockResolvedValue(undefined),
     updateChild: vi.fn().mockResolvedValue(undefined),
     deleteChild: vi.fn().mockResolvedValue(undefined),
+    revokeOtherMembers: vi.fn().mockResolvedValue(undefined),
+    setJoinOpen: vi.fn().mockResolvedValue(undefined),
     setCurrentChild: vi.fn().mockResolvedValue(undefined),
     updateMilestoneProgress: vi.fn().mockResolvedValue(undefined),
     updateVaccineProgress: vi.fn().mockResolvedValue(undefined),
@@ -56,6 +58,7 @@ const child = (overrides: Partial<ChildProfile> = {}): ChildProfile => ({
   vaccineProgress: {},
   createdAt: '2026-01-01T00:00:00.000Z',
   createdBy: 'u1',
+  members: { u1: true },
   ...overrides,
 });
 
@@ -439,6 +442,20 @@ describe('useChildStore (Firebase mode)', () => {
     expect(h.firebaseChildren.deleteDiaryEntry).toHaveBeenCalledWith('c1', 'diary_1');
   });
 
+  it('收回共享與分享開關直接轉給資料層，帶著分享視窗指定的那個孩子', async () => {
+    // 收回的對象是分享視窗裡的那個孩子，不一定是當前選取的那一個。
+    h.userChildren = listing([child(), child({ id: 'c2', name: '小樹' })], 'c1');
+    const { result } = renderHook(() => useChildStore(user));
+
+    await act(async () => {
+      await result.current.revokeOtherMembers('c2');
+      await result.current.setJoinOpen('c2', true);
+    });
+
+    expect(h.firebaseChildren.revokeOtherMembers).toHaveBeenCalledWith('c2');
+    expect(h.firebaseChildren.setJoinOpen).toHaveBeenCalledWith('c2', true);
+  });
+
   it('no-ops LittleExplorer mutators when no child is selected', async () => {
     h.userChildren = listing([]);
     const { result } = renderHook(() => useChildStore(user));
@@ -530,6 +547,8 @@ describe('useChildStore 寫入失敗', () => {
   });
 
   it('表單那一組：往上丟且不跳訊息——訊息由表單出，家長打的字要留著', async () => {
+    // 分享視窗跟表單同一組：收回共享失敗時它要在原地說明，store 再跳一則就
+    // 變成同一次失敗講兩次。
     // 只放孕期檔案：currentChild 與 pregnancyChild 都是它，childCount 也還
     // 沒到上限，addChild／joinChild 才會真的走到寫入而不是被上限攔下來。
     h.userChildren = listing([bump()], 'p1');
@@ -545,6 +564,8 @@ describe('useChildStore 寫入失敗', () => {
       'addDiaryEntry',
       'updateDiaryEntry',
       'deleteDiaryEntry',
+      'revokeOtherMembers',
+      'setJoinOpen',
     ] as const) {
       h.firebaseChildren[method].mockRejectedValueOnce(boom);
     }
@@ -565,9 +586,11 @@ describe('useChildStore 寫入失敗', () => {
       ).rejects.toThrow(boom);
       await expect(result.current.updateDiaryEntry('diary_1', { content: 'x' })).rejects.toThrow(boom);
       await expect(result.current.deleteDiaryEntry('diary_1')).rejects.toThrow(boom);
+      await expect(result.current.revokeOtherMembers('p1')).rejects.toThrow(boom);
+      await expect(result.current.setJoinOpen('p1', true)).rejects.toThrow(boom);
     });
 
     expect(alertSpy).not.toHaveBeenCalled();
-    expect(errorSpy).toHaveBeenCalledTimes(9);
+    expect(errorSpy).toHaveBeenCalledTimes(11);
   });
 });

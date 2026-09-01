@@ -8,7 +8,7 @@ import { useFirebaseCollection } from '../../common/hooks/useFirebaseCollection'
  */
 export function useDailyLogs(childId: string | null, user: User | null) {
   const { data: logs, loading, error } = useFirebaseCollection<DailyLog[]>(childId, user, {
-    firebasePath: `children/${childId}/dailyLogs`,
+    firebasePath: `childRecords/${childId}/dailyLogs`,
     empty: [],
     fromFirebase: (data) => (data ? (Object.values(data) as DailyLog[]) : []),
     errorLabel: 'Error fetching daily logs:',

@@ -49,6 +49,7 @@ const child: ChildProfile = {
   vaccineProgress: {},
   createdAt: '2025-02-27T00:00:00.000Z',
   createdBy: 'u1',
+  members: { u1: true },
 };
 
 /** 五個檢視各自的招牌標題；換檢視就是換掉這些字。 */

@@ -30,13 +30,13 @@ vi.mock('../../lib/firebase', () => ({ database: {} }));
 const user = { uid: 'u1' } as User;
 
 const logsOf = (childId: string | null) => ({
-  firebasePath: `children/${childId}/dailyLogs`,
+  firebasePath: `childRecords/${childId}/dailyLogs`,
   empty: [] as string[],
   fromFirebase: (data: unknown) => (data ? (Object.values(data as object) as string[]) : []),
 });
 
 const subscription = (childId: string) => {
-  const entry = subscriptions.get(`children/${childId}/dailyLogs`);
+  const entry = subscriptions.get(`childRecords/${childId}/dailyLogs`);
   if (!entry) throw new Error(`沒有訂閱 ${childId}`);
   return entry;
 };

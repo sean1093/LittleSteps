@@ -4,7 +4,7 @@ import type { User } from 'firebase/auth';
 import { database } from '../../lib/firebase';
 
 export interface FirebaseCollectionOptions<T> {
-  /** Realtime Database path, e.g. `children/${childId}/dailyLogs`. */
+  /** Realtime Database path, e.g. `childRecords/${childId}/dailyLogs`. */
   firebasePath: string;
   /** Value used when there is no child, no data, or no authenticated user. */
   empty: T;

@@ -33,6 +33,7 @@ const child: ChildProfile = {
   vaccineProgress: {},
   createdAt: '2026-02-01T00:00:00.000Z',
   createdBy: 'u1',
+  members: { u1: true },
 };
 
 /** 開餵奶那張表，並填一個奶量，方便驗「失敗後值還在不在」。 */

@@ -8,12 +8,17 @@ import { useGrowthTracking } from './useGrowthTracking';
  *
  * 另一半：讀取被拒或斷線時原本連 cancel callback 都沒有，loading 永遠停在
  * true；補上之後也不能把失敗解析成一份空紀錄，否則畫面會說「還沒量過」。
+ *
+ * 紀錄住在 childRecords/{childId}/growthRecords：測量筆數沒有上限，跟著孩子
+ * 檔案走的話，每一次勾里程碑都會把整份成長史再推送一次給每一位家長。
  */
 
 type Next = (snapshot: { val: () => unknown }) => void;
 type Cancel = (error: Error) => void;
 
 const subscriptions = new Map<string, { next: Next; cancel: Cancel }>();
+const writes: { path: string; value: unknown }[] = [];
+const removals: string[] = [];
 
 vi.mock('firebase/database', () => ({
   ref: (_db: unknown, path: string) => path,
@@ -21,8 +26,14 @@ vi.mock('firebase/database', () => ({
     subscriptions.set(path, { next, cancel });
     return () => subscriptions.delete(path);
   },
-  set: () => Promise.resolve(),
-  remove: () => Promise.resolve(),
+  set: (path: string, value: unknown) => {
+    writes.push({ path, value });
+    return Promise.resolve();
+  },
+  remove: (path: string) => {
+    removals.push(path);
+    return Promise.resolve();
+  },
 }));
 
 vi.mock('../../lib/firebase', () => ({ database: {} }));
@@ -30,7 +41,7 @@ vi.mock('../../lib/firebase', () => ({ database: {} }));
 const user = { uid: 'u1' };
 
 const subscription = (childId: string) => {
-  const entry = subscriptions.get(`children/${childId}/growthRecords`);
+  const entry = subscriptions.get(`childRecords/${childId}/growthRecords`);
   if (!entry) throw new Error(`沒有訂閱 ${childId}`);
   return entry;
 };
@@ -41,6 +52,8 @@ const weight = (id: string, kg: number) => ({
 
 beforeEach(() => {
   subscriptions.clear();
+  writes.length = 0;
+  removals.length = 0;
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
@@ -95,5 +108,25 @@ describe('useGrowthTracking', () => {
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBe(false);
     expect(result.current.records).toEqual([]);
+  });
+
+  it('新增、修改與刪除都寫在 childRecords 底下，不在孩子檔案裡', async () => {
+    const { result } = renderHook(() => useGrowthTracking('A', user));
+
+    act(() => subscription('A').next({ val: () => weight('g1', 7.4) }));
+    await act(async () => {
+      await result.current.addRecord({
+        childId: 'A',
+        date: '2026-08-02',
+        weight: 7.6,
+        percentile: {},
+      });
+      await result.current.updateRecord('g1', { weight: 7.5 });
+      await result.current.deleteRecord('g1');
+    });
+
+    expect(writes[0].path).toMatch(/^childRecords\/A\/growthRecords\/[^/]+$/);
+    expect(writes[1].path).toBe('childRecords/A/growthRecords/g1');
+    expect(removals).toEqual(['childRecords/A/growthRecords/g1']);
   });
 });

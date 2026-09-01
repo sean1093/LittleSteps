@@ -19,6 +19,7 @@ const profile = (over: Partial<ChildProfile> = {}): ChildProfile => ({
   vaccineProgress: {},
   createdAt: '2025-02-27T00:00:00.000Z',
   createdBy: 'u1',
+  members: { u1: true },
   ...over,
 });
 

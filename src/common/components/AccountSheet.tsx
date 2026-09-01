@@ -43,11 +43,14 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
 
   const [showChildModal, setShowChildModal] = useState(false);
   const [editingChild, setEditingChild] = useState<ChildProfile | null>(null);
-  const [sharingChild, setSharingChild] = useState<ChildProfile | null>(null);
+  // 存 id 而不是 child 物件：切換「開放用代碼加入」之後 store 會送新的 profile
+  // 進來，抓著開窗當下那份快照的話，開關會停在資料庫沒有的狀態。
+  const [sharingChildId, setSharingChildId] = useState<string | null>(null);
 
   const theme = SERVICE_THEME[service];
   const showChildren = SERVICE_USES_CHILD[service] && store !== null;
   const canAddChild = childProfiles.length < MAX_CHILDREN;
+  const sharingChild = childProfiles.find((profile) => profile.id === sharingChildId) ?? null;
 
   // 回傳 promise，讓 AddChildModal 等寫入成功才關窗；失敗時它會留著輸入
   // 並顯示原因，而不是安靜地關掉、把打好的名字與生日一起丟掉。
@@ -171,7 +174,7 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSharingChild(child)}
+                      onClick={() => setSharingChildId(child.id)}
                       className="btn-icon"
                       title="分享寶寶資料給家人"
                       aria-label={`分享 ${child.name} 的資料給家人`}
@@ -225,11 +228,15 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
         accent={theme.fill}
       />
 
-      <ShareChildUuidModal
-        isOpen={sharingChild !== null}
-        onClose={() => setSharingChild(null)}
-        child={sharingChild}
-      />
+      {store && (
+        <ShareChildUuidModal
+          isOpen={sharingChild !== null}
+          onClose={() => setSharingChildId(null)}
+          child={sharingChild}
+          revokeOtherMembers={store.revokeOtherMembers}
+          setJoinOpen={store.setJoinOpen}
+        />
+      )}
     </>
   );
 }

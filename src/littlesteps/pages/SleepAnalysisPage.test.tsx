@@ -22,6 +22,7 @@ const child: ChildProfile = {
   vaccineProgress: {},
   createdAt: '2026-02-01T00:00:00.000Z',
   createdBy: 'u1',
+  members: { u1: true },
 };
 
 const sleepLog = (daysAgo: number, hours: number): DailyLog => {

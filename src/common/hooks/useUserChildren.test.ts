@@ -182,9 +182,34 @@ describe('useUserChildren', () => {
     expect(result.current.error).toBe(true);
     expect(result.current.childCount).toBe(2);
     // 讀不到不等於不存在。當成不存在的話，這裡會順手刪掉 childrenIds/B 與
-    // currentChildId——一次斷線就把孩子退掉了。
+    // currentChildId——一次斷線就把孩子退掉了。共享被收回時收到的也是同一種
+    // permission_denied，退掉的話家長只會看到孩子無聲消失。
     expect(removeMock).not.toHaveBeenCalled();
     expect(result.current.currentChildId).toBe('B');
+  });
+
+  it('孩子節點沒有 members 時補一個空物件', () => {
+    // 分享視窗直接數 Object.keys(members).length；搬遷之前建立的孩子沒有這個
+    // 節點，少了這層補齊，那份檔案一打開分享視窗就是一片白畫面。
+    const { result } = renderHook(() => useUserChildren(user));
+
+    act(() => {
+      emit('users/u1', { childrenIds: { A: true }, currentChildId: 'A' });
+      emit('children/A', child('A', '小豆'));
+    });
+
+    expect(result.current.children[0].members).toEqual({});
+  });
+
+  it('有 members 就原樣帶出來，數得出實際有幾個人在共享', () => {
+    const { result } = renderHook(() => useUserChildren(user));
+
+    act(() => {
+      emit('users/u1', { childrenIds: { A: true }, currentChildId: 'A' });
+      emit('children/A', { ...child('A', '小豆'), members: { u1: true, u2: true } });
+    });
+
+    expect(result.current.children[0].members).toEqual({ u1: true, u2: true });
   });
 
   it('名單重新到齊之後，先前的讀取失敗不會一直掛著', () => {
