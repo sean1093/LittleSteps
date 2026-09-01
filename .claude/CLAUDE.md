@@ -51,6 +51,38 @@ LittleOuting and BabyOasis are public.
 A blocked visitor sees that service's intro page **at the same URL** — the path
 is preserved so signing in lands them where they were going. Never redirect.
 
+### Where authorisation actually lives
+
+`database.rules.json` is the only real boundary — `routePolicy.ts` decides what
+a page *shows*, not what the database *gives out*. Two rules govern everything:
+
+- A child's record is readable and writable by `children/$childId/members/$uid`.
+  Membership lives inside the child, not under the user, so an existing member
+  can remove another — that is what makes a share code revocable. `joinOpen`
+  decides whether a holder of the code may add themselves; it is `false` by
+  default, so a code that has not been deliberately shared does nothing.
+- The unbounded logs live in `childRecords/$childId/{dailyLogs,diaryEntries,
+  growthRecords}`, authorised through the child's `members`. They are outside
+  `children/$childId` because the profile listener downloads that whole node:
+  with the logs inside it, every diaper entry re-sent the child's entire history
+  to every family member.
+
+Two consequences worth knowing before you touch the data layer:
+
+- **Deleting is one root fan-out**, never a sequence. `root` in a rules
+  expression is the *pre-write* database, so `childRecords` stops being
+  authorised the moment the child node goes. `children/$id`, `childRecords/$id`,
+  `childIndex/$id` and your own `childrenIds` entry all go null in one
+  `update()`.
+- **Any member is effectively an owner.** RTDB cannot revoke a write granted at
+  an ancestor node, so a member can write anything under the child. The
+  `createdBy` user's own membership is the one thing rules do protect, because
+  deleting it would leave a health record nobody can reach.
+
+`npm run test:rules` proves all of it against the real Database emulator
+(`scripts/testRules.cjs`, 32 assertions). It needs a JDK. Change
+`database.rules.json` without running it and you are guessing.
+
 ---
 
 ## Rules for UI work
@@ -136,6 +168,7 @@ npm run dev            # localhost:5173
 npm run build          # tsc && vite build — must pass
 npm run lint           # zero warnings allowed
 npm run test           # watch mode; `npx vitest run` for one pass
+npm run test:rules     # database.rules.json against the real emulator (needs a JDK)
 ```
 
 Before claiming a UI change works, **look at it** at 390px. Type-checking is not

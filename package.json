@@ -11,6 +11,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
+    "test:rules": "firebase emulators:exec --only database --project demo-littlesteps \"node scripts/testRules.cjs\"",
     "prepare": "husky install"
   },
   "dependencies": {

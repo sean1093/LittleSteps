@@ -5,106 +5,101 @@ import { describe, it, expect } from 'vitest';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const rules = JSON.parse(readFileSync(join(ROOT, 'database.rules.json'), 'utf8')).rules;
-const source = (path: string) => readFileSync(join(ROOT, 'src', path), 'utf8');
 
 /**
- * 孩子資料的可讀範圍。
+ * 孩子資料的授權邊界。
  *
- * children/$childId 的 .read 原本是 auth != null——任何登入者只要有 UUID 就讀得到
- * 別人孩子的完整健康紀錄，而這個 app 的共享機制正是把 UUID 傳給對方（見
- * ShareChildUuidModal）。隔離靠的是 UUID 猜不到，而 UUID 會流過聊天軟體和截圖。
+ * 兩件事在這裡被釘住：
  *
- * 那條鬆規則原本是有作用的：joinChild 要在成員資格建立之前確認代碼存在，所以
- * 一定得先讀得到某個東西。解法不是把 .read 改成比照 .write，而是把「這個代碼
- * 存不存在」拆成一個只放布林值的公開節點 childIndex。
+ * 1. children/$childId 的 .read 曾經是 auth != null——任何登入者只要有 UUID 就
+ *    讀得到別人孩子的完整健康紀錄，而這個 app 的共享機制正是把 UUID 傳給對方
+ *    （見 ShareChildUuidModal）。隔離靠的是 UUID 猜不到，而 UUID 會流過聊天
+ *    軟體和截圖。「這個代碼存不存在」因此被拆成只放布林值的公開節點 childIndex。
+ *
+ * 2. 授權曾經住在 users/$uid/childrenIds，而那份節點只有本人寫得動。代碼一旦
+ *    給出去就永遠收不回來，唯一的補救是把紀錄整份刪掉、連另一位家長的一起。
+ *    成員名單搬進孩子本體之後，任何一位成員都能把另一位移掉。
  *
  * 這組測試能證明什麼、不能證明什麼要說清楚：它讀的是 database.rules.json 的
- * 文字與客戶端的呼叫路徑，證明「我們打算要的規則沒有被改掉」。它沒有跑
- * Firebase 模擬器，所以不能證明 Firebase 真的照這樣執行——那需要 emulator。
+ * 文字，證明「我們打算要的規則沒有被改掉」。規則實際怎麼執行由 emulator 那組
+ * （scripts/testRules.cjs）負責，客戶端走哪些路徑則由各 hook 自己的測試負責。
  */
 
-const MEMBERSHIP_CHECK =
-  "root.child('users').child(auth.uid).child('childrenIds').child($childId).val() === true";
+/** 成員資格在孩子本體上，用 data（這個節點自己）查。 */
+const MEMBER_OF_THIS_NODE = "data.child('members').child(auth.uid).val() === true";
+/** 別的子樹要繞 root 回來查同一份名單。 */
+const MEMBER_VIA_ROOT =
+  "root.child('children').child($childId).child('members').child(auth.uid).val() === true";
 
-describe('孩子資料只有成員讀得到', () => {
-  it('children 的 .read 要求成員身分，不是「有登入就好」', () => {
-    expect(rules.children.$childId['.read']).toBe(MEMBERSHIP_CHECK);
+describe('孩子本體：成員才讀得到', () => {
+  it('.read 要求成員身分，不是「有登入就好」', () => {
+    expect(rules.children.$childId['.read']).toBe(MEMBER_OF_THIS_NODE);
   });
 
-  it('children 的 .write 仍然只有成員或建立當下', () => {
-    // 建立時還沒有成員資格，所以保留 !data.exists() 那一段。
-    expect(rules.children.$childId['.write']).toContain(MEMBERSHIP_CHECK);
+  it('.write 只有成員，或把自己寫進成員名單的那次建立', () => {
+    // 建立當下還沒有成員資格，所以保留 !data.exists()；但那一筆必須自己就是
+    // 成員，否則會留下一個沒有人碰得到的節點。
+    expect(rules.children.$childId['.write']).toContain(MEMBER_OF_THIS_NODE);
     expect(rules.children.$childId['.write']).toContain('!data.exists()');
+    expect(rules.children.$childId['.write']).toContain(
+      "newData.child('members').child(auth.uid).val() === true",
+    );
+  });
+
+  it('沒有 members 的孩子節點寫不進去', () => {
+    // 授權的唯一來源就是這個欄位。少了它，那份健康紀錄誰都讀不到、也刪不掉。
+    expect(rules.children.$childId['.validate']).toContain('members');
+    expect(rules.children.$childId['.validate']).toContain('createdBy');
+  });
+
+  it('joinOpen 必須是布林值', () => {
+    // 分享視窗的開關讀的就是這個欄位；存成字串或缺著，開關的狀態就是一個謊。
+    expect(rules.children.$childId.joinOpen['.validate']).toBe('newData.isBoolean()');
+  });
+});
+
+describe('成員名單：加得進來，也收得回去', () => {
+  const memberRule = rules.children.$childId.members.$memberUid['.write'];
+
+  it('非成員也寫得了自己那一筆，否則沒有人加入得了', () => {
+    expect(memberRule).toContain('$memberUid === auth.uid');
+  });
+
+  it('既有成員可以移除別人——這就是「收回分享」', () => {
+    expect(memberRule).toContain("data.parent().child(auth.uid).val() === true");
+  });
+
+  it('建立者自己的成員資格刪不掉', () => {
+    // 全部成員都被移掉的話，孩子本體會沒有任何人讀得到或刪得掉。
+    expect(memberRule).toContain(
+      "$memberUid !== root.child('children').child($childId).child('createdBy').val()",
+    );
+  });
+
+  it('把自己加進一份還沒加入過的名單，要對方開著 joinOpen', () => {
+    // 沒有這一段，流出去的舊代碼永遠有效，關掉共享等於沒關。
+    expect(memberRule).toContain(
+      "root.child('children').child($childId).child('joinOpen').val() === true",
+    );
+  });
+});
+
+describe('紀錄子樹與公開索引都跟著同一份名單', () => {
+  it('childRecords 的讀寫都繞 root 查孩子的成員名單', () => {
+    // 日誌、日記與成長紀錄搬出孩子本體之後，授權必須還是同一份名單，
+    // 否則收回共享收不到那三份——而那三份才是健康紀錄的主體。
+    expect(rules.childRecords.$childId['.read']).toBe(MEMBER_VIA_ROOT);
+    expect(rules.childRecords.$childId['.write']).toBe(MEMBER_VIA_ROOT);
   });
 
   it('childIndex 公開可讀，但只有成員能寫', () => {
     expect(rules.childIndex.$childId['.read']).toBe('auth != null');
-    expect(rules.childIndex.$childId['.write']).toBe(MEMBERSHIP_CHECK);
+    expect(rules.childIndex.$childId['.write']).toBe(MEMBER_VIA_ROOT);
   });
 
   it('users 仍然只有本人讀寫', () => {
+    // childrenIds 留著，但只是「我要訂閱哪幾個孩子」的索引，不再是授權來源。
     expect(rules.users.$userId['.read']).toBe('$userId === auth.uid');
     expect(rules.users.$userId['.write']).toBe('$userId === auth.uid');
-  });
-});
-
-describe('加入流程不讀孩子本體', () => {
-  const hook = source('common/hooks/useFirebaseChildren.ts');
-  const joinChild = hook.slice(hook.indexOf('const joinChild'), hook.indexOf('const updateChild'));
-
-  it('joinChild 讀的是 childIndex', () => {
-    expect(joinChild).toContain('childIndex/${childUuid}');
-  });
-
-  it('joinChild 完全不碰 children/ 路徑', () => {
-    // 碰了就等於又需要對非成員開放 .read，繞回原本的問題。
-    expect(joinChild).not.toContain('children/${childUuid}');
-  });
-
-  it('代碼不存在時仍然給出可讀的錯誤，不是靜靜成功', () => {
-    expect(joinChild).toContain('找不到此寶寶代碼');
-  });
-});
-
-describe('索引與孩子本體同生共死', () => {
-  const hook = source('common/hooks/useFirebaseChildren.ts');
-
-  it('新增孩子時寫入索引，且排在授權之後', () => {
-    const addChild = hook.slice(hook.indexOf('const addChild'), hook.indexOf('const joinChild'));
-    const grant = addChild.indexOf('childrenIds/${childId}');
-    const index = addChild.indexOf('childIndex/${childId}');
-
-    expect(index).toBeGreaterThan(-1);
-    // 規則要求寫索引的人已經是成員；順序反了就會被擋下來。
-    expect(index).toBeGreaterThan(grant);
-  });
-
-  it('建立者刪除孩子時一併刪索引', () => {
-    const deleteChild = hook.slice(
-      hook.indexOf('const deleteChild'),
-      hook.indexOf('const setCurrentChild'),
-    );
-
-    expect(deleteChild).toContain('childIndex/${childId}');
-  });
-
-  it('刪除時先處理孩子本體，最後才退掉成員資格', () => {
-    // .read/.write 都要求成員身分，先退資格會讓建立者的刪除靜靜失敗，
-    // 留下一份沒有人能再讀到的健康紀錄。
-    const deleteChild = hook.slice(
-      hook.indexOf('const deleteChild'),
-      hook.indexOf('const setCurrentChild'),
-    );
-    const readsChild = deleteChild.indexOf('children/${childId}');
-    const revokes = deleteChild.indexOf('childrenIds/${childId}');
-
-    expect(readsChild).toBeGreaterThan(-1);
-    expect(revokes).toBeGreaterThan(readsChild);
-  });
-
-  it('既有的孩子會被補上索引，否則舊代碼加入不了', () => {
-    // childIndex 是後來才有的，既有孩子沒有條目。只有成員寫得進去，
-    // 而 useUserChildren 的 listener 正好對每個有權限的孩子各跑一次。
-    expect(source('common/hooks/useUserChildren.ts')).toContain('childIndex/${childId}');
   });
 });
