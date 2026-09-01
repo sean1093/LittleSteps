@@ -202,7 +202,8 @@ export default function HubLanding({
         variants={fadeInUp}
         className="text-center text-xs text-ink-faint"
       >
-        © {new Date().getFullYear()} LittleBloom · LittleSteps · LittleExplorer · BabyOasis
+        © {new Date().getFullYear()} LittleBloom · LittleSteps · LittleExplorer · LittleOuting ·
+        BabyOasis
       </motion.p>
     </div>
   );

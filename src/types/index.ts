@@ -149,17 +149,6 @@ export interface ChildProfile {
   createdBy: string; // User ID who created this child profile
 }
 
-// User profile with child references
-export interface UserProfile {
-  id: string; // User ID (from Firebase Auth)
-  email?: string;
-  displayName?: string;
-  photoURL?: string;
-  childrenIds: string[]; // Array of child UUIDs (max 2)
-  currentChildId?: string; // Currently selected child
-  createdAt: string; // ISO string
-}
-
 // Complementary Food Additional Types
 export interface FeedingPrinciple {
   title: string;

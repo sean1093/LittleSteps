@@ -91,11 +91,9 @@ export default function StepsLanding({ onNavigate, user, onSignIn }: StepsLandin
                 onClick={onSignIn}
                 className="btn-primary"
               >
-                <img
-                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                  alt="Google"
-                  className="w-5 h-5 bg-white rounded-full p-0.5"
-                />
+                {/* 這裡原本掛一張 gstatic.com 的 Google 圖示。離線或被擋下時，
+                    已安裝的 PWA 的第一個畫面就會出現破圖——為了一個裝飾去依賴
+                    外部網域不值得，其他三處登入按鈕也都只有文字。 */}
                 <span>開始記錄寶寶的每一步</span>
               </motion.button>
               <p className="text-sm text-ink-faint">完全免費 • 跨裝置同步 • 隱私安全</p>
