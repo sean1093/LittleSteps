@@ -1,5 +1,4 @@
 import { initializeApp } from 'firebase/app';
-import { getAnalytics, Analytics, logEvent as firebaseLogEvent } from 'firebase/analytics';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
 
@@ -17,12 +16,6 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Analytics (only in browser environment)
-let analytics: Analytics | null = null;
-if (typeof window !== 'undefined') {
-  analytics = getAnalytics(app);
-}
-
 // Initialize Authentication
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
@@ -30,14 +23,36 @@ export const googleProvider = new GoogleAuthProvider();
 // Initialize Realtime Database
 export const database = getDatabase(app, import.meta.env.VITE_FIREBASE_DATABASE_URL);
 
-// Export analytics instance
-export { analytics };
+/**
+ * Analytics 動態載入，而不是靜態 import。
+ *
+ * firebase/analytics 只為了記事件，對畫面沒有任何貢獻，靜態 import 卻會把它
+ * 綁進進入點的 chunk——等於每個家長都得先下載一份追蹤程式碼、等它向 Google
+ * 發出第一個請求，才看得到 app。第一次真的要記事件時再載就夠了。
+ *
+ * isSupported() 是必要的：在無痕模式與部分 in-app 瀏覽器裡 getAnalytics()
+ * 會直接丟例外，而記不到事件不該讓呼叫點壞掉。
+ */
+type SendEvent = (eventName: string, eventParams?: Record<string, unknown>) => void;
 
-// Helper function to log events safely
-export const logEvent = (eventName: string, eventParams?: Record<string, any>) => {
-  if (analytics) {
-    firebaseLogEvent(analytics, eventName, eventParams);
-  }
+let analyticsReady: Promise<SendEvent | null> | null = null;
+
+const loadAnalytics = () => {
+  if (typeof window === 'undefined') return Promise.resolve(null);
+  analyticsReady ??= import('firebase/analytics')
+    .then(async ({ getAnalytics, isSupported, logEvent: send }) => {
+      if (!(await isSupported())) return null;
+      const instance = getAnalytics(app);
+      return (eventName: string, eventParams?: Record<string, unknown>) =>
+        send(instance, eventName, eventParams);
+    })
+    .catch(() => null);
+  return analyticsReady;
+};
+
+// 記事件一律是「送出去就算了」：失敗不影響任何畫面，也不該讓呼叫點等它。
+export const logEvent = (eventName: string, eventParams?: Record<string, unknown>) => {
+  void loadAnalytics().then((send) => send?.(eventName, eventParams));
 };
 
 // Pre-defined event helpers
@@ -89,7 +104,7 @@ export const logPageView = (pageName: string) => {
 
   logEvent('page_view', {
     page_name: pageName,
-    page_path: window.location.hash || '/',
+    page_path: window.location.pathname,
     page_location: window.location.href,
     page_title: document.title,
     // Custom dimensions for better segmentation
@@ -122,4 +137,3 @@ export const logAuthEvent = (action: 'login' | 'logout' | 'login_failed') => {
   logEvent('auth_action', { action });
 };
 
-export default app;
