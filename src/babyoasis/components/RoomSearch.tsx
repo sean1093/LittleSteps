@@ -90,7 +90,12 @@ export default function RoomSearch({ rooms, theme, onSelect }: RoomSearchProps) 
                 <li key={room.id}>
                   <button
                     type="button"
-                    onClick={() => onSelect(room)}
+                    onClick={() => {
+                      // 選定後清掉關鍵字，結果清單才會收起來。留著的話家長關掉
+                      // 詳情面板，看到的是清單依舊蓋住地圖與剛飛過去的那個點。
+                      setQuery('');
+                      onSelect(room);
+                    }}
                     className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-ink/5 active:bg-ink/10 transition-colors text-left"
                   >
                     <MapPin className={`w-4 h-4 shrink-0 ${theme.ink}`} />

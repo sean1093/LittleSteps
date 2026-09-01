@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
@@ -22,22 +22,15 @@ import { NursingRoom } from '../../types';
 import AppHomeButton from '../../common/components/AppHomeButton';
 import AccountButton from '../../common/components/AccountButton';
 import AppBar from '../../common/ui/AppBar';
+import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { sheet, tap } from '../../common/ui/motion';
-import { createSpatialIndex } from '../utils/spatialIndex';
+import { createSpatialIndex, type Located } from '../utils/spatialIndex';
 import RoomSearch from '../components/RoomSearch';
 
 // Import leaflet CSS
 import 'leaflet/dist/leaflet.css';
 import { useToast } from '../../common/ui/toast';
-
-// Fix Leaflet icon issue in React
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
 
 // 兩種圖示都不隨資料變化，模組層建立一次即可。先前是每個 marker 各呼叫一次
 // createCustomIcon，全國資料下等於每次 render 產生近四千顆內容相同的 divIcon。
@@ -51,14 +44,16 @@ const ROOM_ICON = L.divIcon({
   html: `<div style="background: linear-gradient(135deg, #FFB3B3, #F08287); width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(63,58,56,0.28); display: flex; align-items: center; justify-content: center;">
          <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"></path></svg>
        </div>`,
-  className: 'custom-marker-icon',
+  // className 要留空字串，不能整個省略：省略時 Leaflet 會套上預設的
+  // leaflet-div-icon，而 leaflet.css 那條規則會在圓點後面畫一個白底方框。
+  className: '',
   iconSize: [32, 32],
   iconAnchor: [16, 16],
 });
 
 const USER_ICON = L.divIcon({
   html: `<div style="background: #2A7288; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(63,58,56,0.28);"></div>`,
-  className: 'custom-marker-icon',
+  className: '',
   iconSize: [24, 24],
   iconAnchor: [12, 12],
 });
@@ -86,30 +81,30 @@ const LocationMarker = ({ position }: LocationMarkerProps) => {
   );
 };
 
-// Component for locate me button
-const LocateButton = ({ onLocate }: { onLocate: () => void }) => {
-  const [isLocating, setIsLocating] = useState(false);
-
-  const handleClick = () => {
-    setIsLocating(true);
-    onLocate();
-    setTimeout(() => setIsLocating(false), 2000);
-  };
-
-  return (
-    <motion.button
-      onClick={handleClick}
-      disabled={isLocating}
-      whileTap={tap}
-      aria-label="定位我的位置"
-      className="absolute bottom-32 right-4 z-[1000] w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-soft hover:shadow-soft-lg transition-shadow"
-    >
-      <Navigation
-        className={`w-6 h-6 text-secondary-dark ${isLocating ? 'animate-spin' : ''}`}
-      />
-    </motion.button>
-  );
-};
+/**
+ * 定位鈕。轉不轉圈由頁面決定，不是自己數秒。
+ *
+ * 先前這裡開一個兩秒的 setTimeout 停止轉圈：定位其實還在跑（或永遠不會回來），
+ * 圖示卻停了，家長只能一直重按。轉圈必須跟著真正的定位結果走。
+ */
+const LocateButton = ({
+  onLocate,
+  isLocating,
+}: {
+  onLocate: () => void;
+  isLocating: boolean;
+}) => (
+  <motion.button
+    onClick={onLocate}
+    disabled={isLocating}
+    aria-busy={isLocating}
+    whileTap={tap}
+    aria-label="定位我的位置"
+    className="absolute bottom-32 right-4 z-[1000] w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-soft hover:shadow-soft-lg transition-shadow"
+  >
+    <Navigation className={`w-6 h-6 text-secondary-dark ${isLocating ? 'animate-spin' : ''}`} />
+  </motion.button>
+);
 
 // Facility icons mapping
 const getFacilityIcon = (facility: string) => {
@@ -144,6 +139,36 @@ const getFacilityLabel = (facility: string): string => {
   return labelMap[facility] || facility;
 };
 
+/** 兩張面板各自的標題 id，給 aria-labelledby 指。 */
+const ROOM_SHEET_TITLE_ID = 'babyoasis-room-sheet-title';
+const NEARBY_SHEET_TITLE_ID = 'babyoasis-nearby-sheet-title';
+
+/**
+ * 兩張底部面板共用的對話框行為：Escape 關得掉，開啟時焦點會進到面板裡。
+ *
+ * 不借 ModalFrame——那是置中的對話框，形狀和貼齊下緣、蓋著地圖的面板不同；
+ * 這裡需要的只是它的鍵盤行為。
+ */
+const useSheetDialog = (onClose: () => void) => {
+  const ref = useRef<HTMLDivElement>(null);
+
+  // 只在掛載時搶一次焦點。若跟著 onClose 重跑，每次 render 都會把焦點拉回
+  // 面板本身，家長就捲不動裡面的清單了。
+  useEffect(() => {
+    ref.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  return ref;
+};
+
 // Bottom sheet for selected room
 interface RoomDetailSheetProps {
   room: NursingRoom;
@@ -157,6 +182,7 @@ interface RoomDetailSheetProps {
  */
 const RoomDetailSheet = ({ room, onClose }: RoomDetailSheetProps) => {
   const theme = SERVICE_THEME.babyoasis;
+  const dialogRef = useSheetDialog(onClose);
 
   // 來源未提供設施細目時 facilities 是 undefined，與「十項設施都沒有」意義不同，
   // 必須分開呈現，否則會把資料闕漏講成場所簡陋。
@@ -167,7 +193,12 @@ const RoomDetailSheet = ({ room, onClose }: RoomDetailSheetProps) => {
   return (
     <motion.div
       {...sheet}
-      className="fixed bottom-0 left-0 right-0 z-[2000] bg-white rounded-t-3xl shadow-soft-lg max-h-[70vh] overflow-y-auto"
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={ROOM_SHEET_TITLE_ID}
+      tabIndex={-1}
+      className="fixed bottom-0 left-0 right-0 z-[2000] bg-white rounded-t-3xl shadow-soft-lg max-h-[70vh] overflow-y-auto focus:outline-none"
     >
       <button
         onClick={onClose}
@@ -178,7 +209,9 @@ const RoomDetailSheet = ({ room, onClose }: RoomDetailSheetProps) => {
       </button>
 
       <div className="p-5 pb-8">
-        <h2 className="text-xl font-bold text-ink mb-4 pr-12">{room.name}</h2>
+        <h2 id={ROOM_SHEET_TITLE_ID} className="text-xl font-bold text-ink mb-4 pr-12">
+          {room.name}
+        </h2>
 
         {/* These three icons are the only thing distinguishing address from
             hours from phone, so they carry meaning and stay. */}
@@ -285,32 +318,134 @@ const SelectedRoomFocus = ({ room }: { room: NursingRoom | null }) => {
   return null;
 };
 
+/**
+ * 定位後的鄰近清單，和詳情面板一樣是對話框：Escape 關得掉、焦點會進來。
+ */
+const NearbyRoomsSheet = ({
+  nearby,
+  onSelect,
+  onClose,
+}: {
+  nearby: readonly Located<NursingRoom>[];
+  onSelect: (room: NursingRoom) => void;
+  onClose: () => void;
+}) => {
+  const theme = SERVICE_THEME.babyoasis;
+  const dialogRef = useSheetDialog(onClose);
+
+  return (
+    <motion.div
+      {...sheet}
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={NEARBY_SHEET_TITLE_ID}
+      tabIndex={-1}
+      className="fixed bottom-0 left-0 right-0 z-[1500] bg-white rounded-t-3xl shadow-soft-lg max-h-[45vh] overflow-y-auto focus:outline-none"
+    >
+      <div className="sticky top-0 flex items-center justify-between bg-white px-4 pt-4 pb-2">
+        <h2 id={NEARBY_SHEET_TITLE_ID}>附近的哺乳室</h2>
+        <button
+          onClick={onClose}
+          className="btn-icon bg-ink/5 hover:bg-ink/10"
+          aria-label="關閉附近清單"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+      {nearby.length === 0 ? (
+        <p className="px-4 pb-6 text-sm text-ink-muted">
+          {NEARBY_RADIUS_KM} 公里內沒有已登記的哺乳室，可拖動地圖查看其他區域。
+        </p>
+      ) : (
+        <ul className="px-2 pb-6">
+          {nearby.map(({ item, distanceKm }) => (
+            <li key={item.id}>
+              <button
+                onClick={() => onSelect(item)}
+                className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-ink/5 active:bg-ink/10 transition-colors text-left"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-ink truncate">{item.name}</p>
+                  <p className="text-sm text-ink-muted truncate">{item.address}</p>
+                </div>
+                <span className={`text-sm font-semibold whitespace-nowrap ${theme.ink}`}>
+                  {distanceKm < 1
+                    ? `${Math.round(distanceKm * 1000)} 公尺`
+                    : `${distanceKm.toFixed(1)} 公里`}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </motion.div>
+  );
+};
+
+/**
+ * 定位選項。不給 options 時 timeout 預設是 Infinity：室內收不到 GPS 的話
+ * callback 永遠不會回來，家長看到的只有一顆轉不停的鈕。十秒沒結果就當作失敗
+ * 講出來，比無聲的等待有用。
+ *
+ * maximumAge 讓一分鐘內的座標可以直接沿用，連按不必重新定位；哺乳室以街廓為
+ * 單位，不值得用 enableHighAccuracy 換耗電與額外的等待。
+ */
+const GEOLOCATION_OPTIONS: PositionOptions = {
+  timeout: 10_000,
+  maximumAge: 60_000,
+  enableHighAccuracy: false,
+};
+
+/** GeolocationPositionError.TIMEOUT。逾時和被拒絕權限要講不一樣的話。 */
+const GEOLOCATION_TIMEOUT = 3;
+
+/** 資料還沒到、到了、載不進來——空白的地圖必須讀得出是哪一種。 */
+type LoadState = 'loading' | 'ready' | 'failed';
+
 const BabyOasisPage = () => {
   const toast = useToast();
   const theme = SERVICE_THEME.babyoasis;
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<NursingRoom | null>(null);
   const [nursingRooms, setNursingRooms] = useState<NursingRoom[]>([]);
+  const [loadState, setLoadState] = useState<LoadState>('loading');
   const [showNearby, setShowNearby] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
+
+  // 每次載入配一個序號，只有最新那次能寫進 state：重試時先前那次可能後到，
+  // 卸載之後也不該再寫。
+  const loadSeq = useRef(0);
 
   // 全國約 3,900 筆以靜態 JSON 提供，不進 JS bundle，並可獨立於程式碼被快取。
-  useEffect(() => {
-    let active = true;
+  // 這份 1.1 MB 刻意不放進 PWA 預快取，所以離線或訊號差時載不到是常態路徑，
+  // 必須說得出口並且給得起重試，不能只留一張空地圖。
+  const loadRooms = useCallback(() => {
+    const seq = ++loadSeq.current;
+    setLoadState('loading');
     fetch(`${import.meta.env.BASE_URL}data/nursingRooms.json`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json() as Promise<NursingRoom[]>;
       })
       .then((rooms) => {
-        if (active) setNursingRooms(rooms);
+        if (seq !== loadSeq.current) return;
+        setNursingRooms(rooms);
+        setLoadState('ready');
       })
       .catch((error) => {
         console.error('哺乳室資料載入失敗:', error);
+        if (seq !== loadSeq.current) return;
+        setLoadState('failed');
       });
-    return () => {
-      active = false;
-    };
   }, []);
+
+  useEffect(() => {
+    loadRooms();
+    return () => {
+      loadSeq.current += 1;
+    };
+  }, [loadRooms]);
 
   // 建索引 0.4 ms，之後每次最近查詢 0.007 ms；逐筆線性掃描則是 0.5 ms。
   const index = useMemo(() => createSpatialIndex(nursingRooms), [nursingRooms]);
@@ -320,22 +455,53 @@ const BabyOasisPage = () => {
     return index.nearest(userLocation[0], userLocation[1], NEARBY_LIMIT, NEARBY_RADIUS_KM);
   }, [index, userLocation]);
 
+  /*
+    近四千個 <Marker> 只跟資料有關。先前這串直接寫在 render 裡，而 selectedRoom、
+    showNearby、userLocation 都住在同一個元件——點開一筆哺乳室就把全部標記重建
+    一次。抽成只依 nursingRooms 的 memo 之後，選取只動面板與地圖視角。
+  */
+  const markers = useMemo(
+    () =>
+      nursingRooms.map((room) => (
+        <Marker
+          key={room.id}
+          position={[room.latitude, room.longitude]}
+          icon={ROOM_ICON}
+          eventHandlers={{ click: () => setSelectedRoom(room) }}
+        />
+      )),
+    [nursingRooms],
+  );
+
+  // 身分穩定的關閉函式：面板的 Escape 監聽掛在它上面，每次 render 換一個新的
+  // 就等於每次 render 重掛一次監聽。
+  const closeRoom = useCallback(() => setSelectedRoom(null), []);
+  const closeNearby = useCallback(() => setShowNearby(false), []);
+
   const handleLocate = () => {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setUserLocation([latitude, longitude]);
-          setShowNearby(true);
-        },
-        (error) => {
-          console.error('定位失敗:', error);
-          toast.show('無法取得您的位置，請確認已開啟定位權限');
-        }
-      );
-    } else {
+    if (!('geolocation' in navigator)) {
       toast.show('您的瀏覽器不支援定位功能');
+      return;
     }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setIsLocating(false);
+        const { latitude, longitude } = position.coords;
+        setUserLocation([latitude, longitude]);
+        setShowNearby(true);
+      },
+      (error) => {
+        setIsLocating(false);
+        console.error('定位失敗:', error);
+        toast.show(
+          error.code === GEOLOCATION_TIMEOUT
+            ? '定位逾時，室內收訊差時常會這樣，請靠近窗邊或到戶外再試一次'
+            : '無法取得您的位置，請確認已開啟定位權限',
+        );
+      },
+      GEOLOCATION_OPTIONS,
+    );
   };
 
   return (
@@ -349,7 +515,11 @@ const BabyOasisPage = () => {
           theme={theme}
           title={theme.name}
           subtitle={
-            nursingRooms.length ? `全台 ${nursingRooms.length} 處哺乳室` : '找到最近的哺乳室'
+            loadState === 'ready'
+              ? `全台 ${nursingRooms.length} 處哺乳室`
+              : loadState === 'failed'
+                ? '資料載入失敗'
+                : '正在載入資料…'
           }
           actions={
             <>
@@ -362,7 +532,26 @@ const BabyOasisPage = () => {
         {/* 搜尋列掛在標題列下方，畫面下緣要留給定位鈕與地圖的資料來源標註。
             外層不吃指標事件，否則搜尋列旁邊的透明留白會把地圖的拖曳攔下來。 */}
         <div className="max-w-2xl mx-auto px-4 pt-3 pointer-events-none">
-          <RoomSearch rooms={nursingRooms} theme={theme} onSelect={setSelectedRoom} />
+          {loadState === 'ready' ? (
+            <RoomSearch rooms={nursingRooms} theme={theme} onSelect={setSelectedRoom} />
+          ) : (
+            /* 資料沒到就不給搜尋框：對空陣列搜尋每次都回「找不到符合的哺乳室」，
+               等於把「還在載入」和「載入失敗」都說成這一帶沒有哺乳室。 */
+            <div className="pointer-events-auto">
+              {loadState === 'failed' ? (
+                <EmptyState
+                  theme={theme}
+                  title="哺乳室資料載入失敗"
+                  description="地圖上還沒有任何哺乳室。請確認網路連線後再試一次。"
+                  action={{ label: '重新載入', onClick: loadRooms }}
+                />
+              ) : (
+                <div className="panel" role="status">
+                  <p className="text-sm text-ink-muted">正在載入全台哺乳室資料…</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -396,76 +585,24 @@ const BabyOasisPage = () => {
           disableClusteringAtZoom={MARKER_ZOOM}
           showCoverageOnHover={false}
         >
-          {nursingRooms.map((room) => (
-            <Marker
-              key={room.id}
-              position={[room.latitude, room.longitude]}
-              icon={ROOM_ICON}
-              eventHandlers={{
-                click: () => {
-                  setSelectedRoom(room);
-                },
-              }}
-            />
-          ))}
+          {markers}
         </MarkerClusterGroup>
       </MapContainer>
 
       {/* Locate me button */}
-      <LocateButton onLocate={handleLocate} />
+      <LocateButton onLocate={handleLocate} isLocating={isLocating} />
 
-      {/* 附近清單：定位後用空間索引取最近幾筆，並顯示實際距離 */}
+      {/* 附近清單：定位後用空間索引取最近幾筆，並顯示實際距離。資料還沒到就先
+          不開——那時清單只會說「10 公里內沒有已登記的哺乳室」，等於謊報。 */}
       <AnimatePresence>
-        {showNearby && !selectedRoom && (
-          <motion.div
-            {...sheet}
-            className="fixed bottom-0 left-0 right-0 z-[1500] bg-white rounded-t-3xl shadow-soft-lg max-h-[45vh] overflow-y-auto"
-          >
-            <div className="sticky top-0 flex items-center justify-between bg-white px-4 pt-4 pb-2">
-              <h2>附近的哺乳室</h2>
-              <button
-                onClick={() => setShowNearby(false)}
-                className="btn-icon bg-ink/5 hover:bg-ink/10"
-                aria-label="關閉附近清單"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            {nearby.length === 0 ? (
-              <p className="px-4 pb-6 text-sm text-ink-muted">
-                {NEARBY_RADIUS_KM} 公里內沒有已登記的哺乳室，可拖動地圖查看其他區域。
-              </p>
-            ) : (
-              <ul className="px-2 pb-6">
-                {nearby.map(({ item, distanceKm }) => (
-                  <li key={item.id}>
-                    <button
-                      onClick={() => setSelectedRoom(item)}
-                      className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-ink/5 active:bg-ink/10 transition-colors text-left"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-ink truncate">{item.name}</p>
-                        <p className="text-sm text-ink-muted truncate">{item.address}</p>
-                      </div>
-                      <span className={`text-sm font-semibold whitespace-nowrap ${theme.ink}`}>
-                        {distanceKm < 1
-                          ? `${Math.round(distanceKm * 1000)} 公尺`
-                          : `${distanceKm.toFixed(1)} 公里`}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </motion.div>
+        {showNearby && !selectedRoom && loadState === 'ready' && (
+          <NearbyRoomsSheet nearby={nearby} onSelect={setSelectedRoom} onClose={closeNearby} />
         )}
       </AnimatePresence>
 
       {/* Room detail bottom sheet */}
       <AnimatePresence>
-        {selectedRoom && (
-          <RoomDetailSheet room={selectedRoom} onClose={() => setSelectedRoom(null)} />
-        )}
+        {selectedRoom && <RoomDetailSheet room={selectedRoom} onClose={closeRoom} />}
       </AnimatePresence>
     </div>
   );
