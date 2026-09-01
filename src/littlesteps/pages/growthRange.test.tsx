@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import type { ChildProfile, GrowthRecord } from '../../types';
+import type { GrowthRecord } from '../../types';
 import { WHO_MAX_AGE_MONTHS } from '../data/growthChartData';
 import GrowthRecordList from '../components/growth/GrowthRecordList';
 
@@ -13,6 +13,7 @@ import GrowthRecordList from '../components/growth/GrowthRecordList';
  */
 
 const noop = async () => {};
+const noopSync = () => {};
 
 const record = (over: Partial<GrowthRecord> = {}): GrowthRecord =>
   ({
@@ -25,26 +26,14 @@ const record = (over: Partial<GrowthRecord> = {}): GrowthRecord =>
     ...over,
   }) as GrowthRecord;
 
-const child: ChildProfile = {
-  id: 'c1',
-  name: '小明',
-  birthday: '2022-06-01',
-  gender: 'male',
-  milestoneProgress: {},
-  vaccineProgress: {},
-  createdAt: '2022-06-01T00:00:00.000Z',
-  createdBy: 'u1',
-};
-
 describe('超出 WHO 範圍的成長紀錄', () => {
   it('沒有百分位時照樣顯示測量值，不是空白卡片', () => {
     render(
       <GrowthRecordList
         records={[record()]}
         loading={false}
-        onUpdate={noop}
+        onEdit={noopSync}
         onDelete={noop}
-        childId={child.id}
       />,
     );
 
@@ -59,9 +48,8 @@ describe('超出 WHO 範圍的成長紀錄', () => {
       <GrowthRecordList
         records={[record({ percentile: { weight: 62, height: 48 } })]}
         loading={false}
-        onUpdate={noop}
+        onEdit={noopSync}
         onDelete={noop}
-        childId={child.id}
       />,
     );
 

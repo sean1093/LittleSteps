@@ -4,18 +4,18 @@ import { Plus, X } from 'lucide-react';
 import { backdrop, sheet } from '../../../common/ui/motion';
 import { FoodTrialRecord, AllergyReaction, AllergyReactionType, AllergySeverity, FoodPreference } from '../../../types';
 import { formatDate, toLocalDateKey } from '../../../common/utils/dateHelpers';
-import { useToast } from '../../../common/ui/toast';
 
 interface FoodTrialModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (foodData: Omit<FoodTrialRecord, 'id' | 'createdAt'>) => void;
+  onSave: (foodData: Omit<FoodTrialRecord, 'id' | 'createdAt'>) => Promise<void>;
   editingFood?: FoodTrialRecord | null;
 }
 
 /* Same recipe as the other two modals; every field here had its own border. */
 const FIELD = 'w-full px-4 py-3 rounded-xl border border-ink/15 focus:border-primary-dark transition-colors';
 const LABEL = 'block text-sm font-medium text-ink mb-2';
+const ERROR_BOX = 'bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-800';
 
 const PREFERENCES: { value: FoodPreference; label: string }[] = [
   { value: 'love', label: '超愛' },
@@ -31,7 +31,6 @@ export default function FoodTrialModal({
   onSave,
   editingFood,
 }: FoodTrialModalProps) {
-  const toast = useToast();
   const [foodName, setFoodName] = useState('');
   const [category, setCategory] = useState('');
   const [firstTriedDate, setFirstTriedDate] = useState('');
@@ -40,15 +39,24 @@ export default function FoodTrialModal({
   const [preference, setPreference] = useState<FoodPreference | undefined>(undefined);
   const [notes, setNotes] = useState('');
   const [trialDates, setTrialDates] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // New allergy reaction form
   const [newReactionType, setNewReactionType] = useState<AllergyReactionType>('rash');
   const [newReactionSeverity, setNewReactionSeverity] = useState<AllergySeverity>('mild');
   const [newReactionDescription, setNewReactionDescription] = useState('');
   const [newReactionDate, setNewReactionDate] = useState('');
+  const [reactionError, setReactionError] = useState<string | null>(null);
+
+  const today = toLocalDateKey();
 
   // Populate form when editing
   useEffect(() => {
+    setError(null);
+    setReactionError(null);
+    setSaving(false);
+
     if (editingFood) {
       setFoodName(editingFood.foodName);
       setCategory(editingFood.category || '');
@@ -71,14 +79,14 @@ export default function FoodTrialModal({
     }
   }, [editingFood, isOpen]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!foodName.trim()) {
-      toast.show('請輸入食物名稱');
+      setError('請輸入食物名稱');
       return;
     }
 
     if (!firstTriedDate) {
-      toast.show('請選擇首次嘗試日期');
+      setError('請選擇首次嘗試日期');
       return;
     }
 
@@ -94,13 +102,23 @@ export default function FoodTrialModal({
       updatedAt: editingFood ? new Date().toISOString() : undefined,
     };
 
-    onSave(foodData);
-    onClose();
+    setSaving(true);
+    setError(null);
+    try {
+      // 寫入成功才關；失敗時整張表單留著，家長不用重打一次。
+      await onSave(foodData);
+      onClose();
+    } catch (err) {
+      console.error('保存食物記錄失敗:', err);
+      setError(err instanceof Error ? err.message : '保存失敗，請稍後再試');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const addAllergyReaction = () => {
     if (!newReactionDate) {
-      toast.show('請選擇過敏反應日期');
+      setReactionError('請選擇過敏反應日期');
       return;
     }
 
@@ -118,6 +136,7 @@ export default function FoodTrialModal({
     setNewReactionSeverity('mild');
     setNewReactionDescription('');
     setNewReactionDate('');
+    setReactionError(null);
   };
 
   const removeAllergyReaction = (index: number) => {
@@ -125,10 +144,11 @@ export default function FoodTrialModal({
   };
 
   const addTrialDate = () => {
-    const today = toLocalDateKey();
-    if (!trialDates.includes(today)) {
-      setTrialDates([...trialDates, today].sort());
-    }
+    setTrialDates([...trialDates, today].sort());
+  };
+
+  const removeTrialDate = (date: string) => {
+    setTrialDates(trialDates.filter((d) => d !== date));
   };
 
   return (
@@ -156,10 +176,11 @@ export default function FoodTrialModal({
             {/* Form */}
             <div className="p-4 space-y-4">
               <div>
-                <label className={LABEL}>
+                <label htmlFor="food-name" className={LABEL}>
                   食物名稱 <span className="text-red-600">*</span>
                 </label>
                 <input
+                  id="food-name"
                   type="text"
                   value={foodName}
                   onChange={(e) => setFoodName(e.target.value)}
@@ -169,8 +190,9 @@ export default function FoodTrialModal({
               </div>
 
               <div>
-                <label className={LABEL}>食物分類</label>
+                <label htmlFor="food-category" className={LABEL}>食物分類</label>
                 <select
+                  id="food-category"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   className={FIELD}
@@ -187,13 +209,15 @@ export default function FoodTrialModal({
               </div>
 
               <div>
-                <label className={LABEL}>
+                <label htmlFor="food-first-tried" className={LABEL}>
                   首次嘗試日期 <span className="text-red-600">*</span>
                 </label>
                 <input
+                  id="food-first-tried"
                   type="date"
                   value={firstTriedDate}
                   onChange={(e) => setFirstTriedDate(e.target.value)}
+                  max={today}
                   className={FIELD}
                 />
               </div>
@@ -204,8 +228,8 @@ export default function FoodTrialModal({
                 squeezing five cells into a 360px row.
               */}
               <div>
-                <label className={LABEL}>寶寶喜好度</label>
-                <div className="flex flex-wrap gap-2">
+                <div id="food-preference-label" className={LABEL}>寶寶喜好度</div>
+                <div role="group" aria-labelledby="food-preference-label" className="flex flex-wrap gap-2">
                   {PREFERENCES.map((pref) => (
                     <button
                       key={pref.value}
@@ -248,7 +272,7 @@ export default function FoodTrialModal({
               {/* Allergy Reactions */}
               {hasAllergy && (
                 <div className="space-y-3">
-                  <label className={LABEL}>過敏反應記錄</label>
+                  <div className={LABEL}>過敏反應記錄</div>
 
                   {allergyReactions.map((reaction, index) => (
                     <div key={index} className="card bg-red-50 border border-red-200">
@@ -290,45 +314,66 @@ export default function FoodTrialModal({
                     <div className="text-sm font-medium mb-3">新增過敏反應</div>
 
                     <div className="space-y-3">
-                      <select
-                        value={newReactionType}
-                        onChange={(e) => setNewReactionType(e.target.value as AllergyReactionType)}
-                        className={FIELD}
-                      >
-                        <option value="rash">紅疹</option>
-                        <option value="diarrhea">腹瀉</option>
-                        <option value="vomiting">嘔吐</option>
-                        <option value="constipation">便秘</option>
-                        <option value="runny_nose">流鼻涕</option>
-                        <option value="cough">咳嗽</option>
-                        <option value="eczema">濕疹</option>
-                        <option value="other">其他</option>
-                      </select>
+                      <div>
+                        <label htmlFor="reaction-type" className={LABEL}>反應類型</label>
+                        <select
+                          id="reaction-type"
+                          value={newReactionType}
+                          onChange={(e) => setNewReactionType(e.target.value as AllergyReactionType)}
+                          className={FIELD}
+                        >
+                          <option value="rash">紅疹</option>
+                          <option value="diarrhea">腹瀉</option>
+                          <option value="vomiting">嘔吐</option>
+                          <option value="constipation">便秘</option>
+                          <option value="runny_nose">流鼻涕</option>
+                          <option value="cough">咳嗽</option>
+                          <option value="eczema">濕疹</option>
+                          <option value="other">其他</option>
+                        </select>
+                      </div>
 
-                      <select
-                        value={newReactionSeverity}
-                        onChange={(e) => setNewReactionSeverity(e.target.value as AllergySeverity)}
-                        className={FIELD}
-                      >
-                        <option value="mild">輕微</option>
-                        <option value="moderate">中度</option>
-                        <option value="severe">嚴重</option>
-                      </select>
+                      <div>
+                        <label htmlFor="reaction-severity" className={LABEL}>嚴重程度</label>
+                        <select
+                          id="reaction-severity"
+                          value={newReactionSeverity}
+                          onChange={(e) => setNewReactionSeverity(e.target.value as AllergySeverity)}
+                          className={FIELD}
+                        >
+                          <option value="mild">輕微</option>
+                          <option value="moderate">中度</option>
+                          <option value="severe">嚴重</option>
+                        </select>
+                      </div>
 
-                      <input
-                        type="date"
-                        value={newReactionDate}
-                        onChange={(e) => setNewReactionDate(e.target.value)}
-                        className={FIELD}
-                      />
+                      <div>
+                        <label htmlFor="reaction-date" className={LABEL}>發生日期</label>
+                        <input
+                          id="reaction-date"
+                          type="date"
+                          value={newReactionDate}
+                          onChange={(e) => setNewReactionDate(e.target.value)}
+                          max={today}
+                          className={FIELD}
+                        />
+                      </div>
 
-                      <textarea
-                        value={newReactionDescription}
-                        onChange={(e) => setNewReactionDescription(e.target.value)}
-                        placeholder="補充說明（選填）"
-                        rows={2}
-                        className={`${FIELD} resize-none`}
-                      />
+                      <div>
+                        <label htmlFor="reaction-description" className={LABEL}>補充說明</label>
+                        <textarea
+                          id="reaction-description"
+                          value={newReactionDescription}
+                          onChange={(e) => setNewReactionDescription(e.target.value)}
+                          placeholder="選填"
+                          rows={2}
+                          className={`${FIELD} resize-none`}
+                        />
+                      </div>
+
+                      {reactionError && (
+                        <p role="alert" className={ERROR_BOX}>{reactionError}</p>
+                      )}
 
                       <button
                         type="button"
@@ -345,21 +390,30 @@ export default function FoodTrialModal({
 
               {/* Trial Dates (4x3 Rule Tracking) */}
               <div>
-                <label className={LABEL}>嘗試日期記錄（4x3 法則）</label>
+                <div className={LABEL}>嘗試日期記錄（4x3 法則）</div>
                 <div className="card bg-secondary-soft border border-secondary/40">
                   <p className="text-sm text-ink-muted mb-2">
                     已記錄 {trialDates.length} 次嘗試
                   </p>
+                  {/* 點錯日期只能整筆刪掉重建，跟過敏反應一樣給一個移除。 */}
                   <div className="flex flex-wrap gap-2 mb-3">
-                    {trialDates.map((date, index) => (
-                      <span key={index} className="tag bg-secondary-light text-secondary-dark">
+                    {trialDates.map((date) => (
+                      <button
+                        key={date}
+                        type="button"
+                        onClick={() => removeTrialDate(date)}
+                        aria-label={`移除嘗試日期 ${formatDate(date)}`}
+                        className="tag min-h-tap bg-secondary-light text-secondary-dark"
+                      >
                         {formatDate(date)}
-                      </span>
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                     ))}
                   </div>
                   <button
                     type="button"
                     onClick={addTrialDate}
+                    disabled={trialDates.includes(today)}
                     className="btn-secondary w-full"
                   >
                     <Plus className="w-4 h-4" />
@@ -369,8 +423,9 @@ export default function FoodTrialModal({
               </div>
 
               <div>
-                <label className={LABEL}>備註</label>
+                <label htmlFor="food-notes" className={LABEL}>備註</label>
                 <textarea
+                  id="food-notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="記錄任何額外資訊..."
@@ -379,13 +434,17 @@ export default function FoodTrialModal({
                 />
               </div>
 
+              {error && (
+                <p role="alert" className={ERROR_BOX}>{error}</p>
+              )}
+
               {/* Action Buttons */}
               <div className="flex gap-3 pt-2">
                 <button onClick={onClose} className="btn-secondary flex-1">
                   取消
                 </button>
-                <button onClick={handleSave} className="btn-primary flex-1">
-                  {editingFood ? '更新' : '儲存'}
+                <button onClick={handleSave} disabled={saving} className="btn-primary flex-1">
+                  {saving ? '儲存中...' : editingFood ? '更新' : '儲存'}
                 </button>
               </div>
             </div>

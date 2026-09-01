@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ChildProfile, Gender } from '../../types';
 import { pregnancyGuides } from '../data/pregnancyGuides';
@@ -145,6 +145,130 @@ describe('LittleBloomPage', () => {
     );
     expect(screen.getByText(/孕期與產檢紀錄都會保留/)).toBeInTheDocument();
   });
+
+  /*
+   * 空白的出生日期是這四個服務裡唯一無法回復的寫入：檔案被改寫成寶寶檔案、
+   * 孕期資料封存，而 calculateAge('') 是 NaN，照護時程從此永遠是空的。
+   */
+  it('出生日期空白時不能送出', async () => {
+    const user = userEvent.setup();
+    const onRecordBirth = vi.fn(async (_birthday: string, _gender?: Gender) => {});
+
+    render(
+      <LittleBloomPage
+        currentChild={pregnant()}
+        progress={{}}
+        onRecordBirth={onRecordBirth}
+        onAddPregnancy={noopAdd}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /登記出生/ }));
+    fireEvent.change(screen.getByLabelText(/出生日期/), { target: { value: '' } });
+
+    const submit = screen.getByRole('button', { name: '確認出生' });
+    expect(submit).toBeDisabled();
+    await user.click(submit);
+
+    expect(onRecordBirth).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent('請填入實際出生日期');
+  });
+
+  it('出生日期不能是未來的日期', async () => {
+    const user = userEvent.setup();
+    const onRecordBirth = vi.fn(async (_birthday: string, _gender?: Gender) => {});
+
+    render(
+      <LittleBloomPage
+        currentChild={pregnant()}
+        progress={{}}
+        onRecordBirth={onRecordBirth}
+        onAddPregnancy={noopAdd}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /登記出生/ }));
+    fireEvent.change(screen.getByLabelText(/出生日期/), { target: { value: '2026-09-30' } });
+
+    expect(screen.getByRole('button', { name: '確認出生' })).toBeDisabled();
+    expect(screen.getByRole('alert')).toHaveTextContent('未來');
+    await user.click(screen.getByRole('button', { name: '確認出生' }));
+    expect(onRecordBirth).not.toHaveBeenCalled();
+  });
+
+  it('出生日期不能早於末次月經', async () => {
+    const user = userEvent.setup();
+    const onRecordBirth = vi.fn(async (_birthday: string, _gender?: Gender) => {});
+
+    render(
+      <LittleBloomPage
+        currentChild={pregnant()}
+        progress={{}}
+        onRecordBirth={onRecordBirth}
+        onAddPregnancy={noopAdd}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /登記出生/ }));
+    fireEvent.change(screen.getByLabelText(/出生日期/), { target: { value: '2026-03-01' } });
+
+    expect(screen.getByRole('button', { name: '確認出生' })).toBeDisabled();
+    expect(screen.getByRole('alert')).toHaveTextContent('末次月經');
+    expect(onRecordBirth).not.toHaveBeenCalled();
+  });
+
+  it('登記出生失敗時表單留著，只說一次失敗', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const onRecordBirth = vi.fn(async () => {
+      throw new Error('offline');
+    });
+
+    render(
+      <LittleBloomPage
+        currentChild={pregnant()}
+        progress={{}}
+        onRecordBirth={onRecordBirth}
+        onAddPregnancy={noopAdd}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /登記出生/ }));
+    await user.click(screen.getByRole('button', { name: '確認出生' }));
+
+    expect(onRecordBirth).toHaveBeenCalledTimes(1);
+    // 表單還開著，而且只有一句話說明失敗。
+    expect(screen.getByRole('button', { name: '確認出生' })).toBeInTheDocument();
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(screen.getByRole('alert')).toHaveTextContent('儲存失敗');
+  });
+
+  it('建立孕期檔案失敗時視窗留著，剛打的資料不清空', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const onAddPregnancy = vi.fn(async () => {
+      throw new Error('offline');
+    });
+
+    render(
+      <LittleBloomPage
+        currentChild={{ ...pregnant(), isPregnancy: undefined, pregnancyData: undefined }}
+        progress={{}}
+        onRecordBirth={noop}
+        onAddPregnancy={onAddPregnancy}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: '新增孕期檔案' }));
+    await user.type(screen.getByLabelText(/寶寶小名/), '小花苞');
+    fireEvent.change(screen.getByLabelText('預產期'), { target: { value: DUE } });
+    await user.click(screen.getByRole('button', { name: '開始追蹤孕期' }));
+
+    expect(onAddPregnancy).toHaveBeenCalledWith('小花苞', DUE);
+    // 視窗沒關：關掉等於告訴家長孕期檔案建好了。
+    expect(screen.getByRole('button', { name: '開始追蹤孕期' })).toBeInTheDocument();
+    expect(screen.getByLabelText(/寶寶小名/)).toHaveValue('小花苞');
+  });
 });
 
 describe('PrenatalPage', () => {
@@ -265,6 +389,86 @@ describe('PrenatalPage', () => {
     const overdue = screen.getByText('已過建議週數').closest('section')!;
     expect(within(overdue).getAllByText(/已超過建議週數 \d+ 週/).length).toBeGreaterThan(0);
     expect(within(overdue).queryByText(/· 已過 \d+ 週/)).not.toBeInTheDocument();
+  });
+
+  it('儲存失敗時表單留著，剛填的內容還在，只說一次', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const onComplete = vi.fn(async () => {
+      throw new Error('offline');
+    });
+
+    render(
+      <PrenatalPage
+        currentChild={pregnant()}
+        progress={{}}
+        onComplete={onComplete}
+        onUndo={noop}
+      />,
+    );
+
+    await user.click(screen.getAllByRole('button', { name: '標記完成' })[0]);
+    await user.type(screen.getByPlaceholderText('院所（選填）'), '仁愛婦幼');
+    await user.click(screen.getByRole('button', { name: '儲存' }));
+
+    expect(onComplete).toHaveBeenCalledTimes(1);
+    expect(screen.getByPlaceholderText('院所（選填）')).toHaveValue('仁愛婦幼');
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(screen.getByRole('alert')).toHaveTextContent('儲存失敗');
+  });
+
+  it('儲存中的表單不接受第二次送出', async () => {
+    // 兩次點擊就是兩筆寫入，而這一頁的儲存原本沒有任何 in-flight 保護。
+    const user = userEvent.setup();
+    let finish = () => {};
+    const onComplete = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+
+    render(
+      <PrenatalPage
+        currentChild={pregnant()}
+        progress={{}}
+        onComplete={onComplete}
+        onUndo={noop}
+      />,
+    );
+
+    await user.click(screen.getAllByRole('button', { name: '標記完成' })[0]);
+    await user.click(screen.getByRole('button', { name: '儲存' }));
+
+    expect(screen.getByRole('button', { name: '儲存中…' })).toBeDisabled();
+
+    finish();
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: '儲存中…' })).not.toBeInTheDocument();
+    });
+    expect(onComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it('取消完成失敗時說明失敗，不靜靜吞掉', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const onUndo = vi.fn(async () => {
+      throw new Error('offline');
+    });
+
+    render(
+      <PrenatalPage
+        currentChild={pregnant()}
+        progress={{ 'prenatal-visit-1': { completedDate: '2026-05-25' } }}
+        onComplete={noop}
+        onUndo={onUndo}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: '取消完成' }));
+
+    expect(onUndo).toHaveBeenCalledWith('prenatal-visit-1');
+    expect(screen.getByRole('alert')).toHaveTextContent('取消失敗');
   });
 });
 

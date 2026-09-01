@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
 import { User } from 'firebase/auth';
-import { ChildProfile } from '../../types';
+import { ChildProfile, GrowthRecord } from '../../types';
 import { useGrowthTracking } from '../hooks/useGrowthTracking';
 import GrowthRecordList from '../components/growth/GrowthRecordList';
 import AddGrowthRecordModal from '../components/growth/AddGrowthRecordModal';
@@ -28,15 +28,33 @@ export default function GrowthChartsPage({
   currentChild,
   user,
 }: GrowthChartsPageProps) {
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<GrowthRecord | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedChart, setSelectedChart] = useState<'weight' | 'height' | 'headCircumference'>('weight');
 
-  const { records, loading, addRecord, updateRecord, deleteRecord } = useGrowthTracking(
+  const { records, loading, error, addRecord, updateRecord, deleteRecord } = useGrowthTracking(
     currentChild?.id || null,
     user,
     currentChild?.gender,
     currentChild?.birthday
   );
+
+  /*
+    改一筆和新增一筆用同一張表：打錯的體重原本只能整筆刪掉重建。
+    失敗時不接住——訊息與「表單留在原地」由 AddGrowthRecordModal 自己處理。
+  */
+  const handleSave = async (record: Omit<GrowthRecord, 'id'>) => {
+    if (editingRecord) {
+      await updateRecord(editingRecord.id, record);
+    } else {
+      await addRecord(record);
+    }
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingRecord(null);
+  };
 
   if (!currentChild) {
     return (
@@ -66,7 +84,7 @@ export default function GrowthChartsPage({
         className="screen-body-wide"
       >
         <motion.div variants={listItem} className="flex justify-end mb-5">
-          <button onClick={() => setIsAddModalOpen(true)} className="btn-primary">
+          <button onClick={() => setIsModalOpen(true)} className="btn-primary">
             <Plus className="w-5 h-5" />
             <span>新增記錄</span>
           </button>
@@ -166,23 +184,35 @@ export default function GrowthChartsPage({
           </motion.div>
         )}
 
-        {/* Records List */}
-        <motion.div variants={listItem}>
-          <GrowthRecordList
-            records={records}
-            loading={loading}
-            onUpdate={updateRecord}
-            onDelete={deleteRecord}
-            childId={currentChild.id}
-          />
-        </motion.div>
+        {/*
+          讀取失敗時 records 是空的，直接交給清單就會印出「尚無記錄」——把
+          「讀不到」講成「還沒量過」，家長會以為紀錄不見了。這裡先攔下來。
+        */}
+        {error ? (
+          <motion.div variants={listItem} className="card">
+            <p className="text-sm text-ink-muted">讀不到成長記錄，請確認網路後重新載入</p>
+          </motion.div>
+        ) : (
+          <motion.div variants={listItem}>
+            <GrowthRecordList
+              records={records}
+              loading={loading}
+              onEdit={(record) => {
+                setEditingRecord(record);
+                setIsModalOpen(true);
+              }}
+              onDelete={deleteRecord}
+            />
+          </motion.div>
+        )}
       </motion.div>
 
       <AddGrowthRecordModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onAdd={addRecord}
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        onSave={handleSave}
         childId={currentChild.id}
+        editingRecord={editingRecord}
       />
     </div>
   );

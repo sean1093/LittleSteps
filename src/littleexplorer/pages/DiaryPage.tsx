@@ -66,6 +66,10 @@ export default function DiaryPage({
   const [date, setDate] = useState(today);
   const [content, setContent] = useState('');
   const [mood, setMood] = useState<DiaryMood | undefined>(undefined);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState('');
+  /* 刪除失敗的訊息貼在那一則上：日記一頁十幾則，頁面級的橫幅說不清是哪一則。 */
+  const [deleteError, setDeleteError] = useState<{ entryId: string; message: string } | null>(null);
 
   const groups = useMemo(() => groupEntriesByMonth(entries), [entries]);
 
@@ -81,6 +85,7 @@ export default function DiaryPage({
     setDate(today());
     setContent('');
     setMood(undefined);
+    setFormError('');
   };
 
   const startEdit = (entry: DiaryEntry) => {
@@ -91,21 +96,41 @@ export default function DiaryPage({
     setMood(entry.mood);
   };
 
+  /*
+   * store 的 addDiaryEntry／updateDiaryEntry／deleteDiaryEntry 失敗時往外丟
+   * 且不 toast——訊息由這一頁負責。這裡最要緊的是失敗時不能 resetForm：家長
+   * 剛寫的那段話沒有別的地方存著，清掉就永遠沒了。
+   */
   const submit = async () => {
     const trimmed = content.trim();
-    if (!trimmed) return;
-    if (editingId) {
-      await onUpdate(editingId, { date, content: trimmed, mood });
-    } else {
-      await onAdd({ date, content: trimmed, mood });
+    if (!trimmed || !date || date > today() || saving) return;
+    setSaving(true);
+    setFormError('');
+    try {
+      if (editingId) {
+        await onUpdate(editingId, { date, content: trimmed, mood });
+      } else {
+        await onAdd({ date, content: trimmed, mood });
+      }
+      resetForm();
+    } catch (error) {
+      console.error('儲存日記失敗:', error);
+      setFormError('儲存失敗，剛才寫的內容還在，請確認網路後再送出。');
+    } finally {
+      setSaving(false);
     }
-    resetForm();
   };
 
   const remove = async (entry: DiaryEntry) => {
     if (!confirmDelete('這則日記')) return;
-    await onDelete(entry.id);
-    if (editingId === entry.id) resetForm();
+    setDeleteError(null);
+    try {
+      await onDelete(entry.id);
+      if (editingId === entry.id) resetForm();
+    } catch (error) {
+      console.error('刪除日記失敗:', error);
+      setDeleteError({ entryId: entry.id, message: '刪除失敗，請確認網路後再試一次。' });
+    }
   };
 
   const form = (
@@ -113,6 +138,8 @@ export default function DiaryPage({
       <input
         type="date"
         value={date}
+        max={today()}
+        aria-label="日期"
         onChange={(e) => setDate(e.target.value)}
         className="w-full px-3 min-h-tap rounded-xl border border-explorer-sand text-sm text-explorer-bark"
       />
@@ -142,14 +169,21 @@ export default function DiaryPage({
           </button>
         ))}
       </div>
+      {formError && (
+        <p role="alert" className="text-sm text-explorer-clay-ink">
+          {formError}
+        </p>
+      )}
       <div className="flex gap-2">
         <button
           type="button"
-          onClick={submit}
-          disabled={!content.trim()}
+          onClick={() => {
+            void submit();
+          }}
+          disabled={!content.trim() || !date || date > today() || saving}
           className={`btn-primary flex-1 ${THEME.fill} ${THEME.fillText}`}
         >
-          {editingId ? '儲存修改' : '記下來'}
+          {saving ? '儲存中…' : editingId ? '儲存修改' : '記下來'}
         </button>
         <button type="button" onClick={resetForm} aria-label="取消" className="btn-icon">
           <X className="w-5 h-5" />
@@ -243,7 +277,9 @@ export default function DiaryPage({
                         </button>
                         <button
                           type="button"
-                          onClick={() => remove(entry)}
+                          onClick={() => {
+                            void remove(entry);
+                          }}
                           className="btn-icon hover:bg-explorer-clay/10 hover:text-explorer-clay-ink"
                           aria-label="刪除"
                         >
@@ -259,6 +295,12 @@ export default function DiaryPage({
                         <p className="tag mt-3 bg-explorer-meadow/15 text-explorer-meadow-ink">
                           <Sprout className="w-3.5 h-3.5" />
                           {linkedTitle}
+                        </p>
+                      )}
+
+                      {deleteError?.entryId === entry.id && (
+                        <p role="alert" className="text-sm mt-2 text-explorer-clay-ink">
+                          {deleteError.message}
                         </p>
                       )}
                     </li>

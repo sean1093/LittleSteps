@@ -1,7 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { User } from 'firebase/auth';
 import type { Page } from '../../types/routes';
 import { requiresAuth, serviceOf } from '../routePolicy';
+import { useOptionalChildStore } from '../contexts/ChildStoreContext';
+import AddChildModal from '../components/AddChildModal';
 import EmptyState from '../ui/EmptyState';
 import { SERVICE_THEME, type ServiceId } from '../ui/serviceTheme';
 import HubLanding from './HubLanding';
@@ -64,8 +66,6 @@ interface LandingPageProps {
   currentService?: ServiceId;
   onSignIn: () => Promise<void>;
   onNavigate: (page: Page) => void;
-  /** 「先新增寶寶」需要它來開啟側邊欄的新增流程 */
-  onAddChild: () => void;
 }
 
 export default function LandingPage({
@@ -77,8 +77,10 @@ export default function LandingPage({
   currentService,
   onSignIn,
   onNavigate,
-  onAddChild,
 }: LandingPageProps) {
+  const store = useOptionalChildStore();
+  const [addingChild, setAddingChild] = useState(false);
+
   // 登入完成的瞬間帶去這個孩子該去的那一頁，但只在真的有孩子時——否則會落在
   // 一個沒有資料的頁面上，而不是「先新增寶寶」。用 ref 比對前一次的 user 才能
   // 區分「剛登入」與「本來就是登入狀態」。
@@ -120,7 +122,19 @@ export default function LandingPage({
         theme={SERVICE_THEME.littlesteps}
         title="開始記錄寶寶的成長"
         description="先新增一個寶寶，即可開始追蹤里程碑、疫苗與日常照顧。"
-        action={{ label: '新增寶寶', onClick: onAddChild }}
+        action={{ label: '新增寶寶', onClick: () => setAddingChild(true) }}
+      />
+
+      {/* 這顆按鈕原本只是打開側邊欄，而寶寶管理早就從側邊欄搬到每個 AppBar 的
+          帳號按鈕底下了——於是剛註冊的家長按下引導流程唯一的那顆按鈕，得到
+          一份導覽選單，裡面沒有任何地方可以新增寶寶。 */}
+      <AddChildModal
+        isOpen={addingChild}
+        onClose={() => setAddingChild(false)}
+        onSave={(name, birthday, gender, _isPregnancy, dueDate) =>
+          store?.addChild(name, birthday, gender, dueDate)
+        }
+        onJoin={store?.joinChild}
       />
     </div>
   );

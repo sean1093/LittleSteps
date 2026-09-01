@@ -8,7 +8,7 @@ import { getCurrentDateTimeLocal, dateTimeLocalToISO, calculateDuration } from '
 interface LogEntryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (logData: Omit<DailyLog, 'id'>) => void;
+  onSave: (logData: Omit<DailyLog, 'id'>) => Promise<void>;
   logType: 'feeding' | 'sleep' | 'diaper';
   editingLog?: DailyLog | null;
 }
@@ -16,6 +16,8 @@ interface LogEntryModalProps {
 /* Repeated verbatim on eight fields below. */
 const FIELD = 'w-full px-4 py-3 rounded-xl border border-ink/15 focus:border-primary-dark transition-colors';
 const LABEL = 'block text-sm font-medium text-ink mb-1';
+
+const RANGE_ERROR = '結束時間要晚於開始時間；睡到隔天的話，結束時間請選隔天的日期。';
 
 export default function LogEntryModal({
   isOpen,
@@ -87,8 +89,20 @@ export default function LogEntryModal({
     }
   }, [editingLog, logType, isOpen]);
 
+  /*
+    兩個欄位都是 datetime-local，各自帶日期，所以「22:30 睡到隔天 06:00」算出來
+    本來就是正的 450 分鐘，不需要特別處理。真正會出事的是把結束時間選在開始
+    時間之前：calculateDuration 會存進一個負數，列表印成「0分鐘」，但睡眠平均、
+    報告與建議全部被它往下拉，而且沒有任何地方看得出來。
+  */
+  const startMs = new Date(startTime).getTime();
+  const endMs = endTime ? new Date(endTime).getTime() : NaN;
+  const hasSleepRange = logType === 'sleep' && !Number.isNaN(startMs) && !Number.isNaN(endMs);
+  const sleepRangeError = hasSleepRange && endMs <= startMs ? RANGE_ERROR : null;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (sleepRangeError) return; // 訊息已經即時顯示在結束時間下方
     setIsSubmitting(true);
     setError(null);
 
@@ -134,11 +148,12 @@ export default function LogEntryModal({
         updatedAt: editingLog ? new Date().toISOString() : undefined,
       };
 
+      // 寫入成功才關；失敗時留在原地，家長剛打完的東西還在。
       await onSave(logData);
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       console.error('保存失敗:', err);
-      setError(err.message || '保存失敗，請稍後再試');
+      setError(err instanceof Error ? err.message : '保存失敗，請稍後再試');
     } finally {
       setIsSubmitting(false);
     }
@@ -186,8 +201,9 @@ export default function LogEntryModal({
               {logType === 'feeding' && (
                 <>
                   <div>
-                    <label className={LABEL}>時間 *</label>
+                    <label htmlFor="feeding-time" className={LABEL}>時間 *</label>
                     <input
+                      id="feeding-time"
                       type="datetime-local"
                       value={timestamp}
                       onChange={(e) => setTimestamp(e.target.value)}
@@ -197,8 +213,9 @@ export default function LogEntryModal({
                   </div>
 
                   <div>
-                    <label className={LABEL}>類型 *</label>
+                    <label htmlFor="feeding-type" className={LABEL}>類型 *</label>
                     <select
+                      id="feeding-type"
                       value={feedingType}
                       onChange={(e) => setFeedingType(e.target.value as FeedingData['feedingType'])}
                       className={FIELD}
@@ -213,8 +230,9 @@ export default function LogEntryModal({
                   </div>
 
                   <div>
-                    <label className={LABEL}>時長（分鐘）</label>
+                    <label htmlFor="feeding-duration" className={LABEL}>時長（分鐘）</label>
                     <input
+                      id="feeding-duration"
                       type="number"
                       value={duration}
                       onChange={(e) => setDuration(e.target.value)}
@@ -225,8 +243,9 @@ export default function LogEntryModal({
                   </div>
 
                   <div>
-                    <label className={LABEL}>奶量（ml）</label>
+                    <label htmlFor="feeding-amount" className={LABEL}>奶量（ml）</label>
                     <input
+                      id="feeding-amount"
                       type="number"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
@@ -241,8 +260,9 @@ export default function LogEntryModal({
               {logType === 'sleep' && (
                 <>
                   <div>
-                    <label className={LABEL}>開始時間 *</label>
+                    <label htmlFor="sleep-start" className={LABEL}>開始時間 *</label>
                     <input
+                      id="sleep-start"
                       type="datetime-local"
                       value={startTime}
                       onChange={(e) => setStartTime(e.target.value)}
@@ -252,8 +272,9 @@ export default function LogEntryModal({
                   </div>
 
                   <div>
-                    <label className={LABEL}>結束時間</label>
+                    <label htmlFor="sleep-end" className={LABEL}>結束時間</label>
                     <input
+                      id="sleep-end"
                       type="datetime-local"
                       value={endTime}
                       onChange={(e) => setEndTime(e.target.value)}
@@ -262,12 +283,18 @@ export default function LogEntryModal({
                     <p className="mt-1 text-xs text-ink-faint">不填表示還在睡</p>
                   </div>
 
-                  {endTime && (
-                    <div className="bg-secondary-light rounded-xl p-3">
-                      <p className="text-sm text-secondary-dark">
-                        時長：{calculateDuration(dateTimeLocalToISO(startTime), dateTimeLocalToISO(endTime))} 分鐘
+                  {hasSleepRange && (
+                    sleepRangeError ? (
+                      <p role="alert" className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-800">
+                        {sleepRangeError}
                       </p>
-                    </div>
+                    ) : (
+                      <div className="bg-secondary-light rounded-xl p-3">
+                        <p className="text-sm text-secondary-dark">
+                          時長：{calculateDuration(dateTimeLocalToISO(startTime), dateTimeLocalToISO(endTime))} 分鐘
+                        </p>
+                      </div>
+                    )
                   )}
                 </>
               )}
@@ -275,8 +302,9 @@ export default function LogEntryModal({
               {logType === 'diaper' && (
                 <>
                   <div>
-                    <label className={LABEL}>時間 *</label>
+                    <label htmlFor="diaper-time" className={LABEL}>時間 *</label>
                     <input
+                      id="diaper-time"
                       type="datetime-local"
                       value={timestamp}
                       onChange={(e) => setTimestamp(e.target.value)}
@@ -286,8 +314,9 @@ export default function LogEntryModal({
                   </div>
 
                   <div>
-                    <label className={LABEL}>類型 *</label>
+                    <label htmlFor="diaper-type" className={LABEL}>類型 *</label>
                     <select
+                      id="diaper-type"
                       value={diaperType}
                       onChange={(e) => setDiaperType(e.target.value as DiaperData['type'])}
                       className={FIELD}
@@ -301,8 +330,9 @@ export default function LogEntryModal({
 
                   {(diaperType === 'poop' || diaperType === 'both') && (
                     <div>
-                      <label className={LABEL}>性狀</label>
+                      <label htmlFor="diaper-consistency" className={LABEL}>性狀</label>
                       <select
+                        id="diaper-consistency"
                         value={consistency}
                         onChange={(e) => setConsistency(e.target.value as DiaperData['consistency'])}
                         className={FIELD}
@@ -317,8 +347,9 @@ export default function LogEntryModal({
               )}
 
               <div>
-                <label className={LABEL}>備註</label>
+                <label htmlFor="log-notes" className={LABEL}>備註</label>
                 <textarea
+                  id="log-notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   className={`${FIELD} resize-none`}
@@ -329,12 +360,16 @@ export default function LogEntryModal({
               </div>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                <div role="alert" className="bg-red-50 border border-red-200 rounded-xl p-3">
                   <p className="text-sm text-red-800">{error}</p>
                 </div>
               )}
 
-              <button type="submit" disabled={isSubmitting} className="btn-primary w-full">
+              <button
+                type="submit"
+                disabled={isSubmitting || sleepRangeError !== null}
+                className="btn-primary w-full"
+              >
                 {isSubmitting ? '儲存中...' : (editingLog ? '更新' : '儲存')}
               </button>
             </form>

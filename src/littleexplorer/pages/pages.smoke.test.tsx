@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { CareTaskRecord, ChildProfile, DiaryEntry, ResolvedCareTask } from '../../types';
 import { careTaskTemplates } from '../data/careTasks';
@@ -408,6 +408,110 @@ describe('RemindersPage', () => {
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByText('健檢 old')).toBeInTheDocument();
   });
+
+  /** 把一筆非疫苗的任務標成完成——疫苗是在疫苗追蹤那邊勾的，不走這個流程。 */
+  const withOneDone = () => {
+    const all = tasks();
+    const target = all.find((task) => !task.template.vaccineId)!;
+    return {
+      target,
+      rows: all.map((task) =>
+        task.template.id === target.template.id
+          ? { ...task, status: 'done' as const, completedDate: '2026-08-01' }
+          : task,
+      ),
+    };
+  };
+
+  it('完成的項目收進已完成區，並且可以取消完成', async () => {
+    // 原本 done 直接被濾掉：一按下標記完成那一列就從畫面上消失，日期填錯也
+    // 沒有任何入口改回來。
+    const user = userEvent.setup();
+    const onUndoTask = vi.fn(async (_taskId: string) => {});
+    const { target, rows } = withOneDone();
+
+    render(
+      <RemindersPage
+        onAddChild={noopAddChild}
+        currentChild={child()}
+        tasks={rows}
+        onCompleteTask={noop}
+        onUndoTask={onUndoTask}
+      />,
+    );
+
+    const doneSection = screen.getByRole('heading', { name: /已完成/ }).closest('section')!;
+    expect(within(doneSection).getByText(target.template.title)).toBeInTheDocument();
+    expect(within(doneSection).getByText('已於 2026年8月1日 完成')).toBeInTheDocument();
+
+    await user.click(within(doneSection).getByRole('button', { name: '取消完成' }));
+    expect(onUndoTask).toHaveBeenCalledWith(target.template.id);
+  });
+
+  it('沒有取消回呼時，已完成的項目仍然看得到，只是沒有取消鍵', () => {
+    const { target, rows } = withOneDone();
+
+    render(
+      <RemindersPage
+        onAddChild={noopAddChild}
+        currentChild={child()}
+        tasks={rows}
+        onCompleteTask={noop}
+      />,
+    );
+
+    const doneSection = screen.getByRole('heading', { name: /已完成/ }).closest('section')!;
+    expect(within(doneSection).getByText(target.template.title)).toBeInTheDocument();
+    expect(within(doneSection).queryByRole('button', { name: '取消完成' })).not.toBeInTheDocument();
+  });
+
+  it('儲存失敗時表單留著，剛填的內容還在，只說一次', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const onCompleteTask = vi.fn(async () => {
+      throw new Error('offline');
+    });
+
+    render(
+      <RemindersPage
+        onAddChild={noopAddChild}
+        currentChild={child()}
+        tasks={tasks()}
+        onCompleteTask={onCompleteTask}
+      />,
+    );
+
+    await user.click(screen.getAllByRole('button', { name: '標記完成' })[0]);
+    await user.type(screen.getByPlaceholderText('院所（選填）'), '仁愛小兒科');
+    await user.click(screen.getByRole('button', { name: '儲存' }));
+
+    expect(onCompleteTask).toHaveBeenCalledTimes(1);
+    expect(screen.getByPlaceholderText('院所（選填）')).toHaveValue('仁愛小兒科');
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(screen.getByRole('alert')).toHaveTextContent('儲存失敗');
+  });
+
+  it('完成日期清空時不能送出', async () => {
+    // 空字串會被 resolveScheduleStatus 當成「完成了但沒記日期」，於是那一列
+    // 變成已完成，而完成日期一片空白。
+    const user = userEvent.setup();
+    const onCompleteTask = vi.fn(async () => {});
+
+    render(
+      <RemindersPage
+        onAddChild={noopAddChild}
+        currentChild={child()}
+        tasks={tasks()}
+        onCompleteTask={onCompleteTask}
+      />,
+    );
+
+    await user.click(screen.getAllByRole('button', { name: '標記完成' })[0]);
+    fireEvent.change(screen.getByLabelText(/完成日期/), { target: { value: '' } });
+
+    expect(screen.getByRole('button', { name: '儲存' })).toBeDisabled();
+    expect(onCompleteTask).not.toHaveBeenCalled();
+  });
 });
 
 describe('DiaryPage', () => {
@@ -498,6 +602,85 @@ describe('DiaryPage', () => {
     );
     expect(screen.getByText('還沒有寶寶資料')).toBeInTheDocument();
   });
+
+  it('儲存失敗時不清掉剛寫的內容，並說明失敗', async () => {
+    // 家長剛寫的那段話沒有別的地方存著，清掉就永遠沒了。
+    const user = userEvent.setup();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const onAdd = vi.fn(async () => {
+      throw new Error('offline');
+    });
+
+    render(
+      <DiaryPage
+        onAddChild={noopAddChild}
+        currentChild={child()}
+        entries={[]}
+        onAdd={onAdd}
+        onUpdate={noop}
+        onDelete={noop}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /今天發生了什麼/ }));
+    await user.type(screen.getByPlaceholderText('今天發生了什麼？'), '第一次自己穿鞋');
+    await user.click(screen.getByRole('button', { name: '記下來' }));
+
+    expect(onAdd).toHaveBeenCalledTimes(1);
+    expect(screen.getByPlaceholderText('今天發生了什麼？')).toHaveValue('第一次自己穿鞋');
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(screen.getByRole('alert')).toHaveTextContent('儲存失敗');
+  });
+
+  it('刪除失敗時說明失敗，那一則還在', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.stubGlobal('confirm', vi.fn(() => true));
+    const onDelete = vi.fn(async () => {
+      throw new Error('offline');
+    });
+
+    render(
+      <DiaryPage
+        onAddChild={noopAddChild}
+        currentChild={child()}
+        entries={[entry()]}
+        onAdd={async () => 'd2'}
+        onUpdate={noop}
+        onDelete={onDelete}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: '刪除' }));
+
+    expect(screen.getByText('第一次自己穿鞋')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('刪除失敗');
+
+    vi.unstubAllGlobals();
+  });
+
+  it('日期清空時不能送出', async () => {
+    const user = userEvent.setup();
+    const onAdd = vi.fn(async () => 'd2');
+
+    render(
+      <DiaryPage
+        onAddChild={noopAddChild}
+        currentChild={child()}
+        entries={[]}
+        onAdd={onAdd}
+        onUpdate={noop}
+        onDelete={noop}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /今天發生了什麼/ }));
+    await user.type(screen.getByPlaceholderText('今天發生了什麼？'), '今天去公園');
+    fireEvent.change(screen.getByLabelText('日期'), { target: { value: '' } });
+
+    expect(screen.getByRole('button', { name: '記下來' })).toBeDisabled();
+    expect(onAdd).not.toHaveBeenCalled();
+  });
 });
 
 describe('ToddlerWikiPage', () => {
@@ -517,5 +700,22 @@ describe('ToddlerWikiPage', () => {
     render(<ToddlerWikiPage currentChild={null} />);
     expect(screen.queryByText('還沒有寶寶資料')).not.toBeInTheDocument();
     expect(screen.getAllByRole('heading', { level: 3 }).length).toBeGreaterThan(0);
+  });
+
+  it('年齡段裡沒有文章的分類就不畫籌碼', async () => {
+    // 12-18 段沒有如廁訓練與入園與社交的文章。原本籌碼照整份 CATEGORY_ORDER
+    // 畫出來，一按就是 0 篇，而空狀態只會叫家長換關鍵字——把年齡篩選的結果
+    // 算到關鍵字頭上。
+    const user = userEvent.setup();
+    render(<ToddlerWikiPage currentChild={child({ birthday: '2025-06-27' })} />);
+
+    expect(screen.getByRole('button', { name: /1 歲-1 歲半/, pressed: true })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '如廁訓練' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '入園與社交' })).not.toBeInTheDocument();
+
+    const stageRow = screen.getByRole('heading', { name: '依年齡看' }).parentElement!;
+    await user.click(within(stageRow).getByRole('button', { name: '全部' }));
+
+    expect(screen.getByRole('button', { name: '如廁訓練' })).toBeInTheDocument();
   });
 });

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { GrowthRecord } from '../../../types';
 import { getPercentileCategory } from '../../utils/growthCalculator';
 import EmptyState from '../../../common/ui/EmptyState';
@@ -12,14 +12,14 @@ import { confirmDelete } from '../../../common/ui/confirmDelete';
 interface GrowthRecordListProps {
   records: GrowthRecord[];
   loading: boolean;
-  onUpdate: (recordId: string, updates: Partial<Omit<GrowthRecord, 'id' | 'childId'>>) => Promise<void>;
+  onEdit: (record: GrowthRecord) => void;
   onDelete: (recordId: string) => Promise<void>;
-  childId: string;
 }
 
 export default function GrowthRecordList({
   records,
   loading,
+  onEdit,
   onDelete,
 }: GrowthRecordListProps) {
   const toast = useToast();
@@ -81,14 +81,24 @@ export default function GrowthRecordList({
             >
               <div className="flex items-start justify-between mb-3">
                 <span className="font-semibold">{formatDate(record.date)}</span>
-                <motion.button
-                  whileTap={tap}
-                  onClick={() => handleDelete(record.id)}
-                  className="btn-icon -my-2.5 text-red-600 hover:bg-red-50"
-                  aria-label="刪除記錄"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </motion.button>
+                <div className="flex items-center gap-1 -my-2.5">
+                  <motion.button
+                    whileTap={tap}
+                    onClick={() => onEdit(record)}
+                    className="btn-icon"
+                    aria-label={`編輯 ${formatDate(record.date)} 的記錄`}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </motion.button>
+                  <motion.button
+                    whileTap={tap}
+                    onClick={() => handleDelete(record.id)}
+                    className="btn-icon text-red-600 hover:bg-red-50"
+                    aria-label={`刪除 ${formatDate(record.date)} 的記錄`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </motion.button>
+                </div>
               </div>
 
               {/*

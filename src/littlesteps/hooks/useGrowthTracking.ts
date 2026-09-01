@@ -8,6 +8,8 @@ import { removeUndefined } from '../../common/utils/firebaseData';
 interface UseGrowthTrackingResult {
   records: GrowthRecord[];
   loading: boolean;
+  /** 讀取被拒或斷線；沒有測量紀錄與讀不到紀錄不是同一件事。 */
+  error: boolean;
   addRecord: (record: Omit<GrowthRecord, 'id'>) => Promise<void>;
   updateRecord: (
     recordId: string,
@@ -28,21 +30,36 @@ export function useGrowthTracking(
 ): UseGrowthTrackingResult {
   const [records, setRecords] = useState<GrowthRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   // Real-time listener
   useEffect(() => {
     if (!childId || !user) {
       setRecords([]);
+      setError(false);
       setLoading(false);
       return;
     }
 
+    // 換孩子時連 records 一起清掉，否則新快照抵達之前，上一個孩子的身高體重
+    // 會掛在新孩子的名字與成長曲線上。
+    setRecords([]);
+    setError(false);
+    setLoading(true);
     const recordsRef = ref(database, `children/${childId}/growthRecords`);
-    const unsubscribe = onValue(recordsRef, (snapshot) => {
-      const data = snapshot.val();
-      setRecords(data ? sortRecordsByDate(Object.values(data) as GrowthRecord[]) : []);
-      setLoading(false);
-    });
+    const unsubscribe = onValue(
+      recordsRef,
+      (snapshot) => {
+        const data = snapshot.val();
+        setRecords(data ? sortRecordsByDate(Object.values(data) as GrowthRecord[]) : []);
+        setLoading(false);
+      },
+      (err) => {
+        console.error('讀取成長紀錄失敗:', err);
+        setError(true);
+        setLoading(false);
+      },
+    );
     return () => unsubscribe();
   }, [childId, user]);
 
@@ -89,6 +106,7 @@ export function useGrowthTracking(
   return {
     records,
     loading,
+    error,
     addRecord,
     updateRecord,
     deleteRecord,

@@ -7,8 +7,12 @@ export type ChildModalMode = 'create' | 'join' | 'pregnancy';
 interface AddChildModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (name: string, birthday: string, gender?: Gender, isPregnancy?: boolean, dueDate?: string) => void;
-  onJoin?: (uuid: string) => void; // New: join existing child
+  /**
+   * 回傳 promise 時，視窗會等它成功才關閉。寫入失敗的話輸入留在原地——
+   * 家長不必重打一次名字與生日。
+   */
+  onSave: (name: string, birthday: string, gender?: Gender, isPregnancy?: boolean, dueDate?: string) => void | Promise<void>;
+  onJoin?: (uuid: string) => void | Promise<void>; // New: join existing child
   editingChild?: ChildProfile | null;
   /** 只在編輯既有寶寶時提供。刪除從側邊欄那一列搬進來，避開誤觸。 */
   onDelete?: () => void;
@@ -51,6 +55,8 @@ export default function AddChildModal({
   const [dueDate, setDueDate] = useState('');
   const [gender, setGender] = useState<Gender | ''>('');
   const [childUuid, setChildUuid] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (editingChild) {
@@ -68,26 +74,38 @@ export default function AddChildModal({
       setGender('');
       setChildUuid('');
     }
+    setError('');
   }, [editingChild, isOpen]);
+
+  const runWrite = async (write: () => void | Promise<void>) => {
+    setSaving(true);
+    setError('');
+    try {
+      await write();
+      onClose();
+    } catch {
+      // 呼叫端已經跳過提示，這裡只解釋視窗為什麼還開著。
+      setError('儲存失敗，請確認網路後再試一次。');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (mode === 'create') {
       if (name && birthday) {
-        onSave(name, birthday, gender || undefined);
-        onClose();
+        void runWrite(() => onSave(name, birthday, gender || undefined));
       }
     } else if (mode === 'pregnancy') {
       if (name && dueDate) {
-        // Assume birthday is dueDate for simplicity or pass differently
-        onSave(name, dueDate, undefined, true, dueDate);
-        onClose();
+        // 孕期檔案的 birthday 存的就是預產期。
+        void runWrite(() => onSave(name, dueDate, undefined, true, dueDate));
       }
     } else if (mode === 'join') {
       if (childUuid && onJoin) {
-        onJoin(childUuid.trim());
-        onClose();
+        void runWrite(() => onJoin(childUuid.trim()));
       }
     }
   };
@@ -120,7 +138,7 @@ export default function AddChildModal({
         : '加入寶寶';
 
   return (
-    <ModalFrame isOpen={isOpen} onClose={onClose} title={title}>
+    <ModalFrame isOpen={isOpen} onClose={onClose} title={title} closeDisabled={saving}>
       {showModeSelector && (
         <div className="flex gap-2 mb-5">
           {available.map((id) => (
@@ -235,8 +253,18 @@ export default function AddChildModal({
           </div>
         )}
 
-        <button type="submit" className={`btn-primary w-full ${accent} ${accentText}`}>
-          {submitLabel}
+        {error && (
+          <p role="alert" className="text-sm text-primary-dark bg-primary-light rounded-2xl px-4 py-3">
+            {error}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={saving}
+          className={`btn-primary w-full disabled:opacity-60 ${accent} ${accentText}`}
+        >
+          {saving ? '儲存中…' : submitLabel}
         </button>
       </form>
 

@@ -37,7 +37,12 @@ export interface ChildStore {
   currentChildToothProgress: ToothProgress;
   childrenLoading: boolean;
   toggleMilestone: (id: string) => Promise<void>;
-  toggleVaccineDose: (vaccineId: string, doseNumber: number, customDate?: string) => Promise<void>;
+  setVaccineDose: (
+    vaccineId: string,
+    doseNumber: number,
+    administered: boolean,
+    date?: string,
+  ) => Promise<void>;
   addChild: (name: string, birthday: string, gender?: Gender, dueDate?: string) => Promise<void>;
   joinChild: (childUuid: string) => Promise<void>;
   updateChild: (id: string, name: string, birthday: string, gender?: Gender) => Promise<void>;
@@ -58,6 +63,7 @@ export interface ChildStore {
   clearPrenatalRecord: (templateId: string) => Promise<void>;
   recordBirth: (birthday: string, gender?: Gender) => Promise<void>;
   upsertCareTaskRecord: (record: CareTaskRecord) => Promise<void>;
+  clearCareTaskRecord: (taskId: string) => Promise<void>;
   addDiaryEntry: (
     entry: Omit<DiaryEntry, 'id' | 'childId' | 'createdAt'>,
   ) => Promise<string | undefined>;
@@ -76,6 +82,7 @@ export function useChildStore(user: User | null): ChildStore {
     children: childProfiles,
     currentChildId,
     loading: childrenLoading,
+    childCount,
   } = useUserChildren(user);
   const firebaseChildren = useFirebaseChildren(user?.uid || null);
 
@@ -130,19 +137,34 @@ export function useChildStore(user: User | null): ChildStore {
       logMilestoneToggle(id, isAchieved);
     } catch (error) {
       console.error('更新里程碑失敗:', error);
+      toast.show(errorMessage(error, '里程碑更新失敗，請稍後再試'));
     }
   };
 
-  const toggleVaccineDose = async (vaccineId: string, doseNumber: number, customDate?: string) => {
+  /**
+   * administered 由呼叫端明講，不從現況推。原本這裡算的是「反過來」，於是家長在
+   * 已接種的那一劑上確認「修改接種日期」時，反而把 administered 翻成 false，
+   * 資料層接著把 administeredDate 一併刪掉——想改日期，紀錄卻整筆消失。
+   */
+  const setVaccineDose = async (
+    vaccineId: string,
+    doseNumber: number,
+    administered: boolean,
+    date?: string,
+  ) => {
     if (!user || !currentChild) return;
     try {
-      const currentVaccine = currentChildVaccineProgress[vaccineId] || { doses: {} };
-      const currentDose = currentVaccine.doses[doseNumber];
-      const isAdministered = !currentDose?.administered;
-      await firebaseChildren.updateVaccineProgress(currentChild.id, vaccineId, doseNumber, isAdministered, customDate);
-      logVaccineToggle(vaccineId, doseNumber, isAdministered);
+      await firebaseChildren.updateVaccineProgress(
+        currentChild.id,
+        vaccineId,
+        doseNumber,
+        administered,
+        date,
+      );
+      logVaccineToggle(vaccineId, doseNumber, administered);
     } catch (error) {
       console.error('更新疫苗記錄失敗:', error);
+      toast.show(errorMessage(error, '疫苗記錄更新失敗，請稍後再試'));
     }
   };
 
@@ -153,31 +175,33 @@ export function useChildStore(user: User | null): ChildStore {
     dueDate?: string,
   ) => {
     if (!user) return;
-    if (childProfiles.length >= MAX_CHILDREN) {
+    // 上限比的是 childCount（帳號名下所有 id），不是 childProfiles.length。
+    // 後者濾掉了 listener 還沒回報的孩子，第三個檔案就是這樣溜進來的。
+    if (childCount >= MAX_CHILDREN) {
       toast.show(CHILD_LIMIT_MESSAGE);
       return;
     }
     try {
-      await firebaseChildren.addChild(name, birthday, childProfiles.length, gender, dueDate);
+      await firebaseChildren.addChild(name, birthday, childCount, gender, dueDate);
       logChildProfileAction('create');
     } catch (error) {
       console.error('新增寶寶失敗:', error);
-      toast.show(errorMessage(error, '新增寶寶失敗，請稍後再試'));
+      throw error;
     }
   };
 
   const joinChild = async (childUuid: string) => {
     if (!user) return;
-    if (childProfiles.length >= MAX_CHILDREN) {
+    if (childCount >= MAX_CHILDREN) {
       toast.show(CHILD_LIMIT_MESSAGE);
       return;
     }
     try {
-      await firebaseChildren.joinChild(childUuid, childProfiles.length);
+      await firebaseChildren.joinChild(childUuid, childCount);
       logChildProfileAction('create'); // Creating a reference to an existing child.
     } catch (error) {
       console.error('加入寶寶失敗:', error);
-      toast.show(errorMessage(error, '加入寶寶失敗，請確認代碼是否正確'));
+      throw error;
     }
   };
 
@@ -194,7 +218,7 @@ export function useChildStore(user: User | null): ChildStore {
       logChildProfileAction('update');
     } catch (error) {
       console.error('更新寶寶資料失敗:', error);
-      toast.show(errorMessage(error, '更新失敗，請稍後再試'));
+      toast.show(errorMessage(error, '寶寶資料更新失敗，請稍後再試'));
     }
   };
 
@@ -208,7 +232,7 @@ export function useChildStore(user: User | null): ChildStore {
       logChildProfileAction('delete');
     } catch (error) {
       console.error('刪除寶寶失敗:', error);
-      toast.show(errorMessage(error, '刪除失敗，請稍後再試'));
+      toast.show(errorMessage(error, '刪除寶寶失敗，請稍後再試'));
     }
   };
 
@@ -219,6 +243,7 @@ export function useChildStore(user: User | null): ChildStore {
       logChildProfileAction('switch');
     } catch (error) {
       console.error('切換寶寶失敗:', error);
+      toast.show(errorMessage(error, '切換寶寶失敗，請稍後再試'));
     }
   };
 
@@ -229,6 +254,7 @@ export function useChildStore(user: User | null): ChildStore {
       await firebaseChildren.updateDevelopmentProgress(currentChild.id, checkItemId, achieved);
     } catch (error) {
       console.error('更新發展檢核失敗:', error);
+      toast.show(errorMessage(error, '發展檢核更新失敗，請稍後再試'));
     }
   };
 
@@ -239,6 +265,7 @@ export function useChildStore(user: User | null): ChildStore {
       await firebaseChildren.updateToothProgress(currentChild.id, toothId, erupted);
     } catch (error) {
       console.error('更新乳牙記錄失敗:', error);
+      toast.show(errorMessage(error, '乳牙記錄更新失敗，請稍後再試'));
     }
   };
 
@@ -251,6 +278,7 @@ export function useChildStore(user: User | null): ChildStore {
       await firebaseChildren.upsertPrenatalRecord(pregnancyChild.id, templateId, record);
     } catch (error) {
       console.error('更新產檢記錄失敗:', error);
+      throw error;
     }
   };
 
@@ -260,6 +288,7 @@ export function useChildStore(user: User | null): ChildStore {
       await firebaseChildren.clearPrenatalRecord(pregnancyChild.id, templateId);
     } catch (error) {
       console.error('取消產檢記錄失敗:', error);
+      throw error;
     }
   };
 
@@ -270,6 +299,7 @@ export function useChildStore(user: User | null): ChildStore {
       logChildProfileAction('update');
     } catch (error) {
       console.error('登記出生失敗:', error);
+      throw error;
     }
   };
 
@@ -279,6 +309,17 @@ export function useChildStore(user: User | null): ChildStore {
       await firebaseChildren.upsertCareTaskRecord(currentChild.id, record);
     } catch (error) {
       console.error('更新照護記錄失敗:', error);
+      throw error;
+    }
+  };
+
+  const clearCareTaskRecord = async (taskId: string) => {
+    if (!user || !currentChild) return;
+    try {
+      await firebaseChildren.clearCareTaskRecord(currentChild.id, taskId);
+    } catch (error) {
+      console.error('取消照護記錄失敗:', error);
+      throw error;
     }
   };
 
@@ -294,6 +335,7 @@ export function useChildStore(user: User | null): ChildStore {
       });
     } catch (error) {
       console.error('新增日記失敗:', error);
+      throw error;
     }
   };
 
@@ -303,6 +345,7 @@ export function useChildStore(user: User | null): ChildStore {
       await firebaseChildren.updateDiaryEntry(currentChild.id, entryId, updates);
     } catch (error) {
       console.error('更新日記失敗:', error);
+      throw error;
     }
   };
 
@@ -312,6 +355,7 @@ export function useChildStore(user: User | null): ChildStore {
       await firebaseChildren.deleteDiaryEntry(currentChild.id, entryId);
     } catch (error) {
       console.error('刪除日記失敗:', error);
+      throw error;
     }
   };
 
@@ -325,7 +369,7 @@ export function useChildStore(user: User | null): ChildStore {
     currentChildToothProgress,
     childrenLoading,
     toggleMilestone,
-    toggleVaccineDose,
+    setVaccineDose,
     addChild,
     joinChild,
     updateChild,
@@ -339,6 +383,7 @@ export function useChildStore(user: User | null): ChildStore {
     clearPrenatalRecord,
     recordBirth,
     upsertCareTaskRecord,
+    clearCareTaskRecord,
     addDiaryEntry,
     updateDiaryEntry,
     deleteDiaryEntry,

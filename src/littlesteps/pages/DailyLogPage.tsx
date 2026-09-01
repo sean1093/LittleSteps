@@ -27,7 +27,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
   const [selectedDate, setSelectedDate] = useState(() => new Date());
 
   // Load data
-  const { logs, loading } = useDailyLogs(currentChild?.id || null, user);
+  const { logs, loading, error } = useDailyLogs(currentChild?.id || null, user);
   const firebaseChildren = useFirebaseChildren(user?.uid || null);
 
   const isToday = isSameDay(selectedDate, new Date());
@@ -43,40 +43,37 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
     setShowModal(true);
   };
 
+  /*
+    失敗時不接住：訊息與「表單留在原地、家長剛打的內容還在」都由 LogEntryModal
+    自己處理，這裡再 toast 一次就是同一件事講兩遍。關閉與清掉 editingLog 也是
+    它的 onClose，只有成功才會走到。
+  */
   const handleSave = async (logData: Omit<DailyLog, 'id'>) => {
     if (!currentChild) {
-      toast.show('請先選擇寶寶');
-      return;
+      throw new Error('請先選擇寶寶');
     }
 
-    try {
-      const completeLogData = {
-        ...logData,
-        childId: currentChild.id,
-        // 編輯時保留原本的記錄者：改一筆別人記的紀錄不該把它變成自己記的。
-        ...(editingLog
-          ? {}
-          : {
-              createdBy: user?.uid,
-              createdByName: user?.displayName ?? undefined,
-            }),
-      };
+    const completeLogData = {
+      ...logData,
+      childId: currentChild.id,
+      // 編輯時保留原本的記錄者：改一筆別人記的紀錄不該把它變成自己記的。
+      ...(editingLog
+        ? {}
+        : {
+            createdBy: user?.uid,
+            createdByName: user?.displayName ?? undefined,
+          }),
+    };
 
-      if (editingLog) {
-        await firebaseChildren.updateDailyLog(currentChild.id, editingLog.id, completeLogData);
-      } else {
-        await firebaseChildren.addDailyLog(currentChild.id, completeLogData);
-      }
-
-      // 補記昨天的餵奶時，紀錄不會落在目前這一天。跳到它真正落在的日子，
-      // 不然使用者剛存的東西會憑空消失。
-      setSelectedDate(new Date(completeLogData.timestamp));
-      setShowModal(false);
-      setEditingLog(null);
-    } catch (error) {
-      console.error('保存日誌失敗:', error);
-      toast.show(error instanceof Error ? error.message : '保存失敗，請稍後再試');
+    if (editingLog) {
+      await firebaseChildren.updateDailyLog(currentChild.id, editingLog.id, completeLogData);
+    } else {
+      await firebaseChildren.addDailyLog(currentChild.id, completeLogData);
     }
+
+    // 補記昨天的餵奶時，紀錄不會落在目前這一天。跳到它真正落在的日子，
+    // 不然使用者剛存的東西會憑空消失。
+    setSelectedDate(new Date(completeLogData.timestamp));
   };
 
   const handleEdit = (log: DailyLog) => {
@@ -162,13 +159,23 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
 
         <motion.div variants={listItem}>
           <h2 className="mb-3">{isToday ? '今日記錄' : '這天的記錄'}</h2>
-          <LogTimeline
-            logs={logs}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            currentUserId={user?.uid}
-            date={selectedDate}
-          />
+          {/*
+            讀取失敗時 logs 是空的，時間軸會說「今天還沒有記錄」——把「讀不到」
+            講成「還沒記」，家長會以為剛剛存的東西不見了。
+          */}
+          {error ? (
+            <div className="card">
+              <p className="text-sm text-ink-muted">讀不到日常記錄，請確認網路後重新載入</p>
+            </div>
+          ) : (
+            <LogTimeline
+              logs={logs}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              currentUserId={user?.uid}
+              date={selectedDate}
+            />
+          )}
         </motion.div>
 
         {modalType && (

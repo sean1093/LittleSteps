@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { User } from 'firebase/auth';
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { Page } from '../../types/routes';
 import LandingPage, { landingKindFor, isStandaloneLanding } from './LandingPage';
 
@@ -67,7 +68,6 @@ describe('登入後的去向', () => {
         entryPage={entryPage}
         onSignIn={vi.fn()}
         onNavigate={onNavigate}
-        onAddChild={vi.fn()}
       />,
     );
     return { view, onNavigate };
@@ -84,7 +84,6 @@ describe('登入後的去向', () => {
         entryPage="littlesteps/dashboard"
         onSignIn={vi.fn()}
         onNavigate={onNavigate}
-        onAddChild={vi.fn()}
       />,
     );
     await waitFor(() => expect(onNavigate).toHaveBeenCalledWith('littlesteps/dashboard'));
@@ -102,7 +101,6 @@ describe('登入後的去向', () => {
         entryPage="littlebloom"
         onSignIn={vi.fn()}
         onNavigate={onNavigate}
-        onAddChild={vi.fn()}
       />,
     );
     await waitFor(() => expect(onNavigate).toHaveBeenCalledWith('littlebloom'));
@@ -119,7 +117,6 @@ describe('登入後的去向', () => {
         entryPage="littlesteps/dashboard"
         onSignIn={vi.fn()}
         onNavigate={onNavigate}
-        onAddChild={vi.fn()}
       />,
     );
     await waitFor(() => expect(onNavigate).not.toHaveBeenCalled());
@@ -128,5 +125,29 @@ describe('登入後的去向', () => {
   it('本來就是登入狀態時不會再跳一次', async () => {
     const { onNavigate } = renderAt(signedIn, true);
     await waitFor(() => expect(onNavigate).not.toHaveBeenCalled());
+  });
+});
+
+describe('還沒有寶寶時的引導', () => {
+  it('「新增寶寶」打開新增表單，而不是打開沒有新增功能的側邊欄', async () => {
+    const user = userEvent.setup();
+    render(
+      <LandingPage
+        kind="first-child"
+        page="littlesteps"
+        user={signedIn}
+        hasChildren={false}
+        entryPage="littlesteps/dashboard"
+        onSignIn={vi.fn()}
+        onNavigate={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: '新增寶寶' }));
+
+    // 表單真的開了才算：這顆按鈕原本只是 setSidebarOpen(true)，而寶寶管理
+    // 已經從側邊欄搬走，於是新註冊的家長按下去什麼也做不了。
+    expect(screen.getByLabelText('寶寶姓名')).toBeInTheDocument();
+    expect(screen.getByLabelText('寶寶生日')).toBeInTheDocument();
   });
 });

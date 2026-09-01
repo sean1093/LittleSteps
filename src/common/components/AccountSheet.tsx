@@ -6,6 +6,7 @@ import { useOptionalChildStore } from '../contexts/ChildStoreContext';
 import { isPregnancyProfile } from '../pregnancy';
 import type { ChildProfile, Gender } from '../../types';
 import { backdrop, sheet } from '../ui/motion';
+import { useDialogA11y } from '../ui/useDialogA11y';
 import { goTo } from '../navigate';
 import { SERVICE_THEME, type ServiceId } from '../ui/serviceTheme';
 import { CHILD_LIMIT_MESSAGE, MAX_CHILDREN } from '../childLimits';
@@ -35,6 +36,8 @@ interface AccountSheetProps {
 export default function AccountSheet({ service, onClose }: AccountSheetProps) {
   const { user, signInWithGoogle, signOut } = useAuth();
   const store = useOptionalChildStore();
+  // 只在開著的時候才掛載（AccountButton 用 AnimatePresence 包住），所以固定傳 true。
+  const dialogRef = useDialogA11y(true, onClose);
   const childProfiles = store?.childProfiles ?? [];
   const currentChildId = store?.currentChildId ?? null;
 
@@ -46,7 +49,9 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
   const showChildren = SERVICE_USES_CHILD[service] && store !== null;
   const canAddChild = childProfiles.length < MAX_CHILDREN;
 
-  const handleSaveChild = (
+  // 回傳 promise，讓 AddChildModal 等寫入成功才關窗；失敗時它會留著輸入
+  // 並顯示原因，而不是安靜地關掉、把打好的名字與生日一起丟掉。
+  const handleSaveChild = async (
     name: string,
     birthday: string,
     gender?: Gender,
@@ -54,9 +59,9 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
     dueDate?: string,
   ) => {
     if (editingChild) {
-      store?.updateChild(editingChild.id, name, birthday, gender);
+      await store?.updateChild(editingChild.id, name, birthday, gender);
     } else {
-      store?.addChild(name, birthday, gender, dueDate);
+      await store?.addChild(name, birthday, gender, dueDate);
     }
     setEditingChild(null);
   };
@@ -83,6 +88,11 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
       <motion.div {...backdrop} onClick={onClose} className="fixed inset-0 bg-ink/40 z-40" />
       <motion.div
         {...sheet}
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="帳號與寶寶"
+        tabIndex={-1}
         className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl z-50 max-h-[85vh] overflow-y-auto"
       >
         <div className="sticky top-0 bg-white border-b border-ink/10 px-4 py-3 flex items-center justify-between gap-3">

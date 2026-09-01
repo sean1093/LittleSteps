@@ -19,6 +19,7 @@ import LandingPage, { landingKindFor, isStandaloneLanding } from './common/landi
 import ErrorBoundary from './common/components/ErrorBoundary';
 import { ToastProvider } from './common/ui/toast';
 import AppBar from './common/ui/AppBar';
+import EmptyState from './common/ui/EmptyState';
 import { SERVICE_THEME } from './common/ui/serviceTheme';
 const DashboardPage = lazy(() => import('./littlesteps/pages/DashboardPage'));
 const MilestonesPage = lazy(() => import('./littlesteps/pages/MilestonesPage'));
@@ -49,13 +50,12 @@ function AppContent() {
 
   const {
     childProfiles,
-    currentChildId,
     currentChild,
     currentChildMilestoneProgress,
     currentChildVaccineProgress,
     childrenLoading,
     toggleMilestone,
-    toggleVaccineDose,
+    setVaccineDose,
     addChild,
     joinChild,
     currentChildDevelopmentProgress,
@@ -68,6 +68,7 @@ function AppContent() {
     clearPrenatalRecord,
     recordBirth,
     upsertCareTaskRecord,
+    clearCareTaskRecord,
     addDiaryEntry,
     updateDiaryEntry,
     deleteDiaryEntry,
@@ -79,9 +80,12 @@ function AppContent() {
 
 
   // Get daily logs for current child
-  const { logs: dailyLogs } = useDailyLogs(currentChildId, user);
+  // currentChild 不一定是 currentChildId 指的那一個：共享的孩子被建立者刪掉
+  // 之後 currentChildId 會被清成 null，而畫面已經退到名單裡的第一個孩子。
+  // 這裡若用 id，日誌與日記就會去讀一個 null，家長看到的是「這孩子沒有紀錄」。
+  const { logs: dailyLogs } = useDailyLogs(currentChild?.id ?? null, user);
   const { tasks: careTasks } = useCareTasks(currentChild);
-  const { entries: diaryEntries } = useDiary(currentChildId, user);
+  const { entries: diaryEntries } = useDiary(currentChild?.id ?? null, user);
   // 建檔之前就到期的項目不算逾期——app 只是沒有那段紀錄，不是家長漏掉了。
   // 把它們算進紅點，會讓新增一個既有的兩歲孩子立刻背上十幾筆「未完成」。
   const reminderBadge =
@@ -186,10 +190,42 @@ function AppContent() {
   const showHeader = !(currentPage === 'home' || isStandaloneSubApp);
 
 
+  // RTDB 沒有磁碟快取。已安裝的 PWA 在離線時仍然開得起來（shell 有 precache），
+  // 但 onValue 永遠不會回呼，於是載入條會一直轉下去，沒有任何說明。
+  const dataPending = loading || (user !== null && childrenLoading);
+  const [loadStalled, setLoadStalled] = useState(false);
+  useEffect(() => {
+    if (!dataPending) {
+      setLoadStalled(false);
+      return;
+    }
+    // 已知離線就不必等：直接說實話。
+    if (navigator.onLine === false) {
+      setLoadStalled(true);
+      return;
+    }
+    const timer = window.setTimeout(() => setLoadStalled(true), 10000);
+    return () => window.clearTimeout(timer);
+  }, [dataPending]);
+
   // Show loading state while auth or children data is loading.
   // A pulsing 64px baby icon was the old treatment; a thin progress bar says
   // the same thing without an illustration and without a layout jump.
-  if (loading || (user && childrenLoading)) {
+  if (dataPending) {
+    if (loadStalled) {
+      return (
+        <div className="min-h-dscreen bg-warm-white flex items-center justify-center p-4">
+          <div className="w-full max-w-md">
+            <EmptyState
+              theme={SERVICE_THEME.littlesteps}
+              title="連不上伺服器"
+              description="目前似乎沒有網路連線。寶寶的資料存在雲端，連上網路後就會出現。"
+              action={{ label: '重新載入', onClick: () => window.location.reload() }}
+            />
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="min-h-dscreen flex items-center justify-center bg-warm-white">
         <div className="w-40 h-1 rounded-full bg-primary-light overflow-hidden" role="status">
@@ -217,7 +253,6 @@ function AppContent() {
       currentService={serviceForStage(stageOfChild(currentChild))}
       onSignIn={signInWithGoogle}
       onNavigate={navigateToPage}
-      onAddChild={() => setSidebarOpen(true)}
     />
   );
 
@@ -327,7 +362,7 @@ function AppContent() {
             <VaccineTrackingPage
               currentChild={currentChild}
               vaccineProgress={currentChildVaccineProgress}
-              onToggleVaccineDose={toggleVaccineDose}
+              onSetVaccineDose={setVaccineDose}
             />
           </PregnancyGate>
         )}
@@ -423,6 +458,7 @@ function AppContent() {
             tasks={careTasks}
             reminderBadge={reminderBadge}
             onCompleteTask={upsertCareTaskRecord}
+            onUndoTask={clearCareTaskRecord}
             onAddChild={(name, birthday, gender) => addChild(name, birthday, gender)}
             onJoinChild={joinChild}
           />

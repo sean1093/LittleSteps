@@ -1,25 +1,30 @@
-import { ref, set, update, remove, get } from 'firebase/database';
+import { ref, set, update, remove, get, push, type DatabaseReference } from 'firebase/database';
 import { database } from '../../lib/firebase';
 import { CareTaskRecord, ChildProfile, DailyLog, DiaryEntry, FoodTrialRecord, Gender } from '../../types';
 import { removeUndefined } from '../utils/firebaseData';
 import { lmpFromDueDate, toLocalDateKey } from '../utils/dateHelpers';
 import { CHILD_LIMIT_MESSAGE, MAX_CHILDREN } from '../childLimits';
 
-// Helper function to generate UUID v4
-function generateUUID(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
+/**
+ * 新紀錄的 key 一律交給 push()。
+ *
+ * 原本是 `${prefix}_${Date.now()}`：共享的孩子有兩個家長（createdBy 就是為此
+ * 存在），同一毫秒各寫一筆，後到的那筆會靜靜蓋掉對方的紀錄。push() 的 key 由
+ * 客戶端產生且含隨機位元，兩端不會撞。
+ *
+ * 既有的 Date.now() key 原樣留著——讀取一律 Object.values 後照紀錄自己的時間
+ * 排序，沒有任何地方把 key 的順序當成時間順序。
+ */
+function newRecordRef(path: string): { recordRef: DatabaseReference; id: string } {
+  const recordRef = push(ref(database, path));
+  if (!recordRef.key) throw new Error('無法產生紀錄編號');
+  return { recordRef, id: recordRef.key };
 }
 
 export function useFirebaseChildren(userId: string | null) {
   /**
-   * Add a new child profile
-   * - Generates a unique UUID for the child
-   * - Stores child data in children/{uuid}
-   * - Adds UUID to users/{userId}/childrenIds
+   * 新增一份檔案：孩子本體、自己的成員資格、（第一個孩子的）選取狀態，
+   * 一筆原子寫入。
    */
   const addChild = async (
     name: string,
@@ -36,7 +41,7 @@ export function useFirebaseChildren(userId: string | null) {
       throw new Error(CHILD_LIMIT_MESSAGE);
     }
 
-    const childId = generateUUID();
+    const childId = crypto.randomUUID();
     const newChild: ChildProfile = {
       id: childId,
       name,
@@ -60,25 +65,28 @@ export function useFirebaseChildren(userId: string | null) {
       createdBy: userId,
     };
 
-    // Store child data in shared children/ node
-    const childRef = ref(database, `children/${childId}`);
-    await set(childRef, removeUndefined(newChild));
-
-    // Add child UUID to user's childrenIds
-    const userChildRef = ref(database, `users/${userId}/childrenIds/${childId}`);
-    await set(userChildRef, true);
-
-    // 加入用的公開索引，見 childIndex 的說明。必須排在授權之後：
-    // 規則要求寫入者已經是成員。
-    await set(ref(database, `childIndex/${childId}`), true);
-
-    // 如果是第一個孩子，自動設為 currentChildId
+    // 一次寫完，不是三筆循序 set。
+    //
+    // 原本先寫 children/{id} 再寫 childrenIds：第二筆沒落地就沒有任何人是
+    // 成員，database.rules.json 從此拒絕這個 childId 的每一次讀與寫——那份
+    // 健康紀錄再也讀不到、也刪不掉，帳號卻已經被它佔掉一個名額。
+    const updates: Record<string, unknown> = {
+      [`children/${childId}`]: removeUndefined(newChild),
+      [`users/${userId}/childrenIds/${childId}`]: true,
+    };
+    // 第一個孩子自動設為當前選取，同一筆帶過去。
     if (currentChildCount === 0) {
-      const userRef = ref(database, `users/${userId}`);
-      await update(userRef, {
-        currentChildId: childId,
-      });
+      updates[`users/${userId}/currentChildId`] = childId;
     }
+    await update(ref(database), updates);
+
+    // 加入用的公開索引，見 childIndex 的說明。它進不了上面那一筆：規則檢查的
+    // 是寫入前的 root，成員資格在同一筆裡還不算存在，所以只能排在授權之後。
+    // 寫失敗不算新增失敗——孩子已經建好了，而 useUserChildren 對每個有權限的
+    // 孩子都會補一次索引。
+    await set(ref(database, `childIndex/${childId}`), true).catch((error) => {
+      console.error('寫入寶寶索引失敗，稍後由名單 listener 補上:', error);
+    });
 
     return childId;
   };
@@ -290,13 +298,6 @@ export function useFirebaseChildren(userId: string | null) {
   };
 
   /**
-   * 孕期檔案轉為寶寶檔案。
-   *
-   * 保留 pregnancyData 當作孕期紀錄，只把 status 改成 archived —— 家長花了
-   * 十個月累積的產檢記錄不該在出生那天被清掉。birthday 由預產期換成實際
-   * 出生日，之後 LittleSteps 與 LittleExplorer 的月齡計算就會接手。
-   */
-  /**
    * 孕期檔案轉成寶寶檔案。
    *
    * 一併收性別：成長曲線的百分位要有性別才算得出來（WHO 標準男女不同表），
@@ -326,16 +327,21 @@ export function useFirebaseChildren(userId: string | null) {
     await set(taskRef, removeUndefined(record));
   };
 
+  const clearCareTaskRecord = async (childId: string, taskId: string) => {
+    if (!userId) throw new Error('User not authenticated');
+
+    const taskRef = ref(database, `children/${childId}/careTaskProgress/${taskId}`);
+    await remove(taskRef);
+  };
+
   const addDiaryEntry = async (childId: string, entry: Omit<DiaryEntry, 'id'>) => {
     if (!userId) throw new Error('User not authenticated');
 
-    const entryId = `diary_${Date.now()}`;
-    const newEntry: DiaryEntry = { ...entry, id: entryId };
+    const { recordRef, id } = newRecordRef(`children/${childId}/diaryEntries`);
+    const newEntry: DiaryEntry = { ...entry, id };
+    await set(recordRef, removeUndefined(newEntry));
 
-    const entryRef = ref(database, `children/${childId}/diaryEntries/${entryId}`);
-    await set(entryRef, removeUndefined(newEntry));
-
-    return entryId;
+    return id;
   };
 
   const updateDiaryEntry = async (childId: string, entryId: string, updates: Partial<DiaryEntry>) => {
@@ -359,16 +365,11 @@ export function useFirebaseChildren(userId: string | null) {
   const addDailyLog = async (childId: string, log: Omit<DailyLog, 'id'>) => {
     if (!userId) throw new Error('User not authenticated');
 
-    const logId = `log_${Date.now()}`;
-    const newLog: DailyLog = {
-      ...log,
-      id: logId,
-    };
+    const { recordRef, id } = newRecordRef(`children/${childId}/dailyLogs`);
+    const newLog: DailyLog = { ...log, id };
+    await set(recordRef, removeUndefined(newLog));
 
-    const logRef = ref(database, `children/${childId}/dailyLogs/${logId}`);
-    await set(logRef, removeUndefined(newLog));
-
-    return logId;
+    return id;
   };
 
   const updateDailyLog = async (childId: string, logId: string, updates: Partial<DailyLog>) => {
@@ -392,17 +393,15 @@ export function useFirebaseChildren(userId: string | null) {
   const addFoodTrial = async (childId: string, foodTrial: Omit<FoodTrialRecord, 'id' | 'createdAt'>) => {
     if (!userId) throw new Error('User not authenticated');
 
-    const foodId = `food_${Date.now()}`;
+    const { recordRef, id } = newRecordRef(`children/${childId}/foodTrackingProgress`);
     const newFoodTrial: FoodTrialRecord = {
       ...foodTrial,
-      id: foodId,
+      id,
       createdAt: new Date().toISOString(),
     };
+    await set(recordRef, removeUndefined(newFoodTrial));
 
-    const foodRef = ref(database, `children/${childId}/foodTrackingProgress/${foodId}`);
-    await set(foodRef, removeUndefined(newFoodTrial));
-
-    return foodId;
+    return id;
   };
 
   const updateFoodTrial = async (childId: string, foodId: string, updates: Partial<FoodTrialRecord>) => {
@@ -432,18 +431,16 @@ export function useFirebaseChildren(userId: string | null) {
   }) => {
     if (!userId) throw new Error('User not authenticated');
 
-    const feedbackId = `feedback_${Date.now()}`;
+    const { recordRef, id } = newRecordRef('feedbacks');
     const feedbackData = {
-      id: feedbackId,
+      id,
       ...feedback,
       timestamp: new Date().toISOString(),
       createdAt: new Date().toISOString(),
     };
+    await set(recordRef, feedbackData);
 
-    const feedbackRef = ref(database, `feedbacks/${feedbackId}`);
-    await set(feedbackRef, feedbackData);
-
-    return feedbackId;
+    return id;
   };
 
   return {
@@ -468,6 +465,7 @@ export function useFirebaseChildren(userId: string | null) {
     clearPrenatalRecord,
     recordBirth,
     upsertCareTaskRecord,
+    clearCareTaskRecord,
     addDiaryEntry,
     updateDiaryEntry,
     deleteDiaryEntry,

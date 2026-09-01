@@ -24,7 +24,12 @@ type MonthFilter = 'all' | number;
 interface VaccineTrackingPageProps {
   currentChild?: ChildProfile | null;
   vaccineProgress: VaccineProgress;
-  onToggleVaccineDose: (vaccineId: string, doseNumber: number, customDate?: string) => void;
+  onSetVaccineDose: (
+    vaccineId: string,
+    doseNumber: number,
+    administered: boolean,
+    date?: string,
+  ) => void;
 }
 
 const FUNDING_FILTERS: { value: FundingFilter; label: string }[] = [
@@ -73,7 +78,7 @@ const AVAILABLE_MONTHS = Array.from(
 export default function VaccineTrackingPage({
   currentChild,
   vaccineProgress,
-  onToggleVaccineDose,
+  onSetVaccineDose,
 }: VaccineTrackingPageProps) {
   const [fundingFilter, setFundingFilter] = useState<FundingFilter>('all');
   // 從孩子已經到期的最後一個月齡起跑。停在「全部」的話，8 個月大寶寶的家長
@@ -86,7 +91,14 @@ export default function VaccineTrackingPage({
   const [showContraindications, setShowContraindications] = useState(false);
   const [showVaccineTypes, setShowVaccineTypes] = useState(false);
   const [showGuidelines, setShowGuidelines] = useState(false);
-  const [editingDose, setEditingDose] = useState<{ vaccineId: string; doseNumber: number; currentDate?: string } | null>(null);
+  // administered 收在 state 裡，而不是拿 currentDate 有沒有值去猜：只勾了
+  // 接種、沒填日期的紀錄是真實存在的，猜的話那一劑會被當成還沒接種。
+  const [editingDose, setEditingDose] = useState<{
+    vaccineId: string;
+    doseNumber: number;
+    administered: boolean;
+    currentDate?: string;
+  } | null>(null);
 
   const { scrollerRef, selectedRef } = useCentreSelectedChip(monthFilter);
 
@@ -266,6 +278,13 @@ export default function VaccineTrackingPage({
                         const doseNum = vaccine.currentDose || 1;
                         const isAdministered = isDoseAdministered(vaccine.id, doseNum);
                         const doseDate = getDoseDate(vaccine.id, doseNum);
+                        const openDoseSheet = () =>
+                          setEditingDose({
+                            vaccineId: vaccine.id,
+                            doseNumber: doseNum,
+                            administered: isAdministered,
+                            currentDate: doseDate,
+                          });
 
                         return (
                           <motion.div key={vaccine.id} layout variants={listItem} className="card">
@@ -302,45 +321,42 @@ export default function VaccineTrackingPage({
                               </div>
                             </div>
 
-                            {/* Single Dose Checkbox - Only show the current dose for this vaccine entry */}
-                            <div className="flex items-center gap-3 p-3 bg-warm-white rounded-xl">
+                            {/*
+                              圓點的視覺維持 24px，外面的按鈕撐到 44px 才點得到；
+                              負邊距讓這一列的節奏不變。同 MilestoneCard 的做法。
+                            */}
+                            <div className="flex items-center gap-3 px-3 bg-warm-white rounded-xl">
                               <button
                                 type="button"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  // 已接種的按了是改日期，未接種的按了是登記日期，兩者都開同一個 modal
-                                  setEditingDose({
-                                    vaccineId: vaccine.id,
-                                    doseNumber: doseNum,
-                                    currentDate: isAdministered ? doseDate : undefined,
-                                  });
-                                }}
-                                className={`
-                                  flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer
-                                  ${isAdministered
-                                    ? 'bg-primary-dark border-primary-dark'
-                                    : 'border-ink/25 hover:border-primary-dark'
-                                  }
-                                `}
-                                aria-label={`標記為${isAdministered ? '未接種' : '已接種'}`}
+                                onClick={openDoseSheet}
+                                aria-label={`${vaccine.name}：${isAdministered ? '修改接種日期' : '記錄接種日期'}`}
+                                className="btn-icon -m-2.5"
                               >
-                                {isAdministered && <Check className="w-4 h-4 text-white" />}
+                                <span
+                                  className={`
+                                    w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
+                                    ${isAdministered
+                                      ? 'bg-primary-dark border-primary-dark'
+                                      : 'border-ink/25'
+                                    }
+                                  `}
+                                >
+                                  {isAdministered && <Check className="w-4 h-4 text-white" />}
+                                </span>
                               </button>
-                              <div className="flex-1">
-                                {isAdministered && doseDate && (
-                                  <button
-                                    onClick={() => setEditingDose({ vaccineId: vaccine.id, doseNumber: doseNum, currentDate: doseDate })}
-                                    className="inline-flex items-center gap-1 text-sm text-mint-dark font-medium hover:underline"
-                                  >
-                                    <Check className="w-4 h-4" />
-                                    {formatDate(doseDate)}
-                                  </button>
-                                )}
-                                {!isAdministered && (
+                              <button
+                                type="button"
+                                onClick={openDoseSheet}
+                                className="flex-1 min-h-tap flex items-center text-left"
+                              >
+                                {isAdministered ? (
+                                  <span className="text-sm text-mint-dark font-medium">
+                                    {doseDate ? `接種日期 ${formatDate(doseDate)}` : '已接種，點擊補上日期'}
+                                  </span>
+                                ) : (
                                   <span className="text-sm text-ink-muted">點擊記錄接種日期</span>
                                 )}
-                              </div>
+                              </button>
                             </div>
 
                             {/* Description and Protection - Always shown */}
@@ -487,7 +503,7 @@ export default function VaccineTrackingPage({
       <AnimatePresence>
         {editingDose && (
           <Sheet
-            title={editingDose.currentDate ? '修改接種日期' : '記錄接種日期'}
+            title={editingDose.administered ? '修改接種日期' : '記錄接種日期'}
             onClose={() => setEditingDose(null)}
           >
             <form
@@ -497,8 +513,9 @@ export default function VaccineTrackingPage({
                 const date = formData.get('date') as string;
 
                 if (date) {
-                  // Update the vaccine dose with the selected date
-                  onToggleVaccineDose(editingDose.vaccineId, editingDose.doseNumber, date);
+                  // 確認日期一定是「已接種」。這裡原本沿用 toggle，於是家長在
+                  // 已接種的那一劑上按確認，反而把整筆接種紀錄清掉。
+                  onSetVaccineDose(editingDose.vaccineId, editingDose.doseNumber, true, date);
                   setEditingDose(null);
                 }
               }}
@@ -534,6 +551,20 @@ export default function VaccineTrackingPage({
                 </motion.button>
               </div>
             </form>
+
+            {/* 取消接種是另一件事，不該由「確認日期」順手做掉——那正是原本的 bug。 */}
+            {editingDose.administered && (
+              <button
+                type="button"
+                onClick={() => {
+                  onSetVaccineDose(editingDose.vaccineId, editingDose.doseNumber, false);
+                  setEditingDose(null);
+                }}
+                className="btn-ghost w-full text-primary-dark hover:bg-primary-light"
+              >
+                取消接種記錄
+              </button>
+            )}
           </Sheet>
         )}
       </AnimatePresence>

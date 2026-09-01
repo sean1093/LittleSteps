@@ -12,7 +12,7 @@ import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { hoverLift, listItem, stagger, tap } from '../../common/ui/motion';
 import type { Page } from '../../types/routes';
 import { isPregnancyProfile } from '../../common/pregnancy';
-import { formatDate, toLocalDateKey } from '../../common/utils/dateHelpers';
+import { formatDate, parseLocalDate, toLocalDateKey } from '../../common/utils/dateHelpers';
 import { goTo } from '../../common/navigate';
 
 interface LittleBloomPageProps {
@@ -37,6 +37,28 @@ const TRIMESTER_LABEL: Record<1 | 2 | 3, string> = {
   3: '第三孕期',
 };
 
+/**
+ * 出生日期不通過的理由，通過則 null。
+ *
+ * 這是四個服務裡唯一不可逆的寫入：確認之後孕期檔案就被改寫成寶寶檔案、孕期
+ * 資料封存，沒有任何流程回得去。而空白的日期會讓月齡算出 NaN，照護時程從此
+ * 永遠是空的——家長會拿到一份同時壞掉的孕期與寶寶檔案，自己救不回來。
+ * 所以擋在送出之前，不是事後補救。
+ */
+function birthDateProblem(birthDate: string, lmp: string, today: string): string | null {
+  if (!birthDate || Number.isNaN(parseLocalDate(birthDate).getTime())) {
+    return '請填入實際出生日期。';
+  }
+  if (birthDate > today) {
+    return '出生日期不能填未來的日期，寶寶還沒出生就先別登記。';
+  }
+  // 早於末次月經的日期不可能是這一胎的出生日，多半是選錯年份。
+  if (lmp && birthDate < lmp) {
+    return `出生日期不能早於末次月經（${formatDate(lmp)}）。`;
+  }
+  return null;
+}
+
 export default function LittleBloomPage({
   currentChild,
   progress,
@@ -54,9 +76,13 @@ export default function LittleBloomPage({
   const [birthSaving, setBirthSaving] = useState(false);
   const [birthError, setBirthError] = useState('');
 
+  const dateProblem = birthDateProblem(birthDate, lmp, toLocalDateKey());
+
   // 登記出生會改寫檔案並封存孕期資料，失敗卻靜靜關閉表單，家長會以為存好了。
   // 同時擋住重複點擊：這個動作不該被送出兩次。
   const submitBirth = async () => {
+    // 按鈕已經停用，這裡再擋一次：這個寫入沒有回頭路。
+    if (dateProblem) return;
     setBirthSaving(true);
     setBirthError('');
     try {
@@ -240,6 +266,7 @@ export default function LittleBloomPage({
                 <input
                   type="date"
                   value={birthDate}
+                  min={lmp || undefined}
                   max={toLocalDateKey()}
                   onChange={(e) => setBirthDate(e.target.value)}
                   className="mt-1 w-full px-3 min-h-tap rounded-xl border border-bloom-sand text-sm text-bloom-stone-ink"
@@ -257,16 +284,16 @@ export default function LittleBloomPage({
                   <option value="female">女寶寶</option>
                 </select>
               </label>
-              {birthError && (
+              {(dateProblem ?? birthError) && (
                 <p role="alert" className="text-sm text-red-600">
-                  {birthError}
+                  {dateProblem ?? birthError}
                 </p>
               )}
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={submitBirth}
-                  disabled={birthSaving}
+                  disabled={birthSaving || dateProblem !== null}
                   className={`btn-primary flex-1 ${THEME.fill} ${THEME.fillText}`}
                 >
                   {birthSaving ? '儲存中…' : '確認出生'}

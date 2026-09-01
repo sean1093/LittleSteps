@@ -71,6 +71,9 @@ export default function PrenatalPage({
   const [notes, setNotes] = useState('');
   /* 建檔前那一區預設收合：重點是「有這些東西」，不是逐條看完。 */
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  /* 失敗訊息綁在出問題的那一列：這一頁同時列 14 次產檢，頁面級的橫幅說不清是哪一項。 */
+  const [failure, setFailure] = useState<{ templateId: string; message: string } | null>(null);
 
   const lmp = currentChild?.pregnancyData?.lastPeriodDate ?? '';
 
@@ -126,13 +129,42 @@ export default function PrenatalPage({
     );
   }
 
+  /*
+   * store 的 upsertPrenatalRecord／clearPrenatalRecord 失敗時往外丟且不 toast
+   * ——訊息由這一頁負責。表單必須留著：家長剛打的院所與備註不能因為一次網路
+   * 逾時就被清掉，而重複點擊會寫進兩次。
+   */
   const submit = async (templateId: string) => {
-    await onComplete(templateId, {
-      completedDate,
-      clinicName: clinicName.trim() || undefined,
-      notes: notes.trim() || undefined,
-    });
-    setFormFor(null);
+    if (saving) return;
+    setSaving(true);
+    setFailure(null);
+    try {
+      await onComplete(templateId, {
+        completedDate,
+        clinicName: clinicName.trim() || undefined,
+        notes: notes.trim() || undefined,
+      });
+      setFormFor(null);
+    } catch (error) {
+      console.error('儲存產檢記錄失敗:', error);
+      setFailure({ templateId, message: '儲存失敗，剛才填的內容還在，請確認網路後再送出。' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const undo = async (templateId: string) => {
+    if (saving) return;
+    setSaving(true);
+    setFailure(null);
+    try {
+      await onUndo(templateId);
+    } catch (error) {
+      console.error('取消產檢記錄失敗:', error);
+      setFailure({ templateId, message: '取消失敗，請確認網路後再試一次。' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   /**
@@ -183,8 +215,11 @@ export default function PrenatalPage({
             <motion.button
               type="button"
               whileTap={tap}
-              onClick={() => onUndo(template.id)}
-              className="btn-ghost text-sm"
+              onClick={() => {
+                void undo(template.id);
+              }}
+              disabled={saving}
+              className="btn-ghost text-sm disabled:opacity-60"
             >
               <Undo2 className="w-4 h-4" />
               取消完成
@@ -218,6 +253,7 @@ export default function PrenatalPage({
               <input
                 type="date"
                 value={completedDate}
+                max={today()}
                 onChange={(e) => setCompletedDate(e.target.value)}
                 className="mt-1 w-full px-3 min-h-tap rounded-xl border border-bloom-sand text-sm text-bloom-stone-ink"
               />
@@ -238,12 +274,21 @@ export default function PrenatalPage({
             />
             <button
               type="button"
-              onClick={() => submit(template.id)}
+              onClick={() => {
+                void submit(template.id);
+              }}
+              disabled={saving || !completedDate || completedDate > today()}
               className={`btn-primary w-full ${THEME.fill} ${THEME.fillText}`}
             >
-              儲存
+              {saving ? '儲存中…' : '儲存'}
             </button>
           </div>
+        )}
+
+        {failure?.templateId === template.id && (
+          <p role="alert" className="text-sm mt-2 text-bloom-terracotta-ink">
+            {failure.message}
+          </p>
         )}
       </li>
     );

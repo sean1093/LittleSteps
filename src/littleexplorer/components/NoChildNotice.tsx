@@ -40,10 +40,11 @@ export default function NoChildNotice({
         modes={['create', 'join']}
         accent={theme.fill}
         accentText={theme.fillText}
-        onJoin={onJoinChild ? (uuid) => void onJoinChild(uuid).then(() => setOpen(false)) : undefined}
-        onSave={(name, birthday, gender) => {
-          void onAddChild(name, birthday, gender).then(() => setOpen(false));
-        }}
+        // 直接把 promise 交給 AddChildModal：它會等寫入成功才關視窗。原本是
+        // `then(() => setOpen(false))`，不論成敗都關——新增失敗的家長會以為
+        // 寶寶建好了，回到同一張「還沒有寶寶資料」的畫面卻不知道為什麼。
+        onJoin={onJoinChild}
+        onSave={onAddChild}
       />
     </>
   );

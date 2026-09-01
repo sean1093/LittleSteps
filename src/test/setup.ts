@@ -9,8 +9,10 @@ afterEach(() => {
 });
 
 // Mock Firebase functions
-const mockRef = vi.fn();
+const mockRef = vi.fn((_db, path?: string) => ({ path }));
+const mockChild = vi.fn((parent, path: string) => ({ path: `${parent?.path ?? ''}/${path}` }));
 const mockSet = vi.fn().mockResolvedValue(undefined);
+const mockUpdate = vi.fn().mockResolvedValue(undefined);
 const mockOnValue = vi.fn((_ref, callback) => {
   // Call callback with empty data
   callback({ val: () => null });
@@ -18,6 +20,15 @@ const mockOnValue = vi.fn((_ref, callback) => {
   return vi.fn();
 });
 const mockRemove = vi.fn().mockResolvedValue(undefined);
+const mockGet = vi.fn().mockResolvedValue({ exists: () => false, val: () => null });
+// push() 的重點是「每次都不一樣」：Date.now() 當 key 會讓同一毫秒內的兩筆
+// 紀錄互相覆蓋，而共用同一個孩子的兩位家長就是兩個寫入者。
+let pushCount = 0;
+const mockPush = vi.fn((parent) => {
+  pushCount += 1;
+  const key = `mock_push_${pushCount}`;
+  return { key, path: `${parent?.path ?? ''}/${key}` };
+});
 
 /**
  * 這份 mock 必須蓋滿 lib/firebase 的真實匯出面。少一個匯出，
@@ -26,7 +37,6 @@ const mockRemove = vi.fn().mockResolvedValue(undefined);
 vi.mock('../lib/firebase', () => ({
   database: { _checkNotDeleted: vi.fn() },
   auth: { currentUser: null },
-  analytics: {},
   googleProvider: {},
   logEvent: vi.fn(),
   logPageView: vi.fn(),
@@ -34,7 +44,6 @@ vi.mock('../lib/firebase', () => ({
   logVaccineToggle: vi.fn(),
   logChildProfileAction: vi.fn(),
   logAuthEvent: vi.fn(),
-  default: {},
 }));
 
 // 測試一律以「未登入」起跑：onAuthStateChanged 立刻回報 null，
@@ -55,7 +64,11 @@ vi.mock('firebase/auth', () => ({
 // Mock Firebase database functions
 vi.mock('firebase/database', () => ({
   ref: mockRef,
+  child: mockChild,
   set: mockSet,
+  update: mockUpdate,
+  push: mockPush,
+  get: mockGet,
   onValue: mockOnValue,
   remove: mockRemove,
 }));

@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import type { User } from 'firebase/auth';
 import { FoodTrackingProgress } from '../../types';
 import { useFirebaseCollection } from '../../common/hooks/useFirebaseCollection';
-import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
 /** 食物嘗試的統計；追蹤頁與主頁概況共用同一份形狀。 */
 export interface FoodStats {
@@ -18,7 +17,7 @@ export interface FoodStats {
  * (Firebase). Writes go through useFirebaseChildren in the calling component.
  */
 export function useFoodTracking(childId: string | null, user: User | null) {
-  const { data: foodProgress, loading } = useFirebaseCollection<FoodTrackingProgress>(childId, user, {
+  const { data: foodProgress, loading, error } = useFirebaseCollection<FoodTrackingProgress>(childId, user, {
     firebasePath: `children/${childId}/foodTrackingProgress`,
     empty: {},
     fromFirebase: (data) => (data ? (data as FoodTrackingProgress) : {}),
@@ -43,27 +42,8 @@ export function useFoodTracking(childId: string | null, user: User | null) {
     return { total, withAllergy, loved, disliked, noAllergy: total - withAllergy };
   }, [foodTrials]);
 
-  /** Whether a food can be tried again (>= 3 days since its last trial). */
-  const canTryNewFood = (foodId: string): boolean => {
-    const food = foodProgress[foodId];
-    if (!food) return true;
-    const trialDates = food.trialDates || [];
-    if (trialDates.length === 0) return true;
-    const lastTrial = new Date(trialDates[trialDates.length - 1]);
-    const daysDiff = Math.floor((Date.now() - lastTrial.getTime()) / (1000 * 60 * 60 * 24));
-    return daysDiff >= 3;
-  };
-
-  /** Next eligible trial date (last trial + 3 days) as YYYY-MM-DD, or null. */
-  const getNextTrialDate = (foodId: string): string | null => {
-    const food = foodProgress[foodId];
-    if (!food) return null;
-    const trialDates = food.trialDates || [];
-    if (trialDates.length === 0) return null;
-    const nextTrial = new Date(trialDates[trialDates.length - 1]);
-    nextTrial.setDate(nextTrial.getDate() + 3);
-    return toLocalDateKey(nextTrial);
-  };
-
-  return { foodProgress, foodTrials, loading, stats, canTryNewFood, getNextTrialDate };
+  // 「同一種食物間隔 3 天才能再試」的第二份實作原本在這裡，沒有任何人匯入，
+  // 而 FourByThreeTracker 自己算了一份——而且那份與 complementaryFood.ts 的
+  // 階段模型互相矛盾。留一份就好，留在畫面旁邊那一份。
+  return { foodProgress, foodTrials, loading, error, stats };
 }

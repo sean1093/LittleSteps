@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Save, X } from 'lucide-react';
 import { backdrop, sheet, tap } from '../../../common/ui/motion';
@@ -9,8 +9,10 @@ import { useToast } from '../../../common/ui/toast';
 interface AddGrowthRecordModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (record: Omit<GrowthRecord, 'id'>) => Promise<void>;
+  onSave: (record: Omit<GrowthRecord, 'id'>) => Promise<void>;
   childId: string;
+  /** 有值就是在改這一筆；打錯的體重原本只能刪掉重來。 */
+  editingRecord?: GrowthRecord | null;
 }
 
 /* Same recipe as `LogEntryModal`; the four fields below were each styled apart. */
@@ -20,8 +22,9 @@ const LABEL = 'block text-sm font-semibold text-ink mb-2';
 export default function AddGrowthRecordModal({
   isOpen,
   onClose,
-  onAdd,
+  onSave,
   childId,
+  editingRecord,
 }: AddGrowthRecordModalProps) {
   const toast = useToast();
   const [date, setDate] = useState(toLocalDateKey());
@@ -30,6 +33,15 @@ export default function AddGrowthRecordModal({
   const [headCircumference, setHeadCircumference] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setSaving(false);
+    setDate(editingRecord?.date ?? toLocalDateKey());
+    setWeight(editingRecord?.weight?.toString() ?? '');
+    setHeight(editingRecord?.height?.toString() ?? '');
+    setHeadCircumference(editingRecord?.headCircumference?.toString() ?? '');
+    setNotes(editingRecord?.notes ?? '');
+  }, [editingRecord, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +53,7 @@ export default function AddGrowthRecordModal({
 
     setSaving(true);
     try {
-      await onAdd({
+      await onSave({
         childId,
         date,
         weight: weight ? parseFloat(weight) : undefined,
@@ -51,16 +63,11 @@ export default function AddGrowthRecordModal({
         notes: notes || undefined,
       });
 
-      // Reset form
-      setDate(toLocalDateKey());
-      setWeight('');
-      setHeight('');
-      setHeadCircumference('');
-      setNotes('');
+      // 表單的初始值由 editingRecord 決定，下次開啟時 effect 會重設。
       onClose();
     } catch (error) {
-      console.error('Failed to add record:', error);
-      toast.show((error as Error).message || '新增失敗，請檢查輸入資料');
+      console.error('Failed to save record:', error);
+      toast.show((error as Error).message || '儲存失敗，請檢查輸入資料');
     } finally {
       setSaving(false);
     }
@@ -82,7 +89,7 @@ export default function AddGrowthRecordModal({
           >
             {/* Header */}
             <div className="sticky top-0 bg-white border-b border-ink/10 flex items-center justify-between px-4 py-3 rounded-t-3xl">
-              <h2>新增成長記錄</h2>
+              <h2>{editingRecord ? '編輯成長記錄' : '新增成長記錄'}</h2>
               <button onClick={onClose} className="btn-icon" aria-label="關閉">
                 <X className="w-5 h-5" />
               </button>
@@ -91,8 +98,9 @@ export default function AddGrowthRecordModal({
             {/* Form */}
             <form onSubmit={handleSubmit} className="p-4 space-y-5">
               <div>
-                <label className={LABEL}>測量日期</label>
+                <label htmlFor="growth-date" className={LABEL}>測量日期</label>
                 <input
+                  id="growth-date"
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
@@ -103,8 +111,9 @@ export default function AddGrowthRecordModal({
               </div>
 
               <div>
-                <label className={LABEL}>體重 (kg)</label>
+                <label htmlFor="growth-weight" className={LABEL}>體重 (kg)</label>
                 <input
+                  id="growth-weight"
                   type="number"
                   step="0.01"
                   min="0"
@@ -117,8 +126,9 @@ export default function AddGrowthRecordModal({
               </div>
 
               <div>
-                <label className={LABEL}>身高 (cm)</label>
+                <label htmlFor="growth-height" className={LABEL}>身高 (cm)</label>
                 <input
+                  id="growth-height"
                   type="number"
                   step="0.1"
                   min="0"
@@ -131,8 +141,9 @@ export default function AddGrowthRecordModal({
               </div>
 
               <div>
-                <label className={LABEL}>頭圍 (cm)</label>
+                <label htmlFor="growth-head" className={LABEL}>頭圍 (cm)</label>
                 <input
+                  id="growth-head"
                   type="number"
                   step="0.1"
                   min="0"
@@ -145,8 +156,9 @@ export default function AddGrowthRecordModal({
               </div>
 
               <div>
-                <label className={LABEL}>備註 (選填)</label>
+                <label htmlFor="growth-notes" className={LABEL}>備註 (選填)</label>
                 <textarea
+                  id="growth-notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="例如: 在家量測"
@@ -178,7 +190,7 @@ export default function AddGrowthRecordModal({
                   ) : (
                     <>
                       <Save className="w-5 h-5" />
-                      <span>儲存</span>
+                      <span>{editingRecord ? '更新' : '儲存'}</span>
                     </>
                   )}
                 </motion.button>

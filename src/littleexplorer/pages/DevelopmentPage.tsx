@@ -79,6 +79,7 @@ export default function DevelopmentPage({
   const [diaryFor, setDiaryFor] = useState<string | null>(null);
   const [diaryText, setDiaryText] = useState('');
   const [savedFor, setSavedFor] = useState<string | null>(null);
+  const [diaryError, setDiaryError] = useState('');
 
   const bandItems = useMemo(
     () => developmentCheckItems.filter((item) => item.ageBand === band),
@@ -125,7 +126,14 @@ export default function DevelopmentPage({
   const handleQuickDiary = async (item: DevelopmentCheckItem) => {
     const content = diaryText.trim();
     if (!content) return;
-    await onQuickDiary(content, item.id);
+    setDiaryError('');
+    try {
+      await onQuickDiary(content, item.id);
+    } catch {
+      // 留著輸入框與文字：家長不必重打那一句話。
+      setDiaryError('存不進日記，請稍後再試');
+      return;
+    }
     setDiaryFor(null);
     setDiaryText('');
     setSavedFor(item.id);
@@ -262,7 +270,7 @@ export default function DevelopmentPage({
                               value={diaryText}
                               onChange={(e) => setDiaryText(e.target.value)}
                               onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleQuickDiary(item);
+                                if (e.key === 'Enter') void handleQuickDiary(item);
                                 if (e.key === 'Escape') setDiaryFor(null);
                               }}
                               placeholder="要記一筆嗎？（選填）"
@@ -271,7 +279,7 @@ export default function DevelopmentPage({
                             />
                             <button
                               type="button"
-                              onClick={() => handleQuickDiary(item)}
+                              onClick={() => void handleQuickDiary(item)}
                               disabled={!diaryText.trim()}
                               className={`btn-primary px-4 text-sm ${THEME.fill} ${THEME.fillText}`}
                             >
@@ -286,6 +294,12 @@ export default function DevelopmentPage({
                               <X className="w-5 h-5" />
                             </button>
                           </div>
+                        )}
+
+                        {diaryFor === item.id && diaryError && (
+                          <p role="alert" className="pl-tap pb-2 text-xs text-primary-dark">
+                            {diaryError}
+                          </p>
                         )}
 
                         {savedFor === item.id && (

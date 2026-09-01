@@ -30,7 +30,9 @@ export default function AddPregnancyModal({ isOpen, onClose, onAdd }: AddPregnan
       onSave={(name, _birthday, _gender, _isPregnancy, dueDate) => {
         // pregnancy 分頁一定會帶預產期；沒有就不該送出。
         if (!dueDate) return;
-        void onAdd(name, dueDate).then(onClose);
+        // 回傳 promise，讓 AddChildModal 等寫入成功才關視窗。原本是
+        // `then(onClose)`，不論成敗都關——建立失敗的家長會以為孕期檔案建好了。
+        return onAdd(name, dueDate);
       }}
     />
   );

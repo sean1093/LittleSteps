@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CalendarPlus, Check, ChevronDown, Download, History, Syringe } from 'lucide-react';
+import { CalendarPlus, Check, ChevronDown, Download, History, Syringe, Undo2 } from 'lucide-react';
 import type {
   CareTaskRecord,
   ChildProfile,
@@ -50,6 +50,11 @@ interface RemindersPageProps {
   reminderBadge?: number;
   onCompleteTask: (record: CareTaskRecord) => Promise<void>;
   /**
+   * 取消一筆照護記錄。沒有它，日期填錯的完成就永遠改不回來——完成的項目會
+   * 被這一頁篩掉，家長再也看不到、也碰不到那筆紀錄。
+   */
+  onUndoTask?: (taskId: string) => Promise<void>;
+  /**
    * 新增／加入寶寶。LittleExplorer 自己開新增視窗，不把家長送去 LittleSteps
    * ——共用的是帳號與孩子資料，不是彼此的畫面。
    */
@@ -68,6 +73,7 @@ export default function RemindersPage({
   tasks,
   reminderBadge,
   onCompleteTask,
+  onUndoTask,
   onAddChild,
   onJoinChild,
 }: RemindersPageProps) {
@@ -79,6 +85,9 @@ export default function RemindersPage({
   const [notes, setNotes] = useState('');
   /* 建檔前那一區預設收合：重點是「有這些東西」，不是逐條看完。 */
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  /* 失敗訊息綁在出問題的那一列：這一頁同時列十幾項，頁面級的橫幅說不清是哪一項。 */
+  const [failure, setFailure] = useState<{ taskId: string; message: string } | null>(null);
 
   const visible = useMemo(
     () =>
@@ -90,6 +99,12 @@ export default function RemindersPage({
       ),
     [tasks],
   );
+
+  /*
+   * 完成的項目要留得看得見。原本 visible 把 done 濾掉，於是一按下標記完成
+   * 那一列就從畫面上消失——日期填錯也沒有任何入口可以改。
+   */
+  const done = useMemo(() => tasks.filter((task) => task.status === 'done'), [tasks]);
 
   /* 建檔之後才到期的才是真的逾期；建檔前的只是 app 沒有那段紀錄。 */
   const { overdue, missingHistory } = useMemo(
@@ -145,14 +160,43 @@ export default function RemindersPage({
     setNotes('');
   };
 
+  /*
+   * store 的 upsertCareTaskRecord／清除記錄失敗時往外丟且不 toast——訊息由這
+   * 一頁負責。表單要留著：家長剛填的院所與備註不能因為一次網路逾時就消失，
+   * 而重複點擊會寫進兩次。
+   */
   const submitForm = async (taskId: string) => {
-    await onCompleteTask({
-      taskId,
-      completedDate,
-      location: location.trim() || undefined,
-      notes: notes.trim() || undefined,
-    });
-    setFormFor(null);
+    if (saving) return;
+    setSaving(true);
+    setFailure(null);
+    try {
+      await onCompleteTask({
+        taskId,
+        completedDate,
+        location: location.trim() || undefined,
+        notes: notes.trim() || undefined,
+      });
+      setFormFor(null);
+    } catch (error) {
+      console.error('儲存照護記錄失敗:', error);
+      setFailure({ taskId, message: '儲存失敗，剛才填的內容還在，請確認網路後再送出。' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const undoTask = async (taskId: string) => {
+    if (!onUndoTask || saving) return;
+    setSaving(true);
+    setFailure(null);
+    try {
+      await onUndoTask(taskId);
+    } catch (error) {
+      console.error('取消照護記錄失敗:', error);
+      setFailure({ taskId, message: '取消失敗，請確認網路後再試一次。' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   /**
@@ -163,6 +207,9 @@ export default function RemindersPage({
   const taskRow = (task: ResolvedCareTask, accent: string, beforeProfile = false) => {
     const isVaccine = Boolean(task.template.vaccineId);
     const showForm = formFor === task.template.id;
+    const isDone = task.status === 'done';
+    /* 已完成、又不是疫苗、而 onUndoTask 還沒接上時，這一列沒有任何動作可做。 */
+    const showActions = !isDone || isVaccine || Boolean(onUndoTask);
 
     return (
       <li key={task.template.id} className={`card ${accent}`}>
@@ -187,46 +234,71 @@ export default function RemindersPage({
             <p className={`text-sm mt-2 leading-relaxed ${THEME.body}`}>
               {task.template.description}
             </p>
+            {isDone && (
+              <p className="text-sm mt-2 text-explorer-meadow-ink">
+                {/* 疫苗只勾了接種、沒填日期時 completedDate 是空字串，
+                    寫成「已於 完成」等於漏字。 */}
+                {task.completedDate
+                  ? `已於 ${formatDate(task.completedDate)} 完成`
+                  : '已完成（沒有記錄日期）'}
+              </p>
+            )}
           </div>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {isVaccine ? (
-            <motion.button
-              type="button"
-              whileTap={tap}
-              onClick={() => {
-                goTo('littlesteps/vaccine-tracking');
-              }}
-              className="btn-secondary px-4 text-sm text-explorer-sky-ink"
-            >
-              <Syringe className="w-4 h-4" />
-              到疫苗追蹤勾選
-            </motion.button>
-          ) : (
-            <motion.button
-              type="button"
-              whileTap={tap}
-              onClick={() => (showForm ? setFormFor(null) : openForm(task.template.id))}
-              className="btn-secondary px-4 text-sm text-explorer-meadow-ink"
-            >
-              <Check className="w-4 h-4" />
-              標記完成
-            </motion.button>
-          )}
+        {showActions && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {isVaccine ? (
+              <motion.button
+                type="button"
+                whileTap={tap}
+                onClick={() => {
+                  goTo('littlesteps/vaccine-tracking');
+                }}
+                className="btn-secondary px-4 text-sm text-explorer-sky-ink"
+              >
+                <Syringe className="w-4 h-4" />
+                到疫苗追蹤勾選
+              </motion.button>
+            ) : isDone ? (
+              <motion.button
+                type="button"
+                whileTap={tap}
+                onClick={() => {
+                  void undoTask(task.template.id);
+                }}
+                disabled={saving}
+                className="btn-ghost text-sm disabled:opacity-60"
+              >
+                <Undo2 className="w-4 h-4" />
+                取消完成
+              </motion.button>
+            ) : (
+              <motion.button
+                type="button"
+                whileTap={tap}
+                onClick={() => (showForm ? setFormFor(null) : openForm(task.template.id))}
+                className="btn-secondary px-4 text-sm text-explorer-meadow-ink"
+              >
+                <Check className="w-4 h-4" />
+                標記完成
+              </motion.button>
+            )}
 
-          {!beforeProfile && (
-            <a
-              href={buildGoogleCalendarUrl(task, currentChild?.name ?? '寶寶')}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-ghost text-sm"
-            >
-              <CalendarPlus className="w-4 h-4" />
-              加入 Google 日曆
-            </a>
-          )}
-        </div>
+            {/* 做完的項目不必再塞進行事曆。 */}
+            {!beforeProfile && !isDone && (
+              <a
+                href={buildGoogleCalendarUrl(task, currentChild?.name ?? '寶寶')}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-ghost text-sm"
+              >
+                <CalendarPlus className="w-4 h-4" />
+                加入 Google 日曆
+              </a>
+            )}
+          </div>
+        )}
 
         {showForm && (
           <div className="mt-3 pt-3 border-t border-explorer-sand space-y-2">
@@ -235,6 +307,7 @@ export default function RemindersPage({
               <input
                 type="date"
                 value={completedDate}
+                max={today()}
                 onChange={(e) => setCompletedDate(e.target.value)}
                 className="mt-1 w-full px-3 min-h-tap rounded-xl border border-explorer-sand text-sm text-explorer-bark"
               />
@@ -255,12 +328,21 @@ export default function RemindersPage({
             />
             <button
               type="button"
-              onClick={() => submitForm(task.template.id)}
+              onClick={() => {
+                void submitForm(task.template.id);
+              }}
+              disabled={saving || !completedDate || completedDate > today()}
               className={`btn-primary w-full ${THEME.fill} ${THEME.fillText}`}
             >
-              儲存
+              {saving ? '儲存中…' : '儲存'}
             </button>
           </div>
+        )}
+
+        {failure?.taskId === task.template.id && (
+          <p role="alert" className="text-sm mt-2 text-explorer-clay-ink">
+            {failure.message}
+          </p>
         )}
       </li>
     );
@@ -279,7 +361,6 @@ export default function RemindersPage({
             <motion.div variants={listItem}>
               <EmptyState
                 theme={THEME}
-                icon={Check}
                 title="目前沒有待辦"
                 description="接下來 90 天沒有到期的健檢、疫苗或塗氟。下一項到期時會自動出現在這裡。"
               />
@@ -330,6 +411,17 @@ export default function RemindersPage({
                   </motion.div>
                 )}
               </AnimatePresence>
+            </motion.section>
+          )}
+
+          {/* 已完成殿後，而且不算進 actionable：匯出與空狀態都只看還得動的項目。 */}
+          {done.length > 0 && (
+            <motion.section variants={listItem}>
+              <h2 className={`px-1 mb-2 ${THEME.body}`}>
+                已完成
+                <span className={`ml-2 text-sm font-normal ${THEME.muted}`}>{done.length}</span>
+              </h2>
+              <ul className="space-y-3">{done.map((task) => taskRow(task, ''))}</ul>
             </motion.section>
           )}
 

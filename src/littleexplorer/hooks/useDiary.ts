@@ -11,12 +11,12 @@ import { useFirebaseCollection } from '../../common/hooks/useFirebaseCollection'
  * entry through every child-profile update.
  */
 export function useDiary(childId: string | null, user: User | null) {
-  const { data: entries, loading } = useFirebaseCollection<DiaryEntry[]>(childId, user, {
+  const { data: entries, loading, error } = useFirebaseCollection<DiaryEntry[]>(childId, user, {
     firebasePath: `children/${childId}/diaryEntries`,
     empty: [],
     fromFirebase: (data) => (data ? (Object.values(data) as DiaryEntry[]) : []),
     errorLabel: 'Error fetching diary entries:',
   });
 
-  return { entries, loading };
+  return { entries, loading, error };
 }

@@ -44,7 +44,7 @@ export default function ComplementaryFoodPage({
   const [editingFood, setEditingFood] = useState<FoodTrialRecord | null>(null);
 
   const childId = currentChild?.id || null;
-  const { foodProgress, foodTrials, stats } = useFoodTracking(childId, user);
+  const { foodProgress, foodTrials, stats, error } = useFoodTracking(childId, user);
   const firebaseChildren = useFirebaseChildren(user?.uid || null);
 
   const handleAddFood = () => {
@@ -57,23 +57,19 @@ export default function ComplementaryFoodPage({
     setShowFoodModal(true);
   };
 
+  /*
+    失敗時不接住：訊息與「表單留在原地」都由 FoodTrialModal 自己處理，
+    這裡再 toast 一次就是同一件事講兩遍。
+  */
   const handleSaveFood = async (foodData: Omit<FoodTrialRecord, 'id' | 'createdAt'>) => {
     if (!childId) {
-      toast.show('請先選擇寶寶');
-      return;
+      throw new Error('請先選擇寶寶');
     }
 
-    try {
-      if (editingFood) {
-        await firebaseChildren.updateFoodTrial(childId, editingFood.id, foodData);
-      } else {
-        await firebaseChildren.addFoodTrial(childId, foodData);
-      }
-      setShowFoodModal(false);
-      setEditingFood(null);
-    } catch (error) {
-      console.error('保存食物記錄失敗:', error);
-      toast.show(error instanceof Error ? error.message : '保存失敗，請稍後再試');
+    if (editingFood) {
+      await firebaseChildren.updateFoodTrial(childId, editingFood.id, foodData);
+    } else {
+      await firebaseChildren.addFoodTrial(childId, foodData);
     }
   };
 
@@ -95,10 +91,13 @@ export default function ComplementaryFoodPage({
     const food = foodProgress[foodId];
     if (!food) return;
 
+    // 同一天按兩次不該記成兩次嘗試。
+    const trialDates = food.trialDates || [];
+    if (trialDates.includes(today)) return;
+
     try {
-      const updatedTrialDates = [...(food.trialDates || []), today].sort();
       await firebaseChildren.updateFoodTrial(childId, foodId, {
-        trialDates: updatedTrialDates,
+        trialDates: [...trialDates, today].sort(),
       });
     } catch (error) {
       console.error('新增嘗試日期失敗:', error);
@@ -164,18 +163,28 @@ export default function ComplementaryFoodPage({
 
             {viewMode === 'guide-safety' && <FoodGuideSafety />}
 
+            {/*
+              讀取失敗時 foodTrials 是空的，直接畫追蹤頁就會說「還沒有食物記錄」，
+              把「讀不到」講成「還沒記過」。
+            */}
             {viewMode === 'my-tracking' && (
-              <FoodTrackingView
-                activeTab={trackingTab}
-                onTabChange={setTrackingTab}
-                foodTrials={foodTrials}
-                stats={stats}
-                onAddFood={handleAddFood}
-                onEditFood={handleEditFood}
-                onDeleteFood={handleDeleteFood}
-                onAddTrialDate={handleAddTrialDate}
-                user={user}
-              />
+              error ? (
+                <div className="card">
+                  <p className="text-sm text-ink-muted">讀不到食物記錄，請確認網路後重新載入</p>
+                </div>
+              ) : (
+                <FoodTrackingView
+                  activeTab={trackingTab}
+                  onTabChange={setTrackingTab}
+                  foodTrials={foodTrials}
+                  stats={stats}
+                  onAddFood={handleAddFood}
+                  onEditFood={handleEditFood}
+                  onDeleteFood={handleDeleteFood}
+                  onAddTrialDate={handleAddTrialDate}
+                  user={user}
+                />
+              )
             )}
           </motion.div>
         </AnimatePresence>
