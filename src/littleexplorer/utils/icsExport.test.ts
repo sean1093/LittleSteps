@@ -22,6 +22,15 @@ const task = (
   ...overrides,
 });
 
+const CRLF = '\r\n';
+
+/**
+ * RFC 5545 §3.1 解折之後的 VEVENT DESCRIPTION（VALARM 的那一列排在它後面）。
+ * 折行之後任何一段內文都可能被 CRLF + 空白切開，所以斷言要對解折的結果做。
+ */
+const descriptionOf = (ics: string) =>
+  ics.replace(/\r\n /g, '').split(CRLF).find((line) => line.startsWith('DESCRIPTION:'))!;
+
 describe('buildIcs', () => {
   it('產生完整的 VCALENDAR 外框', () => {
     const ics = buildIcs([task()], '小樹');
@@ -87,6 +96,34 @@ describe('buildIcs', () => {
     const uidOf = (ics: string) => ics.match(/UID:(.+)\r\n/)![1];
     expect(uidOf(first)).toBe(uidOf(second));
     expect(uidOf(first)).toContain('health-check-18m');
+  });
+
+  it('每個 VEVENT 都有 DTSTAMP——RFC 5545 §3.6.1 是必填欄位', () => {
+    // 少了它，Outlook 與部分 CalDAV 伺服器會整個檔案拒收。
+    const ics = buildIcs([task()], '小樹', new Date(Date.UTC(2026, 8, 1, 3, 4, 5)));
+    expect(ics).toContain('DTSTAMP:20260901T030405Z');
+  });
+
+  it('超過 75 octet 的中文說明折行，解折後內容一字不差', () => {
+    // 繁體中文一個字 3 bytes，照護說明動輒 90 bytes 以上；不折行的話
+    // 嚴格的解析器會整列丟掉，家長匯進去就是一則沒有說明的行程。
+    const description = '滿 1 歲半要帶健保卡與兒童健康手冊到院所做兒童預防保健服務。'.repeat(3);
+    const ics = buildIcs([
+      task({ template: { ...task().template, description } }),
+    ], '小樹');
+
+    expect(ics).toContain(`${CRLF} `);
+    const encoder = new TextEncoder();
+    for (const line of ics.split(CRLF)) {
+      expect(encoder.encode(line).length, line).toBeLessThanOrEqual(75);
+    }
+    expect(descriptionOf(ics)).toContain(description);
+  });
+
+  it('說明裡的日期用家長讀得懂的寫法，不是原始日期字串', () => {
+    const description = descriptionOf(buildIcs([task()], '小樹'));
+    expect(description).toContain('可執行區間至 2026年1月15日');
+    expect(description).not.toContain('2026-01-15');
   });
 });
 

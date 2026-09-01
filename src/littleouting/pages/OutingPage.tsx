@@ -58,6 +58,9 @@ export default function OutingPage() {
   const [query, setQuery] = useState('');
   const [centres, setCentres] = useState<Venue[]>([]);
   const [loadFailed, setLoadFailed] = useState(false);
+  /* 名冊還在路上時，畫面不能先講「共 0 處 / 找不到符合的場地」——那是在回答
+     一個還沒問完的問題。 */
+  const [loading, setLoading] = useState(true);
 
   // 名冊約 118 KB，和哺乳室資料一樣放靜態 JSON，不進 JS bundle。
   useEffect(() => {
@@ -73,6 +76,9 @@ export default function OutingPage() {
       .catch((error) => {
         console.error('親子館資料載入失敗:', error);
         if (active) setLoadFailed(true);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
       });
     return () => {
       active = false;
@@ -99,6 +105,8 @@ export default function OutingPage() {
       );
     });
   }, [source, city, query]);
+
+  const centresLoading = view === 'centre' && loading;
 
   const access = city !== 'all' ? CENTRE_ACCESS[city] : undefined;
 
@@ -127,6 +135,10 @@ export default function OutingPage() {
               onClick={() => {
                 setView(id);
                 setQuery('');
+                // 縣市也要跟著回「全部縣市」：餐廳只有 6 個縣市有，留著親子館
+                // 那邊選的縣市，22 縣市裡有 16 個會得到一張空清單，而餐廳這一
+                // 頁連那顆被選中的縣市籌碼都畫不出來，家長看不到自己在篩什麼。
+                setCity('all');
               }}
               aria-pressed={view === id}
               className={`chip flex-1 justify-center ${
@@ -172,6 +184,7 @@ export default function OutingPage() {
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder={view === 'centre' ? '搜尋館名、地址或區域' : '搜尋餐廳、地址或區域'}
+                  aria-label={view === 'centre' ? '搜尋親子館' : '搜尋親子餐廳'}
                   className="w-full min-h-tap pl-11 pr-14 py-3 bg-white rounded-2xl shadow-soft text-sm text-ink placeholder-ink-faint [&::-webkit-search-cancel-button]:appearance-none"
                 />
                 {query && (
@@ -231,12 +244,16 @@ export default function OutingPage() {
                 </div>
               )}
 
-              <p className="text-xs text-ink-faint">
-                共 {visible.length} 處
-                {visible.length > MAX_RENDERED && `，先顯示 ${MAX_RENDERED} 處`}
-              </p>
+              {!centresLoading && (
+                <p className="text-xs text-ink-faint">
+                  共 {visible.length} 處
+                  {visible.length > MAX_RENDERED && `，先顯示 ${MAX_RENDERED} 處`}
+                </p>
+              )}
 
-              {loadFailed && view === 'centre' ? (
+              {centresLoading ? (
+                <p className="text-sm text-ink-muted">正在載入親子館名冊…</p>
+              ) : loadFailed && view === 'centre' ? (
                 <EmptyState
                   theme={theme}
                   title="親子館資料載入失敗"

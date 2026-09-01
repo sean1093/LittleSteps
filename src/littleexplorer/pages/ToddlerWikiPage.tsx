@@ -88,6 +88,19 @@ export default function ToddlerWikiPage({ currentChild, reminderBadge }: Toddler
     return ageMonths === null ? withinStage : sortByRelevance(withinStage, ageMonths);
   }, [stage, ageMonths]);
 
+  /*
+   * 分類籌碼只列這一段真的有文章的分類。
+   *
+   * 原本固定送整份 CATEGORY_ORDER 進 WikiBrowser，而年齡篩選是在這裡先做掉的
+   * ——1 歲 2 個月的孩子預設落在 12-18 段，「如廁訓練」與「入園與社交」兩顆
+   * 籌碼一按就是 0 篇，空狀態卻說「請嘗試其他關鍵字」，把年齡篩選的結果算到
+   * 關鍵字頭上。
+   */
+  const categories = useMemo(() => {
+    const present = new Set(articles.map((article) => article.category));
+    return CATEGORY_ORDER.filter((category) => present.has(category));
+  }, [articles]);
+
   const tagFor = useMemo(
     () =>
       ageMonths === null
@@ -108,7 +121,7 @@ export default function ToddlerWikiPage({ currentChild, reminderBadge }: Toddler
       <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="space-y-4">
         <div>
           <h2 className="text-sm font-semibold text-explorer-bark/70 mb-2">依年齡看</h2>
-          <div className="flex gap-2">
+          <div className="row-bleed flex gap-2 py-1">
             {[{ id: 'all', label: '全部' }, ...WIKI_STAGES].map(({ id, label }) => {
               const isActive = stage === id;
               return (
@@ -118,7 +131,7 @@ export default function ToddlerWikiPage({ currentChild, reminderBadge }: Toddler
                   whileTap={tap}
                   onClick={() => setStage(id)}
                   aria-pressed={isActive}
-                  className={`chip flex-1 justify-center px-2 ${
+                  className={`chip shrink-0 ${
                     isActive ? `chip-on ${theme.fill} ${theme.fillText} border-transparent` : ''
                   }`}
                 >
@@ -132,11 +145,17 @@ export default function ToddlerWikiPage({ currentChild, reminderBadge }: Toddler
           </div>
         </div>
 
+        {/*
+          籌碼組隨年齡段變動，所以組別變了就重新掛載一次 WikiBrowser：它的分類
+          選擇是內部狀態，若停在一個已經不再顯示的分類上，畫面會是 0 篇文章、
+          又沒有任何籌碼可以取消——比原本的問題更糟。
+        */}
         <WikiBrowser
+          key={categories.join('|')}
           articles={articles}
           categoryLabels={toddlerWikiCategoryLabels}
           categoryColors={toddlerWikiCategoryColors}
-          categoryOrder={CATEGORY_ORDER}
+          categoryOrder={categories}
           categoryIcons={CATEGORY_ICONS}
           searchPlaceholder="搜尋幼兒照顧問題"
           articleTag={tagFor}

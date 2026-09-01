@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type { Venue } from '../../types';
 import { CENTRE_ACCESS, CENTRE_ACCESS_UNVERIFIED, CENTRE_DATA_ATTRIBUTION } from '../data/centreAccess';
 import { outingChecklist } from '../data/outingChecklist';
+import { restaurants } from '../data/restaurants';
 import OutingPage from './OutingPage';
 
 /**
@@ -270,6 +271,60 @@ describe('兩種資料的可信度差別', () => {
     await screen.findByRole('heading', { name: '這是精選，不是完整名單' });
 
     expect(screen.queryByText(CENTRE_DATA_ATTRIBUTION)).not.toBeInTheDocument();
+  });
+});
+
+describe('切換分頁時的篩選狀態', () => {
+  it('切到親子餐廳時把縣市切回全部縣市', async () => {
+    // 餐廳只在 6 個縣市有，而被選中的那顆縣市籌碼在餐廳這一頁根本畫不出來：
+    // 留著親子館選的縣市，22 縣市裡有 16 個只會看到「找不到符合的場地」，
+    // 家長也看不出是什麼在篩。
+    const user = await renderLoaded();
+
+    await user.click(cityChip(UNVERIFIED_CITY));
+    expect(cityChip(UNVERIFIED_CITY)).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(screen.getByRole('button', { name: '親子餐廳' }));
+    await screen.findByRole('heading', { name: '這是精選，不是完整名單' });
+
+    expect(cityChip('全部縣市')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByText('找不到符合的場地')).not.toBeInTheDocument();
+    expect(screen.getByText(new RegExp(`共 ${restaurants.length} 處`))).toBeInTheDocument();
+  });
+
+  it('搜尋框有自己的標籤，切分頁時跟著換——placeholder 不是標籤', async () => {
+    const user = await renderLoaded();
+
+    expect(screen.getByRole('searchbox', { name: '搜尋親子館' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '親子餐廳' }));
+    await screen.findByRole('heading', { name: '這是精選，不是完整名單' });
+
+    expect(screen.getByRole('searchbox', { name: '搜尋親子餐廳' })).toBeInTheDocument();
+  });
+});
+
+describe('名冊載入中', () => {
+  it('還在載入時不報「共 0 處」，也不說找不到場地', async () => {
+    // 118 KB 的名冊到之前就先講「找不到符合的場地」，等於用失敗的說法回答一個
+    // 還沒問完的問題。
+    let deliver = (_rows: Venue[]) => {};
+    fetchMock.mockReturnValue(
+      new Promise((resolve) => {
+        deliver = (rows) => resolve({ ok: true, status: 200, json: async () => rows });
+      }),
+    );
+
+    render(<OutingPage />);
+
+    expect(screen.getByText('正在載入親子館名冊…')).toBeInTheDocument();
+    expect(screen.queryByText(/共 \d+ 處/)).not.toBeInTheDocument();
+    expect(screen.queryByText('找不到符合的場地')).not.toBeInTheDocument();
+
+    deliver(CENTRES);
+
+    expect(await screen.findByText(new RegExp(`共 ${CENTRES.length} 處`))).toBeInTheDocument();
+    expect(screen.queryByText('正在載入親子館名冊…')).not.toBeInTheDocument();
   });
 });
 
