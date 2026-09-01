@@ -20,9 +20,15 @@ dist-ssr
 # Firebase
 .firebase
 .firebaserc.local
+# Database 模擬器每次執行都會在 repo 根目錄留一份
+database-debug.log
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+
+# 資料庫搬遷的備份（scripts/migrateChildRecords.cjs）。一個檔案就是每一個家庭
+# 完整的健康紀錄，絕不進版控
+backups/
 
 # Editor directories and files
 .vscode/*
