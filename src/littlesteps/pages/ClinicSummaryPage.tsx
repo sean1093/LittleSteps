@@ -9,10 +9,12 @@ import {
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import type { ChildProfile, DailyLog } from '../../types';
-import { useClinicSummary } from '../hooks/useClinicSummary';
+import { buildClinicSummaryText, genderText, useClinicSummary } from '../hooks/useClinicSummary';
 import { formatDuration } from '../utils/logHelpers';
+import { shareText } from '../utils/share';
 import { formatDate, formatTime } from '../../common/utils/dateHelpers';
 import EmptyState from '../../common/ui/EmptyState';
+import { useToast } from '../../common/ui/toast';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem } from '../../common/ui/motion';
 
@@ -27,15 +29,10 @@ function formatDateTime(iso: string): string {
   return `${formatDate(iso)} ${formatTime(iso)}`;
 }
 
-function genderLabel(gender?: string): string {
-  if (gender === 'male') return '男';
-  if (gender === 'female') return '女';
-  return '未設定';
-}
-
 /**
  * Compute a trend arrow comparing current value to previous value.
- * Direction and magnitude are only carried by the glyph, so this one stays.
+ * Direction and magnitude are only carried by the glyph, so this one stays —
+ * 也因此它需要一個文字替代，這份文件是要唸給醫師聽的。
  */
 function TrendArrow({ current, previous }: { current?: number; previous?: number }) {
   if (current === undefined || previous === undefined) {
@@ -45,18 +42,23 @@ function TrendArrow({ current, previous }: { current?: number; previous?: number
   const pct = previous !== 0 ? (diff / previous) * 100 : 0;
 
   if (Math.abs(pct) < 0.5) {
-    return <ArrowRight className="w-4 h-4 text-ink-faint inline-block" />;
+    return <ArrowRight role="img" aria-label="持平" className="w-4 h-4 text-ink-faint inline-block" />;
   }
-  if (pct >= 5) {
-    return <ArrowUp className="w-4 h-4 text-mint-dark inline-block" />;
+
+  // 先判方向、再判幅度。原本的順序讓 +0.5% 到 +1% 之間落到最後一個分支，
+  // 於是「長大了 0.7%」在一份交給醫師的文件上畫成一個向下的箭頭。
+  if (pct > 0) {
+    return pct >= 5 ? (
+      <ArrowUp role="img" aria-label="明顯上升" className="w-4 h-4 text-mint-dark inline-block" />
+    ) : (
+      <ArrowUpRight role="img" aria-label="上升" className="w-4 h-4 text-mint-dark inline-block" />
+    );
   }
-  if (pct >= 1) {
-    return <ArrowUpRight className="w-4 h-4 text-mint-dark inline-block" />;
-  }
-  if (pct <= -5) {
-    return <ArrowDown className="w-4 h-4 text-primary-dark inline-block" />;
-  }
-  return <ArrowDownRight className="w-4 h-4 text-butter-dark inline-block" />;
+  return pct <= -5 ? (
+    <ArrowDown role="img" aria-label="明顯下降" className="w-4 h-4 text-primary-dark inline-block" />
+  ) : (
+    <ArrowDownRight role="img" aria-label="下降" className="w-4 h-4 text-butter-dark inline-block" />
+  );
 }
 
 function PercentileBadge({ value }: { value?: number }) {
@@ -74,6 +76,24 @@ export default function ClinicSummaryPage({
 }: ClinicSummaryPageProps) {
   const { data, loading } = useClinicSummary(currentChild, dailyLogs, user);
   const [notes, setNotes] = useState('');
+  const [sharing, setSharing] = useState(false);
+  const toast = useToast();
+
+  const handleShare = async () => {
+    if (!data) return;
+    setSharing(true);
+    try {
+      // 系統分享面板自己就是回饋，取消也不需要說話。
+      const outcome = await shareText(
+        `看診摘要 - ${data.childName}`,
+        buildClinicSummaryText(data, notes)
+      );
+      if (outcome === 'copied') toast.show('看診摘要已複製到剪貼簿', 'success');
+      if (outcome === 'failed') toast.show('分享失敗，請稍後再試');
+    } finally {
+      setSharing(false);
+    }
+  };
 
   // --- Empty state ---
   if (!currentChild) {
@@ -126,7 +146,7 @@ export default function ClinicSummaryPage({
 
           <div className="grid grid-cols-2 gap-4 mt-4">
             <InfoItem label="姓名" value={data.childName} />
-            <InfoItem label="性別" value={genderLabel(data.gender)} />
+            <InfoItem label="性別" value={genderText(data.gender)} />
             <InfoItem label="生日" value={formatDate(data.birthday)} />
             <InfoItem label="目前年齡" value={data.ageDisplay} />
           </div>
@@ -267,16 +287,39 @@ export default function ClinicSummaryPage({
         {/* ===== Section 4: 近 7 天日常摘要 ===== */}
         <motion.section variants={listItem} className="panel mb-4">
           <h2>近 7 天日常摘要</h2>
+          {/* 每個平均各有自己的分母，寫在各自的格子裡。共用一個「有記錄的天數」
+              會讓記得比較少的那一項被稀釋，而這份文件是要拿給醫師看的。 */}
+          <p className="text-sm text-ink-muted mt-1">
+            {data.weekSummary.loggedDays > 0
+              ? `以 ${data.weekSummary.loggedDays} 天的記錄計算`
+              : '近 7 天沒有任何記錄'}
+          </p>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
-            <StatCard label="每日平均餵奶次數" value={`${data.weekSummary.avgFeedingCount} 次`} />
-            <StatCard label="每日平均奶量" value={`${data.weekSummary.avgFeedingAmount} ml`} />
-            <StatCard label="每日平均睡眠" value={`${data.weekSummary.avgSleepHours} 小時`} />
+            <StatCard
+              label="每日平均餵奶次數"
+              value={data.weekSummary.feedingDays > 0 ? `${data.weekSummary.avgFeedingCount} 次` : '無記錄'}
+              loggedDays={data.weekSummary.feedingDays}
+            />
+            <StatCard
+              label="每日平均奶量"
+              value={data.weekSummary.feedingDays > 0 ? `${data.weekSummary.avgFeedingAmount} ml` : '無記錄'}
+              loggedDays={data.weekSummary.feedingDays}
+            />
+            <StatCard
+              label="每日平均睡眠"
+              value={data.weekSummary.sleepDays > 0 ? `${data.weekSummary.avgSleepHours} 小時` : '無記錄'}
+              loggedDays={data.weekSummary.sleepDays}
+            />
             <StatCard
               label="最長連續睡眠"
-              value={data.weekSummary.longestSleep > 0 ? formatDuration(data.weekSummary.longestSleep) : '--'}
+              value={data.weekSummary.longestSleep > 0 ? formatDuration(data.weekSummary.longestSleep) : '無記錄'}
             />
-            <StatCard label="每日平均便便次數" value={`${data.weekSummary.avgPoopCount} 次`} />
+            <StatCard
+              label="每日平均便便次數"
+              value={data.weekSummary.diaperDays > 0 ? `${data.weekSummary.avgPoopCount} 次` : '無記錄'}
+              loggedDays={data.weekSummary.diaperDays}
+            />
             <StatCard
               label="最後一次便便"
               value={
@@ -317,6 +360,11 @@ export default function ClinicSummaryPage({
         {/* ===== Section 5: 特殊事項 ===== */}
         <motion.section variants={listItem} className="panel mb-4">
           <h2>特殊事項</h2>
+          {/* 這一欄不存進資料庫，所以要講清楚它只活到分享出去為止——否則
+              家長會以為打完就記下來了，下次回診打開卻是空的。 */}
+          <p className="text-sm text-ink-muted mt-1">
+            只用於這次看診，不會儲存；按下方按鈕分享時會一起帶出去。
+          </p>
 
           <textarea
             className="w-full mt-4 p-4 rounded-xl border border-ink/10 bg-warm-white text-base text-ink placeholder-ink-faint resize-none"
@@ -326,6 +374,18 @@ export default function ClinicSummaryPage({
             onChange={(e) => setNotes(e.target.value)}
           />
         </motion.section>
+
+        {/* 這一頁號稱「一鍵產生看診資料」，在此之前卻沒有任何帶得走的出口。 */}
+        <motion.div variants={listItem} className="pb-4">
+          <button
+            type="button"
+            onClick={handleShare}
+            disabled={sharing}
+            className="btn-primary w-full"
+          >
+            分享看診摘要
+          </button>
+        </motion.div>
       </motion.div>
     </div>
   );
@@ -368,15 +428,21 @@ function StatCard({
   label,
   value,
   small,
+  loggedDays,
 }: {
   label: string;
   value: string;
   small?: boolean;
+  /** 這個數字用幾天的記錄算出來的。醫師看到的是平均，得看得到分母。 */
+  loggedDays?: number;
 }) {
   return (
     <div className="bg-warm-white rounded-xl p-3">
       <p className="text-sm text-ink-muted mb-1">{label}</p>
       <p className={`font-bold text-ink ${small ? 'text-sm' : 'text-lg'}`}>{value}</p>
+      {loggedDays !== undefined && loggedDays > 0 && (
+        <p className="text-xs text-ink-faint mt-0.5">{loggedDays} 天有記錄</p>
+      )}
     </div>
   );
 }

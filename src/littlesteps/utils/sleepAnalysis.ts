@@ -4,19 +4,29 @@ import {
   formatMinutesOfDay,
   minutesOfDay,
 } from '../../common/utils/circularTime';
+import { toLocalDateKey } from '../../common/utils/dateHelpers';
 import { getSleepRequirementForAge } from '../data/sleep';
 
 // 睡眠統計介面
 export interface SleepStats {
   totalDuration: number; // 總睡眠時長（分鐘）
-  dailyAverage: number; // 每日平均睡眠時長（分鐘）
+  /** 每日平均睡眠時長（分鐘）。分母是有記錄的天數，不是時段長度。 */
+  dailyAverage: number;
   sleepCount: number; // 睡眠次數
   averageDuration: number; // 平均每次睡眠時長（分鐘）
   nightSleep: number; // 夜間睡眠時長（分鐘）
   daytimeNaps: number; // 白天小睡時長（分鐘）
   nightSleepCount: number; // 夜間睡眠次數
   napCount: number; // 白天小睡次數
-  daysInPeriod: number; // 時段內的天數
+  daysInPeriod: number; // 時段長度：今日 1、本週 7、本月 30
+  /**
+   * 這個時段裡真的有睡眠記錄的天數。
+   *
+   * 每日平均一律除這個數。除以時段長度的話，只記了一晚的家長會看到
+   * 「每天平均睡 1.7 小時」，而建議值是 13-15 小時——那不是孩子的狀況，
+   * 是 29 天沒記錄被當成 29 天沒睡。
+   */
+  daysWithRecords: number;
 }
 
 // 睡眠規律性介面
@@ -112,13 +122,18 @@ export function calculateSleepStats(
     return data.endTime && data.duration;
   });
 
-  // 計算時段內的天數
+  // 時段長度只是「這一頁看的是幾天」，不能當平均的分母。
   let daysInPeriod = 1;
   if (period === 'week') {
     daysInPeriod = 7;
   } else if (period === 'month') {
     daysInPeriod = 30;
   }
+
+  // 真正有睡眠記錄的日曆日。跨夜的睡眠歸在入睡那天，與報表其他地方一致。
+  const daysWithRecords = new Set(
+    completedSleeps.map((log) => toLocalDateKey(log.timestamp))
+  ).size;
 
   let totalDuration = 0;
   let nightSleep = 0;
@@ -142,7 +157,7 @@ export function calculateSleepStats(
 
   const sleepCount = completedSleeps.length;
   const averageDuration = sleepCount > 0 ? totalDuration / sleepCount : 0;
-  const dailyAverage = totalDuration / daysInPeriod;
+  const dailyAverage = daysWithRecords > 0 ? totalDuration / daysWithRecords : 0;
 
   return {
     totalDuration,
@@ -154,6 +169,7 @@ export function calculateSleepStats(
     nightSleepCount,
     napCount,
     daysInPeriod,
+    daysWithRecords,
   };
 }
 
@@ -218,48 +234,63 @@ export function calculateSleepRegularity(logs: DailyLog[]): SleepRegularity {
 }
 
 /**
+ * 少於這麼多天有記錄，就不對「每天平均睡多久」下判斷。
+ *
+ * 一晚是那一晚的事：孩子昨天睡 10 小時不代表他每天睡 10 小時，更不代表
+ * 「不足 3 小時」。同理，今日分頁在中午看到的總時數是半天，不是一天。
+ */
+const MIN_DAYS_FOR_DURATION_ADVICE = 3;
+
+/**
  * 生成睡眠建議
  */
 export function generateSleepAdvice(stats: SleepStats, ageInMonths: number): SleepAdvice[] {
+  // 一筆記錄都沒有就沒有建議。原本會拿 0 小時去對照建議值，然後宣告
+  // 「睡眠時間不足，不足約 13 小時」——對一個今天還沒開始記的家長。
+  if (stats.daysWithRecords === 0) return [];
+
   const advice: SleepAdvice[] = [];
   const recommendation = getSleepRequirementForAge(ageInMonths);
 
   const { min: minHours, max: maxHours } = parseHourRange(recommendation.totalHours);
   const actualHours = stats.dailyAverage / 60; // 使用每日平均
 
-  // 1. 每日平均睡眠時長評估
-  if (actualHours >= minHours && actualHours <= maxHours) {
-    advice.push({
-      category: 'good',
-      title: '睡眠時長充足',
-      description: `寶寶每天平均睡 ${actualHours.toFixed(1)} 小時，符合 ${ageInMonths} 個月大寶寶的建議範圍（${minHours}-${maxHours} 小時）。`,
-      suggestions: ['繼續維持目前的作息安排'],
-    });
-  } else if (actualHours < minHours) {
-    const deficit = minHours - actualHours;
-    advice.push({
-      category: 'improve',
-      title: '睡眠時間不足',
-      description: `寶寶每天平均睡 ${actualHours.toFixed(1)} 小時，少於建議的 ${minHours}-${maxHours} 小時（不足約 ${deficit.toFixed(1)} 小時）。`,
-      suggestions: [
-        '提早 30 分鐘開始睡前儀式',
-        '確保睡眠環境安靜、黑暗、舒適',
-        '觀察寶寶的睏倦訊號（揉眼睛、打哈欠），及時安撫入睡',
-        '檢查是否有干擾睡眠的因素（噪音、光線、溫度）',
-      ],
-    });
-  } else {
-    const excess = actualHours - maxHours;
-    advice.push({
-      category: 'attention',
-      title: '睡眠時間較多',
-      description: `寶寶每天平均睡 ${actualHours.toFixed(1)} 小時，超過建議的 ${maxHours} 小時（多約 ${excess.toFixed(1)} 小時）。`,
-      suggestions: [
-        '如果寶寶清醒時精神良好，無需過度擔心',
-        '注意是否有生病或發育高峰期',
-        '若持續過度嗜睡，建議諮詢醫師',
-      ],
-    });
+  // 1. 每日平均睡眠時長評估。天數不夠就整段跳過，下面的比例、次數、單次
+  //    時長仍然是單日也成立的觀察。
+  if (stats.daysWithRecords >= MIN_DAYS_FOR_DURATION_ADVICE) {
+    if (actualHours >= minHours && actualHours <= maxHours) {
+      advice.push({
+        category: 'good',
+        title: '睡眠時長充足',
+        description: `寶寶每天平均睡 ${actualHours.toFixed(1)} 小時，符合 ${ageInMonths} 個月大寶寶的建議範圍（${minHours}-${maxHours} 小時）。`,
+        suggestions: ['繼續維持目前的作息安排'],
+      });
+    } else if (actualHours < minHours) {
+      const deficit = minHours - actualHours;
+      advice.push({
+        category: 'improve',
+        title: '睡眠時間不足',
+        description: `寶寶每天平均睡 ${actualHours.toFixed(1)} 小時，少於建議的 ${minHours}-${maxHours} 小時（不足約 ${deficit.toFixed(1)} 小時）。`,
+        suggestions: [
+          '提早 30 分鐘開始睡前儀式',
+          '確保睡眠環境安靜、黑暗、舒適',
+          '觀察寶寶的睏倦訊號（揉眼睛、打哈欠），及時安撫入睡',
+          '檢查是否有干擾睡眠的因素（噪音、光線、溫度）',
+        ],
+      });
+    } else {
+      const excess = actualHours - maxHours;
+      advice.push({
+        category: 'attention',
+        title: '睡眠時間較多',
+        description: `寶寶每天平均睡 ${actualHours.toFixed(1)} 小時，超過建議的 ${maxHours} 小時（多約 ${excess.toFixed(1)} 小時）。`,
+        suggestions: [
+          '如果寶寶清醒時精神良好，無需過度擔心',
+          '注意是否有生病或發育高峰期',
+          '若持續過度嗜睡，建議諮詢醫師',
+        ],
+      });
+    }
   }
 
   // 2. 夜間 vs 白天比例評估
@@ -280,8 +311,8 @@ export function generateSleepAdvice(stats: SleepStats, ageInMonths: number): Sle
     }
   }
 
-  // 3. 睡眠次數評估（計算每日平均次數）
-  const dailySleepCount = stats.sleepCount / stats.daysInPeriod;
+  // 3. 睡眠次數評估（每日平均次數，分母同樣是有記錄的天數）
+  const dailySleepCount = stats.sleepCount / stats.daysWithRecords;
   if (ageInMonths >= 6 && dailySleepCount > 5) {
     advice.push({
       category: 'attention',

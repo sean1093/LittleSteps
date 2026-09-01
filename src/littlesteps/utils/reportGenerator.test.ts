@@ -150,15 +150,15 @@ describe('reportGenerator', () => {
       expect(report.summaryText).toBe('尚無足夠資料產生摘要，請持續記錄寶寶的日常。');
     });
 
-    it('scores an empty week as vacuously regular feeding, partial sleep, and zero poop', () => {
+    it('refuses to score a week with no records at all', () => {
       const { scores } = generateWeeklyReport([], [], 4);
 
-      // No variance at all -> CV 0 -> full regularity credit.
-      expect(scores.feeding).toEqual({ score: 100, label: '很棒！' });
-      // meetingRatio 0 * 60 + consistency 100/100 * 40 = 40
-      expect(scores.sleep).toEqual({ score: 40, label: '尚可' });
-      // hasPoops = 0 zeroes the whole poop score
-      expect(scores.poop).toEqual({ score: 0, label: '需注意' });
+      // 原本這裡是「餵奶 100 分、很棒！」——完全沒記錄卻拿滿分，因為補 0 的
+      // 序列毫無變異。沒有樣本就沒有分數。
+      const noScore = { score: null, label: '再記幾天', loggedDays: 0 };
+      expect(scores.feeding).toEqual(noScore);
+      expect(scores.sleep).toEqual(noScore);
+      expect(scores.poop).toEqual(noScore);
     });
   });
 
@@ -185,11 +185,11 @@ describe('reportGenerator', () => {
     it('scores a regular week highly and pro-rates sleep against the age recommendation', () => {
       const { scores } = generateWeeklyReport(buildRegularWeek(), [], 4);
 
-      expect(scores.feeding).toEqual({ score: 100, label: '很棒！' });
+      expect(scores.feeding).toEqual({ score: 100, label: '很棒！', loggedDays: 7 });
       // min(12/13, 1) * 60 + 40 = 95.38 -> 95
-      expect(scores.sleep).toEqual({ score: 95, label: '很棒！' });
+      expect(scores.sleep).toEqual({ score: 95, label: '很棒！', loggedDays: 7 });
       // 100 * 0.7 + 30 = 100
-      expect(scores.poop).toEqual({ score: 100, label: '很棒！' });
+      expect(scores.poop).toEqual({ score: 100, label: '很棒！', loggedDays: 7 });
     });
 
     it('summarises a regular week, flagging sleep just under the recommendation', () => {
@@ -264,15 +264,16 @@ describe('reportGenerator', () => {
       expect(report.poop.consistencyDistribution).toEqual({ normal: 1, soft: 1, hard: 1 });
     });
 
-    it('penalises feeding variance and sparse, irregular poops', () => {
+    it('penalises feeding variance but withholds a poop score from three logged days', () => {
       const { scores } = generateWeeklyReport(buildIrregularWeek(), [], 4);
 
       // amount CV = 40/260 = 0.1538, count CV = 0 -> avg 0.0769 -> 100 - 7.69 = 92.31
-      expect(scores.feeding).toEqual({ score: 92, label: '很棒！' });
+      expect(scores.feeding).toEqual({ score: 92, label: '很棒！', loggedDays: 7 });
       // 13h/day exactly meets the 13h recommendation, with zero variance
-      expect(scores.sleep).toEqual({ score: 100, label: '很棒！' });
-      // poop CV = sqrt(23/7)... > 1 -> regularity clamps to 0, leaving the flat 30
-      expect(scores.poop).toEqual({ score: 30, label: '需注意' });
+      expect(scores.sleep).toEqual({ score: 100, label: '很棒！', loggedDays: 7 });
+      // 尿布只記了 3 天，而且那 3 天都各一次。原本把沒記的 4 天當成 0，
+      // 算出 CV > 1、分數 30 分的「需注意」——那 4 天發生什麼事沒人知道。
+      expect(scores.poop).toEqual({ score: null, label: '再記幾天', loggedDays: 3 });
     });
 
     it('summarises the long poop gap and on-target sleep', () => {
@@ -321,14 +322,41 @@ describe('reportGenerator', () => {
       expect(report.poop.consistencyDistribution).toEqual({ normal: 7 });
     });
 
-    it('scores a mostly empty month poorly', () => {
+    it('scores a 7-of-30-day month on those 7 days, not on 23 blanks', () => {
       const { scores } = generateMonthlyReport(buildRegularWeek(), [], 4);
 
-      // CV of a 7-of-30 indicator is sqrt(23/7) = 1.81 -> 100 - 181 clamps to 0
-      expect(scores.feeding).toEqual({ score: 0, label: '需注意' });
-      // min(2.8/13, 1) * 60 + 0 = 12.92 -> 13
-      expect(scores.sleep).toEqual({ score: 13, label: '需注意' });
-      expect(scores.poop).toEqual({ score: 30, label: '需注意' });
+      // 那 7 天是完全規律的。原本補 0 後餵奶 0 分、睡眠 13 分、排便 30 分，
+      // 三張紅色的「需注意」就印在正確算出 240ml／12 小時的平均值旁邊。
+      expect(scores.feeding).toEqual({ score: 100, label: '很棒！', loggedDays: 7 });
+      expect(scores.sleep).toEqual({ score: 95, label: '很棒！', loggedDays: 7 });
+      expect(scores.poop).toEqual({ score: 100, label: '很棒！', loggedDays: 7 });
+    });
+
+    it('withholds every score when only two days of a 30-day window were logged', () => {
+      const logs = ['2026-06-14', '2026-06-15'].flatMap((date) => [
+        feedingLog(date, '06:00:00', 120),
+        feedingLog(date, '18:00:00', 120),
+        sleepLog(date, 720),
+        diaperLog(date, 'poop', 'normal'),
+      ]);
+
+      const { scores } = generateMonthlyReport(logs, [], 4);
+
+      const noScore = { score: null, label: '再記幾天', loggedDays: 2 };
+      expect(scores.feeding).toEqual(noScore);
+      expect(scores.sleep).toEqual(noScore);
+      expect(scores.poop).toEqual(noScore);
+    });
+
+    it('starts scoring at the fourth logged day', () => {
+      const logs = ['2026-06-12', '2026-06-13', '2026-06-14', '2026-06-15'].flatMap((date) => [
+        feedingLog(date, '06:00:00', 120),
+        feedingLog(date, '18:00:00', 120),
+      ]);
+
+      const { scores } = generateMonthlyReport(logs, [], 4);
+
+      expect(scores.feeding).toEqual({ score: 100, label: '很棒！', loggedDays: 4 });
     });
   });
 
@@ -406,36 +434,39 @@ describe('reportGenerator', () => {
     it('awards full sleep credit once the age recommendation is met', () => {
       // 24 months -> "12-13 小時" -> min 12; 12h/day meets it exactly.
       const scores = calculateScores(sleepEveryDay(720), 7, 24);
-      expect(scores.sleep).toEqual({ score: 100, label: '很棒！' });
+      expect(scores.sleep).toEqual({ score: 100, label: '很棒！', loggedDays: 7 });
     });
 
     it('scales sleep down proportionally when short of the recommendation', () => {
       // 8h vs. the 13h recommendation: 8/13 * 60 + 40 = 76.92 -> 77
       const scores = calculateScores(sleepEveryDay(480), 7, 4);
-      expect(scores.sleep).toEqual({ score: 77, label: '不錯' });
+      expect(scores.sleep).toEqual({ score: 77, label: '不錯', loggedDays: 7 });
     });
 
     it('uses the newborn recommendation for infants under a month', () => {
       // 0 months -> "16-17 小時" -> min 16; 12h/day -> 12/16 * 60 + 40 = 85
       const scores = calculateScores(sleepEveryDay(720), 7, 0);
-      expect(scores.sleep).toEqual({ score: 85, label: '很棒！' });
+      expect(scores.sleep).toEqual({ score: 85, label: '很棒！', loggedDays: 7 });
     });
 
-    it('does not reward poop regularity when nothing was logged', () => {
+    it('withholds a poop score entirely when no diaper was ever logged', () => {
       const scores = calculateScores(sleepEveryDay(720), 7, 4);
-      expect(scores.poop).toEqual({ score: 0, label: '需注意' });
+      // 原本是 0 分「需注意」——只記睡眠不記尿布的家長，每週報告都被告知
+      // 排便有問題。沒記尿布不是沒大便。
+      expect(scores.poop).toEqual({ score: null, label: '再記幾天', loggedDays: 0 });
     });
 
     it('rewards a daily poop rhythm regardless of consistency labels', () => {
       const logs = WEEK_DATES.map(date => diaperLog(date, 'poop'));
       const scores = calculateScores(logs, 7, 4);
-      expect(scores.poop).toEqual({ score: 100, label: '很棒！' });
+      expect(scores.poop).toEqual({ score: 100, label: '很棒！', loggedDays: 7 });
     });
 
-    it('ignores pee-only diaper logs when scoring poop', () => {
+    it('scores pee-only diaper days as a real zero, not as missing data', () => {
       const logs = WEEK_DATES.map(date => diaperLog(date, 'pee'));
       const scores = calculateScores(logs, 7, 4);
-      expect(scores.poop).toEqual({ score: 0, label: '需注意' });
+      // 有記尿布卻沒有大便，是真的七天沒大便，該說。
+      expect(scores.poop).toEqual({ score: 0, label: '需注意', loggedDays: 7 });
     });
 
     it('derives sleep duration from start/end when duration is absent', () => {
@@ -454,7 +485,7 @@ describe('reportGenerator', () => {
       });
 
       const scores = calculateScores(logs, 7, 4);
-      expect(scores.sleep).toEqual({ score: 95, label: '很棒！' });
+      expect(scores.sleep).toEqual({ score: 95, label: '很棒！', loggedDays: 7 });
     });
   });
 
@@ -462,9 +493,9 @@ describe('reportGenerator', () => {
     const baseReport = (overrides: Partial<WeeklyReport> = {}): WeeklyReport => ({
       period: { start: '2026-06-09', end: '2026-06-15' },
       scores: {
-        feeding: { score: 0, label: '需注意' },
-        sleep: { score: 0, label: '需注意' },
-        poop: { score: 0, label: '需注意' },
+        feeding: { score: 0, label: '需注意', loggedDays: 7 },
+        sleep: { score: 0, label: '需注意', loggedDays: 7 },
+        poop: { score: 0, label: '需注意', loggedDays: 7 },
       },
       feeding: {
         dailyAmounts: [],

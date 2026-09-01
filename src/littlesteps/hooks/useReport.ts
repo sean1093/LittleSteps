@@ -5,6 +5,7 @@ import {
   generateMonthlyReport,
   WeeklyReport,
 } from '../utils/reportGenerator';
+import { calculateAge } from '../../common/utils/dateHelpers';
 import { useGrowthTracking } from './useGrowthTracking';
 
 export type ReportPeriod = '7days' | '30days';
@@ -27,16 +28,12 @@ export function useReport(
     currentChild?.birthday
   );
 
-  const ageMonths = useMemo(() => {
-    if (!currentChild?.birthday) return 0;
-    const birth = new Date(currentChild.birthday);
-    const now = new Date();
-    return (
-      (now.getFullYear() - birth.getFullYear()) * 12 +
-      (now.getMonth() - birth.getMonth()) +
-      (now.getDate() - birth.getDate()) / 30
-    );
-  }, [currentChild?.birthday]);
+  // 月齡只餵給睡眠建議的年齡分段，整數月就夠。這裡原本自己算一份帶小數的
+  // 版本，同一個孩子同一天會和全站其他頁面得到不同的月齡。
+  const ageMonths = useMemo(
+    () => (currentChild?.birthday ? calculateAge(currentChild.birthday) : 0),
+    [currentChild?.birthday]
+  );
 
   const report: WeeklyReport | null = useMemo(() => {
     if (!currentChild) return null;

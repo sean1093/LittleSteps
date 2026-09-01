@@ -59,9 +59,11 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
   const { max: maxHours } = parseHourRange(recommendation.totalHours);
   const actualHours = stats.dailyAverage / 60; // 使用每日平均
 
-  // 計算每日平均的夜間和白天睡眠
-  const dailyNightSleep = (stats.nightSleep / stats.daysInPeriod) / 60;
-  const dailyDaytimeNaps = (stats.daytimeNaps / stats.daysInPeriod) / 60;
+  // 分母是「有記錄的天數」，不是視窗長度。除以固定的 7 或 30 會把一晚 10 小時
+  // 算成每日 0.3 小時，然後對照建議時數說睡眠不足——那不是結論，是沒記錄。
+  const hasRecords = stats.daysWithRecords > 0;
+  const dailyNightSleep = hasRecords ? stats.nightSleep / stats.daysWithRecords / 60 : 0;
+  const dailyDaytimeNaps = hasRecords ? stats.daytimeNaps / stats.daysWithRecords / 60 : 0;
 
   // Chart data for actual vs recommended. Bars carry no text, so the DEFAULT
   // token fills are the right shades here.
@@ -107,8 +109,8 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
         <div className="screen-body">
           <EmptyState
             theme={SERVICE_THEME.littlesteps}
-            title="還沒有選擇寶寶"
-            description="請先在側邊欄選擇或新增寶寶"
+            title="還沒有寶寶的資料"
+            description="請點右上角的帳號按鈕新增或選擇寶寶。"
           />
         </div>
       </div>
@@ -172,6 +174,7 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
+                aria-pressed={period === p}
                 className={`chip ${period === p ? 'chip-on' : ''}`}
               >
                 {labels[p]}
@@ -184,7 +187,7 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
         <motion.div variants={listItem} className="grid grid-cols-3 gap-3 mb-4">
           <div className="card text-center">
             <div className="text-2xl font-bold text-primary-dark">
-              {(stats.dailyAverage / 60).toFixed(1)}h
+              {hasRecords ? `${(stats.dailyAverage / 60).toFixed(1)}h` : '—'}
             </div>
             <div className="text-sm text-ink-muted mt-1">
               {period === 'today' ? '今日總時長' : '每日平均'}
@@ -192,10 +195,11 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
           </div>
           <div className="card text-center">
             <div className="text-2xl font-bold text-primary-dark">
-              {period === 'today'
-                ? `${stats.sleepCount}次`
-                : `${(stats.sleepCount / stats.daysInPeriod).toFixed(1)}次`
-              }
+              {!hasRecords
+                ? '—'
+                : period === 'today'
+                  ? `${stats.sleepCount}次`
+                  : `${(stats.sleepCount / stats.daysWithRecords).toFixed(1)}次`}
             </div>
             <div className="text-sm text-ink-muted mt-1">
               {period === 'today' ? '睡眠次數' : '每日次數'}
@@ -203,32 +207,47 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
           </div>
           <div className="card text-center">
             <div className="text-2xl font-bold text-primary-dark">
-              {(stats.averageDuration / 60).toFixed(1)}h
+              {hasRecords ? `${(stats.averageDuration / 60).toFixed(1)}h` : '—'}
             </div>
             <div className="text-sm text-ink-muted mt-1">每次平均</div>
           </div>
         </motion.div>
 
-        {/* Sleep Duration Comparison */}
-        <motion.div variants={listItem} className="panel mb-4">
-          <h2 className="mb-2">睡眠時長對比</h2>
-          <p className="text-sm text-ink-muted mb-4">
-            {ageInMonths} 個月大寶寶建議：{recommendation.totalHours}
-          </p>
-          <SimpleBarChart data={comparisonData} />
-        </motion.div>
+        {/* 這一段沒有記錄就什麼都不畫。一根 0 高度的長條擺在滿高的「建議睡眠」
+            旁邊，讀起來是「這孩子沒睡」，而事實只是還沒記。 */}
+        {hasRecords ? (
+          <>
+            <motion.div variants={listItem} className="panel mb-4">
+              <h2 className="mb-2">睡眠時長對比</h2>
+              <p className="text-sm text-ink-muted mb-4">
+                {ageInMonths} 個月大寶寶建議：{recommendation.totalHours}
+              </p>
+              <SimpleBarChart data={comparisonData} />
+              {stats.daysWithRecords < stats.daysInPeriod && (
+                <p className="text-xs text-ink-faint mt-2">{stats.daysWithRecords} 天有記錄</p>
+              )}
+            </motion.div>
 
-        {/* Night vs Day */}
-        <motion.div variants={listItem} className="panel mb-4">
-          <h2 className="mb-4">夜間 vs 白天</h2>
-          <SimpleBarChart data={nightDayData} height={32} />
-          <div className="mt-3 text-sm text-ink-muted">
-            夜間佔比：
-            {stats.totalDuration > 0
-              ? `${((stats.nightSleep / stats.totalDuration) * 100).toFixed(0)}%`
-              : '0%'}
-          </div>
-        </motion.div>
+            <motion.div variants={listItem} className="panel mb-4">
+              <h2 className="mb-4">夜間 vs 白天</h2>
+              <SimpleBarChart data={nightDayData} height={32} />
+              <div className="mt-3 text-sm text-ink-muted">
+                夜間佔比：
+                {stats.totalDuration > 0
+                  ? `${((stats.nightSleep / stats.totalDuration) * 100).toFixed(0)}%`
+                  : '0%'}
+              </div>
+            </motion.div>
+          </>
+        ) : (
+          <motion.div variants={listItem} className="mb-4">
+            <EmptyState
+              theme={SERVICE_THEME.littlesteps}
+              title="這段時間還沒有睡眠記錄"
+              description="在快速日誌記下一次睡眠，這裡就會出現時長對比與夜間白天的比例。"
+            />
+          </motion.div>
+        )}
 
         {/* Week Timeline */}
         {sleepLogs.length >= 2 && (
@@ -248,12 +267,19 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-medium text-ink">入睡時間規律性</span>
-                  <div className="flex gap-1">
+                  {/* 星星只用顏色與填滿表達程度，讀螢幕軟體看不到；名稱補在
+                      群組上，個別星星就不必逐顆唸。 */}
+                  <div
+                    className="flex gap-1"
+                    role="img"
+                    aria-label={`5 顆星中的 ${bedtimeStars} 顆`}
+                  >
                     {[1, 2, 3, 4, 5].map((i) => (
                       <Star
                         key={i}
+                        aria-hidden="true"
                         className={`w-4 h-4 ${
-                          i <= bedtimeStars ? 'text-butter fill-butter' : 'text-ink/20'
+                          i <= bedtimeStars ? 'text-butter-dark fill-butter-dark' : 'text-ink/20'
                         }`}
                       />
                     ))}
@@ -269,12 +295,17 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-medium text-ink">清醒時間規律性</span>
-                  <div className="flex gap-1">
+                  <div
+                    className="flex gap-1"
+                    role="img"
+                    aria-label={`5 顆星中的 ${wakeTimeStars} 顆`}
+                  >
                     {[1, 2, 3, 4, 5].map((i) => (
                       <Star
                         key={i}
+                        aria-hidden="true"
                         className={`w-4 h-4 ${
-                          i <= wakeTimeStars ? 'text-butter fill-butter' : 'text-ink/20'
+                          i <= wakeTimeStars ? 'text-butter-dark fill-butter-dark' : 'text-ink/20'
                         }`}
                       />
                     ))}

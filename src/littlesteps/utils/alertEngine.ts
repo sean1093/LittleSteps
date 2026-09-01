@@ -1,6 +1,6 @@
-import { DailyLog, FeedingData, SleepData, DiaperData } from '../../types';
+import { DailyLog, SleepData, DiaperData } from '../../types';
 import { filterLogsByDate, calculateSleepDuration } from './logHelpers';
-import { calculateDailyAverage, getRecommendedSleepHours } from './trendCalculator';
+import { generateDailySeries, getRecommendedSleepHours } from './trendCalculator';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
 export type AlertSeverity = 'warning' | 'danger';
@@ -16,35 +16,52 @@ export interface Alert {
 }
 
 /**
+ * 「一整天夠不夠」只能問已經過完的那一天。
+ *
+ * 原本兩個日總量警示比的都是「今天到目前為止」對上一整天的標準，所以每天
+ * 早上第一次餵奶／第一段小睡之後就亮起來，一路亮到深夜才自動消失。天天出現
+ * 的警示，家長只會學會忽略它。
+ */
+function lastCompletedDay(): string {
+  const date = new Date();
+  date.setDate(date.getDate() - 1);
+  return toLocalDateKey(date);
+}
+
+/** 少於這麼多天有記錄就沒有「平均」可比 */
+const MIN_BASELINE_DAYS = 3;
+
+/**
  * Detect feeding alerts
  *
  * Rules:
- * - warning: today's feeding amount < 70% of 7-day average
+ * - warning: yesterday's feeding amount < 70% of the surrounding week's average
  * - warning: last feeding was >6 hours ago
  */
 export function detectFeedingAlerts(logs: DailyLog[], _ageMonths: number): Alert[] {
   const alerts: Alert[] = [];
-  const today = toLocalDateKey();
-  const todayLogs = filterLogsByDate(logs, today);
 
-  // Rule 1: today's feeding amount < 70% of 7-day average
-  const avgDailyAmount = calculateDailyAverage(logs, 7, 'feeding_amount');
-  const todayFeedingAmount = todayLogs
-    .filter(log => log.type === 'feeding')
-    .reduce((sum, log) => {
-      const data = log.data as FeedingData;
-      return sum + (data.amount || 0);
-    }, 0);
+  // 已經過完的 7 天（不含今天），最後一格是昨天。
+  const week = generateDailySeries(logs, 8, 'feeding_amount').slice(0, 7);
+  const yesterdayAmount = week[week.length - 1];
+  // 基準不含昨天自己，否則偏低的那天會把自己的平均往下拉。沒記錄的日子不是
+  // 「那天喝 0 ml」，不能參與平均。
+  const baseline = week.slice(0, -1).filter((value): value is number => value !== null);
 
-  if (avgDailyAmount > 0 && todayFeedingAmount < avgDailyAmount * 0.7) {
-    alerts.push({
-      id: 'feeding-low-amount',
-      category: 'feeding',
-      severity: 'warning',
-      title: '今日餵奶量偏低',
-      message: `今日餵奶量 ${Math.round(todayFeedingAmount)}ml，低於近 7 天平均 ${Math.round(avgDailyAmount)}ml 的 70%，請留意寶寶食慾。`,
-      icon: 'AlertTriangle',
-    });
+  // Rule 1: yesterday's feeding amount < 70% of the week's average
+  if (yesterdayAmount !== null && baseline.length >= MIN_BASELINE_DAYS) {
+    const avgDailyAmount = baseline.reduce((sum, v) => sum + v, 0) / baseline.length;
+
+    if (avgDailyAmount > 0 && yesterdayAmount < avgDailyAmount * 0.7) {
+      alerts.push({
+        id: 'feeding-low-amount',
+        category: 'feeding',
+        severity: 'warning',
+        title: '昨日餵奶量偏低',
+        message: `昨日餵奶量 ${Math.round(yesterdayAmount)}ml，低於近一週平均 ${Math.round(avgDailyAmount)}ml 的 70%，請留意寶寶食慾。`,
+        icon: 'AlertTriangle',
+      });
+    }
   }
 
   // Rule 2: last feeding was >6 hours ago
@@ -127,34 +144,37 @@ export function detectPoopAlerts(logs: DailyLog[]): Alert[] {
  * Detect sleep alerts
  *
  * Rules:
- * - warning: today's total sleep < 70% of age-recommended minimum
+ * - warning: yesterday's total sleep < 70% of age-recommended minimum
  */
 export function detectSleepAlerts(logs: DailyLog[], ageMonths: number): Alert[] {
   const alerts: Alert[] = [];
-  const today = toLocalDateKey();
-  const todayLogs = filterLogsByDate(logs, today);
+
+  const sleepLogs = filterLogsByDate(logs, lastCompletedDay()).filter(
+    log => log.type === 'sleep'
+  );
+  // 昨天完全沒記睡眠不代表寶寶沒睡。
+  if (sleepLogs.length === 0) return alerts;
+
+  let totalMinutes = 0;
+  for (const log of sleepLogs) {
+    const data = log.data as SleepData;
+    const duration = data.duration ?? calculateSleepDuration(data);
+    // 還沒按結束的那一段沒有時數，昨天的總和就是不完整的——不完整的總和
+    // 拿去比建議值，得到的只會是虛驚。
+    if (duration === undefined) return alerts;
+    totalMinutes += duration;
+  }
 
   const recommended = getRecommendedSleepHours(ageMonths);
+  const sleepHours = totalMinutes / 60;
 
-  // Calculate today's total sleep in hours
-  const todaySleepMinutes = todayLogs
-    .filter(log => log.type === 'sleep')
-    .reduce((sum, log) => {
-      const data = log.data as SleepData;
-      const duration = data.duration || calculateSleepDuration(data) || 0;
-      return sum + duration;
-    }, 0);
-  const todaySleepHours = todaySleepMinutes / 60;
-
-  const threshold = recommended.min * 0.7;
-
-  if (todaySleepHours < threshold && todaySleepHours > 0) {
+  if (sleepHours < recommended.min * 0.7) {
     alerts.push({
       id: 'sleep-below-recommended',
       category: 'sleep',
       severity: 'warning',
-      title: '今日睡眠時數偏低',
-      message: `今日睡眠 ${todaySleepHours.toFixed(1)} 小時，低於建議最低 ${recommended.min} 小時的 70%，請注意寶寶作息。`,
+      title: '昨日睡眠時數偏低',
+      message: `昨日睡眠 ${sleepHours.toFixed(1)} 小時，低於建議最低 ${recommended.min} 小時的 70%，請注意寶寶作息。`,
       icon: 'Moon',
     });
   }
