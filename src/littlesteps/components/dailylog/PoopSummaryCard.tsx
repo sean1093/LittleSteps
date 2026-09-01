@@ -78,7 +78,6 @@ export default function PoopSummaryCard({
             {/* `#9A6212` is `butter-dark`; SVG paint can't take a Tailwind class. */}
             <SparklineChart
               data={sparklineData}
-              width={200}
               height={36}
               color="#9A6212"
               fillColor="#9A6212"

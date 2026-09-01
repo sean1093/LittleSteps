@@ -65,7 +65,6 @@ export default function CareGuidePage() {
         </motion.div>
 
         {/* Category Filter */}
-        <h3 className="mb-3">篩選照顧類別</h3>
         <div className="row-bleed flex gap-2 pb-2 mb-4">
           {careCategories.map((category) => {
             const IconComponent = getLucideIcon(category.icon);
@@ -75,6 +74,7 @@ export default function CareGuidePage() {
                 key={category.value}
                 onClick={() => setSelectedCategory(category.value)}
                 whileTap={tap}
+                aria-pressed={selectedCategory === category.value}
                 className={`chip ${selectedCategory === category.value ? 'chip-on' : ''}`}
               >
                 {IconComponent && <IconComponent className="w-4 h-4" />}

@@ -59,11 +59,7 @@ export default function DailyLogSummaryCard({
           {feedingTrend.sparklinePoints.some(v => v > 0) && (
             <div className="bg-white rounded-xl p-3">
               <div className="text-xs text-ink-muted mb-2">近 7 天餵奶量趨勢</div>
-              <SparklineChart
-                data={feedingTrend.sparklinePoints}
-                width={200}
-                height={36}
-              />
+              <SparklineChart data={feedingTrend.sparklinePoints} height={36} />
               <div className="text-xs text-ink-faint mt-1">
                 平均 {Math.round(feedingTrend.averageValue)}ml
               </div>

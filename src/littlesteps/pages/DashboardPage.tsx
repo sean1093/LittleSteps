@@ -101,8 +101,8 @@ export default function DashboardPage({
           <motion.div variants={listItem} className="mb-6">
             <EmptyState
               theme={SERVICE_THEME.littlesteps}
-              title="開始記錄寶寶的成長旅程"
-              description={'建立寶寶檔案後，即可使用所有功能追蹤寶寶的成長里程碑\n請從左上角選單新增寶寶資料'}
+              title="還沒有寶寶的資料"
+              description="請點右上角的帳號按鈕新增或選擇寶寶。"
             />
           </motion.div>
 
@@ -166,7 +166,7 @@ export default function DashboardPage({
         {/* 月齡與出生日期是 AppBar 標題沒帶到的資訊，所以這一段留著；
             重複的頁面標題與寶寶頭像圖示已移除。 */}
         <motion.div variants={listItem} className="panel mb-4">
-          <h1 className="mb-1">{ageDisplay}</h1>
+          <h2 className="mb-1">{ageDisplay}</h2>
           {/* 孕期檔案的 birthday 是預產期。標題已經說了「尚未出生」，
               下一行再寫「出生: …」會自相矛盾。 */}
           <p className="text-sm text-ink-muted">

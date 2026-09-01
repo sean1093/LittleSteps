@@ -1,9 +1,34 @@
+import type { ReactNode } from 'react';
+
 interface SparklineChartProps {
   data: number[];
-  width?: number;
   height?: number;
   color?: string;
   fillColor?: string;
+}
+
+/**
+ * viewBox 的座標寬度，不是渲染寬度——圖表一律撐滿容器，所以呼叫端無從影響它，
+ * 也就不該是一個 prop。
+ */
+const VIEWBOX_WIDTH = 120;
+
+/**
+ * 三個分支共用的外殼。寫死 `width` 的 svg 在 320px 的螢幕上會把卡片撐開；
+ * 改成撐滿容器、只固定高度。`preserveAspectRatio="none"` 讓折線真的鋪滿寬度
+ * （sparkline 在意的是形狀不是比例），線寬則用 non-scaling-stroke 保住。
+ */
+function Canvas({ height, children }: { height: number; children: ReactNode }) {
+  return (
+    <svg
+      viewBox={`0 0 ${VIEWBOX_WIDTH} ${height}`}
+      height={height}
+      preserveAspectRatio="none"
+      className="w-full"
+    >
+      {children}
+    </svg>
+  );
 }
 
 /*
@@ -13,7 +38,6 @@ interface SparklineChartProps {
 */
 export default function SparklineChart({
   data,
-  width = 120,
   height = 32,
   color = '#2A7288',
   fillColor,
@@ -21,26 +45,27 @@ export default function SparklineChart({
   // Handle edge cases
   if (!data || data.length === 0) {
     return (
-      <svg width={width} height={height}>
+      <Canvas height={height}>
         <line
           x1={0}
           y1={height / 2}
-          x2={width}
+          x2={VIEWBOX_WIDTH}
           y2={height / 2}
           stroke={color}
           strokeWidth={1.5}
           strokeDasharray="4 4"
           opacity={0.4}
+          vectorEffect="non-scaling-stroke"
         />
-      </svg>
+      </Canvas>
     );
   }
 
   if (data.length === 1) {
     return (
-      <svg width={width} height={height}>
-        <circle cx={width / 2} cy={height / 2} r={2.5} fill={color} />
-      </svg>
+      <Canvas height={height}>
+        <circle cx={VIEWBOX_WIDTH / 2} cy={height / 2} r={2.5} fill={color} />
+      </Canvas>
     );
   }
 
@@ -49,7 +74,7 @@ export default function SparklineChart({
   const range = maxVal - minVal || 1; // avoid division by zero when all values are the same
 
   const padding = 2;
-  const chartWidth = width - padding * 2;
+  const chartWidth = VIEWBOX_WIDTH - padding * 2;
   const chartHeight = height - padding * 2;
 
   // Generate points
@@ -69,7 +94,7 @@ export default function SparklineChart({
   ].join(' ');
 
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+    <Canvas height={height}>
       {/* Fill area */}
       {fillColor && (
         <polygon
@@ -86,6 +111,7 @@ export default function SparklineChart({
         strokeWidth={1.5}
         strokeLinecap="round"
         strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
       />
       {/* End point dot */}
       <circle
@@ -94,6 +120,6 @@ export default function SparklineChart({
         r={2}
         fill={color}
       />
-    </svg>
+    </Canvas>
   );
 }

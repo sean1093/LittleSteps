@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { backdrop, sheet } from '../ui/motion';
+import { useDialogA11y } from '../ui/useDialogA11y';
 
 interface ModalFrameProps {
   isOpen: boolean;
@@ -26,21 +27,26 @@ export default function ModalFrame({
   closeDisabled,
   children,
 }: ModalFrameProps) {
+  const dialogRef = useDialogA11y(isOpen, onClose, closeDisabled);
+
   return (
     <AnimatePresence>
       {isOpen && (
         <>
           <motion.div
             {...backdrop}
-            onClick={onClose}
+            // 存檔中連遮罩也不能關：只鎖住 X 的話，關掉請求的那條路還開著一半。
+            onClick={closeDisabled ? undefined : onClose}
             className="fixed inset-0 bg-ink/40 z-50"
           />
 
           <motion.div
             {...sheet}
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-label={title}
+            tabIndex={-1}
             className="fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-lg max-h-[85vh] overflow-y-auto bg-white rounded-t-3xl shadow-soft-lg"
           >
             <div className="sticky top-0 z-10 flex items-center justify-between gap-2 bg-white px-5 pt-5 pb-3">

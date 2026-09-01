@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { ReactNode } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { hoverLift, tap } from '../../../common/ui/motion';
+import { pressable } from '../../../common/ui/pressable';
 
 interface DashboardCardProps {
   title: string;
@@ -21,14 +22,14 @@ export default function DashboardCard({
   bgColor = '',
 }: DashboardCardProps) {
   const CardWrapper = onClick ? motion.div : 'div';
-  const motionProps = onClick ? { whileHover: hoverLift, whileTap: tap } : {};
+  // 整張卡片就是那顆按鈕，所以鍵盤路徑也得自己補上——原本只有 onClick，
+  // 六張儀表板卡片對 Tab 與讀螢幕軟體等於不存在。
+  const interactive = onClick
+    ? { ...pressable(onClick), whileHover: hoverLift, whileTap: tap }
+    : {};
 
   return (
-    <CardWrapper
-      className={`${onClick ? 'panel-tap' : 'panel'} ${bgColor}`}
-      onClick={onClick}
-      {...motionProps}
-    >
+    <CardWrapper className={`${onClick ? 'panel-tap' : 'panel'} ${bgColor}`} {...interactive}>
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="min-w-0">
           <h3 className="text-ink">{title}</h3>

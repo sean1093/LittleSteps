@@ -18,7 +18,9 @@ export type ServiceId = 'littlesteps' | 'littlebloom' | 'littleexplorer' | 'baby
  * 里程碑與疫苗追蹤刻意不在此列。它們的清單本身確實是參考資料，但整頁的
  * 主體是逐項勾選的完成紀錄，離開孩子的資料就只剩一份空清單。
  */
-const PUBLIC_PAGES: Record<string, true> = {
+// Partial<Record<Page, true>>：key 綁在路由聯集上，改了路由名稱而忘了改這裡
+// 會編譯失敗，而不是安靜地把一頁公開頁變成需登入（或反過來）。
+const PUBLIC_PAGES: Partial<Record<Page, true>> = {
   home: true,
   'littlesteps/baby-wiki': true,
   'littlesteps/care-guide': true,
