@@ -54,6 +54,13 @@ const DENOM_SMALL = 300;
 const CALIBRATION_YEARS = 3;
 const CALIBRATION_MIN_DENOM = 300;
 
+/**
+ * 每支 CSV 的閒置逾時。連不上主機時 connect 會卡到系統預設的兩分多鐘才放棄，
+ * 六支一起卡就是十幾分鐘的空等，最後只留下一行 ETIMEDOUT。二十秒收不到任何
+ * 位元組就當作連不上；資料在傳的時候計時器會被重設，47 MB 的下載不受影響。
+ */
+const IDLE_TIMEOUT_MS = 20_000;
+
 const agent = new https.Agent({
   ca: [
     ...tls.rootCertificates,
@@ -64,8 +71,11 @@ const agent = new https.Agent({
 
 function download(url) {
   return new Promise((resolve, reject) => {
-    https
-      .get(url, { agent }, (res) => {
+    // `timeout` 走的是 net.createConnection，計時器在連線建立「之前」就開始跑；
+    // req.setTimeout() 要等 'connect' 才套用，連不上主機時它永遠不會生效——實測
+    // 就是卡到系統自己的 connect 逾時（本機 75 秒、GitHub runner 兩分多鐘）。
+    const req = https
+      .get(url, { agent, timeout: IDLE_TIMEOUT_MS }, (res) => {
         if (res.statusCode !== 200) {
           res.resume();
           reject(new Error(`${url} → HTTP ${res.statusCode}`));
@@ -96,6 +106,9 @@ function download(url) {
         });
       })
       .on('error', reject);
+    req.on('timeout', () => {
+      req.destroy(new Error(`${url} → ${IDLE_TIMEOUT_MS / 1000} 秒內收不到任何回應`));
+    });
   });
 }
 
@@ -403,5 +416,12 @@ async function main() {
 main().catch((err) => {
   // 非零退出 → 排程 workflow 不會 commit，線上維持上一週而不是變成空板。
   console.error(`buildDiseaseRadar 失敗：${err.message}`);
+  if (/ETIMEDOUT|ENETUNREACH|EHOSTUNREACH|收不到任何回應/.test(err.message)) {
+    // 這一種失敗跟資料無關，講清楚才不會有人去改腳本。
+    console.error(
+      'od.cdc.gov.tw 擋掉台灣以外的來源 IP，GitHub 託管的 runner 一律連不上。' +
+        '請在台灣的網路上跑這支腳本（README 的資料一節有步驟）。',
+    );
+  }
   process.exit(1);
 });
