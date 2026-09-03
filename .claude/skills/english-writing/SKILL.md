@@ -99,10 +99,14 @@ commit.
 ## Check before you commit
 
 ```bash
-# Han characters in the English surface — must print nothing
-git diff --cached --name-only -- '*.md' '.claude/**' 'docs/**' \
-  | grep -v -e '^README.zh-TW.md$' -e '^docs/superpowers/' \
-  | xargs -r perl -CSD -ne 'print "$ARGV:$.: $_" if /\p{Han}/'
+# Han characters in the English surface — must print nothing. Three exclusions:
+# the Chinese mirror, the dated records, and this file (its examples are Chinese
+# on purpose). The `next` skips the switcher link, the one Han string that
+# belongs in an English document.
+git diff --cached --name-only -- '*.md' .claude docs \
+  | grep -v -e '^README\.zh-TW\.md$' -e '^docs/superpowers/' \
+            -e '^\.claude/skills/english-writing/SKILL\.md$' \
+  | xargs perl -CSD -ne 'next if m{README\.zh-TW\.md}; print "$ARGV:$.: $_" if /\p{Han}/'
 
 # The commit message itself
 git log -1 --pretty=%B | perl -CSD -ne 'print "non-English: $_" if /\p{Han}/'
