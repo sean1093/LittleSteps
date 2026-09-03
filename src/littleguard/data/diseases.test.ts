@@ -68,6 +68,24 @@ describe('六種病的說明', () => {
     expect(allText(disease)).not.toMatch(/[↑↓→←!！⚠]/);
   });
 
+  it.each(DISEASES)('%s 沒有把家長推去談接種', (disease) => {
+    // 疫苗是 LittleSteps 的疫苗追蹤在管的（spec §1.3「疫苗追蹤功能不重做」）。
+    // 雷達只回答「外面在流行什麼」；一開始講接種就跨進另一個服務的職責，也踩到
+    // spec §10「不做醫療建議」。連「問問醫師接種時程」都算，所以掃整串。
+    expect(allText(disease)).not.toContain('疫苗');
+    expect(allText(disease)).not.toContain('接種');
+  });
+
+  it.each(DISEASES)('%s 的就醫時機只寫看得見的徵象', (disease) => {
+    // 這個欄位只能是家長看得到的東西。「該去哪一級醫院」是分流指示，「哪些族群
+    // 風險較高」是流行病學陳述——兩者都不是徵象，都不屬於這裡。
+    const { seeDoctor } = DISEASE_INFO[disease];
+    // 「併發症」是診斷分類，不是家長看得見的東西——看得見的是「水泡周圍紅腫」。
+    ['大醫院', '高危險', '風險', '族群', '併發症'].forEach((word) =>
+      expect(seeDoctor).not.toContain(word),
+    );
+  });
+
   it.each(DISEASES)('%s 說清楚了這一格是門診就診人次而不是確診數', (disease) => {
     // 名稱落差是這個服務最容易誤導人的地方：上游六個 dataset 都是健保門診就診
     // 人次，疾管署同名的疾病介紹卻常常只涵蓋重症或併發症。

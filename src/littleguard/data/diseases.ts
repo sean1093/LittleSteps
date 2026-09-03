@@ -1,9 +1,21 @@
 export interface DiseaseInfo {
   /** 這個病名在上游資料裡指的是什麼——名稱落差要說清楚，不能讓人以為是確診數。 */
   meaning: string;
-  /** 平常做得到的事，至少兩條。這是「提醒而不是製造焦慮」的資料層保證。 */
+  /**
+   * 平常做得到的事，至少兩條。這是「提醒而不是製造焦慮」的資料層保證。
+   *
+   * 不放接種相關的話：疫苗是 LittleSteps 的疫苗追蹤在管的（spec §1.3「疫苗追蹤
+   * 功能不重做」），雷達只回答「外面在流行什麼」。連「問問醫師接種時程」都不放，
+   * 那還是把家長推進另一個服務的職責，也踩到 spec §10「不做醫療建議」。
+   */
   actions: string[];
-  /** 什麼情況要看醫生。不寫治療方式。 */
+  /**
+   * 什麼情況要看醫生——只放家長看得見的東西。
+   *
+   * 不寫治療方式，也不寫「該去哪一級醫院」這種分流指示；「哪些族群風險較高」是
+   * 流行病學陳述，同樣不屬於這個欄位。徵象是「持續高燒」「嗜睡」「手腳無力」
+   * 「脫水的樣子」，不是「未滿一歲比較容易併發」。
+   */
   seeDoctor: string;
   sourceUrl: string;
   /** 補充 Q&A，沒有就省略。 */
@@ -46,7 +58,7 @@ export const DISEASE_INFO: Record<string, DiseaseInfo> = {
       '生病的時候請假在家休息，先不上學不上課，也少傳給其他孩子。痊癒後糞便還會帶病毒好幾週，洗手要繼續。',
     ],
     seeDoctor:
-      '發病後一週內出現嗜睡、意識不清、活力不佳、手腳無力，或是無故驚嚇般的全身肌肉收縮、持續嘔吐、呼吸急促、心跳加快，請儘快帶去大醫院。',
+      '發病後一週內出現嗜睡、意識不清、活力不佳、手腳無力，或是無故驚嚇般的全身肌肉收縮、持續嘔吐、呼吸急促、心跳加快。',
     sourceUrl: 'https://www.cdc.gov.tw/Disease/SubIndex/m3zdUk3u9GJVvddeSnhkiA',
     qaUrl: 'https://www.cdc.gov.tw/Category/QAPage/uWGc1UXjKbX7uC1uTG5_2Q',
     verifiedOn: '2026-09-03',
@@ -61,7 +73,7 @@ export const DISEASE_INFO: Record<string, DiseaseInfo> = {
       '生病的時候請假在家休息，先不上學不上課，也少傳給其他孩子。',
     ],
     seeDoctor:
-      '發病後一週內出現嗜睡、意識不清、活力不佳、手腳無力，或是無故驚嚇般的全身肌肉收縮、持續嘔吐、呼吸急促、心跳加快，請儘快帶去大醫院。',
+      '發病後一週內出現嗜睡、意識不清、活力不佳、手腳無力，或是無故驚嚇般的全身肌肉收縮、持續嘔吐、呼吸急促、心跳加快。',
     sourceUrl: 'https://www.cdc.gov.tw/Disease/SubIndex/m3zdUk3u9GJVvddeSnhkiA',
     qaUrl: 'https://www.cdc.gov.tw/Category/QAPage/uWGc1UXjKbX7uC1uTG5_2Q',
     verifiedOn: '2026-09-03',
@@ -76,7 +88,7 @@ export const DISEASE_INFO: Record<string, DiseaseInfo> = {
       '生病的時候請假在家休息，先不上學不上課，也少傳給其他孩子。',
     ],
     seeDoctor:
-      '發病後一週內出現嗜睡、意識不清、活力不佳、手腳無力，或是無故驚嚇般的全身肌肉收縮、持續嘔吐、呼吸急促、心跳加快，請儘快帶去大醫院。',
+      '發病後一週內出現嗜睡、意識不清、活力不佳、手腳無力，或是無故驚嚇般的全身肌肉收縮、持續嘔吐、呼吸急促、心跳加快。',
     sourceUrl: 'https://www.cdc.gov.tw/Disease/SubIndex/m3zdUk3u9GJVvddeSnhkiA',
     qaUrl: 'https://www.cdc.gov.tw/Category/QAPage/uWGc1UXjKbX7uC1uTG5_2Q',
     verifiedOn: '2026-09-03',
@@ -88,7 +100,6 @@ export const DISEASE_INFO: Record<string, DiseaseInfo> = {
       '用肥皂勤洗手；咳嗽或打噴嚏時用手帕、衣袖捂住口鼻，出門記得戴口罩。',
       '生病不上班不上課。沒有使用退燒藥的情況下，至少退燒滿二十四小時再回學校。',
       '保持室內空氣流通，流行的時候少去人多又不通風的地方。',
-      '流感疫苗每年要重新接種一次，接種時程可以問問孩子的醫師。',
     ],
     seeDoctor:
       '小孩不太會講自己哪裡不舒服，特別留意呼吸急促或呼吸困難、嘴唇發紫、精神變差或不容易叫醒、活動力低下；高燒連續三天沒退也請再看一次。',
@@ -106,7 +117,7 @@ export const DISEASE_INFO: Record<string, DiseaseInfo> = {
       '生病期間水分要顧好，少量多餐吃清淡一點；照顧完孩子再洗一次手，家裡其他人才不會跟著中。',
     ],
     seeDoctor:
-      '水瀉或嘔吐一直停不下來、喝下去的都補不回來，糞便帶黏液或血絲，或是已經出現脫水的樣子，請帶去看醫生；嬰幼兒流失體液比較快，要多留意。',
+      '水瀉或嘔吐一直停不下來、喝下去的都補不回來，糞便帶黏液或血絲，或是已經出現脫水的樣子，請帶去看醫生。',
     sourceUrl: 'https://www.cdc.gov.tw/Disease/SubIndex/j1rqZjBCeR9vtCRUHefN3g',
     qaUrl: 'https://www.cdc.gov.tw/Category/QAPage/h5jfdG8vi3tGUDO8fNAoFQ',
     verifiedOn: '2026-09-03',
@@ -115,13 +126,12 @@ export const DISEASE_INFO: Record<string, DiseaseInfo> = {
     meaning:
       '這一格是所有水痘的健保門診就診人次。疾管署列為法定傳染病的是「水痘併發症」，只涵蓋出現嚴重併發症的個案。水痘的樣子是全身分批冒出大小不一的表淺水泡，被衣物遮住的地方通常比露出來的多。',
     actions: [
-      '水痘疫苗是最有效的預防方式：滿十二個月大有一劑公費，四到六歲入小學前建議再自費補第二劑，接種紀錄可以拿出來對一下。',
       '保持室內空氣流通，少去人多又密閉的地方；勤洗手，遵守咳嗽禮節。',
       '生病時請病假在家休養，直到全身水泡都結痂變乾為止；不得不外出就戴口罩、穿長袖。',
       '結痂的皮不會傳染，水泡液會。碰過水泡的衣物與器物要分開清洗。',
     ],
     seeDoctor:
-      '水泡周圍變得紅腫，或是持續發燒、呼吸變快、走路站不太穩、精神明顯變差，請帶去看醫生；未滿一歲的嬰兒本來就比較容易出現併發症。',
+      '水泡周圍變得紅腫，或是持續發燒、呼吸變快、走路站不太穩、精神明顯變差，請帶去看醫生。',
     sourceUrl: 'https://www.cdc.gov.tw/Disease/SubIndex/ipoIA74yjikLAewcRSjXjw',
     verifiedOn: '2026-09-03',
   },
