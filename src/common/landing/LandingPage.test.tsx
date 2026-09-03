@@ -30,6 +30,7 @@ describe('landingKindFor', () => {
     expect(landingKindFor('littlebloom/wiki', null, false)).toBeNull();
     expect(landingKindFor('babyoasis', null, false)).toBeNull();
     expect(landingKindFor('littlesteps/baby-wiki', null, false)).toBeNull();
+    expect(landingKindFor('littleguard', null, false)).toBeNull();
   });
 
   it('已登入但還沒有孩子時，提示先新增寶寶', () => {

@@ -35,6 +35,7 @@ const LittleBloomWikiPage = lazy(() => import('./littlebloom/pages/LittleBloomWi
 const OutingPage = lazy(() => import('./littleouting/pages/OutingPage'));
 const PrenatalPage = lazy(() => import('./littlebloom/pages/PrenatalPage'));
 const BabyOasisPage = lazy(() => import('./babyoasis/pages/BabyOasisPage'));
+const RadarPage = lazy(() => import('./littleguard/pages/RadarPage'));
 const BabyWikiPage = lazy(() => import('./littlesteps/pages/BabyWikiPage'));
 const ClinicSummaryPage = lazy(() => import('./littlesteps/pages/ClinicSummaryPage'));
 const ReportPage = lazy(() => import('./littlesteps/pages/ReportPage'));
@@ -178,13 +179,15 @@ function AppContent() {
     return title;
   };
 
-  // LittleBloom (hub + wiki) and BabyOasis are standalone sub-apps that render
-  // their own chrome, so the LittleSteps header/sidebar stays hidden for them.
+  // LittleBloom (hub + wiki), BabyOasis and LittleGuard are standalone sub-apps
+  // that render their own chrome, so the LittleSteps header/sidebar stays hidden
+  // for them.
   const isStandaloneSubApp =
     currentPage.startsWith('littlebloom') ||
     currentPage.startsWith('littleexplorer') ||
     currentPage === 'littleouting' ||
-    currentPage === 'babyoasis';
+    currentPage === 'babyoasis' ||
+    currentPage === 'littleguard';
   // Login is mandatory, so every LittleSteps route shows the header (and thus the
   // sidebar/menu) once we reach the authenticated tree below.
   const showHeader = !(currentPage === 'home' || isStandaloneSubApp);
@@ -479,9 +482,10 @@ function AppContent() {
           <ToddlerWikiPage currentChild={currentChild} reminderBadge={reminderBadge} />
         )}
 
-        {/* BabyOasis Route */}
+        {/* Standalone sub-app routes */}
         {currentPage === 'littleouting' && <OutingPage />}
         {currentPage === 'babyoasis' && <BabyOasisPage />}
+        {currentPage === 'littleguard' && <RadarPage />}
         </Suspense>
         </ErrorBoundary>
       </main>

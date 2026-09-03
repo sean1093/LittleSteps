@@ -31,6 +31,7 @@ const PUBLIC: Page[] = [
   'littleexplorer/wiki',
   'littleouting',
   'babyoasis',
+  'littleguard',
 ];
 
 /**
@@ -58,13 +59,17 @@ const GATED: Page[] = [
   'littleexplorer/diary',
 ];
 
-/** 與 routePolicy.ts 的 ServiceId union 同步；少一個，SERVICE_HOME 的窮舉就會鬆掉。 */
+/**
+ * 與 ServiceId union 同步（真身在 ui/serviceTheme.ts，routePolicy 只是轉出）；
+ * 少一個，SERVICE_HOME 的窮舉就會鬆掉。
+ */
 const ALL_SERVICES = Object.keys({
   littlesteps: true,
   littlebloom: true,
   littleexplorer: true,
   babyoasis: true,
   littleouting: true,
+  littleguard: true,
 } satisfies Record<ServiceId, true>) as ServiceId[];
 
 describe('路由表同步', () => {
@@ -105,13 +110,14 @@ describe('requiresAuth', () => {
   });
 
   it('不需要孩子資料的知識頁都不需登入', () => {
-    // 這四頁不收任何 prop，只讀專案內的靜態資料。
+    // 這幾頁不收任何 prop，只讀專案內或政府公開的靜態資料。
     expect(requiresAuth('littlesteps/baby-wiki')).toBe(false);
     expect(requiresAuth('littlesteps/care-guide')).toBe(false);
     expect(requiresAuth('littlesteps/sleep-training')).toBe(false);
     expect(requiresAuth('littlebloom/wiki')).toBe(false);
     expect(requiresAuth('littleexplorer/wiki')).toBe(false);
     expect(requiresAuth('babyoasis')).toBe(false);
+    expect(requiresAuth('littleguard')).toBe(false);
   });
 
   it('會讀或寫孩子資料的頁面都需要登入', () => {
@@ -150,10 +156,11 @@ describe('serviceOf', () => {
     expect(serviceOf('littleexplorer/wiki')).toBe('littleexplorer');
   });
 
-  it('littleouting 歸自己，不會掉進最後那行 fallthrough', () => {
+  it('littleouting 與 littleguard 歸自己，不會掉進最後那行 fallthrough', () => {
     // serviceOf 的最後一行是 `return 'babyoasis'`：任何前面沒被認領的路由都會
     // 落到那裡。新增服務時漏掉判斷，頁面不會壞，只會歸錯服務——所以要有測試。
     expect(serviceOf('littleouting')).toBe('littleouting');
+    expect(serviceOf('littleguard')).toBe('littleguard');
   });
 
   it('只有 babyoasis 自己會被歸到 babyoasis', () => {

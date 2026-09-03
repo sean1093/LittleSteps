@@ -7,7 +7,7 @@ import { SERVICE_ORDER, SERVICE_THEME } from '../ui/serviceTheme';
 import type { ServiceId } from '../ui/serviceTheme';
 
 /**
- * HubLanding - Entry point for all five services
+ * HubLanding - Entry point for all six services
  *
  * Public: reachable without signing in, so a first-time visitor can see what
  * the collection offers before deciding to hand over an account.
@@ -57,6 +57,11 @@ const SERVICE_FEATURES: Record<ServiceId, string[]> = {
     '精選親子餐廳與出發前檢查清單',
   ],
   babyoasis: ['定位最近哺乳室', '詳細設施資訊', '一鍵導航', '全台 22 縣市、3,852 處'],
+  littleguard: [
+    '六種兒童常見傳染病，看你所在縣市',
+    '跟前 8 週比，這週有沒有變多',
+    '資料來自疾管署健保門診統計，每週更新',
+  ],
 };
 
 /**
@@ -149,7 +154,7 @@ export default function HubLanding({
                   {/* 角色標籤放在 h2 外面：標題的可及名稱要正好是服務名。 */}
                   <h2 className={theme.ink}>{theme.name}</h2>
                   <span className={`text-xs ${theme.muted}`}>{theme.role}</span>
-                  {/* 五個服務並列時，家長第一個問題是「哪一個是我的」。
+                  {/* 六個服務並列時，家長第一個問題是「哪一個是我的」。
                       標記回答它；順序刻意不動，見 serviceForStage。 */}
                   {id === currentService && <span className="tag">目前階段</span>}
                 </div>
@@ -202,8 +207,7 @@ export default function HubLanding({
         variants={fadeInUp}
         className="text-center text-xs text-ink-faint"
       >
-        © {new Date().getFullYear()} LittleBloom · LittleSteps · LittleExplorer · LittleOuting ·
-        BabyOasis
+        © {new Date().getFullYear()} {SERVICE_ORDER.map((id) => SERVICE_THEME[id].name).join(' · ')}
       </motion.p>
     </div>
   );

@@ -122,6 +122,11 @@ const PAGE_META: Record<Page, PageMeta> = {
     description:
       '全台 3,852 處哺乳室的地圖查詢，依所在位置找出最近的哺乳室，資料來源為政府公開資料。',
   },
+  littleguard: {
+    title: '兒童傳染病這週多不多｜疫情雷達｜LittleGuard',
+    description:
+      '腸病毒、手足口病、疱疹性咽峽炎、類流感、腹瀉、水痘的每週門診就診情況，可依縣市與孩子年齡查看，資料來自衛福部疾管署開放資料。',
+  },
 };
 
 export interface ResolvedMeta extends PageMeta {

@@ -1,13 +1,14 @@
 /**
  * 路由表：這個 app 所有的頁面，以及每一頁在網址列上的樣子。
  *
- * 五個服務：
+ * 六個服務：
  * - home: 服務集合首頁
  * - LittleSteps: 0-1 歲寶寶追蹤
  * - LittleBloom: 孕期陪伴
  * - LittleExplorer: 1-3 歲幼兒陪伴
  * - LittleOuting: 親子好去處
  * - BabyOasis: 哺乳室地圖
+ * - LittleGuard: 疫情雷達
  *
  * 這張表是唯一的事實來源。Page 型別由它推導，反查表也由它推導，所以
  * 「加了一頁卻只加了一半」在型別上就不成立——不會再出現能導過去、卻無法
@@ -41,6 +42,7 @@ export const ROUTE_PATH = {
   'littleexplorer/wiki': '/littleexplorer/wiki',
   littleouting: '/littleouting',
   babyoasis: '/babyoasis',
+  littleguard: '/littleguard',
 } as const;
 
 export type Page = keyof typeof ROUTE_PATH;
