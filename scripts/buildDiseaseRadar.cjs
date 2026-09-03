@@ -71,9 +71,29 @@ function download(url) {
           reject(new Error(`${url} → HTTP ${res.statusCode}`));
           return;
         }
+        // 200 之後才斷線的情況走這裡。'aborted' 與「宣告長度 vs 實收長度」各擋
+        // 一種截斷：少了它們，一份「短但格式正確」的 CSV 會照樣解析成功，只是
+        // 少了幾週或幾個縣市，而 parseDisease 只擋得住空檔與表頭不符。
+        //
+        // 刻意不加「列數至少要有多少」這種檢查：那個門檻是憑空訂的，疾管署一次
+        // 合理改版就會讓排程每週紅燈——比它要防的問題更糟。真的截斷時下游本來
+        // 就失效安全：六支共同的最新週會往前退一週，湊不齊的格子分母是 0、
+        // 標成「資料不足」，不會生出一個看起來令人安心的數字。
+        const declared = Number(res.headers['content-length']);
         const chunks = [];
-        res.on('data', (c) => chunks.push(c));
-        res.on('end', () => resolve(Buffer.concat(chunks)));
+        let received = 0;
+        res.on('data', (c) => {
+          chunks.push(c);
+          received += c.length;
+        });
+        res.on('aborted', () => reject(new Error(`${url} → 回應在收完前中斷`)));
+        res.on('end', () => {
+          if (Number.isFinite(declared) && received !== declared) {
+            reject(new Error(`${url} → 只收到 ${received} / ${declared} bytes`));
+            return;
+          }
+          resolve(Buffer.concat(chunks));
+        });
       })
       .on('error', reject);
   });
