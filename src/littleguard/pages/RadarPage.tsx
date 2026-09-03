@@ -7,6 +7,7 @@ import { stagger } from '../../common/ui/motion';
 import { useCentreSelectedChip } from '../../common/ui/useCentreSelectedChip';
 import type { RadarData } from '../../types';
 import CountyPicker from '../components/CountyPicker';
+import DiseaseDrawer from '../components/DiseaseDrawer';
 import DiseaseRow from '../components/DiseaseRow';
 import { formatWeekRange, freshnessOf } from '../utils/radar';
 
@@ -150,8 +151,15 @@ export default function RadarPage() {
           </>
         )}
       </div>
-      {/* 抽屜在 Task 5 接上；open 先保留狀態，避免那一步又動這支檔案的結構。 */}
-      {open && null}
+      {open && cells && data && (
+        <DiseaseDrawer
+          disease={open}
+          cell={cells[open]}
+          data={data}
+          age={age}
+          onClose={() => setOpen(null)}
+        />
+      )}
     </div>
   );
 }

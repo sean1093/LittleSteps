@@ -285,3 +285,69 @@ describe('語氣', () => {
     expect(row?.innerHTML ?? '').not.toMatch(/text-(lg|xl|2xl|3xl|4xl)/);
   });
 });
+
+describe('抽屜', () => {
+  it('先給可以做什麼，再給數字', async () => {
+    const it = await renderReady();
+    await it.click(screen.getByRole('button', { name: /腸病毒/ }));
+    const body = screen.getByRole('dialog').textContent ?? '';
+    expect(body.indexOf('可以做什麼')).toBeGreaterThan(-1);
+    expect(body.indexOf('可以做什麼')).toBeLessThan(body.indexOf('這一週'));
+  });
+
+  it('連得出疾管署', async () => {
+    const it = await renderReady();
+    await it.click(screen.getByRole('button', { name: /腸病毒/ }));
+    expect(screen.getByRole('link', { name: /疾管署的腸病毒說明/ })).toHaveAttribute(
+      'href',
+      'https://www.cdc.gov.tw/Disease/SubIndex/m3zdUk3u9GJVvddeSnhkiA',
+    );
+  });
+
+  it('板上放不下的分母在抽屜裡補上', async () => {
+    // 卡片只放得下率與人次；分母是這一格可不可信的關鍵，落點在抽屜。
+    const it = await renderReady();
+    await it.click(screen.getByRole('button', { name: /腸病毒/ }));
+    const body = screen.getByRole('dialog').textContent ?? '';
+    expect(body).toContain('100.0/萬');
+    expect(body).toContain('20 人次');
+    expect(body).toContain('2,000 次門診');
+  });
+
+  it('關掉之後就不在了', async () => {
+    const it = await renderReady();
+    await it.click(screen.getByRole('button', { name: /腸病毒/ }));
+    await it.click(screen.getByRole('button', { name: '關閉' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('打開的是當下那個縣市與年齡層的格子', async () => {
+    // 3-6 歲的水痘基線為零，抽屜裡的狀態要跟著換，不能還停在 0-2 歲那一格。
+    const it = await renderReady();
+    await it.click(screen.getByRole('button', { name: '3-6 歲' }));
+    await it.click(screen.getByRole('button', { name: /水痘/ }));
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveTextContent('最近沒有個案');
+    expect(dialog).toHaveTextContent('0 人次');
+  });
+
+  it('資料不足的格子照樣打得開，據實說算不出來', async () => {
+    const it = await renderReady();
+    await it.click(screen.getByRole('button', { name: '連江縣' }));
+    await it.click(screen.getByRole('button', { name: /腸病毒/ }));
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveTextContent('資料不足');
+    expect(dialog).toHaveTextContent('11 次門診');
+    expect(dialog).toHaveTextContent(/容易上下跳動/);
+    // 算不出來的率不編一個數字；人次與分母是實際數到的，照實給。
+    expect(dialog).toHaveTextContent('—（0 人次）');
+  });
+
+  it('抽屜裡也沒有箭頭、驚嘆號或最強的那個紅', async () => {
+    const it = await renderReady();
+    await it.click(screen.getByRole('button', { name: /腸病毒/ }));
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.textContent ?? '').not.toMatch(/[↑↓→←!！⚠]/);
+    expect(dialog.innerHTML).not.toContain('primary-dark');
+  });
+});
