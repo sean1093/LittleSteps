@@ -2,6 +2,15 @@ name: Deploy to Firebase Hosting on PR
 
 on: pull_request
 
+# action-hosting-deploy 會建立 check run 並在 PR 上留預覽網址的留言。這個 repo 的
+# 預設 GITHUB_TOKEN 權限是唯讀（default_workflow_permissions: read），沒有這個區塊
+# 就會在 POST /check-runs 收到 403 Resource not accessible by integration。
+# 這支 workflow 在 PR #1 之前從未跑過，所以缺漏一直沒有被發現。
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 jobs:
   build_and_preview:
     if: '${{ github.event.pull_request.head.repo.full_name == github.repository }}'
