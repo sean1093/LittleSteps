@@ -10,6 +10,12 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-03-littleguard-disease-radar-design.md`
 
+**實作後更正（Task 6 回填）：** 這份計畫是已執行完的歷史文件，下方各 Task 的程式碼區塊、數字與測試斷言一律**保留當時的寫法**作為紀錄，不改成符合成品；與成品不符處以 spec 為準（`docs/superpowers/specs/2026-09-03-littleguard-disease-radar-design.md`）。三處已知落差：
+
+- **產出大小是 68,511 bytes / gzip 14,667**，不是計畫寫的 47 KB / gzip 12 KB。估值時的格子只有 5 個欄位，定稿是 8 個。
+- **門檻是 P25 0.78 / P75 1.26 / P90 1.77（n = 48,725）**，不是 0.77 / 1.33 / 1.88（n = 40,040）。校準視窗依規格從第 1 週起算並跳年取值（原型只算第 9–52 週、不跳年），樣本變大、三個百分位隨之下移。見 spec §4.3。
+- **狀態是九個，不是八個**：新增 `noBaseline`（「還不夠資料比較」，用於 `trendBase === null`）——「前 8 週算不出基線」與「基線真的是零」不是同一件事，只有後者能說「這週開始出現」。連帶 `noBaseline` / `none` / `smallSample` / `insufficient` 四個弱狀態的色階由 `text-ink-faint` 改為 `text-ink-muted`。見 spec §4.5。
+
 ## Global Constraints
 
 - 語言：所有使用者可見字串為繁體中文；程式碼、註解與 commit message 依 repo 現況（註解中文、識別字英文）。
