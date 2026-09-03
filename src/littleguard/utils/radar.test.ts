@@ -10,6 +10,7 @@ import {
   statusOf,
   freshnessOf,
   formatRate,
+  formatWeekRange,
 } from './radar';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -85,12 +86,35 @@ describe('freshnessOf', () => {
   });
 });
 
+/**
+ * spec §6.1 第 3 條的禁用詞，逐字抄在測試這一側。
+ *
+ * 刻意不從 radar.ts 取用 FORBIDDEN_WORDS 來檢查文案：那是套套邏輯——實作只要
+ * 把某個詞從清單裡刪掉、同時把它寫進 STATUS_COPY，測試照樣綠。真正要守的是
+ * spec 的清單，所以由測試自己持有一份。
+ */
+const BANNED_IN_SPEC = [
+  '警戒',
+  '升溫',
+  '爆發',
+  '危險',
+  '疫情嚴峻',
+  '拉警報',
+  '慎防',
+] as const;
+
 describe('語氣', () => {
-  it('八個狀態的文案都不含禁用詞', () => {
+  it('八個狀態的文案都不含 spec 的禁用詞', () => {
     for (const { label } of Object.values(STATUS_COPY)) {
-      for (const word of FORBIDDEN_WORDS) {
+      for (const word of BANNED_IN_SPEC) {
         expect(label).not.toContain(word);
       }
+    }
+  });
+
+  it('FORBIDDEN_WORDS 這個對外契約涵蓋 spec 的七個詞', () => {
+    for (const word of BANNED_IN_SPEC) {
+      expect(FORBIDDEN_WORDS).toContain(word);
     }
   });
 
@@ -114,6 +138,27 @@ describe('formatRate', () => {
 
   it('保留一位小數並帶單位', () => {
     expect(formatRate(169)).toBe('169.0/萬');
+  });
+});
+
+describe('formatWeekRange', () => {
+  it('同年的疫情週給月/日，不給「第 34 週」', () => {
+    expect(formatWeekRange('2026-08-23', '2026-08-29')).toBe('8/23–8/29');
+  });
+
+  it('跨年的週照樣只給月/日，不會冒出年份', () => {
+    expect(formatWeekRange('2025-12-28', '2026-01-03')).toBe('12/28–1/3');
+  });
+
+  it('月與日都去掉補零——家長寫日期不寫 08/09', () => {
+    expect(formatWeekRange('2026-01-04', '2026-01-10')).toBe('1/4–1/10');
+    expect(formatWeekRange('2026-10-11', '2026-10-17')).toBe('10/11–10/17');
+  });
+
+  it('分隔符是 en dash（U+2013），不是 hyphen', () => {
+    const range = formatWeekRange('2026-08-23', '2026-08-29');
+    expect(range).toContain('\u2013');
+    expect(range).not.toContain('-');
   });
 });
 
