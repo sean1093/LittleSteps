@@ -1,6 +1,8 @@
 # LittleSteps
 
-> 從懷孕到幼兒，六個服務陪台灣爸媽走過每個階段。
+**English** · [繁體中文](README.zh-TW.md)
+
+> Six services for Taiwanese parents, from pregnancy through the toddler years.
 > A mobile-first PWA covering pregnancy, the first year, the toddler years,
 > finding somewhere to feed the baby when you are out, and what is going around
 > in your county this week.
@@ -23,68 +25,70 @@ shape.
 
 | | Service | Stage | Navigation |
 |---|---|---|---|
-| 🌸 | **LittleBloom** | 孕期 · 0-40 週 | hub + back button |
-| 🍼 | **LittleSteps** | 新生兒 · 0-12 月 | sidebar, 12 routes |
-| ☀️ | **LittleExplorer** | 幼兒期 · 1-3 歲 | 4 bottom tabs |
+| 🌸 | **LittleBloom** | Pregnancy · weeks 0-40 | hub + back button |
+| 🍼 | **LittleSteps** | Newborn · 0-12 months | sidebar, 12 routes |
+| ☀️ | **LittleExplorer** | Toddler · 1-3 years | 4 bottom tabs |
 | 🌳 | **LittleOuting** | any | 3 in-page tabs |
 | 📍 | **BabyOasis** | any | full-screen map |
 | 🛡️ | **LittleGuard** | any | single board + drawer |
 
-### LittleBloom — 孕期陪伴
-- **每週孕期指南** — week-by-week body changes and what to watch for
-- **產檢時程** — the 14 government-funded prenatal checkups, with dates and clinics recorded
-- **孕期知識庫** — 24 articles: causes, what to do, when to see a doctor
-- **登記出生** — converts a pregnancy profile into a baby profile, which is what moves a family from LittleBloom to LittleSteps
+### LittleBloom — pregnancy companion
+- **Weekly pregnancy guide** — week-by-week body changes and what to watch for
+- **Prenatal schedule** — the 14 government-funded prenatal checkups, with dates and clinics recorded
+- **Pregnancy knowledge base** — 24 articles: causes, what to do, when to see a doctor
+- **Birth registration** — converts a pregnancy profile into a baby profile, which is what moves a family from LittleBloom to LittleSteps
 
-### LittleSteps — 寶寶成長追蹤
-- **成長總覽** — one screen summarising milestones, vaccines, sleep, nappies and food
-- **里程碑追蹤** — 33 milestones across 體格 / 動作 / 認知 / 餵食
-- **疫苗追蹤** — 32 doses on Taiwan's MOHW schedule (21 公費, 11 自費), with side-effect and emergency guidance
-- **快速日誌** — feeding, sleep and nappies in a couple of taps
-- **睡眠分析** — patterns, quality scoring and advice from the logs
-- **睡眠指南** — 0-3 歲 sleep needs, safety rules and training methods
-- **成長曲線圖** — WHO curves (P3/P15/P50/P85/P97) for weight, height and head circumference
-- **副食品指南** — stage-based weaning plus the 4×3 allergen-introduction method and a per-food trial log
-- **照顧重點** — age-appropriate care and safety
-- **寶寶百科** — 15 common health issues
-- **看診摘要** — generates a summary to hand to a paediatrician
-- **週報 / 月報** — trends and development insight
+### LittleSteps — baby growth tracking
+- **Growth overview** — one screen summarising milestones, vaccines, sleep, nappies and food
+- **Milestone tracking** — 33 milestones across physical, motor, cognitive and feeding
+- **Vaccine tracking** — 32 doses on Taiwan's MOHW schedule (21 government-funded, 11 self-paid), with side-effect and emergency guidance
+- **Quick log** — feeding, sleep and nappies in a couple of taps
+- **Sleep analysis** — patterns, quality scoring and advice from the logs
+- **Sleep guide** — sleep needs from 0 to 3 years, safety rules and training methods
+- **Growth charts** — WHO curves (P3/P15/P50/P85/P97) for weight, height and head circumference
+- **Weaning guide** — stage-based weaning plus the 4×3 allergen-introduction method and a per-food trial log
+- **Care guide** — age-appropriate care and safety
+- **Baby wiki** — 15 common health issues
+- **Clinic summary** — generates a summary to hand to a paediatrician
+- **Weekly / monthly report** — trends and development insight
 
-### LittleExplorer — 幼兒期陪伴
-- **成長檢核** — 30 checks over 12-36 months in five stages, plus a primary-teeth chart
-- **照護提醒** — health checks, vaccines and fluoride varnish scheduled from the birth date, exportable to a calendar
-- **成長日記** — free-text entries with a mood, for the things that never show up in data
-- **幼兒百科** — 45 articles on toilet training, language, emotions, fussy eating, illness
+### LittleExplorer — toddler companion
+- **Development checks** — 30 checks over 12-36 months in five stages, plus a primary-teeth chart
+- **Care reminders** — health checks, vaccines and fluoride varnish scheduled from the birth date, exportable to a calendar
+- **Growth diary** — free-text entries with a mood, for the things that never show up in data
+- **Toddler wiki** — 45 articles on toilet training, language, emotions, fussy eating, illness
   and what to keep in the medicine cabinet, filtered by the child's age stage
 
-### LittleOuting — 親子好去處
-- **234 公立親子館 across all 22 counties**, built from 衛福部社家署's national
-  list by a committed script, plus Taipei's 13 育兒友善園 kept separate because
-  they are a different programme
-- Per-county access rules — 免費與否、年齡對象、預約方式、戶籍限制 — each with
-  its own source and 查證日期, and an explicit "not verified" for the 18 counties
-  whose rules are not published
-- **12 親子餐廳**, hand-verified and labelled as a sample rather than a
-  directory: Taiwan has no official 親子餐廳 dataset and no certification
-  scheme, and the Tourism Administration's national restaurant feed has a
-  Kids-Friendly field that is empty in all 3,632 records
-- 出發前檢查清單 — the eleven questions that decide whether a trip out works
-- No map, on purpose: no official 親子館 source carries coordinates, and
+### LittleOuting — places to take a child
+- **234 public family centres across all 22 counties**, built by a committed
+  script from the national list published by the MOHW Social and Family Affairs
+  Administration, plus Taipei's 13 parenting-friendly rooms kept separate
+  because they are a different programme
+- Per-county access rules — free or paid, eligible ages, how to book, household
+  registration limits — each with its own source and verification date, and an
+  explicit "not verified" for the 18 counties whose rules are not published
+- **12 family-friendly restaurants**, hand-verified and labelled as a sample
+  rather than a directory: Taiwan has no official dataset of family-friendly
+  restaurants and no certification scheme, and the Tourism Administration's
+  national restaurant feed has a Kids-Friendly field that is empty in all 3,632
+  records
+- A before-you-go checklist — the eleven questions that decide whether a trip out works
+- No map, on purpose: no official family-centre source carries coordinates, and
   geocoding Taiwanese street addresses was tested and rejected (see below)
 
-### BabyOasis — 哺乳室地圖
+### BabyOasis — nursing-room map
 - **3,852 nursing rooms across all 22 counties**, from MOHW open data
 - Locate-me search returning the nearest 8 within 10 km, with real distances
 - Facilities, opening hours, phone, and a one-tap Google Maps handoff
 - Clustered markers with a spatial index, so the national dataset stays usable at any zoom
 
-### LittleGuard — 疫情雷達
-- **六種兒童常見傳染病**（腸病毒、手足口病、疱疹性咽峽炎、類流感、腹瀉、水痘）的每週門診就診情況，依 22 縣市與三個年齡層（0-2 / 3-6 / 7-12）切分
-- 狀態是「跟自己前 8 週比」而不是跟往年同期比：2020-2022 的防疫措施讓腸病毒幾乎消失，以前 5 年同週為基線會讓每一週都看起來異常
-- 門檻取實測分布的百分位（P25 0.78 / P75 1.26 / P90 1.77，n=48,725），並在每次重建時重算寫入 JSON，程式碼常數漂掉時測試會紅
-- 狀態共九個，其中 `noBaseline`（還不夠資料比較）與 `none`（最近沒有個案）刻意分開：「前 8 週不足以算出基線」跟「基線真的是零」是兩件事，只有後者才能說「這週開始出現」
-- 分母不足的格子據實顯示「樣本偏小」或「資料不足」——連江縣與金門 0-2 歲每週就診數只有兩位數，不替它編一個狀態
-- 語氣刻意收斂：提醒多留意而不是製造焦慮，每個「變多」都同時給得出可以做的事，顏色最強只到 `butter-dark`
+### LittleGuard — disease radar
+- **Six infectious diseases common in children** (enterovirus, hand-foot-and-mouth disease, herpangina, influenza-like illness, diarrhoea, chickenpox): weekly outpatient visits, split across the 22 counties and three age bands (0-2 / 3-6 / 7-12)
+- Status compares a county with **its own previous 8 weeks**, not with the same week in earlier years: the 2020-2022 control measures nearly erased enterovirus, so a five-year same-week baseline makes every week look abnormal
+- Thresholds are percentiles of the measured distribution (P25 0.78 / P75 1.26 / P90 1.77, n=48,725), recomputed into the JSON on every rebuild, so a test goes red when the constants in code drift away from the data
+- Nine statuses, with `noBaseline` (not enough data to compare) deliberately separate from `none` (no recent cases): "the previous 8 weeks cannot produce a baseline" and "the baseline really is zero" are different things, and only the second one supports "this week it starts appearing"
+- A cell whose denominator is too small says "small sample" or "not enough data" instead of being given an invented status — weekly visits for ages 0-2 in Lienchiang and Kinmen are two-digit numbers
+- The tone is deliberately restrained: notice this, do not panic about it. Every "more than usual" comes with something a parent can do, and the strongest colour it reaches is `butter-dark`
 
 ---
 
@@ -96,8 +100,8 @@ Knowledge content is not.
 `src/common/routePolicy.ts` holds a **public allowlist**, deliberately not a
 "needs auth" blocklist: this app stores children's health data, so forgetting to
 mark a new page should fail closed. Public pages are the entry point, the three
-knowledge bases, 照顧重點, 睡眠指南, LittleOuting, BabyOasis and LittleGuard.
-Everything else needs an account.
+knowledge bases, the care guide, the sleep guide, LittleOuting, BabyOasis and
+LittleGuard. Everything else needs an account.
 
 A signed-out visitor hitting a private route gets that service's intro page at
 the same URL — the path is preserved, so after signing in they land where they
@@ -284,35 +288,47 @@ because that formula is keg-only, `/opt/homebrew/opt/openjdk/bin` has to be on
 family off from a child's health record, or opened one to a stranger.
 
 The nursing-room dataset lives at `public/data/nursingRooms.json` and is
-regenerated by `scripts/buildNursingRooms.cjs`; the 親子館 list is
+regenerated by `scripts/buildNursingRooms.cjs`; the family-centre list is
 `public/data/familyCentres.json` from `scripts/buildFamilyCentres.cjs`. It is excluded from the PWA
 precache and fetched on first visit to the map instead — 1.1 MB should not be
 downloaded by someone who never opens BabyOasis.
 
-疫情雷達的資料在 `public/data/diseaseRadar.json`，由 `scripts/buildDiseaseRadar.cjs`
-從疾管署六支 CSV（約 47 MB）聚合成 68.5 KB。gzip 後是 14.7 KB，所以留在 PWA
-precache 內，板可以離線打開。`od.cdc.gov.tw` 的憑證鏈不完整，腳本自帶
-`scripts/data/` 下的兩張 TWCA 憑證，不要改成關閉 TLS 驗證。
+Disease radar data lives at `public/data/diseaseRadar.json`, aggregated by
+`scripts/buildDiseaseRadar.cjs` from six Taiwan CDC CSV files (~47 MB) down to
+68.5 KB. That is 14.7 KB gzipped, so it stays inside the PWA precache and the
+board opens offline. The certificate chain served by `od.cdc.gov.tw` is
+incomplete, so the script carries the two TWCA certificates under
+`scripts/data/`; do not "fix" that by turning off TLS verification.
 
-**更新是手動的，每週一次**，疾管署週一、二清晨更新上一週資料，所以週三之後跑：
+**Updating is manual, once a week.** Taiwan CDC publishes the previous week
+early on Monday or Tuesday, so run this from Wednesday onwards:
 
 ```bash
-node scripts/buildDiseaseRadar.cjs   # 重建
-node scripts/diffDiseaseRadar.cjs    # 0 資料本體相同 / 1 有變更 / 2 比不出來
+node scripts/buildDiseaseRadar.cjs   # rebuild
+node scripts/diffDiseaseRadar.cjs    # 0 same data / 1 changed / 2 cannot compare
 ```
 
-回 1 才 `git add public/data/diseaseRadar.json` 並 commit；回 0 就
-`git checkout -- public/data/diseaseRadar.json` 把重建時寫進去的時間戳還原。
-比對前會先剝掉每次執行都會變的 `generatedAt` 與 `verifiedOn`，否則每週都會多一筆
-內容其實沒動的 commit。回 2 是「比不出來」，要停下來看，不能當成 1。
+Only exit 1 earns `git add public/data/diseaseRadar.json` and a commit. On exit
+0 run `git checkout -- public/data/diseaseRadar.json` to drop the timestamps the
+rebuild just wrote. The comparison strips `generatedAt` and `verifiedOn` first,
+because they change on every run and would otherwise produce a weekly commit
+that changes no data. Exit 2 means the comparison itself failed: stop and look,
+never treat it as a 1.
 
-`.github/workflows/refresh-disease-radar.yml` 有同一套邏輯，但**只能手動觸發、
-沒有排程**：`od.cdc.gov.tw` 從 GitHub 託管的 runner 連不上（實測兩次都是
-`connect ETIMEDOUT`，同一個 IP 從台灣連得上），來源 IP 被擋。接上有台灣線路的
-self-hosted runner 之後換掉 `runs-on` 就能自動化。
+`.github/workflows/refresh-disease-radar.yml` carries the same logic but is
+**manual only, and only useful on a runner with a Taiwan route**.
+`od.cdc.gov.tw` is unreachable from GitHub-hosted runners: two dispatches both
+died with `connect ETIMEDOUT 35.229.205.172:443` without completing a TCP
+handshake, while the same IP answers from a machine in Taiwan and resolves to
+the same address from both, so this is the source IP being blocked and not DNS
+geo-splitting. Dispatched on `ubuntu-latest` it now stops after about 20 seconds
+with that explanation instead of hanging for over two minutes; dispatch it with
+the `runner` input pointed at a self-hosted runner in Taiwan and the rest of the
+job works unchanged.
 
-忘記更新不會出錯：畫面會顯示資料週次，超過一個月會出現「超過一個月沒更新」並收起
-所有狀態文案，只留數字。
+Forgetting to update is safe: the board shows which week the data covers, and
+once that is over a month old it says so and collapses every status line,
+leaving only the numbers.
 
 ---
 
@@ -333,7 +349,7 @@ src/
 ├── littlebloom/             pages, components (BloomShell), data, utils
 ├── littleexplorer/          pages, components (ExplorerShell, ExplorerTabBar,
 │                            ToothChart, AgeBandPicker), hooks, data, utils
-├── littleouting/            venue page + card, 親子館/親子餐廳 data, checklist
+├── littleouting/            venue page + card, centre + restaurant data, checklist
 ├── babyoasis/               map page, spatial index, data
 ├── littleguard/             radar page, disease row + drawer, sparkline,
 │                            status thresholds, county centroids
@@ -428,13 +444,18 @@ and undeletable. That the sequential order fails is a case in
 
 ## Contributing
 
-1. Read `.claude/CLAUDE.md` and the relevant file in `.claude/skills/`.
+1. Read `.claude/CLAUDE.md` and the skills in `.claude/skills/`. Two of them are
+   process, not code: `english-writing` (commit messages, PR text and docs are
+   English; `README.md` and `README.zh-TW.md` change together) and
+   `pr-self-merge` (branch, open a PR, review your own diff in writing, fix what
+   it finds, merge it).
 2. Follow the design system above. Adding a second way to draw a card is the
    main thing to avoid.
 3. Conventional commits: `feat:` `fix:` `refactor:` `style:` `docs:` `test:`
    `chore:`.
-4. `npm run build` and `npm run test` must pass. Check your change on a 390px
-   viewport before opening a PR.
+4. CI only builds the PR and deploys a preview, so run `npm run build`,
+   `npm run lint` and `npx vitest run` yourself — and look at the change on a
+   390px viewport — before opening the PR.
 
 ## Roadmap
 
