@@ -1,27 +1,40 @@
 name: Refresh disease radar data
 
-# 只能手動觸發，沒有 schedule。
+# Manual only, and only useful on a runner that can reach Taiwan CDC.
 #
-# `od.cdc.gov.tw`（35.229.205.172）從 GitHub 託管的 runner 連不上：實測兩次
-# workflow_dispatch 都是 `connect ETIMEDOUT 35.229.205.172:443`，各卡約 2 分 17 秒，
-# 連 TCP 都沒建立起來。同一個 IP 從台灣的機器連得上，DNS 也解到同一個位址，
-# 所以不是 DNS 分流而是來源 IP 被擋（GitHub runner 在 Azure 上）。
+# od.cdc.gov.tw (35.229.205.172) is unreachable from GitHub-hosted runners: two
+# workflow_dispatch runs both died with `connect ETIMEDOUT 35.229.205.172:443`
+# after about 2m17s each, without ever completing a TCP handshake. The same IP
+# answers from a machine in Taiwan and resolves to the same address from both,
+# so this is the source IP being blocked (GitHub runners live on Azure) and not
+# DNS geo-splitting.
 #
-# 排 cron 的話每週三只會準時寄一封失敗信，久了就沒人看告警。改成：每週在本機跑
-# `node scripts/buildDiseaseRadar.cjs`，有變更才 commit（README 的資料一節有步驟）。
-# 疾管署週一、二清晨更新上一週的資料，所以週三之後跑最準。
+# A cron schedule would therefore deliver one failure email a week until nobody
+# reads them. The weekly refresh is a local command instead — see the disease
+# radar part of the data section in README.md. Taiwan CDC publishes the previous
+# week early on Monday or Tuesday, so run it from Wednesday onwards.
 #
-# 這支 workflow 保留著、也保留 workflow_dispatch：如果哪天接上有台灣線路的
-# self-hosted runner，把 `runs-on` 換掉就能直接用，下面的 diff 判斷邏輯不用改。
+# This workflow stays for the day a self-hosted runner with a Taiwan route
+# exists: dispatch it with `runner` set to that label and everything below works
+# unchanged. On ubuntu-latest each download now gives up after 20s with a stated
+# reason instead of hanging for over two minutes.
 on:
   workflow_dispatch:
+    inputs:
+      runner:
+        description: 'Runner label — ubuntu-latest cannot reach od.cdc.gov.tw'
+        type: choice
+        default: ubuntu-latest
+        options:
+          - ubuntu-latest
+          - self-hosted
 
 permissions:
   contents: write
 
 jobs:
   refresh:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     steps:
       - uses: actions/checkout@v4
 
@@ -30,35 +43,58 @@ jobs:
         with:
           node-version: '20'
 
-      # 沒有 npm ci：buildDiseaseRadar.cjs 只用 node 內建模組（fs / https / path / tls）。
+      # No npm ci: buildDiseaseRadar.cjs only uses node builtins (fs / https / path / tls).
       - name: Rebuild diseaseRadar.json
+        id: rebuild
         run: node scripts/buildDiseaseRadar.cjs
 
-      # 任一支 CSV 抓取失敗或解析出 0 列時，上一步會非零退出、不寫檔，這一步因此
-      # 不會執行——線上維持上一週而不是變成空板。
+      - name: Explain an unreachable source
+        if: failure() && steps.rebuild.outcome == 'failure'
+        run: |
+          {
+            echo '## Could not fetch the Taiwan CDC data'
+            echo
+            echo '`od.cdc.gov.tw` blocks source IPs outside Taiwan, and every'
+            echo 'GitHub-hosted runner is one. Nothing was written, so the live'
+            echo 'board still shows last week rather than an empty board.'
+            echo
+            echo 'Refresh it from a machine on a Taiwan network:'
+            echo
+            echo '```bash'
+            echo 'node scripts/buildDiseaseRadar.cjs'
+            echo 'node scripts/diffDiseaseRadar.cjs   # 0 same / 1 changed / 2 cannot compare'
+            echo '```'
+            echo
+            echo 'Commit `public/data/diseaseRadar.json` only on exit 1.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # A CSV that fails to download, or parses to 0 rows, exits non-zero above
+      # and writes nothing, so this step never runs — the live board keeps last
+      # week instead of turning into an empty one.
       #
-      # 不用 `git diff --quiet`：每次重建都會寫入新的 generatedAt 與 verifiedOn，
-      # git 因此永遠說有變更，排程會每週 commit 一筆資料其實沒動的變更。
-      # diffDiseaseRadar.cjs 剝掉那兩個欄位再比，並沿用 git diff 的退出碼語意
-      # （0 相同 / 1 有變更 / 2 比不出來）。2 不能當成 1：比不出來時要紅燈停下，
-      # 而不是把一份還沒驗證過的檔案 commit 上去。
+      # Not `git diff --quiet`: every rebuild writes a fresh generatedAt and
+      # verifiedOn, so git always reports a change and a schedule would commit a
+      # week of nothing. diffDiseaseRadar.cjs strips those two fields before
+      # comparing and reuses git diff's exit codes (0 same / 1 changed / 2 cannot
+      # compare). A 2 is not a 1: when the comparison itself fails, stop red
+      # rather than commit a file nobody has verified.
       #
-      # 排程跑在預設分支 master，所以這裡的 push 會觸發既有的
-      # firebase-hosting-merge.yml，不需要在這裡另外部署。
+      # Dispatched on the default branch, the push below triggers the existing
+      # firebase-hosting-merge.yml, so there is no deploy step here.
       - name: Commit if data changed
         run: |
           status=0
           node scripts/diffDiseaseRadar.cjs || status=$?
           case "$status" in
             0)
-              echo "不 commit，還原重建時寫入的時間戳"
+              echo "No commit; restoring the timestamps the rebuild wrote"
               git checkout -- public/data/diseaseRadar.json
               ;;
             1)
               git config user.name "github-actions[bot]"
               git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
               git add public/data/diseaseRadar.json
-              git commit -m "chore: 更新疫情雷達資料"
+              git commit -m "chore: update disease radar data"
               git push
               ;;
             *)
