@@ -1,6 +1,8 @@
 import type { Page } from '../types/routes';
-
-export type ServiceId = 'littlesteps' | 'littlebloom' | 'littleexplorer' | 'babyoasis' | 'littleouting';
+// ServiceId 原本在這裡另寫一份，於是加一個服務要改兩處且必須手動同步。
+// 主題那份是真正被 UI 讀的，這裡改成引用它。
+export type { ServiceId } from './ui/serviceTheme';
+import type { ServiceId } from './ui/serviceTheme';
 
 /**
  * 不需登入就能看的頁面。
@@ -30,6 +32,8 @@ const PUBLIC_PAGES: Partial<Record<Page, true>> = {
   // 場館名冊是政府公開資料與查證過的整理，不讀任何孩子的資料。
   littleouting: true,
   babyoasis: true,
+  // 就診統計是政府公開資料的整理，不讀任何孩子的資料。
+  littleguard: true,
 };
 
 export function requiresAuth(page: Page): boolean {
@@ -43,6 +47,7 @@ export function serviceOf(page: Page): ServiceId | null {
   if (page.startsWith('littlebloom')) return 'littlebloom';
   if (page.startsWith('littleexplorer')) return 'littleexplorer';
   if (page === 'littleouting') return 'littleouting';
+  if (page === 'littleguard') return 'littleguard';
   return 'babyoasis';
 }
 
@@ -53,4 +58,5 @@ export const SERVICE_HOME: Record<ServiceId, Page> = {
   littleexplorer: 'littleexplorer',
   littleouting: 'littleouting',
   babyoasis: 'babyoasis',
+  littleguard: 'littleguard',
 };

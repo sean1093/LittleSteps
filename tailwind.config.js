@@ -61,6 +61,18 @@ export default {
           ink: '#1F7A70',   // 5.15:1 — text, and white text on it
           deep: '#14655C',  // 6.89:1
         },
+        // LittleGuard（疫情雷達）。靖藍：不撞 secondary 的天藍（BabyOasis）
+        // 也不撞 outing 的青綠。對比值對 warm-white #FDFBF7 實算：
+        // DEFAULT 2.10:1（與 outing DEFAULT 同級，只當填色永不承載文字）、
+        // ink 5.48:1（白字在其上 5.66:1，可當按鈕與 active chip 的實色底）、
+        // deep 7.68:1（hover 與邊框）。
+        guard: {
+          DEFAULT: '#A8ADDB',
+          light: '#E4E6F5',
+          soft: '#F3F4FB',
+          ink: '#5A61A8',
+          deep: '#474C86',
+        },
         // LittleBloom Morandi palette.
         //
         // The Morandi shades are deliberately desaturated, which makes them

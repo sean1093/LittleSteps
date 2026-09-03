@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
-import type { Venue, NursingRoom } from '../../types';
+import type { Venue, NursingRoom, RadarData } from '../../types';
 import { toddlerWikiArticles } from '../../littleexplorer/data/toddlerWiki';
 import { prenatalCheckupSchedule } from '../../littlebloom/data/prenatalCheckups';
 
@@ -49,6 +49,7 @@ const readJson = <T>(...segments: string[]): T =>
 
 const venues = readJson<Venue[]>('public', 'data', 'familyCentres.json');
 const rooms = readJson<NursingRoom[]>('public', 'data', 'nursingRooms.json');
+const radar = readJson<RadarData>('public', 'data', 'diseaseRadar.json');
 
 /**
  * 親子館與育兒友善園是兩份來源、兩種 id 前綴，同住一個檔案。
@@ -57,6 +58,19 @@ const rooms = readJson<NursingRoom[]>('public', 'data', 'nursingRooms.json');
 const centres = venues.filter((venue) => venue.id.startsWith('centre-'));
 const roomCities = new Set(rooms.map((room) => room.city));
 const publicCheckups = prenatalCheckupSchedule.filter((item) => item.kind === 'checkup');
+
+/**
+ * 迷你走勢圖回顧幾週。每個 cell 都一樣長，收成 Set 是為了在長度不齊時
+ * 讓下面那條直接紅——拿第一個 cell 當代表的話，不齊會被靜靜吃掉。
+ */
+const radarSparkWeeks = new Set(
+  Object.values(radar.counties).flatMap((bands) =>
+    Object.values(bands).flatMap((cells) => Object.values(cells).map((cell) => cell.spark.length)),
+  ),
+);
+
+/** 中文數字寫的量詞，`六種` 的 `六`。文案只會用到個位數。 */
+const CHINESE_DIGITS = [...'零一二三四五六七八九'];
 
 interface CopyLine {
   file: string;
@@ -128,6 +142,20 @@ describe('首頁文案的數字', () => {
   it('公費產檢的次數就是排程裡 checkup 的筆數', () => {
     expect(claimed(HUB_LANDING, '次公費產檢')).toEqual([publicCheckups.length]);
   });
+
+  it('疫情雷達的病種數與回顧週數就是 diseaseRadar.json 裡的數字', () => {
+    // 「六種」是中文數字，claimed() 的阿拉伯數字比對抓不到，這裡自己轉一次；
+    // 六個病種是 spec 訂死的清單，改資料卻沒改文案時要在這裡紅。
+    const diseaseCounts = HUB_LANDING.flatMap((entry) =>
+      [...entry.text.matchAll(/([零一二三四五六七八九])種/g)].map((match) =>
+        CHINESE_DIGITS.indexOf(match[1]),
+      ),
+    );
+    expect(diseaseCounts).toEqual([radar.diseases.length]);
+
+    expect([...radarSparkWeeks], '各 cell 的 spark 長度不一致').toHaveLength(1);
+    expect(claimed(HUB_LANDING, '週比')).toEqual([...radarSparkWeeks]);
+  });
 });
 
 /**
@@ -139,7 +167,14 @@ describe('首頁文案的數字', () => {
  */
 describe('文案裡沒有第三種數字', () => {
   /** 上面已經逐條對過資料的說法。 */
-  const CHECKED_ABOVE = ['45 篇', '234 間親子館', '3,852 處', '22 縣市', '14 次公費產檢'];
+  const CHECKED_ABOVE = [
+    '45 篇',
+    '234 間親子館',
+    '3,852 處',
+    '22 縣市',
+    '14 次公費產檢',
+    '8 週',
+  ];
 
   /**
    * 不是數量、因此沒有資料可以對的數字。每一條都要寫得出理由；

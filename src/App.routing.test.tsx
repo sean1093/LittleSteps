@@ -71,6 +71,7 @@ const ROUTES: Probe[] = [
   { path: '/littleexplorer/wiki', page: 'littleexplorer/wiki', expect: currentTab('百科') },
   { path: '/littleouting', page: 'littleouting', expect: heading('LittleOuting') },
   { path: '/babyoasis', page: 'babyoasis', expect: heading('BabyOasis') },
+  { path: '/littleguard', page: 'littleguard', expect: heading('LittleGuard') },
 ];
 
 const visit = (path: string) => window.history.replaceState(null, '', path);

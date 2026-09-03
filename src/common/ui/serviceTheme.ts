@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Baby, Flower2, MapPin, Sun, Trees } from 'lucide-react';
+import { Baby, Flower2, MapPin, ShieldAlert, Sun, Trees } from 'lucide-react';
 
 /**
  * One layout language, four personalities.
@@ -22,7 +22,8 @@ export type ServiceId =
   | 'littlebloom'
   | 'littleexplorer'
   | 'babyoasis'
-  | 'littleouting';
+  | 'littleouting'
+  | 'littleguard';
 
 export interface ServiceTheme {
   id: ServiceId;
@@ -129,11 +130,27 @@ export const SERVICE_THEME: Record<ServiceId, ServiceTheme> = {
     body: 'text-ink',
     muted: 'text-ink-muted',
   },
+  littleguard: {
+    id: 'littleguard',
+    name: 'LittleGuard',
+    role: '疫情雷達',
+    icon: ShieldAlert,
+    pageBg: 'bg-warm-white',
+    tint: 'bg-guard-soft',
+    accent: 'bg-guard',
+    ink: 'text-guard-ink',
+    fill: 'bg-guard-ink',
+    fillText: 'text-white',
+    body: 'text-ink',
+    muted: 'text-ink-muted',
+  },
 };
 
 /**
  * Entry-point order: the timeline a family actually moves through, with the
- * two "where can we go" services last because they apply at every stage.
+ * two "where can we go" services last because they apply at every stage, and
+ * the radar after them — it is tied to no stage at all, you check it whenever
+ * something is going around.
  */
 export const SERVICE_ORDER: ServiceId[] = [
   'littlebloom',
@@ -141,4 +158,5 @@ export const SERVICE_ORDER: ServiceId[] = [
   'littleexplorer',
   'littleouting',
   'babyoasis',
+  'littleguard',
 ];

@@ -17,8 +17,8 @@ import { confirmDelete } from '../ui/confirmDelete';
 /**
  * 讀不讀某個孩子的資料，決定這個服務該不該顯示切換器。
  *
- * 親子館名冊與哺乳室地圖不看孩子，在那裡放一個切換器等於暗示它會改變畫面
- * 上的東西——不會。帳號本身則到處都要能碰到，登出不該只在某一個服務裡有。
+ * 親子館名冊、哺乳室地圖與疫情雷達不看孩子，在那裡放一個切換器等於暗示它會
+ * 改變畫面上的東西——不會。帳號本身則到處都要能碰到，登出不該只在某一個服務裡有。
  */
 const SERVICE_USES_CHILD: Record<ServiceId, boolean> = {
   littlesteps: true,
@@ -26,6 +26,7 @@ const SERVICE_USES_CHILD: Record<ServiceId, boolean> = {
   littleexplorer: true,
   littleouting: false,
   babyoasis: false,
+  littleguard: false,
 };
 
 interface AccountSheetProps {

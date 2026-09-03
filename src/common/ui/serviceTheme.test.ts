@@ -194,9 +194,9 @@ describe('SERVICE_THEME 對比度', () => {
     // 3:1，但這裡收到 4.5：app 的底色從來不是純白，所以「對白色 4.5」調出來的
     // 色階落在自己的 pageBg 上會掉下去——`bloom-dusty-rose-ink` 曾是 4.19
     // （#8E6A6A on #F5F0E8）、`secondary-dark` 曾是 4.38（#2F7F9C on #FDFBF7）。
-    // 兩個色階都已照真正的 pageBg（而不是純白）重新調深，五個服務現在的實測是
+    // 兩個色階都已照真正的 pageBg（而不是純白）重新調深，六個服務現在的實測是
     // littlebloom 4.87、littlesteps 4.92、littleouting 4.98、babyoasis 5.26、
-    // littleexplorer 5.38，所以不再需要分成兩個門檻。
+    // littleexplorer 5.38、littleguard 5.48，所以不再需要分成兩個門檻。
     for (const [id, theme] of SERVICES) {
       const value = contrast(theme.ink, theme.pageBg);
       expect(
@@ -253,7 +253,7 @@ describe('SERVICE_THEME 對比度', () => {
   });
 
   it('每個服務的 accent 是不同顏色', () => {
-    // hub 上五張卡片並排，兩張同色就讀成同一個服務。
+    // hub 上六張卡片並排，兩張同色就讀成同一個服務。
     const byHex = new Map<string, ServiceId>();
     for (const [id, theme] of SERVICES) {
       const { hex } = resolve(theme.accent);
@@ -278,7 +278,7 @@ describe('SERVICE_THEME 完整性', () => {
     }
   });
 
-  it('每個服務的 icon 都渲染得出 svg，且五個服務不共用同一個 icon', () => {
+  it('每個服務的 icon 都渲染得出 svg，且六個服務不共用同一個 icon', () => {
     const seen = new Map<unknown, ServiceId>();
     for (const [id, theme] of SERVICES) {
       const { container, unmount } = render(createElement(theme.icon, { 'aria-hidden': true }));
@@ -302,13 +302,14 @@ describe('SERVICE_THEME 完整性', () => {
 });
 
 describe('palette 的色階規則', () => {
-  /** 五個基礎色階：DEFAULT 是填色，可讀的夥伴各自叫 dark 或 ink。 */
+  /** 六個基礎色階：DEFAULT 是填色，可讀的夥伴各自叫 dark 或 ink。 */
   const RAMPS: { group: string; readable: string }[] = [
     { group: 'primary', readable: 'dark' },
     { group: 'secondary', readable: 'dark' },
     { group: 'mint', readable: 'dark' },
     { group: 'butter', readable: 'dark' },
     { group: 'outing', readable: 'ink' },
+    { group: 'guard', readable: 'ink' },
   ];
 
   it('DEFAULT 色階是填色：對白色 <4.5:1', () => {
