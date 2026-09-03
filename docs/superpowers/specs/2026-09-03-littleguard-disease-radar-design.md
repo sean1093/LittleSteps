@@ -33,7 +33,7 @@
 | 疫苗時程與追蹤 | `littlesteps/data/vaccines.ts`，32 劑 | **不重做**。雷達講的是「現在外面在流行什麼」，與「你家孩子打了幾劑」是兩件事 |
 | 寶寶百科 15 篇疾病條目 | `littlesteps/data/babyWiki.ts` | **不重做**。雷達的抽屜連到疾管署該病介紹頁，不在此重寫醫療內容 |
 | 幼兒百科 45 篇（含生病照顧） | `littleexplorer/data/` | **不重做**，同上 |
-| 地圖能力 | `babyoasis` 的 Leaflet + 空間索引 | **不使用**。縣市層級的資料用 22 顆 chip 就夠，加地圖等於把 12 KB 的板變成要載 Leaflet 的頁 |
+| 地圖能力 | `babyoasis` 的 Leaflet + 空間索引 | **不使用**。縣市層級的資料用 22 顆 chip 就夠，加地圖等於把 gzip 14.7 KB 的板變成要載 Leaflet 的頁 |
 | 定位能力 | `BabyOasisPage.tsx` 的 `navigator.geolocation` + toast 失敗處理 | **沿用同一模式**，座標對縣市用內建中心點表，不引入 geocoding 服務（本 repo 已測試並否決台灣地址 geocoding） |
 
 ---
@@ -118,21 +118,21 @@ data.gov.tw 標示「每 1 日」，但實際內容以「週」為單位：NIDSS
 ### 3.3 資料管線：排程 workflow 週更並 commit
 
 ```
-6 支 CSV ≈ 49 MB
+6 支 CSV ≈ 47 MB
    ↓ scripts/buildDiseaseRadar.cjs（ca: [中介, 根]）
-public/data/diseaseRadar.json   47,131 bytes / gzip 12,000（實測）
+public/data/diseaseRadar.json   68,511 bytes / gzip 14,667（實測）
    ↓ 有 diff 才 commit 到 master
 既有 firebase-hosting-merge workflow 自動部署
 ```
 
-1000:1 的壓縮比是這個設計成立的原因：nursingRooms.json 是 1.1 MB 所以被 `globIgnores` 排除在 PWA precache 外；12 KB 則可以直接被預先快取，板因此離線可用。
+700:1 的壓縮比是這個設計成立的原因：nursingRooms.json 是 1.1 MB 所以被 `globIgnores` 排除在 PWA precache 外；68.5 KB（gzip 14.7 KB）則可以直接被預先快取，板因此離線可用。
 
 排程：每週三 01:00 UTC（台灣時間週三 09:00），CDC 週一／週二已更新上週資料。Workflow 需要 `permissions: contents: write`，且必須 push 到 **`master`**（`firebase-hosting-merge.yml:6`），否則不會觸發部署。
 
 被否決的做法：
 
 - **完全手動**（比照 nursingRooms 現況）：疫情資料過期不是「不新鮮」而是「誤導」。放著會讓降級狀態變成常態而不是例外。
-- **client 端直抓 CDC**：單支 8.2 MB、六支 49 MB，行動網路不可行；且瀏覽器對缺中介憑證的容忍度不一致（Chrome 會用 AIA 補抓，Safari／Firefox 可能直接失敗）。
+- **client 端直抓 CDC**：單支 8.2 MB、六支 47 MB，行動網路不可行；且瀏覽器對缺中介憑證的容忍度不一致（Chrome 會用 AIA 補抓，Safari／Firefox 可能直接失敗）。
 - **排程時直接 build+deploy 不 commit**：線上資料與 repo 不一致，git 查不到當前線上是哪一週。
 - **Cloud Function 代理**：Firebase Functions 需要 Blaze 付費方案。
 
@@ -198,13 +198,15 @@ spark     = 含本週在內的最近 8 週 rate       ← 與 trendBase 的視�
                                               基線不能包含被評估的那一週
 ```
 
-實測分布（近 3 年、分母 ≥ 300、n = 40,040）：
+實測分布（近 3 年、分母 ≥ 300、n = 48,725）：
 
-| P10 | P25 | P50 | P75 | P90 | P95 |
-|---|---|---|---|---|---|
-| 0.51 | 0.77 | **1.01** | 1.33 | 1.88 | 2.41 |
+| P25 | P75 | P90 |
+|---|---|---|
+| 0.78 | 1.26 | 1.77 |
 
-P50 = 1.01，正確地以 1.0 為中心，且完全不跨 NPI 斷層。這是燈號唯一的依據。
+這三個就是燈號的門檻。它們由 `buildDiseaseRadar.cjs` 每次重建時實算並寫入 JSON 的 `calibration` 欄位（見 §5），`radar.ts` 的 `RADAR_THRESHOLDS` 是它們的鏡像，兩邊漂開超過 0.05 測試就紅（見 §9）。表上只列這三個，因為出貨管線只算這三個——其餘百分位沒有對應的新量測，不補。
+
+設計階段的原型另外量到 P50 **1.01**。**P50 ≈ 1.01、正確地以 1.0 為中心且完全不跨 NPI 斷層，是選這個基準而不選 §4.2 的理由**，這個論證仍然成立。但那個數字量在**較窄的視窗**上（只算第 9–52 週、不跳年，n = 40,040）；實作依本節規格從第 1 週起算並跳年取值（跨年退回前一年的最後一週，2025 確實有 W53），樣本因此從 40,040 增到 48,725，三個門檻百分位隨之下移。§4.2、§4.4、§4.6 的分布數字同樣出自那批原型量測，出貨管線沒有重算它們。
 
 ### 4.4 空間基準（抽屜內的第二個視角）
 
@@ -222,14 +224,19 @@ geoRatio = rate(縣市) / rate(全國同週同年齡層同病種)
 
 | `status` | 文案 | 條件 | 顏色 | 來源百分位 |
 |---|---|---|---|---|
-| `risingStrong` | 最近變多，多留意 | `ratio >= 1.88` | `butter-dark` | P90：歷史上只有十分之一的週這麼高 |
-| `rising` | 稍微變多 | `1.33 <= ratio < 1.88` | `ink` | P75 |
-| `steady` | 跟平常差不多 | `0.77 <= ratio < 1.33` | `ink-muted` | P25–P75 |
-| `falling` | 比平常少 | `ratio < 0.77` | `mint-dark` | P25 |
-| `none` | 最近沒有個案 | `trendBase === 0 && rate === 0` | `ink-faint` | 基線為零，比值無意義。2026 W34 在分母 ≥ 1,000 的 330 格中有 **13 格**如此，全部是水痘 |
+| `risingStrong` | 最近變多，多留意 | `ratio >= 1.77` | `butter-dark` | P90：歷史上只有十分之一的週這麼高 |
+| `rising` | 稍微變多 | `1.26 <= ratio < 1.77` | `ink` | P75 |
+| `steady` | 跟平常差不多 | `0.78 <= ratio < 1.26` | `ink-muted` | P25–P75 |
+| `falling` | 比平常少 | `ratio < 0.78` | `mint-dark` | P25 |
+| `noBaseline` | 還不夠資料比較 | `trendBase === null` | `ink-muted` | 前 8 週算不出基線（需至少 6 週有值），見下 |
+| `none` | 最近沒有個案 | `trendBase === 0 && rate === 0` | `ink-muted` | 基線為零，比值無意義。2026 W34 在分母 ≥ 1,000 的 330 格中有 **13 格**基線為零，全部是水痘——其中 9 格 `none`、4 格 `emerged` |
 | `emerged` | 這週開始出現 | `trendBase === 0 && rate > 0` | `ink` | 從零變成有是資訊，但不能算成倍數 |
-| `smallSample` | 樣本偏小，僅供參考 | `reliability === 'small'` | `ink-faint` | 見 §4.6 |
-| `insufficient` | 資料不足 | `reliability === 'insufficient'` | `ink-faint` | 見 §4.6 |
+| `smallSample` | 樣本偏小，僅供參考 | `reliability === 'small'` | `ink-muted` | 見 §4.6 |
+| `insufficient` | 資料不足 | `reliability === 'insufficient'` | `ink-muted` | 見 §4.6 |
+
+**`noBaseline` 與 `none` 必須分開。** 前者是「我們算不出基線」（本週之前 8 週裡有值的週數不足 6），後者是「基線真的是零」。只有後者有資格說「這週開始出現」；把算不出來的格子併進 `none`，等於對家長宣稱那個縣市那個年齡層最近沒有個案，而我們並不知道。`trendBase` 有效但 `ratio` 仍是 `null` 的格子也歸入 `noBaseline`，理由相同：不拿「跟平常差不多」替算不出來的數字背書。shipped 資料目前有 **0 格**落在這個狀態（24 格 `trendBase === null` 全部先被 `insufficient` 接走，因為判定順序是可靠度優先），所以它是潛在而非現行——但不拆這一格，資料稍有變化就會對家長講不實的話。
+
+**四個弱狀態用 `ink-muted`，不用 `ink-faint`。** `ink-faint` 的對比只有 3.2:1，`tailwind.config.js` 在那個 token 上的註解自己寫著「captions, never body text」；而狀態文案是那一列的意義載體，不是說明性小字——`rate` 與 `visits` 都在，唯一告訴家長「這個數字算什麼」的就是那幾個字。`ink-muted` 是 5.4:1、定位為 secondary copy，才是正確層級。`noBaseline` / `none` / `smallSample` / `insufficient` 四個都適用。
 
 **不用箭頭符號。** 文案本身已經帶方向（「變多」「差不多」「比平常少」），再加 `↑↑` 只是把同一件事說兩次，而兩個並排的上升箭頭本身就是警報視覺——正是要避免的東西。這也符合 CLAUDE.md 的「圖示重複相鄰文字就是噪音」。
 
@@ -277,7 +284,7 @@ ratio 的離散度（P90 − P10）隨分母單調收斂，實測：
   "license": "政府資料開放授權條款-第1版",
   "diseases": ["腸病毒", "手足口病", "疱疹性咽峽炎", "類流感", "腹瀉", "水痘"],
   "ageBands": ["0~2", "3~6", "7~12"],
-  "calibration": { "trendP25": 0.77, "trendP75": 1.33, "trendP90": 1.88, "sampleSize": 40040 },
+  "calibration": { "trendP25": 0.78, "trendP75": 1.26, "trendP90": 1.77, "sampleSize": 48725 },
   "national": { "3~6": { "腸病毒": { "rate": 114.1 } } },
   "counties": {
     "花蓮縣": {
@@ -298,7 +305,7 @@ ratio 的離散度（P90 − P10）隨分母單調收斂，實測：
 - `week` 取六支資料共同存在的最新一週；任一支缺該週就退到前一週，避免六張卡來自不同週。
 - `weekStart` / `weekEnd` 由 ISO 週次換算，畫面上顯示的是日期而不是週號——「第 34 週」對家長沒有意義，「8/23–8/29」有。
 - `spark` 固定 8 個元素、**含本週**，缺值填 `null`；`trendBase` 的視窗是本週之前 8 週。兩者差一週是刻意的：基線不能包含被評估的那一週。
-- `trendBase` 為 0（前 8 週皆無個案）時，`ratio` 與 `geoRatio` 皆為 `null`，`status` 改用 §4.5 的 `none`（最近沒有個案）／`emerged`（這週開始出現）。
+- `trendBase` 為 0（前 8 週皆無個案）時，`ratio` 與 `geoRatio` 皆為 `null`，`status` 改用 §4.5 的 `none`（最近沒有個案）／`emerged`（這週開始出現）。`trendBase` 為 `null`（前 8 週有值的週數不足 6，算不出基線）時 `status` 是 `noBaseline`（還不夠資料比較）——與基線真的是零不是同一件事，見 §4.5。
 - `national` 節點含 3 年齡層 × 6 病種的全國就診率，供 `geoRatio` 與抽屜的全國比較使用。
 - `reliability` 為 `insufficient` 時，`rate` / `trendBase` / `ratio` / `geoRatio` 一律 `null`，只留 `visits` 與 `denom`。不留半個數字讓 UI 自己猜。
 - `verifiedOn` 由腳本寫入當日日期，直接滿足 `src/common/dataFreshness.test.ts` 的規則（`查證|查核|verifiedOn|dateModified` 後 60 字內要有 `YYYY-MM-DD`）。**這份新資料檔不進 `UNDATED` 豁免名單**——那份名單只能變短。
@@ -321,7 +328,7 @@ AppBar（LittleGuard / 疫情雷達）
 │ 腸病毒          最近變多，多留意   169/萬   35 人次  │
 │ 手足口病        最近變多，多留意    72/萬   15 人次  │
 │ 疱疹性咽峽炎    稍微變多            97/萬   20 人次  │
-│ 類流感          跟平常差不多       159/萬   33 人次  │
+│ 類流感          比平常少           314/萬   65 人次  │
 │ 腹瀉            跟平常差不多       251/萬   52 人次  │
 │ 水痘            最近沒有個案          —      0 人次  │
 ├────────────────────────────────────────────────────┤
@@ -412,7 +419,7 @@ src/littleguard/utils/radar.ts               門檻常數、燈號判定、新�
 | `src/common/seo/pageMeta.ts` | 新頁 meta（`staticHead` 的 sitemap 與 robots 由路由表自動帶出，不必手動維護） |
 | `README.md`、`.claude/CLAUDE.md` | 「五個服務」→ 六個；架構圖加 `littleguard/` |
 
-**`vite.config.ts` 不需要改**：`workbox.globPatterns` 已含 `json`，`globIgnores` 只排除 `nursingRooms.json`，所以 12 KB 的 `diseaseRadar.json` 自動進 precache，板離線可用（`vite.config.ts:92-95`）。
+**`vite.config.ts` 不需要改**：`workbox.globPatterns` 已含 `json`，`globIgnores` 只排除 `nursingRooms.json`，所以 68.5 KB（gzip 14.7 KB）的 `diseaseRadar.json` 自動進 precache，板離線可用（`vite.config.ts:92-95`）。
 
 ### 8.3 順帶修掉的既有問題
 
@@ -426,11 +433,13 @@ src/littleguard/utils/radar.ts               門檻常數、燈號判定、新�
 |---|---|
 | `src/littleguard/data/diseaseRadar.contract.test.ts` | 讀真的 `public/data/diseaseRadar.json`：22 縣市 × 3 年齡層 × 6 病種齊全；`ratio` 與 `rate / trendBase` 相符（浮點容忍）；`reliability` 與分母門檻一致；`spark.length === 8`；`week` 符合 `YYYY-Wnn`；`verifiedOn` 存在且不是未來日期；`insufficient` 與 `trendBase === 0` 的格子 `ratio` 為 `null` |
 | `src/littleguard/data/diseases.test.ts` | 六筆說明的 `name` / `meaning` / `actions` / `seeDoctor` / `sourceUrl` / `verifiedOn` 皆非空，且 `actions` 至少兩條 |
-| `src/littleguard/utils/radar.test.ts` | `status` 邊界（1.879 → `rising`、1.88 → `risingStrong`、0.769 → `falling`、0.77 → `steady`）；`trendBase === 0` 的 `none` / `emerged` 兩種；`small` 與 `insufficient` 的處理；新鮮度三段門檻（14 / 35 天邊界） |
+| `src/littleguard/utils/radar.test.ts` | `status` 邊界（1.769 → `rising`、1.77 → `risingStrong`、0.779 → `falling`、0.78 → `steady`）；`trendBase === null` 與 `ratio === null` 的 `noBaseline`；`trendBase === 0` 的 `none` / `emerged` 兩種；`small` 與 `insufficient` 的處理；新鮮度三段門檻（14 / 35 天邊界） |
 | 校準測試（同上檔） | `RADAR_THRESHOLDS` 常數與 JSON `calibration` 差距 ≤ 0.05 |
 | 語氣測試（同上檔） | §6.1 第 3 條的禁用詞（警戒／升溫／爆發／危險／疫情嚴峻／拉警報／慎防）不出現在任何 `status` 文案與降級文案裡；`STATUS_COPY` 的顏色不含 `primary-dark` |
 | `src/littleguard/pages/RadarPage.test.tsx` | 切換 chip 換內容；抽屜開關且「可以做什麼」排在數字之前；注入過期 JSON 時出現降級訊息且狀態文案消失；`insufficient` 格顯示「資料不足」；抓檔失敗顯示 `EmptyState`；卡片順序不隨 `status` 重排 |
 | 既有測試補一筆 | `routePolicy.test.ts`、`App.routing.test.tsx`、`serviceCopy.test.ts`、`HubLanding.test.tsx`、`designSystem.test.ts` |
+
+表上列的是每個檔案至少要守住的斷言，不是全部：實作後 `src/littleguard` 共 9 個測試檔、181 個測試。
 
 不測：顏色值、文案字串、SVG path、以及 `dataFreshness.test.ts` 本身（它會自動涵蓋新檔案）。
 
@@ -443,7 +452,7 @@ src/littleguard/utils/radar.ts               門檻常數、燈號判定、新�
 - **不做即時疫情**。資料粒度是週，落後 3–9 天，任何「今日確診」的暗示都是錯的。
 - **不做確診數**。這是健保門診就診人次，不是通報確診。
 - **不做醫療建議**。抽屜只寫日常可做的事與「哪些狀況該就醫」，並連向疾管署。
-- **不做地圖**。22 顆 chip 已經覆蓋全國，加 Leaflet 只會讓 12 KB 的板變重。
+- **不做地圖**。22 顆 chip 已經覆蓋全國，加 Leaflet 只會讓 gzip 14.7 KB 的板變重。
 - **不做推播通知，也不做紅點 badge**。全 repo 沒有通知機制；而且主動推「某個病變多了」正是 §6.1 要避免的事——這個服務在被打開時才說話。
 - **不做急診資料（`RODS_*`）**。沒有分母，跨縣市不可比。
 - **不做個人化**。見 §3.1。

@@ -4,7 +4,7 @@ A mobile-first PWA for Taiwanese parents, covering pregnancy through the toddler
 years. Traditional Chinese UI. React 18 + TypeScript (strict) + Vite + Tailwind
 + Framer Motion, on Firebase Auth and Realtime Database.
 
-**Read `README.md` first.** It is the source of truth for the five services, the
+**Read `README.md` first.** It is the source of truth for the six services, the
 auth model, the database shape and the design system. This file covers only how
 to work in the repo.
 
@@ -12,12 +12,12 @@ to work in the repo.
 
 ## Architecture
 
-Five services share one shell, one design system and one data layer. Each keeps
+Six services share one shell, one design system and one data layer. Each keeps
 its own palette and its own navigation shape.
 
 ```
 src/
-├── common/          shared by all five services
+├── common/          shared by all six services
 │   ├── ui/          THE design system — read before writing any UI
 │   ├── components/  Sidebar, ModalFrame, modals, wiki browser
 │   ├── landing/     entry point + per-service intro pages
@@ -28,6 +28,7 @@ src/
 ├── littleexplorer/  pages/ components/ hooks/ data/ utils/
 ├── littleouting/    venue page + card, 親子館/親子餐廳 data, checklist
 ├── babyoasis/       map page + spatial index
+├── littleguard/     疫情雷達：板 + 抽屜，純公開、無 Firebase
 ├── contexts/  lib/  types/
 ├── App.tsx          path routing, shell, lazy pages
 └── index.css        design tokens as classes
@@ -46,7 +47,7 @@ one.
 `common/routePolicy.ts` is a **public allowlist**, not a "needs auth" blocklist.
 This app stores children's health data, so a page nobody classified must fail
 closed. Only the entry point, the three knowledge bases, 照顧重點, 睡眠指南,
-LittleOuting and BabyOasis are public.
+LittleOuting, BabyOasis and LittleGuard are public.
 
 A blocked visitor sees that service's intro page **at the same URL** — the path
 is preserved so signing in lands them where they were going. Never redirect.
