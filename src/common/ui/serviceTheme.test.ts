@@ -291,6 +291,30 @@ describe('SERVICE_THEME 完整性', () => {
     }
   });
 
+  // 清單由測試自持、不從實作 import：把 icon 換成警示圖形的同時又把它從清單刪掉
+  // 也會過的測試，等於沒有守。只針對 littleguard 斷言——「提醒而不是驚嚇」是這個
+  // 服務的規格約束，其他五個服務不該被這裡順手加上新規則。
+  it('疫情雷達的識別 icon 不是警示類圖形', () => {
+    const ALARM_ICONS = [
+      'ShieldAlert',
+      'AlertTriangle',
+      'TriangleAlert',
+      'AlertCircle',
+      'CircleAlert',
+      'AlertOctagon',
+      'OctagonAlert',
+      'Siren',
+      'BellRing',
+    ];
+    const { displayName } = SERVICE_THEME.littleguard.icon as { displayName?: string };
+    // 沒有 displayName 的話，下面那條斷言永遠不會命中，測試就變成擺設。
+    expect(displayName, 'lucide icon 沒有 displayName，這個測試守不到東西').toBeTruthy();
+    expect(
+      ALARM_ICONS,
+      `疫情雷達的 icon 是 ${displayName}：圖形裡的驚嘆號違反「提醒而不是驚嚇」`,
+    ).not.toContain(displayName);
+  });
+
   it('每個服務都有非空的 name 與 role', () => {
     for (const [id, theme] of SERVICES) {
       expect(theme.name.trim(), `${id} name`).toBe(theme.name);

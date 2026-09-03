@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Baby, Flower2, MapPin, ShieldAlert, Sun, Trees } from 'lucide-react';
+import { Baby, Flower2, MapPin, Shield, Sun, Trees } from 'lucide-react';
 
 /**
  * One layout language, four personalities.
@@ -134,7 +134,12 @@ export const SERVICE_THEME: Record<ServiceId, ServiceTheme> = {
     id: 'littleguard',
     name: 'LittleGuard',
     role: '疫情雷達',
-    icon: ShieldAlert,
+    // Shield 而不是 ShieldAlert：後者的圖形裡有一個驚嘆號，而這個服務的第一條
+    // 約束就是提醒而不是驚嚇。這個 repo 裡 ShieldAlert 也已經另有意思——
+    // careGuides 的「環境安全」、toddlerWiki 的頭部外傷、疫苗頁的「接種注意事項」
+    // 都用它，拿它當雷達的識別圖示會連到疫苗，那正是這個服務不碰的領域。
+    // 也不用 ShieldCheck：打勾等於宣告「安全」，雷達沒有資格說那句話。
+    icon: Shield,
     pageBg: 'bg-warm-white',
     tint: 'bg-guard-soft',
     accent: 'bg-guard',
