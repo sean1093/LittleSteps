@@ -83,9 +83,10 @@ data.gov.tw 標示「每 1 日」，但實際內容以「週」為單位：NIDSS
 | `node --use-openssl-ca` | `UNABLE_TO_VERIFY_LEAF_SIGNATURE` |
 | `ca: [中介]`（會取代整個信任庫） | `UNABLE_TO_GET_ISSUER_CERT` |
 | `ca: [...tls.rootCertificates, 中介]` | 200 OK — 但依賴該 runtime 的信任庫剛好有 TWCA CYBER Root |
-| **`ca: [中介, 根]`（完全不用系統信任庫）** | **200 OK, 8,184,212 bytes** ← 採用 |
+| `ca: [中介, 根]`（完全不用系統信任庫） | 200 OK, 8,184,212 bytes — 證明兩張自帶憑證已足以建立信任鏈 |
+| **`ca: [...tls.rootCertificates, 中介, 根]`** | **200 OK, 8,184,212 bytes** ← 採用：信任錨點寫死，行為與 runtime 內建信任庫的版本無關 |
 
-採用最後一種：兩張憑證 vendor 進 `scripts/data/`，明確指定信任錨點。理由是 CI 用的是 Node 20（見 `.github/workflows/firebase-hosting-merge.yml:17`），而 Node 20 與 Node 24 的內建 Mozilla 信任庫版本不同；把信任錨點寫死，行為就與 runtime 版本無關。對單一已知主機而言，指定錨點也比整個系統信任庫更嚴格。
+採用最後一種（見 `scripts/buildDiseaseRadar.cjs:57`）：兩張憑證 vendor 進 `scripts/data/`，附加兩張自帶憑證到系統信任庫之後，明確指定信任錨點。理由是 CI 用的是 Node 20（見 `.github/workflows/firebase-hosting-merge.yml:17`），而 Node 20 與 Node 24 的內建 Mozilla 信任庫版本不同；把信任錨點寫死，行為就與 runtime 版本無關。`ca: [中介, 根]` 同樣實測回 200，但那會取代整個系統信任庫；這支腳本只連 `od.cdc.gov.tw`，兩者對它都成立，差別只在於對其他主機是否仍信任系統庫，所以附加的寫法保留了系統庫又不失去寫死的錨點。
 
 | 憑證 | 檔案 | SHA-256 | 效期 |
 |---|---|---|---|
