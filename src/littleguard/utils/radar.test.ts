@@ -57,6 +57,24 @@ describe('statusOf 的基線為零', () => {
   });
 });
 
+describe('statusOf 的基線算不出來', () => {
+  it('前 8 週有效點數不夠 → 還不夠資料比較，不能說成這週開始出現', () => {
+    // 這一格可能一直都有個案，只是算不出比較基準，說「這週開始出現」是不實陳述。
+    const withCases = cell({ rate: 12, trendBase: null, ratio: null, visits: 3 });
+    expect(statusOf(withCases)).toBe('noBaseline');
+    expect(statusOf(withCases)).not.toBe('emerged');
+
+    // 本週也沒有個案時，同樣不能斷言「最近沒有個案」——我們並不知道。
+    const withoutCases = cell({ rate: 0, trendBase: null, ratio: null, visits: 0 });
+    expect(statusOf(withoutCases)).toBe('noBaseline');
+    expect(statusOf(withoutCases)).not.toBe('none');
+  });
+
+  it('基線有效卻算不出比值 → 不謊稱跟平常差不多', () => {
+    expect(statusOf(cell({ trendBase: 100, ratio: null }))).toBe('noBaseline');
+  });
+});
+
 describe('statusOf 的樣本品質優先於比值', () => {
   it('分母 300–999 只標樣本偏小，不給狀態', () => {
     expect(statusOf(cell({ reliability: 'small', ratio: 3 }))).toBe('smallSample');
@@ -104,7 +122,7 @@ const BANNED_IN_SPEC = [
 ] as const;
 
 describe('語氣', () => {
-  it('八個狀態的文案都不含 spec 的禁用詞', () => {
+  it('九個狀態的文案都不含 spec 的禁用詞', () => {
     for (const { label } of Object.values(STATUS_COPY)) {
       for (const word of BANNED_IN_SPEC) {
         expect(label).not.toContain(word);
