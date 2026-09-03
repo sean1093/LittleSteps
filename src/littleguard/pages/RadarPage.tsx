@@ -157,6 +157,7 @@ export default function RadarPage() {
           cell={cells[open]}
           data={data}
           age={age}
+          showStatus={freshness !== 'expired'}
           onClose={() => setOpen(null)}
         />
       )}

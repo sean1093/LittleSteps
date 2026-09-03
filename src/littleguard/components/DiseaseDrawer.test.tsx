@@ -71,6 +71,7 @@ function open(disease = '腸病毒', overrides: Partial<RadarCell> = {}, onClose
       cell={cell(overrides)}
       data={data()}
       age="3~6"
+      showStatus
       onClose={onClose}
     />,
   );
@@ -151,7 +152,14 @@ describe('抽屜的內容', () => {
     const bare = data();
     bare.national = {};
     render(
-      <DiseaseDrawer disease="腸病毒" cell={cell()} data={bare} age="3~6" onClose={noop} />,
+      <DiseaseDrawer
+        disease="腸病毒"
+        cell={cell()}
+        data={bare}
+        age="3~6"
+        showStatus
+        onClose={noop}
+      />,
     );
     expect(screen.getByText('全國同一週').parentElement).toHaveTextContent('—');
   });
@@ -191,6 +199,7 @@ describe('抽屜的狀態與樣本', () => {
           cell={CELL_BY_STATUS[status]}
           data={data()}
           age="3~6"
+          showStatus
           onClose={noop}
         />,
       );
@@ -218,6 +227,7 @@ describe('抽屜的狀態與樣本', () => {
         cell={CELL_BY_STATUS.insufficient}
         data={data()}
         age="3~6"
+        showStatus
         onClose={noop}
       />,
     );
@@ -231,6 +241,50 @@ describe('抽屜的狀態與樣本', () => {
   it('點夠多的時候畫得出 8 週折線', () => {
     open();
     expect(screen.getByRole('img', { name: /腸病毒最近 8 週/ })).toBeInTheDocument();
+  });
+});
+
+/**
+ * 過期時抽屜要跟板一樣收起狀態（spec §7）。這兩條 it.each 互為對照：只有
+ * false 那一條的話，一個永遠不渲染狀態的抽屜也會過關。
+ */
+describe('抽屜的資料新舊', () => {
+  /** 九個狀態的文案一律從 STATUS_COPY 取，之後多一個狀態這裡自動跟著守。 */
+  const LABELS = Object.values(STATUS_COPY).map((entry) => entry.label);
+  const STATUSES = Object.keys(CELL_BY_STATUS) as RadarStatus[];
+
+  const drawer = (radarCell: RadarCell, showStatus: boolean) =>
+    render(
+      <DiseaseDrawer
+        disease="腸病毒"
+        cell={radarCell}
+        data={data()}
+        age="3~6"
+        showStatus={showStatus}
+        onClose={noop}
+      />,
+    );
+
+  it.each(STATUSES)('showStatus 為 false 時 %s 的狀態文案一個都不在畫面上', (status) => {
+    const view = drawer(CELL_BY_STATUS[status], false);
+    LABELS.forEach((label) => expect(screen.queryByText(label)).not.toBeInTheDocument());
+    view.unmount();
+  });
+
+  it.each(STATUSES)('showStatus 為 true 時 %s 的狀態文案就在畫面上', (status) => {
+    const view = drawer(CELL_BY_STATUS[status], true);
+    expect(screen.getByText(STATUS_COPY[status].label)).toBeInTheDocument();
+    view.unmount();
+  });
+
+  it('收起的只有那一行文字：折線、率、人次、分母都還在', () => {
+    // spec §7 收的是「可能已經錯的判斷」，折線是數字自己的圖形呈現，不是判斷。
+    drawer(cell(), false);
+    expect(screen.getByRole('img', { name: /腸病毒最近 8 週/ })).toBeInTheDocument();
+    const body = bodyText();
+    expect(body).toContain('169.0/萬');
+    expect(body).toContain('35 人次');
+    expect(body).toContain('2,071 次門診');
   });
 });
 

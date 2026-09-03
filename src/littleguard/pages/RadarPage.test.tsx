@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RadarCell, RadarData } from '../../types';
+import { STATUS_COPY } from '../utils/radar';
 import RadarPage from './RadarPage';
 
 function cell(overrides: Partial<RadarCell> = {}): RadarCell {
@@ -19,6 +20,9 @@ function cell(overrides: Partial<RadarCell> = {}): RadarCell {
 }
 
 const DISEASES = ['腸病毒', '手足口病', '疱疹性咽峽炎', '類流感', '腹瀉', '水痘'];
+
+/** 九個狀態的文案，從 STATUS_COPY 取——之後多一個狀態，這裡自動跟著守。 */
+const STATUS_LABELS = Object.values(STATUS_COPY).map((entry) => entry.label);
 
 const perDisease = (factory: (name: string) => RadarCell): Record<string, RadarCell> =>
   Object.fromEntries(DISEASES.map((name) => [name, factory(name)]));
@@ -227,6 +231,22 @@ describe('資料新舊', () => {
     // 數字還在，六列也還在——收起的是可能已經錯的判斷，不是整塊板。
     expect(renderedDiseases()).toEqual(DISEASES);
     expect(screen.getAllByText('20 人次').length).toBe(6);
+  });
+
+  it('過期時抽屜裡也不顯示狀態，板收了抽屜就得跟著收', async () => {
+    // 分層一致性的回歸：板收了、抽屜沒收的話，家長從板上看不到判斷，點進去卻
+    // 又看到一個可能已經錯的，比不收更糟。
+    const it = await renderReady(fixture('2026-06-28', '2026-07-04'));
+    await it.click(screen.getByRole('button', { name: /腸病毒/ }));
+    const dialog = screen.getByRole('dialog');
+    STATUS_LABELS.forEach((label) => {
+      expect(screen.queryByText(label)).not.toBeInTheDocument();
+      expect(dialog).not.toHaveTextContent(label);
+    });
+    // 收起的是判斷，不是數字：率、人次、分母照給，也還連得出疾管署那一頁。
+    expect(dialog).toHaveTextContent('100.0/萬');
+    expect(dialog).toHaveTextContent('2,000 次門診');
+    expect(screen.getByRole('link', { name: /疾管署的腸病毒說明/ })).toBeInTheDocument();
   });
 
   it('過期時給得出去哪裡看最新的', async () => {

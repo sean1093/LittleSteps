@@ -10,6 +10,8 @@ interface Props {
   cell: RadarCell;
   data: RadarData;
   age: string;
+  /** 資料過期時只留數字，不顯示可能已經錯的狀態。 */
+  showStatus: boolean;
   onClose: () => void;
 }
 
@@ -22,11 +24,16 @@ interface Props {
  * 數字那一段一次給率、人次與分母。少了分母，「169.0/萬」跟「35 人次」都讀不
  * 出可信度——板上那一列只放得下率與人次，分母的落點就在這裡。
  *
+ * showStatus 為 false（資料過期）時只收起那一行文字狀態，最近 8 週的折線留
+ * 著：spec §7 收的是「可能已經錯的判斷」，折線是數字自己的圖形呈現，趨勢家長
+ * 看得出來。欄位名與 DiseaseRow 一致，兩邊由 RadarPage 餵同一個表達式——板收
+ * 了抽屜沒收，家長點進來就又看到一個判斷，那比不收更糟。
+ *
  * 外層不再包捲動容器：ModalFrame 自己就是 AnimatePresence ＋ role="dialog"
  * ＋ max-h-[85vh] overflow-y-auto（ModalFrame.tsx:34-50），再包一層會出現
  * 兩個捲軸。
  */
-export default function DiseaseDrawer({ disease, cell, data, age, onClose }: Props) {
+export default function DiseaseDrawer({ disease, cell, data, age, showStatus, onClose }: Props) {
   const info = DISEASE_INFO[disease];
   const copy = STATUS_COPY[statusOf(cell)];
   const national = data.national[age]?.[disease]?.rate ?? null;
@@ -56,7 +63,7 @@ export default function DiseaseDrawer({ disease, cell, data, age, onClose }: Pro
           <div className={SERVICE_THEME.littleguard.ink}>
             <Sparkline values={cell.spark} label={`${disease}最近 8 週的就診率變化`} />
           </div>
-          <p className={`text-sm mt-1 ${copy.tone}`}>{copy.label}</p>
+          {showStatus && <p className={`text-sm mt-1 ${copy.tone}`}>{copy.label}</p>}
         </section>
 
         <dl className="text-sm text-ink-muted space-y-1">
