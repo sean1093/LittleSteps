@@ -18,8 +18,9 @@
  * 2 與 1 分開是必要的：比不出來時 workflow 必須紅燈停下，而不是當成「有變更」
  * 把一份還沒驗證過的檔案 commit 上去。
  *
- * 比對規則由 `bodyOf` 一支純函式決定，`diffDiseaseRadar.test.cjs` 逐條釘住；
- * 下面的 CLI 只負責把檔案餵進去並把結果翻成退出碼。
+ * 比對規則由 `bodyOf`、退出碼由 `decide` 兩支純函式決定，`diffDiseaseRadar.test.cjs`
+ * 逐條釘住。`decide` 的 IO 全部由外部注入，所以測試不需要 spawn 子行程、也不需要
+ * 造一個臨時 git repo。下面的 CLI 只負責把真的讀檔與 `git show` 包成 reader。
  */
 
 const { execFileSync } = require('node:child_process');
@@ -71,29 +72,54 @@ function bodyOf(json, label = '檔案') {
   return JSON.stringify(canonicalize(parsed));
 }
 
-function main() {
+/**
+ * 決定退出碼：0 相同 / 1 有變更 / 2 比不出來。
+ *
+ * 不碰 `process`、不碰檔案系統、不碰 git——workflow 真正依賴的就是這三個退出碼，
+ * 把決策留在這裡才測得動。
+ *
+ * 讀不到或讀不懂**任何一邊**都是 2，絕不退化成 0 或 1：當成 0 會讓一份沒比對過的
+ * 檔案被靜默還原（線上停在上一週卻沒人知道比對失敗），當成 1 會把它 commit 上去。
+ *
+ * @param {object} io
+ * @param {() => string} io.readWorking 工作區檔案的內容；讀不到就丟
+ * @param {() => string} io.readHead HEAD 版本的內容；讀不到就丟
+ * @param {(message: string) => void} io.log 判定結果（CLI 接 stdout）
+ * @param {(message: string) => void} io.logError 比不出來的原因（CLI 接 stderr）
+ * @returns {0 | 1 | 2}
+ */
+function decide({ readWorking, readHead, log, logError }) {
+  let working;
+  let committed;
   try {
-    const working = bodyOf(fs.readFileSync(path.join(REPO_ROOT, REL_PATH), 'utf8'), '工作區的檔案');
-    const committed = bodyOf(
-      execFileSync('git', ['show', `HEAD:${REL_PATH}`], {
-        cwd: REPO_ROOT,
-        encoding: 'utf8',
-        maxBuffer: 16 * 1024 * 1024,
-      }),
-      'HEAD 的檔案',
-    );
-
-    const changed = working !== committed;
-    console.log(
-      changed ? '資料本體有變更' : `資料本體相同（${VOLATILE_FIELDS.join(' / ')} 以外沒有差異）`,
-    );
-    process.exit(changed ? 1 : 0);
+    working = bodyOf(readWorking(), '工作區的檔案');
+    committed = bodyOf(readHead(), 'HEAD 的檔案');
   } catch (err) {
-    console.error(`無法比對 ${REL_PATH}：${err.message}`);
-    process.exit(2);
+    logError(`無法比對 ${REL_PATH}：${err.message}`);
+    return 2;
   }
+
+  const changed = working !== committed;
+  log(changed ? '資料本體有變更' : `資料本體相同（${VOLATILE_FIELDS.join(' / ')} 以外沒有差異）`);
+  return changed ? 1 : 0;
 }
 
-module.exports = { VOLATILE_FIELDS, bodyOf };
+function main() {
+  process.exit(
+    decide({
+      readWorking: () => fs.readFileSync(path.join(REPO_ROOT, REL_PATH), 'utf8'),
+      readHead: () =>
+        execFileSync('git', ['show', `HEAD:${REL_PATH}`], {
+          cwd: REPO_ROOT,
+          encoding: 'utf8',
+          maxBuffer: 16 * 1024 * 1024,
+        }),
+      log: console.log,
+      logError: console.error,
+    }),
+  );
+}
+
+module.exports = { VOLATILE_FIELDS, bodyOf, decide };
 
 if (require.main === module) main();
