@@ -1,9 +1,19 @@
 name: Refresh disease radar data
 
-# 疾管署每週一、二清晨更新上一週的健保次級統計，所以排在週三。
+# 只能手動觸發，沒有 schedule。
+#
+# `od.cdc.gov.tw`（35.229.205.172）從 GitHub 託管的 runner 連不上：實測兩次
+# workflow_dispatch 都是 `connect ETIMEDOUT 35.229.205.172:443`，各卡約 2 分 17 秒，
+# 連 TCP 都沒建立起來。同一個 IP 從台灣的機器連得上，DNS 也解到同一個位址，
+# 所以不是 DNS 分流而是來源 IP 被擋（GitHub runner 在 Azure 上）。
+#
+# 排 cron 的話每週三只會準時寄一封失敗信，久了就沒人看告警。改成：每週在本機跑
+# `node scripts/buildDiseaseRadar.cjs`，有變更才 commit（README 的資料一節有步驟）。
+# 疾管署週一、二清晨更新上一週的資料，所以週三之後跑最準。
+#
+# 這支 workflow 保留著、也保留 workflow_dispatch：如果哪天接上有台灣線路的
+# self-hosted runner，把 `runs-on` 換掉就能直接用，下面的 diff 判斷邏輯不用改。
 on:
-  schedule:
-    - cron: '0 1 * * 3'
   workflow_dispatch:
 
 permissions:

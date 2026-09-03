@@ -290,12 +290,29 @@ precache and fetched on first visit to the map instead — 1.1 MB should not be
 downloaded by someone who never opens BabyOasis.
 
 疫情雷達的資料在 `public/data/diseaseRadar.json`，由 `scripts/buildDiseaseRadar.cjs`
-從疾管署六支 CSV（約 47 MB）聚合成 68.5 KB，並由
-`.github/workflows/refresh-disease-radar.yml` 每週三自動重建。gzip 後是 14.7 KB，
-所以留在 PWA precache 內，板可以離線打開。重建後只有資料本體真的變了才 commit：
-`scripts/diffDiseaseRadar.cjs` 會先剝掉每次執行都會變的 `generatedAt` 與
-`verifiedOn` 再比對，否則每週都會多一筆內容沒動的 commit。`od.cdc.gov.tw` 的
-憑證鏈不完整，腳本自帶 `scripts/data/` 下的兩張 TWCA 憑證，不要改成關閉 TLS 驗證。
+從疾管署六支 CSV（約 47 MB）聚合成 68.5 KB。gzip 後是 14.7 KB，所以留在 PWA
+precache 內，板可以離線打開。`od.cdc.gov.tw` 的憑證鏈不完整，腳本自帶
+`scripts/data/` 下的兩張 TWCA 憑證，不要改成關閉 TLS 驗證。
+
+**更新是手動的，每週一次**，疾管署週一、二清晨更新上一週資料，所以週三之後跑：
+
+```bash
+node scripts/buildDiseaseRadar.cjs   # 重建
+node scripts/diffDiseaseRadar.cjs    # 0 資料本體相同 / 1 有變更 / 2 比不出來
+```
+
+回 1 才 `git add public/data/diseaseRadar.json` 並 commit；回 0 就
+`git checkout -- public/data/diseaseRadar.json` 把重建時寫進去的時間戳還原。
+比對前會先剝掉每次執行都會變的 `generatedAt` 與 `verifiedOn`，否則每週都會多一筆
+內容其實沒動的 commit。回 2 是「比不出來」，要停下來看，不能當成 1。
+
+`.github/workflows/refresh-disease-radar.yml` 有同一套邏輯，但**只能手動觸發、
+沒有排程**：`od.cdc.gov.tw` 從 GitHub 託管的 runner 連不上（實測兩次都是
+`connect ETIMEDOUT`，同一個 IP 從台灣連得上），來源 IP 被擋。接上有台灣線路的
+self-hosted runner 之後換掉 `runs-on` 就能自動化。
+
+忘記更新不會出錯：畫面會顯示資料週次，超過一個月會出現「超過一個月沒更新」並收起
+所有狀態文案，只留數字。
 
 ---
 

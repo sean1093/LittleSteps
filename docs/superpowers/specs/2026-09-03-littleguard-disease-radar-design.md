@@ -2,7 +2,7 @@
 
 > 日期：2026-09-03
 > 定位：LittleSteps 家族的第六個服務。回答一個家長每週都在問、而政府資料答得出來但答得不好懂的問題：**我這個縣市、我小孩這個年齡，這週有什麼可以多留意。**
-> 決策前提：純公開（不讀任何孩子資料）、縣市與年齡層手選、排程 workflow 每週自動更新並 commit、六種 0-6 歲相關且有分母的病種、靖藍 ramp
+> 決策前提：純公開（不讀任何孩子資料）、縣市與年齡層手選、每週手動重建並 commit（排程在實作後證明不可行，見 §3.3）、六種 0-6 歲相關且有分母的病種、靖藍 ramp
 > **語氣前提（貫穿全文，優先於任何視覺或資訊密度考量）**：這個服務要讓家長「多留意」，不是讓家長緊張。狀態文案用日常說法、顏色最強只到 `butter-dark`、不用箭頭與紅點、每個「變多」都必須同時給得出可以做的事。細節見 §4.5 與 §6.1，並有測試把關（§9）。
 
 ---
@@ -68,7 +68,7 @@
 data.gov.tw 標示「每 1 日」，但實際內容以「週」為單位：NIDSS 的說明是「RODS 及健保次級統計資料因考量週別資料完整性，於每週一及週二清晨更新上一週資料」。因此：
 
 - 資料粒度是週，不是日。UI 不得暗示即時。
-- 排程定在**每週三**，確保上週資料已進來。
+- 更新定在**每週三之後**，確保上週資料已進來。
 - 最新一週永遠落後今天 3–9 天。這是資料的性質，不是缺陷，但必須寫在畫面上（見 §7）。
 
 ### 2.3 憑證鏈問題與解法
@@ -116,7 +116,7 @@ data.gov.tw 標示「每 1 日」，但實際內容以「週」為單位：NIDSS
 
 只有一個路由 `/littleguard`。沒有子頁——這個服務只回答一個問題，多一層導覽就是多一層阻力。
 
-### 3.3 資料管線：排程 workflow 週更並 commit
+### 3.3 資料管線：每週手動重建並 commit
 
 ```
 6 支 CSV ≈ 47 MB
@@ -128,11 +128,20 @@ public/data/diseaseRadar.json   68,511 bytes / gzip 14,667（實測）
 
 700:1 的壓縮比是這個設計成立的原因：nursingRooms.json 是 1.1 MB 所以被 `globIgnores` 排除在 PWA precache 外；68.5 KB（gzip 14.7 KB）則可以直接被預先快取，板因此離線可用。
 
-排程：每週三 01:00 UTC（台灣時間週三 09:00），CDC 週一／週二已更新上週資料。Workflow 需要 `permissions: contents: write`，且必須 push 到 **`master`**（`firebase-hosting-merge.yml:6`），否則不會觸發部署。
+更新時機：每週三之後（CDC 週一／週二已更新上週資料）。在本機跑
+`node scripts/buildDiseaseRadar.cjs`，再用 `scripts/diffDiseaseRadar.cjs` 判斷要不要
+commit，且必須 push 到 **`master`**（`firebase-hosting-merge.yml:6`），否則不會觸發部署。
+
+**排程在實作後被證明不可行，已移除。** `od.cdc.gov.tw`（35.229.205.172）從 GitHub
+託管的 runner 連不上：兩次 `workflow_dispatch` 都是 `connect ETIMEDOUT`，各卡約
+2 分 17 秒，TCP 都沒建立。同一個 IP 從台灣的機器連得上、DNS 也解到同一個位址，
+所以是來源 IP 被擋（GitHub runner 在 Azure 上），不是 DNS 分流。cron 留著只會每週三
+準時寄一封失敗信。workflow 本身與 `permissions: contents: write` 都保留，改成只能
+手動觸發；接上有台灣線路的 self-hosted runner 後換掉 `runs-on` 即可恢復自動化。
 
 被否決的做法：
 
-- **完全手動**（比照 nursingRooms 現況）：疫情資料過期不是「不新鮮」而是「誤導」。放著會讓降級狀態變成常態而不是例外。
+- **完全手動**（比照 nursingRooms 現況）：原本以此為否決——疫情資料過期不是「不新鮮」而是「誤導」，放著會讓降級狀態變成常態而不是例外。**實作後這條否決被推翻兩次**：(a) 排程這個選項並不存在（見上），真正的選擇是「手動」對「每週失敗一次的 cron」；(b) §7 的降級是設計好的，過期超過一個月時九個狀態文案全部收起、只留數字與週次，所以板不會對過期資料做出任何論斷——「誤導」的風險由 UI 承接，不是由更新頻率承接。
 - **client 端直抓 CDC**：單支 8.2 MB、六支 47 MB，行動網路不可行；且瀏覽器對缺中介憑證的容忍度不一致（Chrome 會用 AIA 補抓，Safari／Firefox 可能直接失敗）。
 - **排程時直接 build+deploy 不 commit**：線上資料與 repo 不一致，git 查不到當前線上是哪一週。
 - **Cloud Function 代理**：Firebase Functions 需要 Blaze 付費方案。
@@ -396,7 +405,7 @@ AppBar（LittleGuard / 疫情雷達）
 scripts/buildDiseaseRadar.cjs                抓 6 支 CSV、聚合、算百分位、寫 JSON
 scripts/data/twca-ssl-ca.pem                 中介憑證
 scripts/data/twca-cyber-root.pem             根憑證
-.github/workflows/refresh-disease-radar.yml  每週三排程，有 diff 才 commit 到 master
+.github/workflows/refresh-disease-radar.yml  只能手動觸發，有 diff 才 commit 到 master
 public/data/diseaseRadar.json                產生物，committed
 src/littleguard/pages/RadarPage.tsx
 src/littleguard/components/DiseaseRow.tsx
@@ -470,7 +479,7 @@ src/littleguard/utils/radar.ts               門檻常數、燈號判定、新�
 3. **板與狀態**：`radar.ts`（含 `STATUS_COPY` 與禁用詞測試）、`DiseaseRow`、`CountyPicker`、`RadarPage`、新鮮度降級、`radar.test.ts`、`RadarPage.test.tsx`。驗收：390px 下實際看過六張卡與三段降級狀態，且畫面上沒有任何紅色系文字、箭頭或驚嘆號。
 4. **抽屜與病種說明**：`DiseaseDrawer`、sparkline、`diseases.ts`（六欄位，出處用附錄 A 已查證的網址，查證日期 2026-09-03）、`diseases.test.ts`。驗收：390px 下實際開過抽屜，六筆都有「可以做什麼」且排在數字之前，六筆都有可點的疾管署連結與該病名在上游資料裡的定義。
 
-排程 workflow 在階段 1 完成後即可加入，但第一次 commit 必須由人手動確認 diff 內容再開啟排程。
+更新流程在階段 1 完成後即可使用，且第一次 commit 必須由人手動確認 diff 內容。（原文寫的是「開啟排程」；排程在實作後證明不可行，見 §3.3。）
 
 ---
 
