@@ -1,0 +1,57 @@
+name: Refresh disease radar data
+
+# 疾管署每週一、二清晨更新上一週的健保次級統計，所以排在週三。
+on:
+  schedule:
+    - cron: '0 1 * * 3'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 沒有 npm ci：buildDiseaseRadar.cjs 只用 node 內建模組（fs / https / path / tls）。
+      - name: Rebuild diseaseRadar.json
+        run: node scripts/buildDiseaseRadar.cjs
+
+      # 任一支 CSV 抓取失敗或解析出 0 列時，上一步會非零退出、不寫檔，這一步因此
+      # 不會執行——線上維持上一週而不是變成空板。
+      #
+      # 不用 `git diff --quiet`：每次重建都會寫入新的 generatedAt 與 verifiedOn，
+      # git 因此永遠說有變更，排程會每週 commit 一筆資料其實沒動的變更。
+      # diffDiseaseRadar.cjs 剝掉那兩個欄位再比，並沿用 git diff 的退出碼語意
+      # （0 相同 / 1 有變更 / 2 比不出來）。2 不能當成 1：比不出來時要紅燈停下，
+      # 而不是把一份還沒驗證過的檔案 commit 上去。
+      #
+      # 排程跑在預設分支 master，所以這裡的 push 會觸發既有的
+      # firebase-hosting-merge.yml，不需要在這裡另外部署。
+      - name: Commit if data changed
+        run: |
+          status=0
+          node scripts/diffDiseaseRadar.cjs || status=$?
+          case "$status" in
+            0)
+              echo "不 commit，還原重建時寫入的時間戳"
+              git checkout -- public/data/diseaseRadar.json
+              ;;
+            1)
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git add public/data/diseaseRadar.json
+              git commit -m "chore: 更新疫情雷達資料"
+              git push
+              ;;
+            *)
+              exit "$status"
+              ;;
+          esac
