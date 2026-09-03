@@ -1,0 +1,82 @@
+import { LocateFixed } from 'lucide-react';
+import { useCentreSelectedChip } from '../../common/ui/useCentreSelectedChip';
+import { useToast } from '../../common/ui/toast';
+import { SERVICE_THEME } from '../../common/ui/serviceTheme';
+import { nearestCounty } from '../data/countyCentroids';
+
+interface Props {
+  counties: string[];
+  selected: string;
+  onSelect: (county: string) => void;
+}
+
+/**
+ * 22 顆縣市 chip 加一顆定位。全 repo 沒有偏好持久化機制，所以每次進來都要選
+ * 一次——定位鈕把它縮成一次點擊。失敗一律出 toast，不靜默（比照 BabyOasis）。
+ *
+ * 定位鈕自己一行、不併進 chip 列：`row-bleed` 的 `-mx-4` 會讓捲動區往兩側各
+ * 長出 16px，跟它並排時 chip 會從按鈕底下穿出去。標題那一行本來就得有，順便
+ * 給了按鈕一個位置，也讓兩列 chip 分得出哪一列是什麼。
+ */
+export default function CountyPicker({ counties, selected, onSelect }: Props) {
+  const theme = SERVICE_THEME.littleguard;
+  const { scrollerRef, selectedRef } = useCentreSelectedChip(selected);
+  // toast 是 hook 而不是 module 級別的物件（src/common/ui/toast.tsx:102）。
+  const toast = useToast();
+
+  const locate = () => {
+    // 用真值判斷而不是 `'geolocation' in navigator`：關掉定位的瀏覽器留著
+    // 屬性但給 null，用 `in` 檢查會通過然後在下一行炸掉。
+    const geolocation = navigator.geolocation;
+    if (!geolocation) {
+      toast.show('您的瀏覽器不支援定位功能');
+      return;
+    }
+    geolocation.getCurrentPosition(
+      (position) => {
+        const county = nearestCounty(position.coords.latitude, position.coords.longitude);
+        if (counties.includes(county)) onSelect(county);
+        else toast.show('找不到你所在縣市的資料');
+      },
+      () => toast.show('沒辦法取得位置，請直接選縣市'),
+    );
+  };
+
+  return (
+    <section className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-sm font-medium text-ink-muted">看哪一個縣市</h2>
+        <button
+          type="button"
+          onClick={locate}
+          aria-label="用目前位置選縣市"
+          className="btn-icon -mr-3"
+        >
+          <LocateFixed className="w-5 h-5" aria-hidden />
+        </button>
+      </div>
+      <div ref={scrollerRef} className="row-bleed flex gap-2 py-1">
+        {counties.map((county) => {
+          const isSelected = county === selected;
+          return (
+            <button
+              key={county}
+              ref={isSelected ? selectedRef : undefined}
+              type="button"
+              onClick={() => onSelect(county)}
+              aria-pressed={isSelected}
+              // 蓋掉 `.chip-on` 的珊瑚紅填色，換成這個服務的靖藍：那個紅是
+              // LittleSteps 的品牌色，擺在一頁疫情資訊上會讀成警報。留著
+              // `.chip-on` 只覆蓋顏色，做法比照 LittleOuting 與 wiki 的 chip 列。
+              className={`chip shrink-0 ${
+                isSelected ? `chip-on ${theme.fill} ${theme.fillText} border-transparent` : ''
+              }`}
+            >
+              {county}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
