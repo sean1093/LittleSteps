@@ -3,7 +3,7 @@
  *
  * 刻意不做 geocoding：本 repo 已經測試並否決過台灣地址的 geocoding（見
  * README 的 LittleOuting 段），而這裡需要的精度只有「哪一縣市」。座標取各縣
- * 市政府所在地，誤差不影響最近縣市的判斷。
+ * 市政府所在地，誤差不影響最近縣市的判斷；二十二筆座標於 2026-09-03 逐筆查證。
  *
  * 縣市名必須與 diseaseRadar.json 的 key 完全一致（上游用「台北市」而非
  * 「臺北市」），countyCentroids.test.ts 會逐字比對——打錯一個字不會報錯，
