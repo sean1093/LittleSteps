@@ -297,7 +297,7 @@ ratio 的離散度（P90 − P10）隨分母單調收斂，實測：
 - `verifiedOn` 由腳本寫入當日日期，直接滿足 `src/common/dataFreshness.test.ts` 的規則（`查證|查核|verifiedOn|dateModified` 後 60 字內要有 `YYYY-MM-DD`）。**這份新資料檔不進 `UNDATED` 豁免名單**——那份名單只能變短。
 - 任一支 CSV 抓取失敗或解析出 0 列 → 腳本以非零狀態結束、不寫檔。Workflow 因此不會 commit，線上維持上一週。
 
-`src/littleguard/data/diseases.ts` 另存六種病的家長向說明，每筆必須有：`name`、一行「怎麼傳染」、一行「什麼時候該就醫」、`sourceUrl`（疾管署該疾病介紹頁）、`verifiedOn`。contract test 強制這五個欄位皆非空，所以不可能空著上線。這裡不寫醫療建議，只寫「哪些狀況要看醫生」並連到疾管署。
+`src/littleguard/data/diseases.ts` 另存六種病的家長向說明，每筆必須有：`name`、一行「怎麼傳染」、一行「什麼時候該就醫」、`sourceUrl`（疾管署引用頁，**六筆的網址已查證並列在附錄 A**）、`verifiedOn`。contract test 強制這五個欄位皆非空，所以不可能空著上線。這裡不寫醫療建議，只寫「哪些狀況要看醫生」並連到疾管署。上游 dataset 名稱與疾管署疾病介紹並非一對一，抽屜必須寫明落差——見附錄 A 的第二張表。
 
 ---
 
@@ -424,6 +424,33 @@ src/littleguard/utils/radar.ts               門檻常數、燈號判定、新�
 1. **資料管線**：`buildDiseaseRadar.cjs` + 兩張憑證 + 首次產出 `diseaseRadar.json` + `diseaseRadar.contract.test.ts`。驗收：`node scripts/buildDiseaseRadar.cjs` 產出通過 contract test 的 JSON，且 TLS 驗證未被關閉。
 2. **服務骨架**：路由、`routePolicy`（含 `serviceOf()` 分支與 `ServiceId` 去重）、`serviceTheme`、`guard` ramp、HubLanding 六宮格、`pageMeta`、既有測試補筆。驗收：`/littleguard` 可深連結進入、未登入可見、`npm run lint` 零警告、`npx vitest run` 全綠。
 3. **板與燈號**：`radar.ts`、`DiseaseRow`、`CountyPicker`、`RadarPage`、新鮮度降級、`radar.test.ts`、`RadarPage.test.tsx`。驗收：390px 下實際看過六張卡與三段降級狀態。
-4. **抽屜與病種說明**：`DiseaseDrawer`、sparkline、`diseases.ts`（含出處與查證日期）、`diseases.test.ts`。驗收：390px 下實際開過抽屜，六筆說明都有可點的疾管署連結。
+4. **抽屜與病種說明**：`DiseaseDrawer`、sparkline、`diseases.ts`（出處用附錄 A 已查證的網址，查證日期 2026-09-03）、`diseases.test.ts`。驗收：390px 下實際開過抽屜，六筆說明都有可點的疾管署連結，且每筆都寫出該病名在上游資料裡的定義。
 
 排程 workflow 在階段 1 完成後即可加入，但第一次 commit 必須由人手動確認 diff 內容再開啟排程。
+
+---
+
+## 附錄 A：`diseases.ts` 的引用頁與名稱落差
+
+2026-09-03 查證，七個網址全部逐一抓取並以 `<title>` 確認身分，皆回 200。
+
+| 板上病名 | 疾管署引用頁（`sourceUrl`） | 補充 Q&A |
+|---|---|---|
+| 腸病毒 | [腸病毒感染併發重症](https://www.cdc.gov.tw/Disease/SubIndex/m3zdUk3u9GJVvddeSnhkiA) | [腸病毒 Q&A](https://www.cdc.gov.tw/Category/QAPage/uWGc1UXjKbX7uC1uTG5_2Q) |
+| 手足口病 | 同上（無獨立條目） | 同上 |
+| 疱疹性咽峽炎 | 同上（無獨立條目） | 同上 |
+| 類流感 | [流感併發重症](https://www.cdc.gov.tw/Disease/SubIndex/x7jzGIMMuIeuLM5izvwg_g) | [季節性流感防治](https://www.cdc.gov.tw/Category/QAPage/DQWXG19u2cXMH1jwGKXHug) |
+| 腹瀉 | [病毒性腸胃炎](https://www.cdc.gov.tw/Disease/SubIndex/j1rqZjBCeR9vtCRUHefN3g) | [病毒性腸胃炎 Q&A](https://www.cdc.gov.tw/Category/QAPage/h5jfdG8vi3tGUDO8fNAoFQ) |
+| 水痘 | [水痘併發症](https://www.cdc.gov.tw/Disease/SubIndex/ipoIA74yjikLAewcRSjXjw) | — |
+
+**上游 dataset 名稱與疾管署疾病介紹不是一對一，抽屜必須寫明落差，不能讓使用者以為是同一件事：**
+
+| 落差 | 內容 |
+|---|---|
+| 腸病毒 | 板上是**所有腸病毒門診就診**；引用頁是法定傳染病「腸病毒感染併發重症」，只涵蓋重症。範圍差很多 |
+| 手足口病、疱疹性咽峽炎 | 疾管署「傳染病介紹」索引裡**沒有**這兩個獨立條目（實查 `https://www.cdc.gov.tw/Disease/Index`，只有「腸病毒」與「水痘」等法定傳染病）。它們是腸病毒的臨床表現，引用頁同腸病毒 |
+| 類流感 | 類流感（ILI）是**症候群定義**（發燒加呼吸道症狀），不等於流感確診；引用頁是「流感併發重症」 |
+| 腹瀉 | 板上是**所有腹瀉門診**，病因不限病毒；病毒性腸胃炎只是主要病因之一 |
+| 水痘 | 板上是所有水痘門診；引用頁是法定傳染病「水痘併發症」 |
+
+這張表也是 §10「不做確診數」在文案層的落實：六個病名一律以「就診人次」描述，抽屜第一行寫清楚該病名在上游資料裡的定義。
