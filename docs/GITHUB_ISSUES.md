@@ -480,8 +480,8 @@ Fallback UI:
 - [ ] Wrap `<App />` with ErrorBoundary in `src/main.tsx`
 - [ ] Add error logging (console for now, Firebase Analytics later)
 - [ ] Design friendly error UI with LittleSteps branding
-- [ ] Add "重新載入" (Reload) button
-- [ ] Add "回報問題" (Report Issue) button linking to GitHub
+- [ ] Add "Reload" button
+- [ ] Add "Report Issue" button linking to GitHub
 - [ ] Test with intentional errors
 - [ ] Test reload functionality
 
@@ -693,7 +693,7 @@ export interface VaccineSideEffect {
   symptoms: string[];       // ['fever', 'soreness', 'irritability']
   severity: 'mild' | 'moderate' | 'severe';
   duration: number;         // Duration in hours
-  interventions?: string;   // What was done (e.g., "给了退烧药")
+  interventions?: string;   // What was done (e.g., "gave fever medicine")
   notes?: string;
   createdAt: string;
 }
@@ -986,7 +986,7 @@ Currently the app is only in Traditional Chinese. Supporting English and Simplif
 1. **Language Switcher**
    - Language selection in settings/sidebar
    - Persist language preference
-   - Support 3 languages: 繁體中文 / English / 简体中文
+   - Support 3 languages: Traditional Chinese / English / Simplified Chinese
 
 2. **Translation Coverage**
    - All UI text

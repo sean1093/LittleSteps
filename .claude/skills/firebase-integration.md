@@ -27,7 +27,7 @@ families/
     children/
       {childId}/
         id: "child_123"
-        name: "小寶"
+        name: "Little One"
         birthday: "2024-01-15"
         createdAt: "2024-01-15T..."
         milestoneProgress/

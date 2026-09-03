@@ -416,8 +416,8 @@ import type { ChildProfile } from '../types';
 
 ```typescript
 const features = [
-  { id: 'milestones', title: '里程碑追蹤' },
-  { id: 'vaccines', title: '疫苗追蹤' },
+  { id: 'milestones', title: 'Milestone tracking' },
+  { id: 'vaccines', title: 'Vaccine tracking' },
 ] as const;
 
 type FeatureId = typeof features[number]['id']; // 'milestones' | 'vaccines'

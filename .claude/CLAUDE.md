@@ -26,9 +26,9 @@ src/
 ├── littlesteps/     pages/ components/<feature>/ hooks/ data/
 ├── littlebloom/     pages/ components/ data/ utils/
 ├── littleexplorer/  pages/ components/ hooks/ data/ utils/
-├── littleouting/    venue page + card, 親子館/親子餐廳 data, checklist
+├── littleouting/    venue page + card, centre + restaurant data, checklist
 ├── babyoasis/       map page + spatial index
-├── littleguard/     疫情雷達：板 + 抽屜，純公開、無 Firebase
+├── littleguard/     disease radar: board + drawer, fully public, no Firebase
 ├── contexts/  lib/  types/
 ├── App.tsx          path routing, shell, lazy pages
 └── index.css        design tokens as classes
@@ -46,8 +46,8 @@ one.
 
 `common/routePolicy.ts` is a **public allowlist**, not a "needs auth" blocklist.
 This app stores children's health data, so a page nobody classified must fail
-closed. Only the entry point, the three knowledge bases, 照顧重點, 睡眠指南,
-LittleOuting, BabyOasis and LittleGuard are public.
+closed. Only the entry point, the three knowledge bases, the care guide, the
+sleep guide, LittleOuting, BabyOasis and LittleGuard are public.
 
 A blocked visitor sees that service's intro page **at the same URL** — the path
 is preserved so signing in lands them where they were going. Never redirect.

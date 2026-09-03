@@ -194,7 +194,7 @@ Root (#/)
   - Age grouping (0M, 1M, 2M, 4M, 6M, 12M, etc.)
 
 - **Filters**
-  - Funding type (Public 公費 / Private 自費 / All)
+  - Funding type (Government-funded / Self-paid / All)
   - Age filter (0-6M, 7-12M, 1-2Y, 2-6Y, All)
 
 - **Vaccine Cards**

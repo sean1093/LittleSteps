@@ -2,23 +2,23 @@
 
 ## Design Philosophy
 
-LittleSteps 的設計理念強調**溫暖、親切、易用**，目標用戶是新手父母，需要在疲憊時也能快速操作。
+The design philosophy of LittleSteps stresses **warmth, friendliness and ease of use**. The target users are new parents, who need to be able to operate the app quickly even when exhausted.
 
 ### Core Principles
 
-1. **3 秒原則** - 關鍵操作（如快速日誌）必須在 3 秒內完成
-2. **單手操作** - 按鈕最少 80x80px，間距充足（gap-4），方便單手點擊
-3. **視覺層次** - 重要資訊優先，使用大小、顏色、對比度建立層次
-4. **減少認知負擔** - 少用文字，多用圖示、顏色、進度條等視覺元素
-5. **溫暖色調** - 粉紅、藍色漸層，營造溫馨感
+1. **The 3-second rule** - a key action (such as Quick log) must be completable within 3 seconds
+2. **One-handed operation** - buttons at least 80x80px with generous spacing (gap-4), easy to tap with one hand
+3. **Visual hierarchy** - important information first; build the hierarchy with size, colour and contrast
+4. **Less cognitive load** - use less text and more icons, colour, progress bars and other visual elements
+5. **Warm palette** - pink and blue gradients create a cosy feel
 
 ---
 
 ## Animation Patterns
 
-### Framer Motion 使用規範
+### Framer Motion conventions
 
-**所有互動元素都應有動畫回饋**，使用 Framer Motion 提供流暢體驗。
+**Every interactive element should give animated feedback**, using Framer Motion for a smooth experience.
 
 #### Button Animations
 
@@ -32,10 +32,10 @@ LittleSteps 的設計理念強調**溫暖、親切、易用**，目標用戶是�
 </motion.button>
 ```
 
-**規則：**
-- `whileHover`: scale 1.02-1.05，輕微上浮 y: -2 到 -4
-- `whileTap`: scale 0.95-0.98，提供按下回饋
-- 避免過度動畫（scale > 1.1 或複雜動畫鏈）
+**Rules:**
+- `whileHover`: scale 1.02-1.05, a slight lift of y: -2 to -4
+- `whileTap`: scale 0.95-0.98, giving press feedback
+- Avoid over-animating (scale > 1.1 or complex animation chains)
 
 #### Card Animations
 
@@ -49,9 +49,9 @@ LittleSteps 的設計理念強調**溫暖、親切、易用**，目標用戶是�
 </motion.div>
 ```
 
-**適用場景：**
-- 可點擊的卡片（drill-down）
-- 不可點擊的卡片僅用 `transition-all` CSS
+**Where this applies:**
+- Clickable cards (drill-down)
+- Non-clickable cards use CSS `transition-all` only
 
 #### List/Grid Stagger Animations
 
@@ -78,9 +78,9 @@ const itemVariants = {
 </motion.div>
 ```
 
-**規則：**
-- staggerChildren: 0.05-0.15s（過長會感覺遲緩）
-- 初始 y: 10-30px（不要太大）
+**Rules:**
+- staggerChildren: 0.05-0.15s (any longer feels sluggish)
+- initial y: 10-30px (do not go too far)
 - duration: 0.3-0.6s
 
 #### Page Transitions
@@ -95,13 +95,13 @@ const itemVariants = {
 </motion.div>
 ```
 
-**規則：**
-- 頁面進入：opacity 0→1 + y: -20→0
-- 避免使用 exit 動畫（頁面切換時會造成延遲）
+**Rules:**
+- Page entrance: opacity 0→1 + y: -20→0
+- Avoid exit animations (they add a delay when switching pages)
 
 #### Modal/Sidebar Animations
 
-使用 `AnimatePresence` 處理條件渲染：
+Use `AnimatePresence` to handle conditional rendering:
 
 ```tsx
 <AnimatePresence>
@@ -129,11 +129,11 @@ const itemVariants = {
 </AnimatePresence>
 ```
 
-**規則：**
-- Sidebar: x 平移動畫
+**Rules:**
+- Sidebar: x translation animation
 - Modal: scale 0.9→1 + opacity 0→1
-- Backdrop: 總是淡入淡出
-- 使用 spring 動畫讓感覺更自然
+- Backdrop: always fades in and out
+- Use spring animations so it feels more natural
 
 ---
 
@@ -141,16 +141,16 @@ const itemVariants = {
 
 ### Cards
 
-**所有卡片使用統一樣式：**
+**Every card uses the same style:**
 
 ```tsx
 className="bg-white rounded-2xl p-6 shadow-soft hover:shadow-soft-lg transition-all"
 ```
 
-**變體：**
-- 可點擊卡片：加 `cursor-pointer border-2 border-transparent hover:border-primary/20`
-- 淺色背景：`bg-pink-50/50` 或 `bg-blue-50/50`
-- 圓角：統一使用 `rounded-2xl` (16px)
+**Variants:**
+- Clickable card: add `cursor-pointer border-2 border-transparent hover:border-primary/20`
+- Light background: `bg-pink-50/50` or `bg-blue-50/50`
+- Corner radius: always `rounded-2xl` (16px)
 
 ### Buttons
 
@@ -160,10 +160,10 @@ className="bg-white rounded-2xl p-6 shadow-soft hover:shadow-soft-lg transition-
 className="px-8 py-4 rounded-2xl bg-gradient-to-r from-primary to-secondary text-white shadow-soft-lg hover:shadow-xl transition-all font-semibold"
 ```
 
-**適用：**
-- 登入按鈕
-- 主要行動呼籲
-- 新增寶寶等重要操作
+**Use for:**
+- The sign-in button
+- Primary calls to action
+- Important actions such as adding a baby
 
 #### Secondary Button
 
@@ -171,9 +171,9 @@ className="px-8 py-4 rounded-2xl bg-gradient-to-r from-primary to-secondary text
 className="px-6 py-3 rounded-xl bg-white border-2 border-gray-200 hover:border-primary hover:bg-pink-50 transition-all text-gray-700 font-medium"
 ```
 
-**適用：**
-- 取消按鈕
-- 次要操作
+**Use for:**
+- The cancel button
+- Secondary actions
 
 #### Icon Button
 
@@ -181,9 +181,9 @@ className="px-6 py-3 rounded-xl bg-white border-2 border-gray-200 hover:border-p
 className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center"
 ```
 
-**適用：**
-- Header 的選單、返回按鈕
-- 編輯、刪除等工具按鈕
+**Use for:**
+- The menu and back buttons in the header
+- Tool buttons such as edit and delete
 
 #### Quick Action Button (80x80px+)
 
@@ -191,18 +191,18 @@ className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors 
 className="w-20 h-20 rounded-2xl bg-gradient-to-br from-pink-400 to-pink-600 text-white shadow-soft hover:shadow-soft-lg transition-all flex flex-col items-center justify-center gap-2"
 ```
 
-**適用：**
-- 快速日誌按鈕（餵奶、睡眠、尿布）
-- 單手操作場景
+**Use for:**
+- Quick log buttons (feeding, sleep, diaper)
+- One-handed scenarios
 
 ### Icons
 
-**使用 lucide-react，統一尺寸：**
-- 小圖示：`w-4 h-4`
-- 中圖示：`w-5 h-5` 或 `w-6 h-6`
-- 大圖示：`w-8 h-8` 或 `w-9 h-9`
+**Use lucide-react, with consistent sizes:**
+- Small icon: `w-4 h-4`
+- Medium icon: `w-5 h-5` or `w-6 h-6`
+- Large icon: `w-8 h-8` or `w-9 h-9`
 
-**圖示容器（圓形或方形）：**
+**Icon container (circular or square):**
 
 ```tsx
 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-soft">
@@ -221,11 +221,11 @@ className="w-20 h-20 rounded-2xl bg-gradient-to-br from-pink-400 to-pink-600 tex
 </div>
 ```
 
-**規則：**
-- 高度：`h-2` 或 `h-3`
-- 背景：`bg-gray-200`
-- 進度條：使用漸層
-- 轉場：`transition-all duration-500`
+**Rules:**
+- Height: `h-2` or `h-3`
+- Background: `bg-gray-200`
+- Progress bar: use a gradient
+- Transition: `transition-all duration-500`
 
 ---
 
@@ -237,10 +237,10 @@ className="w-20 h-20 rounded-2xl bg-gradient-to-br from-pink-400 to-pink-600 tex
 className="max-w-6xl mx-auto px-4 py-8"
 ```
 
-**規則：**
-- 內容區：`max-w-4xl` 或 `max-w-6xl`
-- 左右留白：`px-4`
-- 上下間距：`py-8` 或 `py-16`
+**Rules:**
+- Content area: `max-w-4xl` or `max-w-6xl`
+- Left and right whitespace: `px-4`
+- Vertical spacing: `py-8` or `py-16`
 
 ### Grid Layouts
 
@@ -248,17 +248,17 @@ className="max-w-6xl mx-auto px-4 py-8"
 className="grid md:grid-cols-2 gap-6"
 ```
 
-**規則：**
-- 卡片網格：2 或 3 欄
-- 間距：`gap-4` 到 `gap-6`
-- 響應式：`grid-cols-1 md:grid-cols-2`
+**Rules:**
+- Card grid: 2 or 3 columns
+- Gap: `gap-4` to `gap-6`
+- Responsive: `grid-cols-1 md:grid-cols-2`
 
 ### Spacing System
 
-- 極小間距：`gap-2` (8px)
-- 小間距：`gap-3` 或 `gap-4` (12-16px)
-- 中間距：`gap-6` (24px)
-- 大間距：`mb-8` 或 `py-16` (32-64px)
+- Extra-small gap: `gap-2` (8px)
+- Small gap: `gap-3` or `gap-4` (12-16px)
+- Medium gap: `gap-6` (24px)
+- Large gap: `mb-8` or `py-16` (32-64px)
 
 ---
 
@@ -266,17 +266,17 @@ className="grid md:grid-cols-2 gap-6"
 
 ### Mobile-First Approach
 
-**所有設計都先考慮手機版，再適配桌面版。**
+**Design every screen for mobile first, then adapt it to desktop.**
 
 ```tsx
-className="text-base md:text-lg" // 手機 16px，桌面 18px
-className="px-4 md:px-8" // 手機 16px，桌面 32px
-className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" // 手機 1欄，平板 2欄，桌面 3欄
+className="text-base md:text-lg" // 16px on mobile, 18px on desktop
+className="px-4 md:px-8" // 16px on mobile, 32px on desktop
+className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" // 1 column on mobile, 2 on tablet, 3 on desktop
 ```
 
 ### Breakpoints
 
-- Mobile: < 768px (預設)
+- Mobile: < 768px (default)
 - Tablet: `md:` 768px+
 - Desktop: `lg:` 1024px+
 
@@ -286,16 +286,16 @@ className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" // 手機 1欄，平板 2�
 
 ### Color Contrast
 
-- 主文字：`text-gray-800` 或更深
-- 次要文字：`text-gray-600`
-- 提示文字：`text-gray-500`
-- 禁用狀態：`text-gray-400`
+- Primary text: `text-gray-800` or darker
+- Secondary text: `text-gray-600`
+- Hint text: `text-gray-500`
+- Disabled state: `text-gray-400`
 
 ### Interactive Elements
 
-- 所有按鈕必須有 hover 狀態
-- 所有可點擊元素必須有 `cursor-pointer`
-- 使用 `title` 屬性提供工具提示
+- Every button must have a hover state
+- Every clickable element must have `cursor-pointer`
+- Use the `title` attribute to provide a tooltip
 
 ### Focus States
 
@@ -307,17 +307,17 @@ className="focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-
 
 ## Common Mistakes to Avoid
 
-❌ **不要：**
-- 按鈕太小（< 44x44px）
-- 動畫過度（scale > 1.1 或時間 > 1s）
-- 漸層方向不一致（統一使用 `from-X to-Y`）
-- 文字顏色對比度不足
-- 忘記加 `transition-all`
-- 手動計算間距（使用 Tailwind spacing system）
+❌ **Do not:**
+- Make buttons too small (< 44x44px)
+- Over-animate (scale > 1.1 or longer than 1s)
+- Use inconsistent gradient directions (always use `from-X to-Y`)
+- Leave text contrast too low
+- Forget to add `transition-all`
+- Work out spacing by hand (use the Tailwind spacing system)
 
-✅ **要：**
-- 統一使用 `rounded-2xl` 圓角
-- 統一使用 `shadow-soft` 陰影
-- 所有互動元素加動畫
-- 優先使用圖示而非純文字
-- 保持一致的間距系統
+✅ **Do:**
+- Use `rounded-2xl` corners throughout
+- Use the `shadow-soft` shadow throughout
+- Add animation to every interactive element
+- Prefer icons over plain text
+- Keep a consistent spacing system
