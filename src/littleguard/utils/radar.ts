@@ -21,6 +21,7 @@ export type RadarStatus =
   | 'rising'
   | 'steady'
   | 'falling'
+  | 'noBaseline'
   | 'none'
   | 'emerged'
   | 'smallSample'
@@ -48,24 +49,31 @@ export const STATUS_COPY: Record<RadarStatus, { label: string; tone: string }> =
   rising: { label: '稍微變多', tone: 'text-ink' },
   steady: { label: '跟平常差不多', tone: 'text-ink-muted' },
   falling: { label: '比平常少', tone: 'text-mint-dark' },
-  none: { label: '最近沒有個案', tone: 'text-ink-faint' },
+  noBaseline: { label: '還不夠資料比較', tone: 'text-ink-muted' },
+  none: { label: '最近沒有個案', tone: 'text-ink-muted' },
   emerged: { label: '這週開始出現', tone: 'text-ink' },
-  smallSample: { label: '樣本偏小，僅供參考', tone: 'text-ink-faint' },
-  insufficient: { label: '資料不足', tone: 'text-ink-faint' },
+  smallSample: { label: '樣本偏小，僅供參考', tone: 'text-ink-muted' },
+  insufficient: { label: '資料不足', tone: 'text-ink-muted' },
 };
 
 /**
  * 樣本品質先於比值：分母不到 1,000 時，ratio 的離散度（P90−P10）從 1.20 跳到
  * 2.75 以上，而分母低於 1,000 有超過十分之一的週是零例，比值沒有意義。
+ *
+ * 「算不出基線」與「基線是零」是兩件事，不能併成一條：前者是我們手上資料不足
+ * （前 8 週有效點數不夠，見 buildDiseaseRadar.cjs 的 TREND_MIN_POINTS），後者是
+ * 前 8 週真的一例都沒有。把前者說成「這週開始出現」是不實陳述——那格可能一直
+ * 都有個案，只是我們算不出比較基準。
  */
 export function statusOf(cell: RadarCell): RadarStatus {
   if (cell.reliability === 'insufficient') return 'insufficient';
   if (cell.reliability === 'small') return 'smallSample';
-  if (cell.trendBase === null || cell.trendBase === 0) {
-    return (cell.rate ?? 0) > 0 ? 'emerged' : 'none';
-  }
+  if (cell.trendBase === null) return 'noBaseline';
+  if (cell.trendBase === 0) return (cell.rate ?? 0) > 0 ? 'emerged' : 'none';
   const ratio = cell.ratio;
-  if (ratio === null) return 'steady';
+  // 基線既非 null 也非 0 時 ratio 不該是 null；真的發生就承認算不出來，
+  // 而不是回「跟平常差不多」替資料背書。
+  if (ratio === null) return 'noBaseline';
   if (ratio >= RADAR_THRESHOLDS.p90) return 'risingStrong';
   if (ratio >= RADAR_THRESHOLDS.p75) return 'rising';
   if (ratio >= RADAR_THRESHOLDS.p25) return 'steady';
