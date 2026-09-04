@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import userEvent, { type UserEvent } from '@testing-library/user-event';
 import type { NursingRoom } from '../../types';
 import { ToastProvider } from '../../common/ui/toast';
 import BabyOasisPage from './BabyOasisPage';
@@ -30,10 +30,18 @@ vi.mock('react-leaflet', async () => {
   return {
     MapContainer: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
     TileLayer: () => null,
-    Marker: ({ eventHandlers }: { eventHandlers?: { click?: () => void } }) =>
+    // title 只有捷運站那顆標記會帶，測試靠它把「定位點」和哺乳室分開數。
+    Marker: ({
+      eventHandlers,
+      title,
+    }: {
+      eventHandlers?: { click?: () => void };
+      title?: string;
+    }) =>
       createElement('button', {
         type: 'button',
         'data-testid': 'marker',
+        'data-title': title,
         onClick: () => eventHandlers?.click?.(),
       }),
     Popup: ({ children }: { children?: ReactNode }) => createElement(Fragment, null, children),
@@ -239,6 +247,64 @@ describe('定位', () => {
     // 高雄那筆在十公里外，不該混進「附近」。
     expect(within(nearbySheet).queryByText('統一夢時代購物中心')).not.toBeInTheDocument();
     expect(locateButton()).not.toBeDisabled();
+  });
+});
+
+describe('捷運站定位', () => {
+  /** 選一站：開選單、打站名、按下去。 */
+  async function pickStation(user: UserEvent, name: string) {
+    await user.click(screen.getByRole('button', { name: '捷運站' }));
+    await user.type(screen.getByRole('searchbox', { name: '搜尋捷運站' }), name);
+    await user.click(screen.getByRole('button', { name }));
+  }
+
+  it('選了一站就列出那一站附近的哺乳室，標題講的是那一站', async () => {
+    const user = await renderReady();
+    // 忠孝復興距 SOGO 忠孝館 25 公尺；天母店最近的站在 1.3 公里外。
+    await pickStation(user, '忠孝復興');
+
+    const sheet = await screen.findByRole('dialog', { name: '捷運忠孝復興站附近' });
+    expect(within(sheet).getByText('SOGO 忠孝館')).toBeInTheDocument();
+    expect(within(sheet).queryByText('新光三越天母店')).not.toBeInTheDocument();
+    // 800 公尺是「這一站附近」，不是整個市區。
+    expect(within(sheet).queryByText('統一夢時代購物中心')).not.toBeInTheDocument();
+  });
+
+  it('選站是定位點而不是篩選：哺乳室標記一顆都沒少，另外多一顆標那一站', async () => {
+    const user = await renderReady();
+    await pickStation(user, '忠孝復興');
+
+    const markers = screen.getAllByTestId('marker');
+    expect(markers.filter((marker) => !marker.dataset.title)).toHaveLength(ROOMS.length);
+    expect(markers.filter((marker) => marker.dataset.title === '捷運忠孝復興站')).toHaveLength(1);
+    // 副標題還是全台筆數：選站沒有篩掉任何一筆。
+    expect(screen.getByText(`全台 ${ROOMS.length} 處哺乳室`)).toBeInTheDocument();
+  });
+
+  it('這一站附近真的沒有就說沒有，不會把清單靜靜留空', async () => {
+    const user = await renderReady();
+    await pickStation(user, '美麗島');
+
+    const sheet = await screen.findByRole('dialog', { name: '捷運美麗島站附近' });
+    expect(within(sheet).getByText(/800 公尺內沒有已登記的哺乳室/)).toBeInTheDocument();
+  });
+
+  it('重新定位就放掉那一站——「附近」只能有一個原點', async () => {
+    const user = await renderReady();
+    await pickStation(user, '忠孝復興');
+    expect(await screen.findByRole('dialog', { name: '捷運忠孝復興站附近' })).toBeInTheDocument();
+
+    await user.click(locateButton());
+    const onSuccess = getCurrentPosition.mock.calls[0][0] as PositionCallback;
+    act(() => {
+      onSuccess({
+        coords: { latitude: 25.1153, longitude: 121.5301 },
+        timestamp: Date.now(),
+      } as GeolocationPosition);
+    });
+
+    expect(await screen.findByRole('dialog', { name: '附近的哺乳室' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '捷運站' })).toBeInTheDocument();
   });
 });
 

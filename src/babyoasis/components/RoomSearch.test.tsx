@@ -6,6 +6,7 @@ import type { NursingRoom } from '../../types';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { categoryOf, isInternalVenue } from '../utils/roomCategory';
 import RoomSearch, { NO_FILTERS, type RoomFilters } from './RoomSearch';
+import type { MrtStation } from '../data/mrtStations';
 
 /**
  * 搜尋列守四件事：
@@ -83,6 +84,8 @@ const theme = SERVICE_THEME.babyoasis;
  */
 function Harness({ rooms, onSelect }: { rooms: NursingRoom[]; onSelect?: (room: NursingRoom) => void }) {
   const [filters, setFilters] = useState<RoomFilters>(NO_FILTERS);
+  // 捷運站是定位點而不是篩選條件，所以它不參與這裡的過濾——頁面也一樣。
+  const [station, setStation] = useState<MrtStation | null>(null);
   const visible = rooms.filter(
     (room) =>
       (filters.category === null || categoryOf(room) === filters.category) &&
@@ -98,6 +101,8 @@ function Harness({ rooms, onSelect }: { rooms: NursingRoom[]; onSelect?: (room: 
       theme={theme}
       filters={filters}
       onFiltersChange={setFilters}
+      station={station}
+      onStationChange={setStation}
       onSelect={onSelect ?? (() => {})}
     />
   );

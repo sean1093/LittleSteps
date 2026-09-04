@@ -11,6 +11,8 @@ import {
   type RoomCategory,
 } from '../utils/roomCategory';
 import AreaPicker from './AreaPicker';
+import MrtPicker from './MrtPicker';
+import type { MrtStation } from '../data/mrtStations';
 
 /**
  * 一次最多畫幾列。全台 3,852 處，「新光三越」這種關鍵字動輒數十筆，
@@ -48,6 +50,12 @@ interface RoomSearchProps {
   theme: ServiceTheme;
   filters: RoomFilters;
   onFiltersChange: (filters: RoomFilters) => void;
+  /**
+   * 選定的捷運站。它是附近清單與地圖的定位點，不是篩選條件——所以不在
+   * RoomFilters 裡，也不會拿掉任何一筆哺乳室。
+   */
+  station: MrtStation | null;
+  onStationChange: (station: MrtStation | null) => void;
   /** 交還給頁面的 selectedRoom：選定的哺乳室同時開詳情、帶動地圖。 */
   onSelect: (room: NursingRoom) => void;
 }
@@ -73,10 +81,13 @@ export default function RoomSearch({
   theme,
   filters,
   onFiltersChange,
+  station,
+  onStationChange,
   onSelect,
 }: RoomSearchProps) {
   const [query, setQuery] = useState('');
   const [areaOpen, setAreaOpen] = useState(false);
+  const [stationOpen, setStationOpen] = useState(false);
   const keyword = query.trim().toLowerCase();
 
   const matches = useMemo(() => {
@@ -146,6 +157,16 @@ export default function RoomSearch({
           className={chipClass(city !== null)}
         >
           {city === null ? '全部縣市' : district === null ? city : `${city} ${district}`}
+        </button>
+        {/* 捷運站不是篩選條件而是定位點，但它跟篩選籤一樣是「怎麼收窄」的操作，
+            家長會在同一列找它。 */}
+        <button
+          type="button"
+          onClick={() => setStationOpen(true)}
+          aria-haspopup="dialog"
+          className={chipClass(station !== null)}
+        >
+          {station === null ? '捷運站' : `捷運${station.name}站`}
         </button>
         {CATEGORY_CHIPS.map((id) => (
           <button
@@ -253,6 +274,14 @@ export default function RoomSearch({
             onFiltersChange({ ...filters, city: nextCity, district: nextDistrict })
           }
           onClose={() => setAreaOpen(false)}
+        />
+      )}
+
+      {stationOpen && (
+        <MrtPicker
+          selected={station}
+          onSelect={onStationChange}
+          onClose={() => setStationOpen(false)}
         />
       )}
     </div>

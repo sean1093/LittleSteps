@@ -28,6 +28,7 @@ import { sheet, tap } from '../../common/ui/motion';
 import { createSpatialIndex, distanceBetween, type Located } from '../utils/spatialIndex';
 import RoomSearch, { NO_FILTERS, type RoomFilters } from '../components/RoomSearch';
 import { categoryOf, isInternalVenue } from '../utils/roomCategory';
+import type { MrtStation } from '../data/mrtStations';
 
 // Import leaflet CSS
 import 'leaflet/dist/leaflet.css';
@@ -57,6 +58,17 @@ const USER_ICON = L.divIcon({
   className: '',
   iconSize: [24, 24],
   iconAnchor: [12, 12],
+});
+
+// 選定捷運站的位置。空心環而不是實心點：它標的是「你要去的地方」，不是一筆
+// 哺乳室也不是你現在的位置，三者在同一張地圖上必須分得出來。
+//
+// Hex is unavoidable here too; the value is the `secondary-dark` token.
+const STATION_ICON = L.divIcon({
+  html: `<div style="width: 26px; height: 26px; border-radius: 50%; border: 5px solid #2A7288; background: white; box-shadow: 0 2px 8px rgba(63,58,56,0.28);"></div>`,
+  className: '',
+  iconSize: [26, 26],
+  iconAnchor: [13, 13],
 });
 
 // Component to handle user location
@@ -286,6 +298,15 @@ const RoomDetailSheet = ({ room, onClose }: RoomDetailSheetProps) => {
 const NEARBY_LIMIT = 8;
 const NEARBY_RADIUS_KM = 10;
 
+/**
+ * 選了捷運站時的半徑。10 公里在捷運沿線等於整個市區，回答不了「這一站附近」。
+ *
+ * 800 公尺是量出來的，不是手感：全台 260 站對上這份哺乳室資料，246 站在 800
+ * 公尺內至少有一處（159 站在 300 公尺內），平均 7 處，剛好填滿 NEARBY_LIMIT。
+ * 再放寬只會把隔一站的場所混進來，那不是家長問的問題。
+ */
+const STATION_RADIUS_KM = 0.8;
+
 /** 未定位時的預設視角：涵蓋台灣本島與離島，避免看起來只有臺北有資料。 */
 const TAIWAN_CENTER: [number, number] = [23.75, 120.95];
 const TAIWAN_ZOOM = 8;
@@ -297,24 +318,24 @@ const TAIWAN_ZOOM = 8;
 const MARKER_ZOOM = 16;
 
 /**
- * 選定的哺乳室把地圖帶過去。
+ * 選定的目標把地圖帶過去——一筆哺乳室，或一個捷運站。
  *
  * MapContainer 的 center/zoom 只是初始值，之後改它不會動；要移動地圖只能像
- * LocationMarker 那樣拿 useMap 的實例。掛在 selectedRoom 上而不是另開一個
- * 「搜尋選中的那筆」狀態：一個選取只該有一種地圖反應，搜尋結果、附近清單、
- * 直接點標記三條路徑因此完全一致。
+ * LocationMarker 那樣拿 useMap 的實例。掛在選取本身而不是另開一個「搜尋選中
+ * 的那筆」狀態：一個選取只該有一種地圖反應，搜尋結果、附近清單、直接點標記
+ * 三條路徑因此完全一致。
  *
  * 只放大不縮小（Math.max）：已經放大到街道層的家長不該因為點一筆而被拉遠。
  */
-const SelectedRoomFocus = ({ room }: { room: NursingRoom | null }) => {
+const PointFocus = ({ point }: { point: { latitude: number; longitude: number } | null }) => {
   const map = useMap();
 
   useEffect(() => {
-    if (!room) return;
-    map.flyTo([room.latitude, room.longitude], Math.max(map.getZoom(), MARKER_ZOOM), {
+    if (!point) return;
+    map.flyTo([point.latitude, point.longitude], Math.max(map.getZoom(), MARKER_ZOOM), {
       duration: 1,
     });
-  }, [room, map]);
+  }, [point, map]);
 
   return null;
 };
@@ -372,14 +393,21 @@ const FilteredAreaFocus = ({
 };
 
 /**
- * 定位後的鄰近清單，和詳情面板一樣是對話框：Escape 關得掉、焦點會進來。
+ * 鄰近清單，和詳情面板一樣是對話框：Escape 關得掉、焦點會進來。
+ *
+ * 標題與「一筆都沒有」的那句話由呼叫端給：同一份清單有兩個原點——「我現在的
+ * 位置」與「我要去的那一站」，而 10 公里與 800 公尺講成同一句話會騙人。
  */
 const NearbyRoomsSheet = ({
   nearby,
+  title,
+  emptyText,
   onSelect,
   onClose,
 }: {
   nearby: readonly Located<NursingRoom>[];
+  title: string;
+  emptyText: string;
   onSelect: (room: NursingRoom) => void;
   onClose: () => void;
 }) => {
@@ -397,7 +425,7 @@ const NearbyRoomsSheet = ({
       className="fixed bottom-0 left-0 right-0 z-[1500] bg-white rounded-t-3xl shadow-soft-lg max-h-[45vh] overflow-y-auto focus:outline-none"
     >
       <div className="sticky top-0 flex items-center justify-between bg-white px-4 pt-4 pb-2">
-        <h2 id={NEARBY_SHEET_TITLE_ID}>附近的哺乳室</h2>
+        <h2 id={NEARBY_SHEET_TITLE_ID}>{title}</h2>
         <button
           onClick={onClose}
           className="btn-icon bg-ink/5 hover:bg-ink/10"
@@ -407,9 +435,7 @@ const NearbyRoomsSheet = ({
         </button>
       </div>
       {nearby.length === 0 ? (
-        <p className="px-4 pb-6 text-sm text-ink-muted">
-          {NEARBY_RADIUS_KM} 公里內沒有已登記的哺乳室，可拖動地圖查看其他區域。
-        </p>
+        <p className="px-4 pb-6 text-sm text-ink-muted">{emptyText}</p>
       ) : (
         <ul className="px-2 pb-6">
           {nearby.map(({ item, distanceKm }) => (
@@ -473,6 +499,15 @@ const BabyOasisPage = () => {
   const [showNearby, setShowNearby] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [filters, setFilters] = useState<RoomFilters>(NO_FILTERS);
+  /*
+    選定的捷運站是「定位點」而不是「篩選條件」：它不會拿掉任何一筆哺乳室，
+    只是把附近清單與地圖的原點換成那一站。所以它不住在 RoomFilters 裡。
+
+    和定位互斥，因為兩者都在回答「附近有什麼」，而答案只能有一個原點：選了站
+    就以站為準，重新定位就把站放掉。留著兩個原點的話，清單標題與距離會各自
+    指向不同的地方。
+  */
+  const [station, setStation] = useState<MrtStation | null>(null);
 
   // 每次載入配一個序號，只有最新那次能寫進 state：重試時先前那次可能後到，
   // 卸載之後也不該再寫。
@@ -543,21 +578,49 @@ const BabyOasisPage = () => {
   // 建索引 0.4 ms，之後每次最近查詢 0.007 ms；逐筆線性掃描則是 0.5 ms。
   const index = useMemo(() => createSpatialIndex(filteredRooms), [filteredRooms]);
 
+  /*
+    附近清單與清單排序的原點。選定的捷運站優先於定位，因為它是家長剛剛按下去
+    的那個動作；兩者都沒有就沒有原點，清單改用區域排序。
+  */
+  const origin = useMemo(() => {
+    if (station) {
+      return {
+        lat: station.latitude,
+        lng: station.longitude,
+        radiusKm: STATION_RADIUS_KM,
+        title: `捷運${station.name}站附近`,
+        emptyText: `這一站 ${STATION_RADIUS_KM * 1000} 公尺內沒有已登記的哺乳室，可換一站或拖動地圖查看。`,
+      };
+    }
+    if (userLocation) {
+      return {
+        lat: userLocation[0],
+        lng: userLocation[1],
+        radiusKm: NEARBY_RADIUS_KM,
+        title: '附近的哺乳室',
+        emptyText: `${NEARBY_RADIUS_KM} 公里內沒有已登記的哺乳室，可拖動地圖查看其他區域。`,
+      };
+    }
+    return null;
+  }, [station, userLocation]);
+
   const nearby = useMemo(() => {
-    if (!userLocation) return [];
-    return index.nearest(userLocation[0], userLocation[1], NEARBY_LIMIT, NEARBY_RADIUS_KM);
-  }, [index, userLocation]);
+    if (!origin) return [];
+    return index.nearest(origin.lat, origin.lng, NEARBY_LIMIT, origin.radiusKm);
+  }, [index, origin]);
 
   /*
     清單順序。國健署回傳的順序是它自己的查詢順序，讀起來像亂數：同一條路上的
-    三筆會散在清單的三個地方。有定位就照距離，沒有就照行政區再照名稱。
+    三筆會散在清單的三個地方。有原點就照距離，沒有就照行政區再照名稱。
   */
   const sortedRooms = useMemo(() => {
-    if (userLocation) {
-      const [lat, lng] = userLocation;
+    if (origin) {
       // 先把距離算好再排。放在比較函式裡的話，每一筆會被重算 log n 次。
       return filteredRooms
-        .map((room) => ({ room, km: distanceBetween(lat, lng, room.latitude, room.longitude) }))
+        .map((room) => ({
+          room,
+          km: distanceBetween(origin.lat, origin.lng, room.latitude, room.longitude),
+        }))
         .sort((a, b) => a.km - b.km)
         .map((entry) => entry.room);
     }
@@ -566,7 +629,7 @@ const BabyOasisPage = () => {
         COLLATOR.compare(a.district ?? '', b.district ?? '') ||
         COLLATOR.compare(a.name, b.name),
     );
-  }, [filteredRooms, userLocation]);
+  }, [filteredRooms, origin]);
 
   /*
     近四千個 <Marker> 只跟資料有關。先前這串直接寫在 render 裡，而 selectedRoom、
@@ -591,6 +654,12 @@ const BabyOasisPage = () => {
   const closeRoom = useCallback(() => setSelectedRoom(null), []);
   const closeNearby = useCallback(() => setShowNearby(false), []);
 
+  /* 選了站就開清單，取消就收起來——按下去之後畫面必須有反應。 */
+  const handleStation = useCallback((next: MrtStation | null) => {
+    setStation(next);
+    setShowNearby(next !== null);
+  }, []);
+
   const handleLocate = () => {
     if (!('geolocation' in navigator)) {
       toast.show('您的瀏覽器不支援定位功能');
@@ -602,6 +671,8 @@ const BabyOasisPage = () => {
         setIsLocating(false);
         const { latitude, longitude } = position.coords;
         setUserLocation([latitude, longitude]);
+        // 重新定位就放掉捷運站：兩者都是「附近」的原點，只能有一個。
+        setStation(null);
         setShowNearby(true);
       },
       (error) => {
@@ -654,6 +725,8 @@ const BabyOasisPage = () => {
               theme={theme}
               filters={filters}
               onFiltersChange={setFilters}
+              station={station}
+              onStationChange={handleStation}
               onSelect={setSelectedRoom}
             />
           ) : (
@@ -692,15 +765,27 @@ const BabyOasisPage = () => {
         {/* User location marker */}
         <LocationMarker position={userLocation} />
 
-        {/* 選了哪一筆，地圖就跟到哪一筆 */}
-        <SelectedRoomFocus room={selectedRoom} />
+        {/* 選定的那一站。空心環標的是「你要去的地方」，不是一筆哺乳室。 */}
+        {station && (
+          <Marker
+            position={[station.latitude, station.longitude]}
+            icon={STATION_ICON}
+            title={`捷運${station.name}站`}
+          />
+        )}
 
-        {/* 篩了條件就把視角帶到剩下的那些點上；選定某一筆時讓給上面那個。 */}
+        {/* 選了哪一筆、或哪一站，地圖就跟過去 */}
+        <PointFocus point={selectedRoom} />
+        <PointFocus point={station} />
+
+        {/* 篩了條件就把視角帶到剩下的那些點上；選定某一筆、或選定某一站時，
+            讓給上面那兩個——那時家長看的是那個點，不是整個篩選範圍。 */}
         <FilteredAreaFocus
           rooms={filteredRooms}
           active={
             isFiltered &&
             selectedRoom === null &&
+            station === null &&
             filteredRooms.length > 0 &&
             filteredRooms.length < nursingRooms.length
           }
@@ -725,11 +810,18 @@ const BabyOasisPage = () => {
       {/* Locate me button */}
       <LocateButton onLocate={handleLocate} isLocating={isLocating} />
 
-      {/* 附近清單：定位後用空間索引取最近幾筆，並顯示實際距離。資料還沒到就先
-          不開——那時清單只會說「10 公里內沒有已登記的哺乳室」，等於謊報。 */}
+      {/* 附近清單：以定位或選定的捷運站為原點，用空間索引取最近幾筆並顯示實際
+          距離。資料還沒到就先不開——那時清單只會說「沒有已登記的哺乳室」，
+          等於謊報。 */}
       <AnimatePresence>
-        {showNearby && !selectedRoom && loadState === 'ready' && (
-          <NearbyRoomsSheet nearby={nearby} onSelect={setSelectedRoom} onClose={closeNearby} />
+        {showNearby && origin && !selectedRoom && loadState === 'ready' && (
+          <NearbyRoomsSheet
+            nearby={nearby}
+            title={origin.title}
+            emptyText={origin.emptyText}
+            onSelect={setSelectedRoom}
+            onClose={closeNearby}
+          />
         )}
       </AnimatePresence>
 
