@@ -99,7 +99,8 @@ shape.
 - Clustered markers with a spatial index, so the national dataset stays usable at any zoom
 
 ### LittleGuard — disease radar
-- **Six infectious diseases common in children** (enterovirus, hand-foot-and-mouth disease, herpangina, influenza-like illness, diarrhoea, chickenpox): weekly outpatient visits, split across the 22 counties and three age bands (0-2 / 3-6 / 7-12)
+- **Six infectious diseases common in children**, one upstream dataset each (enterovirus, hand-foot-and-mouth disease, herpangina, influenza-like illness, diarrhoea, chickenpox): weekly outpatient visits, split across the 22 counties and three age bands (0-2 / 3-6 / 7-12)
+- **Four rows on the board, not six**: hand-foot-and-mouth disease and herpangina are the two clinical presentations of an enterovirus infection, and the upstream enterovirus dataset is exactly their sum — equal in all 66 cells (22 counties × 3 age bands), for visits, for rates and for each of the 8 sparkline weeks. Three rows side by side counted the same outpatient visits three times, so the board lists enterovirus once and breaks the two forms out inside its drawer, and a contract test goes red if upstream ever stops being an exact partition
 - Status compares a county with **its own previous 8 weeks**, not with the same week in earlier years: the 2020-2022 control measures nearly erased enterovirus, so a five-year same-week baseline makes every week look abnormal
 - Thresholds are percentiles of the measured distribution (P25 0.78 / P75 1.26 / P90 1.77, n=48,725), recomputed into the JSON on every rebuild, so a test goes red when the constants in code drift away from the data
 - Nine statuses, with `noBaseline` (not enough data to compare) deliberately separate from `none` (no recent cases): "the previous 8 weeks cannot produce a baseline" and "the baseline really is zero" are different things, and only the second one supports "this week it starts appearing"

@@ -1,12 +1,14 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { RadarCell, RadarData } from '../../types';
-import { DISEASE_INFO } from '../data/diseases';
+import { DISEASE_INFO, DISEASE_PART_INFO, DISEASE_PART_OF } from '../data/diseases';
 import { FORBIDDEN_WORDS, STATUS_COPY, type RadarStatus } from '../utils/radar';
 import DiseaseDrawer from './DiseaseDrawer';
 
+/** 上游六支 dataset；板上只有四列，兩種表現收在腸病毒底下。 */
 const DISEASES = ['腸病毒', '手足口病', '疱疹性咽峽炎', '類流感', '腹瀉', '水痘'];
+const BOARD = DISEASES.filter((name) => !(name in DISEASE_PART_OF));
 
 function cell(overrides: Partial<RadarCell> = {}): RadarCell {
   return {
@@ -64,11 +66,18 @@ function data(): RadarData {
 
 const noop = () => {};
 
+/** 腸病毒底下的兩種表現，形狀跟 RadarPage 餵進來的一樣。 */
+const enteroParts = () => [
+  { disease: '手足口病', cell: cell({ visits: 15 }) },
+  { disease: '疱疹性咽峽炎', cell: cell({ visits: 20 }) },
+];
+
 function open(disease = '腸病毒', overrides: Partial<RadarCell> = {}, onClose = noop) {
   return render(
     <DiseaseDrawer
       disease={disease}
       cell={cell(overrides)}
+      parts={disease === '腸病毒' ? enteroParts() : undefined}
       data={data()}
       age="3~6"
       showStatus
@@ -86,10 +95,11 @@ describe('抽屜的順序', () => {
     const body = bodyText();
     const order = [
       DISEASE_INFO['腸病毒'].meaning.slice(0, 8),
+      '這一週的組成',
       '可以做什麼',
       '什麼情況要看醫生',
       '最近 8 週',
-      '這一週',
+      '統計基數',
     ].map((needle) => body.indexOf(needle));
     order.forEach((at) => expect(at).toBeGreaterThan(-1));
     expect(order).toEqual([...order].sort((a, b) => a - b));
@@ -99,13 +109,13 @@ describe('抽屜的順序', () => {
     open();
     const body = bodyText();
     expect(body.indexOf('可以做什麼')).toBeGreaterThan(-1);
-    expect(body.indexOf('可以做什麼')).toBeLessThan(body.indexOf('這一週'));
+    expect(body.indexOf('可以做什麼')).toBeLessThan(body.indexOf('統計基數'));
   });
 });
 
 describe('抽屜的內容', () => {
-  it('六種病都打得開，說明、行動、就醫時機三塊都在', () => {
-    DISEASES.forEach((disease) => {
+  it('板上四列都打得開，說明、行動、就醫時機三塊都在', () => {
+    BOARD.forEach((disease) => {
       const view = open(disease);
       const body = bodyText();
       const info = DISEASE_INFO[disease];
@@ -118,7 +128,8 @@ describe('抽屜的內容', () => {
 
   it('行動是逐條列出來的清單，不是一坨字', () => {
     open();
-    const items = screen.getAllByRole('listitem');
+    const actions = screen.getByRole('heading', { name: '可以做什麼' }).closest('section');
+    const items = within(actions as HTMLElement).getAllByRole('listitem');
     expect(items).toHaveLength(DISEASE_INFO['腸病毒'].actions.length);
     expect(items[0]).toHaveTextContent(DISEASE_INFO['腸病毒'].actions[0]);
   });
@@ -172,7 +183,7 @@ describe('抽屜的內容', () => {
     expect(link).toHaveAttribute('rel', expect.stringContaining('noreferrer'));
   });
 
-  it.each(DISEASES)('%s 的連結指向自己那一頁', (disease) => {
+  it.each(BOARD)('%s 的連結指向自己那一頁', (disease) => {
     const view = open(disease);
     expect(screen.getByRole('link', { name: new RegExp(`疾管署的${disease}說明`) })).toHaveAttribute(
       'href',
@@ -186,6 +197,27 @@ describe('抽屜的內容', () => {
     open('腸病毒', {}, onClose);
     await userEvent.setup().click(screen.getByRole('button', { name: '關閉' }));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('這一週的組成', () => {
+  it('腸病毒說得出兩種表現各自的人次與樣子', () => {
+    // 板上只列腸病毒一列，家長會問「那手足口病呢」。答案就在這一段。
+    open();
+    expect(screen.getByRole('heading', { name: '這一週的組成' })).toBeInTheDocument();
+    const body = bodyText();
+    expect(body).toContain(
+      '手足口病與疱疹性咽峽炎都是腸病毒的表現。這份資料裡兩者相加就是腸病毒的全部，所以板上只列一項。',
+    );
+    expect(body).toContain('15 人次');
+    expect(body).toContain('20 人次');
+    expect(body).toContain(DISEASE_PART_INFO['手足口病'].meaning);
+    expect(body).toContain(DISEASE_PART_INFO['疱疹性咽峽炎'].meaning);
+  });
+
+  it('沒有東西掛在底下的那一列不長出這一段', () => {
+    open('類流感');
+    expect(screen.queryByText('這一週的組成')).not.toBeInTheDocument();
   });
 });
 
@@ -290,7 +322,7 @@ describe('抽屜的資料新舊', () => {
 
 describe('抽屜的語氣', () => {
   it('沒有用到禁用詞', () => {
-    DISEASES.forEach((disease) => {
+    BOARD.forEach((disease) => {
       const view = open(disease);
       const body = bodyText();
       FORBIDDEN_WORDS.forEach((word) => expect(body).not.toContain(word));
