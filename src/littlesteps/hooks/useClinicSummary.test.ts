@@ -43,4 +43,26 @@ describe('useClinicSummary', () => {
 
     expect(result.current.data?.latestGrowth).toBeUndefined();
   });
+
+  // 這一頁的百分位是用矯正年齡算的。年齡欄位若只給實際年齡，醫師手上就是
+  // 兩個對不起來的數字，而且看不出哪一個對應哪一個。
+  it('早產寶寶的摘要同時給出生週數與矯正年齡', () => {
+    const preterm = {
+      ...childWithoutProgressMaps(),
+      birthday: '2026-02-01',
+      gestationalAgeWeeks: 32,
+      gestationalAgeDays: 3,
+    } as ChildProfile;
+    const { result } = renderHook(() => useClinicSummary(preterm, [], null));
+
+    expect(result.current.data?.gestationalAge).toBe('出生 32 週 3 天');
+    expect(result.current.data?.correctedAgeDisplay).toMatch(/個月$/);
+  });
+
+  it('足月寶寶的摘要不多出矯正年齡欄位', () => {
+    const { result } = renderHook(() => useClinicSummary(childWithoutProgressMaps(), [], null));
+
+    expect(result.current.data?.gestationalAge).toBeUndefined();
+    expect(result.current.data?.correctedAgeDisplay).toBeUndefined();
+  });
 });
