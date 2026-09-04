@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ChildProfile, DailyLog, SleepData } from '../../types';
+import type { ChildProfile, DailyLog, FeedingData, SleepData } from '../../types';
 import { ToastProvider } from '../../common/ui/toast';
 import DailyLogPage from './DailyLogPage';
 
@@ -87,6 +87,46 @@ describe('讀不到記錄時', () => {
 
     expect(screen.getByText('讀不到日常記錄，請確認網路後重新載入')).toBeInTheDocument();
     expect(screen.queryByText(/還沒有記錄/)).toBeNull();
+  });
+});
+
+/*
+  日檢視上那個「餵奶」數字是媽媽真正會看的那一個。它跟摘要卡必須說同一件事，
+  否則同一個畫面上兩個數字互相矛盾——而擠奶被算進去的話，全擠奶的媽媽每天
+  看到的是實際餐數的兩倍。
+*/
+describe('日檢視的餵奶次數', () => {
+  it('六次瓶餵加六次擠奶顯示 6，不是 12', () => {
+    const at = (hour: number) => {
+      const d = new Date();
+      d.setHours(hour, 0, 0, 0);
+      return d.toISOString();
+    };
+    const log = (id: string, data: FeedingData, hour: number): DailyLog => ({
+      id,
+      childId: 'c1',
+      type: 'feeding',
+      timestamp: at(hour),
+      data,
+      createdAt: at(hour),
+    });
+    readState.logs = [
+      ...[1, 4, 7, 10, 13, 16].map((h) =>
+        log(`bottle-${h}`, { feedingType: 'breast_milk_bottle', amount: 100 }, h),
+      ),
+      ...[2, 5, 8, 11, 14, 17].map((h) =>
+        log(`pump-${h}`, { feedingType: 'pumping', amount: 150, duration: 20 }, h),
+      ),
+    ];
+
+    render(
+      <ToastProvider>
+        <DailyLogPage currentChild={child} user={null} />
+      </ToastProvider>,
+    );
+
+    const statsCard = screen.getByRole('heading', { name: '今日統計' }).parentElement!;
+    expect(within(statsCard).getByText('餵奶').previousElementSibling).toHaveTextContent('6');
   });
 });
 

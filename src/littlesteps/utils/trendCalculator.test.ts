@@ -416,6 +416,37 @@ describe('trendCalculator', () => {
   });
 
   /*
+    This series feeds the report scores, the dashboard sparkline and the trend
+    charts. Pumped millilitres reaching it would inflate every one of them, and
+    a pumping-only day must stay null rather than becoming a real zero - a zero
+    drags the weekly average down and can fire a false low-intake alert at a
+    mother who only pumped that day.
+  */
+  describe('pumping never reaches a feeding series', () => {
+    it('counts bottles and ignores pumping on the same day', () => {
+      const pumped = makeLog('feeding', `${TODAY}T07:00:00+08:00`, {
+        feedingType: 'pumping',
+        amount: 150,
+        duration: 20,
+      });
+      const logs = [feeding(TODAY, 120, '06'), feeding(TODAY, 120, '18'), pumped];
+
+      expect(generateDailySeries(logs, 1, 'feeding_count')).toEqual([2]);
+      expect(generateDailySeries(logs, 1, 'feeding_amount')).toEqual([240]);
+    });
+
+    it('leaves a pumping-only day unknown rather than calling it zero intake', () => {
+      const pumped = makeLog('feeding', `${TODAY}T07:00:00+08:00`, {
+        feedingType: 'pumping',
+        amount: 150,
+      });
+
+      expect(generateDailySeries([pumped], 1, 'feeding_amount')).toEqual([null]);
+      expect(generateDailySeries([pumped], 1, 'feeding_count')).toEqual([null]);
+    });
+  });
+
+  /*
     A sleep whose end time was never filled in has no duration. Counted as an
     observation it becomes a real zero for that day, which is not the same fact
     as "we do not know" - and every score built on this series reads it as a
