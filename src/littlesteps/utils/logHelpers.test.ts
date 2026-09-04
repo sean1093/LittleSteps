@@ -385,6 +385,44 @@ describe('logHelpers', () => {
     });
   });
 
+  describe('pumping is output, not intake', () => {
+    /*
+      The acceptance boundary from the issue: an exclusively pumping mother
+      logs six bottles and six pumping sessions. Counting the pumping as feeds
+      doubles both the feed count and the intake, and that number is what gets
+      shown to a paediatrician.
+    */
+    it('reports 6 feeds for a day of 6 bottles and 6 pumping sessions', () => {
+      const logs = [
+        ...Array.from({ length: 6 }, (_, i) =>
+          feedingLog(`bottle-${i}`, `2026-06-15T0${i}:00:00.000Z`, {
+            feedingType: 'breast_milk_bottle',
+            amount: 100,
+          })
+        ),
+        ...Array.from({ length: 6 }, (_, i) =>
+          feedingLog(`pump-${i}`, `2026-06-15T0${i}:30:00.000Z`, {
+            feedingType: 'pumping',
+            amount: 140,
+            duration: 20,
+          })
+        ),
+      ];
+
+      const summary = calculateDailySummary(logs, '2026-06-15');
+
+      expect(summary.feedingCount).toBe(6);
+      expect(summary.totalFeedingAmount).toBe(600);
+    });
+
+    it('labels bottled breast milk apart from formula and from pumping', () => {
+      expect(getFeedingTypeLabel('breast_milk_bottle')).not.toBe(
+        getFeedingTypeLabel('formula')
+      );
+      expect(getFeedingTypeLabel('pumping')).toBe('擠奶');
+    });
+  });
+
   describe('open sleep sessions', () => {
     it('treats a missing endTime as still sleeping', () => {
       expect(isOpenSleep(sleepLog('s1', at(-30)))).toBe(true);

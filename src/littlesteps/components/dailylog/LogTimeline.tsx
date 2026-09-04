@@ -8,6 +8,12 @@ import { SERVICE_THEME } from '../../../common/ui/serviceTheme';
 import { listItem, stagger } from '../../../common/ui/motion';
 import { confirmDelete } from '../../../common/ui/confirmDelete';
 
+const SIDE_LABEL: Record<NonNullable<FeedingData['side']>, string> = {
+  left: '左側',
+  right: '右側',
+  both: '兩側',
+};
+
 interface LogTimelineProps {
   logs: DailyLog[];
   onEdit: (log: DailyLog) => void;
@@ -70,15 +76,19 @@ export default function LogTimeline({
   const getLogDetails = (log: DailyLog) => {
     if (log.type === 'feeding') {
       const data = log.data as FeedingData;
-      const typeMap = {
+      const typeMap: Record<FeedingData['feedingType'], string> = {
         breast_left: '母乳左側',
         breast_right: '母乳右側',
         breast_both: '母乳雙側',
+        breast_milk_bottle: '母乳瓶餵',
         formula: '配方奶',
         solid: '副食品',
+        pumping: '擠奶',
       };
       const parts = [typeMap[data.feedingType]];
+      if (data.side) parts.push(SIDE_LABEL[data.side]);
       if (data.duration) parts.push(`${data.duration}分鐘`);
+      // 擠奶的 ml 是擠出來的量，不是喝進去的——同一個單位，兩件事。
       if (data.amount) parts.push(`${data.amount}ml`);
       return parts.join(' · ');
     } else if (log.type === 'sleep') {

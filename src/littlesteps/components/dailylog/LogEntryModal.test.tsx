@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { DailyLog, SleepData } from '../../../types';
+import type { DailyLog, FeedingData, SleepData } from '../../../types';
 import LogEntryModal from './LogEntryModal';
 
 /**
@@ -96,6 +96,44 @@ describe('睡眠的起訖時間', () => {
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
     const saved = onSave.mock.calls[0][0] as Omit<DailyLog, 'id'>;
     expect((saved.data as SleepData).duration).toBe(450);
+  });
+});
+
+describe('擠奶', () => {
+  it('存成 pumping，帶擠出量、時間與哪一邊', async () => {
+    const { user, onSave } = renderModal({ logType: 'feeding' });
+
+    await user.selectOptions(screen.getByLabelText('類型 *'), 'pumping');
+    await user.selectOptions(screen.getByLabelText('哪一邊'), 'left');
+    await user.type(screen.getByLabelText('擠出量（ml）'), '150');
+    await user.type(screen.getByLabelText('時長（分鐘）'), '20');
+    await user.click(screen.getByRole('button', { name: '儲存' }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    const saved = onSave.mock.calls[0][0] as Omit<DailyLog, 'id'>;
+    const data = saved.data as FeedingData;
+    expect(data.feedingType).toBe('pumping');
+    expect(data.amount).toBe(150);
+    expect(data.duration).toBe(20);
+    expect(data.side).toBe('left');
+  });
+
+  it('哪一邊只屬於擠奶，換成瓶餵就不會被帶著走', async () => {
+    const { user, onSave } = renderModal({ logType: 'feeding' });
+
+    await user.selectOptions(screen.getByLabelText('類型 *'), 'pumping');
+    await user.selectOptions(screen.getByLabelText('哪一邊'), 'both');
+    await user.selectOptions(screen.getByLabelText('類型 *'), 'breast_milk_bottle');
+
+    expect(screen.queryByLabelText('哪一邊')).toBeNull();
+
+    await user.type(screen.getByLabelText('奶量（ml）'), '120');
+    await user.click(screen.getByRole('button', { name: '儲存' }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    const data = (onSave.mock.calls[0][0] as Omit<DailyLog, 'id'>).data as FeedingData;
+    expect(data.feedingType).toBe('breast_milk_bottle');
+    expect(data.side).toBeUndefined();
   });
 });
 

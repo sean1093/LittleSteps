@@ -5,7 +5,7 @@ import { ChildProfile, DailyLog, SleepData } from '../../types';
 import { useDailyLogs } from '../hooks/useDailyLogs';
 import { useFirebaseChildren } from '../../common/hooks/useFirebaseChildren';
 import { calculateDuration, isSameDay } from '../../common/utils/dateHelpers';
-import { findOpenSleep, isStaleOpenSleep } from '../utils/logHelpers';
+import { findOpenSleep, isIntakeFeedingLog, isStaleOpenSleep } from '../utils/logHelpers';
 import QuickLogButtons, { type SleepMode } from '../components/dailylog/QuickLogButtons';
 import LogEntryModal from '../components/dailylog/LogEntryModal';
 import LogTimeline from '../components/dailylog/LogTimeline';
@@ -44,7 +44,8 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
 
   const isToday = isSameDay(selectedDate, new Date());
   const todayLogs = logs.filter((log) => isSameDay(log.timestamp, selectedDate));
-  const feedingCount = todayLogs.filter((l) => l.type === 'feeding').length;
+  // 擠奶是產出，不是餵了一餐——這個數字要跟摘要卡說同一件事。
+  const feedingCount = todayLogs.filter(isIntakeFeedingLog).length;
   // 忘了按「醒了」的那一筆不是一段睡眠，是一個待補的欄位；它有自己的卡片。
   const sleepCount = todayLogs.filter((l) => l.type === 'sleep' && !isStaleOpenSleep(l)).length;
   const diaperCount = todayLogs.filter((l) => l.type === 'diaper').length;

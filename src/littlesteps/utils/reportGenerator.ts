@@ -1,5 +1,11 @@
 import { DailyLog, GrowthRecord, FeedingData, SleepData, DiaperData } from '../../types';
-import { filterLogsByDate, calculateSleepDuration, isStaleOpenSleep } from './logHelpers';
+import {
+  filterLogsByDate,
+  calculateSleepDuration,
+  isStaleOpenSleep,
+  isIntakeFeedingLog,
+  isPumpingLog,
+} from './logHelpers';
 import {
   TrendDirection,
   calculateTrend,
@@ -39,6 +45,18 @@ export interface WeeklyReport {
     /** 一天餵奶都沒記過就沒有「最高日」可言 */
     maxDay?: { date: string; amount: number };
     minDay?: { date: string; amount: number };
+  };
+  /**
+   * 只有真的擠過奶才有。擠奶是產出，所以它自己一段，不會併進 `feeding`。
+   */
+  pumping?: {
+    sessions: number;
+    totalAmount: number; // ml
+    totalMinutes: number;
+    /** 有擠奶紀錄的天數，也是下面兩個平均的分母 */
+    loggedDays: number;
+    avgDailySessions: number;
+    avgDailyAmount: number; // ml
   };
   sleep: {
     dailyDurations: number[];
@@ -150,7 +168,8 @@ function buildFeedingData(logs: DailyLog[], days: number) {
     const date = getDateNDaysAgo(i);
     const dayLogs = filterLogsByDate(logs, date);
 
-    const feedingLogs = dayLogs.filter(log => log.type === 'feeding');
+    // 擠奶是產出，不是這一天餵了幾次、喝了多少。它在報告裡有自己的一段。
+    const feedingLogs = dayLogs.filter(isIntakeFeedingLog);
     const dayAmount = feedingLogs.reduce((sum, log) => {
       const data = log.data as FeedingData;
       return sum + (data.amount || 0);
@@ -195,6 +214,44 @@ function buildFeedingData(logs: DailyLog[], days: number) {
     loggedDays,
     maxDay: logged ? maxDay : undefined,
     minDay: logged ? minDay : undefined,
+  };
+}
+
+/**
+ * 擠奶自己的一段。
+ *
+ * 對一位在追奶或維持奶量的母親，重要的數字是每次幾 ml、一天幾次——那是產出，
+ * 不是寶寶的攝取，所以它不能混進上面任何一個平均，也不能因此就不出現。
+ * 完全沒有擠奶紀錄時回 undefined：報告不該對沒在擠奶的人多長一張卡。
+ */
+function buildPumpingData(logs: DailyLog[], days: number) {
+  let sessions = 0;
+  let totalAmount = 0;
+  let totalMinutes = 0;
+  let loggedDays = 0;
+
+  for (let i = days - 1; i >= 0; i--) {
+    const dayLogs = filterLogsByDate(logs, getDateNDaysAgo(i)).filter(isPumpingLog);
+    if (dayLogs.length === 0) continue;
+
+    loggedDays += 1;
+    sessions += dayLogs.length;
+    dayLogs.forEach((log) => {
+      const data = log.data as FeedingData;
+      totalAmount += data.amount || 0;
+      totalMinutes += data.duration || 0;
+    });
+  }
+
+  if (sessions === 0) return undefined;
+
+  return {
+    sessions,
+    totalAmount,
+    totalMinutes,
+    loggedDays,
+    avgDailySessions: Math.round((sessions / loggedDays) * 10) / 10,
+    avgDailyAmount: Math.round(totalAmount / loggedDays),
   };
 }
 
@@ -470,6 +527,7 @@ function generateReport(
 
   const scores = calculateScores(logs, days, ageMonths);
   const feeding = buildFeedingData(logs, days);
+  const pumping = buildPumpingData(logs, days);
   const sleep = buildSleepData(logs, days, ageMonths);
   const poop = buildPoopData(logs, days);
   const growth = buildGrowthData(growthRecords, days);
@@ -478,6 +536,7 @@ function generateReport(
     period: { start: periodStart, end: periodEnd },
     scores,
     feeding,
+    pumping,
     sleep,
     poop,
     growth,

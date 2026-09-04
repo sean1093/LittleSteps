@@ -1,5 +1,10 @@
 import { DailyLog, FeedingData, SleepData, DiaperData } from '../../types';
-import { filterLogsByDate, calculateSleepDuration, isStaleOpenSleep } from './logHelpers';
+import {
+  filterLogsByDate,
+  calculateSleepDuration,
+  isIntakeFeedingLog,
+  isStaleOpenSleep,
+} from './logHelpers';
 import { getSleepRequirementForAge } from '../data/sleep';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
@@ -27,10 +32,13 @@ export interface TrendData {
  * 睡眠要跳過忘了按「醒了」的那一筆。它沒有時長，卻會把那一天標成「有記睡眠
  * 但只睡了 0 小時」——分數因此掉下來，而同一頁的睡眠區塊還印著每天 11 小時。
  * 報告自己跟自己打架，比少一個數字更難解釋。
+ *
+ * 餵奶兩個指標問的不是「有沒有餵奶紀錄」而是「有沒有餵到寶寶」：只擠了奶的
+ * 那一天，寶寶喝了多少仍然是不知道，不是 0。
  */
 const OBSERVES: Record<MetricType, (log: DailyLog) => boolean> = {
-  feeding_count: (log) => log.type === 'feeding',
-  feeding_amount: (log) => log.type === 'feeding',
+  feeding_count: isIntakeFeedingLog,
+  feeding_amount: isIntakeFeedingLog,
   sleep_duration: (log) => log.type === 'sleep' && !isStaleOpenSleep(log),
   poop_count: (log) => log.type === 'diaper',
 };
@@ -88,16 +96,15 @@ function getDailyValue(
   const dayLogs = filterLogsByDate(logs, date);
 
   switch (type) {
+    // 擠奶不是一餐，擠出來的量也不是寶寶喝進去的量。
     case 'feeding_count':
-      return dayLogs.filter(log => log.type === 'feeding').length;
+      return dayLogs.filter(isIntakeFeedingLog).length;
 
     case 'feeding_amount':
-      return dayLogs
-        .filter(log => log.type === 'feeding')
-        .reduce((sum, log) => {
-          const data = log.data as FeedingData;
-          return sum + (data.amount || 0);
-        }, 0);
+      return dayLogs.filter(isIntakeFeedingLog).reduce((sum, log) => {
+        const data = log.data as FeedingData;
+        return sum + (data.amount || 0);
+      }, 0);
 
     case 'sleep_duration': {
       return dayLogs

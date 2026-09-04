@@ -385,6 +385,49 @@ describe('reportGenerator', () => {
       expect(report.sleep.avgDailyHours).toBe(11);
     });
 
+    /*
+      An exclusively pumping mother logs bottles and pumping sessions on the
+      same days. Folding the pumped millilitres into the feeding average
+      doubles the intake the report shows, and the report is the document that
+      gets carried into a clinic.
+    */
+    it('keeps pumping out of the feeding averages and gives it its own section', () => {
+      const pumping = (date: string, hour: string): DailyLog => {
+        const timestamp = `${date}T${hour}:00:00+08:00`;
+        return {
+          id: `log_${++logSeq}`,
+          childId: 'child-1',
+          type: 'feeding',
+          timestamp,
+          data: { feedingType: 'pumping', amount: 150, duration: 20 },
+          createdAt: timestamp,
+        };
+      };
+      const logs = ['2026-06-14', '2026-06-15'].flatMap((date) => [
+        feedingLog(date, '06:00:00', 120),
+        feedingLog(date, '18:00:00', 120),
+        pumping(date, '07'),
+        pumping(date, '19'),
+      ]);
+
+      const report = generateWeeklyReport(logs, [], 4);
+
+      expect(report.feeding.avgDailyCount).toBe(2);
+      expect(report.feeding.avgDailyAmount).toBe(240);
+      expect(report.pumping).toEqual({
+        sessions: 4,
+        totalAmount: 600,
+        totalMinutes: 80,
+        loggedDays: 2,
+        avgDailySessions: 2,
+        avgDailyAmount: 300,
+      });
+    });
+
+    it('omits the pumping section entirely when nobody pumped', () => {
+      expect(generateWeeklyReport(buildRegularWeek(), [], 4).pumping).toBeUndefined();
+    });
+
     it('withholds every score when only two days of a 30-day window were logged', () => {
       const logs = ['2026-06-14', '2026-06-15'].flatMap((date) => [
         feedingLog(date, '06:00:00', 120),

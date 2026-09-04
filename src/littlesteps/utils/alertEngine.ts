@@ -1,5 +1,5 @@
 import { DailyLog, SleepData, DiaperData } from '../../types';
-import { filterLogsByDate, calculateSleepDuration } from './logHelpers';
+import { filterLogsByDate, calculateSleepDuration, isIntakeFeedingLog } from './logHelpers';
 import { generateDailySeries, getRecommendedSleepHours } from './trendCalculator';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
@@ -37,6 +37,9 @@ const MIN_BASELINE_DAYS = 3;
  * Rules:
  * - warning: yesterday's feeding amount < 70% of the surrounding week's average
  * - warning: last feeding was >6 hours ago
+ *
+ * Both rules count intake only. A pumping session is the mother's output and
+ * says nothing about whether the baby has been fed.
  */
 export function detectFeedingAlerts(logs: DailyLog[], _ageMonths: number): Alert[] {
   const alerts: Alert[] = [];
@@ -64,9 +67,14 @@ export function detectFeedingAlerts(logs: DailyLog[], _ageMonths: number): Alert
     }
   }
 
-  // Rule 2: last feeding was >6 hours ago
+  /*
+    Rule 2: last feeding was >6 hours ago
+
+    擠奶不算。一位半夜兩點擠奶的母親，寶寶並沒有因此喝到東西——把擠奶當成
+    一餐，這則「超過六小時沒餵」的提醒就會被悄悄關掉，而它正是要提醒她的事。
+  */
   const feedingLogs = logs
-    .filter(log => log.type === 'feeding')
+    .filter(isIntakeFeedingLog)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   if (feedingLogs.length > 0) {

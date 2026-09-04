@@ -1,7 +1,12 @@
 import { useMemo } from 'react';
 import type { ChildProfile, DailyLog, FeedingData, SleepData, DiaperData } from '../../types';
 import { useGrowthTracking } from './useGrowthTracking';
-import { getRecentLogs, calculateSleepDuration, isStaleOpenSleep } from '../utils/logHelpers';
+import {
+  getRecentLogs,
+  calculateSleepDuration,
+  isStaleOpenSleep,
+  isPumpingLog,
+} from '../utils/logHelpers';
 import { calculateAgeDisplay, calculateVaccineSummary } from '../../common/utils/summaryCalculator';
 import { correctedAgeMonths, gestationalAgeLabel, isCorrecting } from '../../common/correctedAge';
 import { vaccineSchedules } from '../data/vaccines';
@@ -221,6 +226,8 @@ export function useClinicSummary(
 
       switch (log.type) {
         case 'feeding': {
+          // 擠奶是媽媽的產出。把它算成一餐，交給醫師的攝取量就會多一倍。
+          if (isPumpingLog(log)) break;
           day.hasFeeding = true;
           day.feedingCount++;
           const fd = log.data as FeedingData;
