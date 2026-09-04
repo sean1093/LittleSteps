@@ -206,6 +206,27 @@ describe('進行中的睡眠', () => {
     expect((updates.data as SleepData).nightWakings).toBe(2);
   });
 
+  /*
+    夜醒次數是把整個 data 寫回去的，所以它必須帶著剛剛設好的結束時間。
+    從 logs 重查那一筆會拿到監聽器還沒更新的舊值——也就是還沒關的那一版——
+    於是「回答夜醒次數」會把剛結束的睡眠變回進行中。
+  */
+  it('補夜醒次數時不會把剛設好的結束時間洗掉', async () => {
+    readState.logs = [openSleepLog(80)];
+    // 監聽器還沒把關掉後的值送回來：logs 裡仍然是沒有結束時間的那一版。
+    updateDailyLog.mockResolvedValue(undefined);
+    const user = renderPage();
+
+    await user.click(screen.getByRole('button', { name: '醒了' }));
+    await user.click(await screen.findByRole('button', { name: '夜醒 1 次' }));
+
+    const [, , updates] = updateDailyLog.mock.calls[1];
+    const written = updates.data as SleepData;
+    expect(written.nightWakings).toBe(1);
+    expect(written.endTime).toBeDefined();
+    expect(written.duration).toBe(80);
+  });
+
   it('沒有回答夜醒次數就什麼都不寫', async () => {
     readState.logs = [openSleepLog(80)];
     const user = renderPage();
