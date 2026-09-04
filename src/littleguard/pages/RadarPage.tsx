@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import AppBar from '../../common/ui/AppBar';
+import AppHomeButton from '../../common/components/AppHomeButton';
+import AccountButton from '../../common/components/AccountButton';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger } from '../../common/ui/motion';
@@ -16,6 +18,25 @@ import { AGE_LABEL, formatWeekRange, freshnessOf, summariseBoard } from '../util
 const DEFAULT_COUNTY = '台北市';
 
 const NIDSS = 'https://nidss.cdc.gov.tw/';
+
+/**
+ * 標題列右側。另外五個服務都有這兩顆，這一頁漏了。
+ *
+ * 「所有服務」那顆是唯一回得去入口頁的路：入口頁是唯一列出六個服務的地方，
+ * 而沒有任何子應用會連到自己的手足，所以少了它，家長只剩瀏覽器的上一頁可以
+ * 離開這一頁。帳號那顆一起補——這一頁確實不讀孩子的資料，但登出與切換寶寶
+ * 現在全靠各服務 AppBar 上的這顆（見 Sidebar.tsx 的註解），少一個服務就是
+ * 少一個出口。
+ */
+const HeaderActions = () => (
+  <>
+    <AccountButton
+      service="littleguard"
+      className="bg-guard-light hover:bg-guard/40 text-guard-ink"
+    />
+    <AppHomeButton className="bg-guard-light hover:bg-guard/40 text-guard-ink" />
+  </>
+);
 
 /**
  * 疫情雷達：一頁、板優先、免打字。
@@ -76,7 +97,7 @@ export default function RadarPage() {
   if (failed || (data && !cells)) {
     return (
       <div className={`screen ${theme.pageBg}`}>
-        <AppBar theme={theme} title={theme.name} subtitle={theme.role} />
+        <AppBar theme={theme} title={theme.name} subtitle={theme.role} actions={<HeaderActions />} />
         <div className="screen-body">
           <EmptyState
             theme={theme}
@@ -94,7 +115,7 @@ export default function RadarPage() {
 
   return (
     <div className={`screen ${theme.pageBg}`}>
-      <AppBar theme={theme} title={theme.name} subtitle={theme.role} />
+      <AppBar theme={theme} title={theme.name} subtitle={theme.role} actions={<HeaderActions />} />
       <div className="screen-body space-y-4">
         <p className="text-sm text-ink-muted">
           {data
