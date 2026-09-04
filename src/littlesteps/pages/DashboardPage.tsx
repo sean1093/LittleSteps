@@ -208,6 +208,7 @@ export default function DashboardPage({
           {vaccineSummary && (
             <VaccineSummaryCard
               vaccineProgress={currentChild.vaccineProgress || {}}
+              birthday={currentChild.birthday}
               onNavigate={() => onNavigate('littlesteps/vaccine-tracking')}
             />
           )}

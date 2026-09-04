@@ -4,14 +4,17 @@ import { calculateVaccineSummary } from '../../../common/utils/summaryCalculator
 
 interface VaccineSummaryCardProps {
   vaccineProgress: VaccineProgress;
+  /** 下一劑是從出生日推算的，沒有生日就算不出「接下來是哪一劑」 */
+  birthday: string;
   onNavigate: () => void;
 }
 
 export default function VaccineSummaryCard({
   vaccineProgress,
+  birthday,
   onNavigate,
 }: VaccineSummaryCardProps) {
-  const summary = calculateVaccineSummary(vaccineProgress);
+  const summary = calculateVaccineSummary(vaccineProgress, birthday);
 
   return (
     <DashboardCard title="疫苗追蹤" onClick={onNavigate} bgColor="bg-mint-light/30">
@@ -41,9 +44,22 @@ export default function VaccineSummaryCard({
             </p>
           </div>
         </div>
-      ) : (
+      ) : summary.remainingNationalDoses > 0 ? (
+        // 沒有下一劑，但公費劑次還沒記完——剩下的都已經超出可以補打的範圍。
+        // 這時候說「皆已接種完成」是假的，說「你漏打了」也不對：家長可能打了
+        // 只是沒記。用和幼兒期提醒頁同一個講法。
         <div className="pt-2 border-t border-ink/10">
-          <p className="text-sm text-mint-dark font-medium">所有疫苗皆已接種完成</p>
+          <p className="text-sm text-ink-muted leading-relaxed">
+            尚有 {summary.remainingNationalDoses} 劑公費疫苗沒有記錄，沒有記錄不代表沒打，可對照兒童健康手冊補登
+          </p>
+        </div>
+      ) : (
+        // 分母是整份時程表（含自費），所以只說「公費」會和上面的 21/33 對不起來。
+        // 把差額的來由講出來，這句話才不會看起來自相矛盾。
+        <div className="pt-2 border-t border-ink/10">
+          <p className="text-sm text-mint-dark font-medium leading-relaxed">
+            公費疫苗皆已接種完成，其餘劑次不在公費時程內
+          </p>
         </div>
       )}
     </DashboardCard>

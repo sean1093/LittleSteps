@@ -19,7 +19,7 @@ export function useChildSummary(currentChild: ChildProfile | undefined, dailyLog
 
   const vaccineSummary: VaccineSummary | null = useMemo(() => {
     if (!currentChild) return null;
-    return calculateVaccineSummary(currentChild.vaccineProgress || {});
+    return calculateVaccineSummary(currentChild.vaccineProgress || {}, currentChild.birthday);
   }, [currentChild]);
 
   const todaySummary = useMemo(() => {
