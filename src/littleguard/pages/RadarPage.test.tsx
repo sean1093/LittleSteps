@@ -122,6 +122,23 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe('標題列', () => {
+  it('給得出回到入口頁的路，資料抓不到時也給得出', async () => {
+    // 入口頁是唯一列出六個服務的地方，而沒有子應用會連到自己的手足：少了這顆
+    // 鈕，家長只剩瀏覽器的上一頁可以離開這一頁。這個服務上線時就漏了。
+    await renderReady();
+    expect(screen.getByRole('button', { name: '所有服務' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '帳號與寶寶' })).toBeInTheDocument();
+  });
+
+  it('抓不到資料的畫面也留著「所有服務」那顆', async () => {
+    mockFetch(null);
+    render(<RadarPage />);
+    await waitFor(() => expect(screen.getByText('現在抓不到資料')).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: '所有服務' })).toBeInTheDocument();
+  });
+});
+
 describe('疫情雷達板', () => {
   it('四列都在，順序固定不隨狀態重排', async () => {
     // 水痘（清單最後一個）最吵、腸病毒（第一個）最安靜。若有人把「變多」的
