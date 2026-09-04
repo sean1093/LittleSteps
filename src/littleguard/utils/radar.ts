@@ -187,12 +187,14 @@ function reasonWithoutRatio(cell: RadarCell): string {
  * 中文句子裡夾一個西文病名時前後留空白。
  *
  * 「COVID-19比平常多」「次因COVID-19就診」擠在一起，而這個 repo 其他文案一律
- * 是「WHO 的標準」「14 次公費產檢」這種寫法。純中文病名不能加，否則會變成
- * 「類流感 比平常多」——所以只看頭尾那一個字是不是漢字。
+ * 是「WHO 的標準」「14 次公費產檢」這種寫法。
+ *
+ * 判準寫成「頭尾是不是拉丁字母或數字」而不是「是不是漢字」：純中文病名加了會
+ * 變成「類流感 比平常多」，而全形括號之類的標點自己就帶了間距，兩者都不該加。
  */
 export function inSentence(name: string): string {
-  const head = /^[\u3400-\u9fff]/.test(name) ? '' : ' ';
-  const tail = /[\u3400-\u9fff]$/.test(name) ? '' : ' ';
+  const head = /^[0-9A-Za-z]/.test(name) ? ' ' : '';
+  const tail = /[0-9A-Za-z]$/.test(name) ? ' ' : '';
   return `${head}${name}${tail}`;
 }
 

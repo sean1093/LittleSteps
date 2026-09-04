@@ -51,6 +51,12 @@ describe('inSentence', () => {
   it('只有貼著中文的那一側不加', () => {
     expect(inSentence('類流感、COVID-19')).toBe('類流感、COVID-19 ');
   });
+
+  it('標點自己帶間距，不再加空白', () => {
+    // 判準是「頭尾是不是拉丁字母或數字」，不是「是不是漢字」——否則全形括號
+    // 結尾的病名會變成「…（EV71） 比平常多」。
+    expect(inSentence('腸病毒（EV71）')).toBe('腸病毒（EV71）');
+  });
 });
 
 describe('statusOf 的邊界', () => {
