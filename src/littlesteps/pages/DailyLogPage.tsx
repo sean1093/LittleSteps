@@ -12,6 +12,7 @@ import LogTimeline from '../components/dailylog/LogTimeline';
 import DaySelector from '../components/dailylog/DaySelector';
 import OpenSleepCard from '../components/dailylog/OpenSleepCard';
 import NightWakingsPrompt from '../components/dailylog/NightWakingsPrompt';
+import ChildSwitcher from '../../common/components/ChildSwitcher';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem } from '../../common/ui/motion';
@@ -246,6 +247,8 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
         initial="hidden"
         animate="visible"
       >
+        <ChildSwitcher service="littlesteps" className="mb-4" />
+
         <motion.div variants={listItem} className="card mb-4">
           <DaySelector
             value={selectedDate}
