@@ -8,6 +8,8 @@ import AccountButton from '../../common/components/AccountButton';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { fadeInUp, stagger, tap } from '../../common/ui/motion';
+import { useCentreSelectedChip } from '../../common/ui/useCentreSelectedChip';
+import { readPreferences, savePreferences } from '../../common/preferences';
 import { CENTRE_ACCESS, CENTRE_ACCESS_UNVERIFIED, CENTRE_DATA_ATTRIBUTION } from '../data/centreAccess';
 import { restaurants } from '../data/restaurants';
 import { outingChecklist } from '../data/outingChecklist';
@@ -35,6 +37,9 @@ const VIEWS: { id: View; label: string }[] = [
   { id: 'checklist', label: '出發前' },
 ];
 
+/** 縣市籌碼裡的「全部縣市」。 */
+const ALL_CITIES = 'all';
+
 /**
  * 親子好去處：找地方帶孩子出門。
  *
@@ -53,8 +58,13 @@ const VIEWS: { id: View; label: string }[] = [
  */
 export default function OutingPage() {
   const theme = SERVICE_THEME.littleouting;
-  const [view, setView] = useState<View>('centre');
-  const [city, setCity] = useState<string>('all');
+  /* 上次停在哪一頁、篩到哪個縣市。只讀一次；搜尋字串刻意不記，那是一次性的
+     問句，不是「我家在哪」。分頁 id 對不上今天的 VIEWS 就當沒存過。 */
+  const [stored] = useState(readPreferences);
+  const [view, setView] = useState<View>(
+    () => VIEWS.find((entry) => entry.id === stored.outingTab)?.id ?? 'centre',
+  );
+  const [pickedCity, setPickedCity] = useState<string>(stored.outingCity ?? ALL_CITIES);
   const [query, setQuery] = useState('');
   const [centres, setCentres] = useState<Venue[]>([]);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -92,10 +102,21 @@ export default function OutingPage() {
     return CITY_ORDER.filter((c) => present.has(c));
   }, [source]);
 
+  /* 記著的縣市不一定還在這一頁的名冊裡（餐廳只有 6 個縣市有，上游也可能改
+     字），名冊還在路上時更是一顆籌碼都還沒有。畫面上被選中的縣市一律只能是
+     籌碼列上真的有的那幾個，其餘當「全部縣市」——否則家長會拿到一份被篩過的
+     清單，卻找不到任何一顆看起來被選中的籌碼。 */
+  const city = cities.includes(pickedCity) ? pickedCity : ALL_CITIES;
+
+  /* 記著的縣市在 22 顆籌碼裡多半不是第一顆，重新整理之後它會落在畫面外——家長
+     看到一份被篩過的清單，卻沒有一顆籌碼看起來被選中。和 LittleGuard 的縣市列
+     用同一個 hook 把它捲進來。 */
+  const { scrollerRef, selectedRef } = useCentreSelectedChip(city);
+
   const visible = useMemo(() => {
     const keyword = query.trim().toLowerCase();
     return source.filter((venue) => {
-      if (city !== 'all' && venue.city !== city) return false;
+      if (city !== ALL_CITIES && venue.city !== city) return false;
       if (keyword === '') return true;
       // 家長記得的常常是路名或區名，不是館名，所以地址也要搜。
       return (
@@ -108,7 +129,23 @@ export default function OutingPage() {
 
   const centresLoading = view === 'centre' && loading;
 
-  const access = city !== 'all' ? CENTRE_ACCESS[city] : undefined;
+  const access = city !== ALL_CITIES ? CENTRE_ACCESS[city] : undefined;
+
+  /* 選了就記起來，下次打開直接是這裡。 */
+  const chooseView = (next: View) => {
+    setView(next);
+    setQuery('');
+    // 縣市也要跟著回「全部縣市」：餐廳只有 6 個縣市有，留著親子館那邊選的縣
+    // 市，22 縣市裡有 16 個會得到一張空清單，而餐廳這一頁連那顆被選中的縣市
+    // 籌碼都畫不出來，家長看不到自己在篩什麼。
+    setPickedCity(ALL_CITIES);
+    savePreferences({ outingTab: next, outingCity: ALL_CITIES });
+  };
+
+  const chooseCity = (next: string) => {
+    setPickedCity(next);
+    savePreferences({ outingCity: next });
+  };
 
   return (
     <div className={`min-h-dscreen ${theme.pageBg}`}>
@@ -132,14 +169,7 @@ export default function OutingPage() {
               key={id}
               type="button"
               whileTap={tap}
-              onClick={() => {
-                setView(id);
-                setQuery('');
-                // 縣市也要跟著回「全部縣市」：餐廳只有 6 個縣市有，留著親子館
-                // 那邊選的縣市，22 縣市裡有 16 個會得到一張空清單，而餐廳這一
-                // 頁連那顆被選中的縣市籌碼都畫不出來，家長看不到自己在篩什麼。
-                setCity('all');
-              }}
+              onClick={() => chooseView(id)}
               aria-pressed={view === id}
               className={`chip flex-1 justify-center ${
                 view === id ? `chip-on ${theme.fill} ${theme.fillText} border-transparent` : ''
@@ -199,24 +229,25 @@ export default function OutingPage() {
                 )}
               </div>
 
-              <div className="row-bleed flex gap-2 pb-1">
-                {(['all', ...cities]).map((value) => (
+              <div ref={scrollerRef} className="row-bleed flex gap-2 pb-1">
+                {([ALL_CITIES, ...cities]).map((value) => (
                   <button
                     key={value}
+                    ref={city === value ? selectedRef : undefined}
                     type="button"
-                    onClick={() => setCity(value)}
+                    onClick={() => chooseCity(value)}
                     aria-pressed={city === value}
                     className={`chip shrink-0 ${
                       city === value ? `chip-on ${theme.fill} ${theme.fillText} border-transparent` : ''
                     }`}
                   >
-                    {value === 'all' ? '全部縣市' : value}
+                    {value === ALL_CITIES ? '全部縣市' : value}
                   </button>
                 ))}
               </div>
 
               {/* 各縣市的收費與預約規則差很多，選了縣市就把已查證的規則講清楚。 */}
-              {view === 'centre' && city !== 'all' && (
+              {view === 'centre' && city !== ALL_CITIES && (
                 <div className="card bg-white">
                   <h3 className={`mb-2 ${theme.ink}`}>{city}的使用規則</h3>
                   {access ? (
