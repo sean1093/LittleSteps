@@ -11,7 +11,9 @@ import {
   freshnessOf,
   formatRate,
   formatWeekRange,
+  summariseBoard,
 } from './radar';
+import { DISEASE_PART_OF } from '../data/diseases';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -195,5 +197,60 @@ describe('門檻與 shipped 資料的校準', () => {
     expect(Math.abs(data.calibration.trendP25 - RADAR_THRESHOLDS.p25)).toBeLessThanOrEqual(0.05);
     expect(Math.abs(data.calibration.trendP75 - RADAR_THRESHOLDS.p75)).toBeLessThanOrEqual(0.05);
     expect(Math.abs(data.calibration.trendP90 - RADAR_THRESHOLDS.p90)).toBeLessThanOrEqual(0.05);
+  });
+});
+
+describe('summariseBoard', () => {
+  const board = (ratios: Record<string, number>) =>
+    Object.entries(ratios).map(([disease, ratio]) => ({ disease, cell: cell({ ratio }) }));
+
+  it('沒有哪一列變多的時候把話說完整，不是留白', () => {
+    // 「這禮拜沒事」也要講出來。只在有事時才出現的那一行，本身就是警示燈號。
+    expect(summariseBoard(board({ 腸病毒: 0.4, 類流感: 1.0, 腹瀉: 1.1, 水痘: 0.9 }))).toBe(
+      '這一週沒有哪一種比平常明顯多。',
+    );
+  });
+
+  it('有幾列變多就點名那幾列，其他一句話帶過', () => {
+    expect(summariseBoard(board({ 腸病毒: 0.4, 類流感: 1.44, 腹瀉: 1.0, 水痘: 2.2 }))).toBe(
+      '這一週類流感、水痘比平常多，其他沒有變多。',
+    );
+  });
+
+  it('每一列都在變多的時候不說「其他」——那個「其他」是空的', () => {
+    expect(summariseBoard(board({ 腸病毒: 1.3, 類流感: 1.9 }))).toBe('這一週腸病毒、類流感比平常多。');
+  });
+
+  it('這週開始出現也算變多，算不出基線的不算', () => {
+    // emerged 是「前 8 週真的一例都沒有，這週有了」，那是家長要知道的事；
+    // noBaseline 只是我們算不出比較基準，說它變多是不實陳述。
+    const rows = [
+      { disease: '水痘', cell: cell({ rate: 12, trendBase: 0, ratio: null }) },
+      { disease: '腹瀉', cell: cell({ trendBase: null, ratio: null }) },
+    ];
+    // 剩下那一列是「還不夠資料比較」，不是「沒事」，所以不替它做保證。
+    expect(summariseBoard(rows)).toBe('這一週水痘比平常多。');
+  });
+
+  it('沒有列可以總結的時候也不編一句話', () => {
+    expect(summariseBoard([])).toBe('這一週沒有哪一種比平常明顯多。');
+  });
+
+  it('shipped 資料的每一塊板，總結都不含 spec 的禁用詞', () => {
+    const data = JSON.parse(
+      readFileSync(join(HERE, '../../../public/data/diseaseRadar.json'), 'utf8'),
+    );
+    const rows: string[] = data.diseases.filter((name: string) => !(name in DISEASE_PART_OF));
+    for (const county of Object.keys(data.counties)) {
+      for (const age of data.ageBands as string[]) {
+        const line = summariseBoard(
+          rows.map((disease) => ({ disease, cell: data.counties[county][age][disease] })),
+        );
+        for (const word of BANNED_IN_SPEC) {
+          expect(line, `${county} ${age}`).not.toContain(word);
+        }
+        expect(line).not.toMatch(/[↑↓→!！]/);
+      }
+    }
   });
 });

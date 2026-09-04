@@ -105,6 +105,7 @@ shape.
 - Thresholds are percentiles of the measured distribution (P25 0.78 / P75 1.26 / P90 1.77, n=48,725), recomputed into the JSON on every rebuild, so a test goes red when the constants in code drift away from the data
 - Nine statuses, with `noBaseline` (not enough data to compare) deliberately separate from `none` (no recent cases): "the previous 8 weeks cannot produce a baseline" and "the baseline really is zero" are different things, and only the second one supports "this week it starts appearing"
 - A cell whose denominator is too small says "small sample" or "not enough data" instead of being given an invented status — weekly visits for ages 0-2 in Lienchiang and Kinmen are two-digit numbers
+- **The board explains itself before it counts**: a short explainer sits above the county picker, and one line above the rows answers the whole board for the selected county and age band — which diseases are above their usual level, or that none of them are. The line is withheld when the data is expired, because a stale board cannot support it, and it only says the rest are unchanged when every remaining row is genuinely comparable
 - The tone is deliberately restrained: notice this, do not panic about it. Every "more than usual" comes with something a parent can do, and the strongest colour it reaches is `butter-dark`
 
 ---

@@ -169,6 +169,40 @@ describe('疫情雷達板', () => {
   });
 });
 
+describe('怎麼看這個板', () => {
+  it('第一次打開就有一段話說明這些數字是什麼', async () => {
+    await renderReady();
+    expect(screen.getByRole('heading', { name: '怎麼看這個板' })).toBeInTheDocument();
+    expect(screen.getByText(/選你住的縣市和孩子的年齡/)).toBeInTheDocument();
+  });
+
+  it('說明在縣市籤之前——先知道自己在看什麼，再選縣市', async () => {
+    await renderReady();
+    const body = document.body.textContent ?? '';
+    expect(body.indexOf('怎麼看這個板')).toBeGreaterThan(-1);
+    expect(body.indexOf('怎麼看這個板')).toBeLessThan(body.indexOf('花蓮縣'));
+  });
+});
+
+describe('一句話總結', () => {
+  it('有病種比平常多就點名，不用家長自己讀四列', async () => {
+    const it = await renderReady();
+    await it.click(screen.getByRole('button', { name: '3-6 歲' }));
+    expect(screen.getByText('這一週腸病毒比平常多，其他沒有變多。')).toBeInTheDocument();
+  });
+
+  it('沒事的那一週也把話說完整，不是留白', async () => {
+    await renderReady();
+    expect(screen.getByText('這一週沒有哪一種比平常明顯多。')).toBeInTheDocument();
+  });
+
+  it('資料過期就不給這句話——它跟狀態一樣是撐不起來的判斷', async () => {
+    await renderReady(fixture('2026-06-28', '2026-07-04'));
+    expect(screen.queryByText(/沒有哪一種比平常明顯多/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/比平常多，其他沒有變多/)).not.toBeInTheDocument();
+  });
+});
+
 describe('縣市與年齡層', () => {
   it('預設看台北市', async () => {
     const data = fixture();
