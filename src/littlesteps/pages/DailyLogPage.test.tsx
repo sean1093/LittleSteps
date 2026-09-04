@@ -273,6 +273,47 @@ describe('沿用上一筆', () => {
     expect(screen.getByLabelText('性狀')).toHaveValue('soft');
   });
 
+  /*
+    擠奶是這個孩子最新的一筆 feeding 型別紀錄，但它不是一餐。把它當成「上次的
+    餵奶」有兩個錯：按鈕會寫成「餵奶（擠奶 90 ml）」，而剛擠完奶的媽媽從此
+    再也叫不出「再餵一次上次那餐」。
+  */
+  it('最近一筆是擠奶時，餵奶與擠奶各有各的按鈕', async () => {
+    const ago = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
+    readState.logs = [
+      {
+        id: 'feed',
+        childId: 'c1',
+        type: 'feeding',
+        timestamp: ago(180),
+        data: { feedingType: 'formula', amount: 120 },
+        createdAt: ago(180),
+      },
+      {
+        id: 'pump',
+        childId: 'c1',
+        type: 'feeding',
+        timestamp: ago(30),
+        data: { feedingType: 'pumping', amount: 90 },
+        createdAt: ago(30),
+      },
+    ];
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <DailyLogPage currentChild={child} user={null} />
+      </ToastProvider>,
+    );
+
+    expect(screen.queryByRole('button', { name: /餵奶（擠奶/ })).toBeNull();
+    expect(screen.getByRole('button', { name: '餵奶（配方奶 120 ml）' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '擠奶（90 ml）' }));
+
+    const [, written] = addDailyLog.mock.calls[0];
+    expect((written.data as FeedingData).feedingType).toBe('pumping');
+  });
+
   it('還沒有任何紀錄的孩子沒有重複鍵，表單也回到原本的預設值', async () => {
     readState.logs = [];
     const user = userEvent.setup();

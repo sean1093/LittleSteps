@@ -6,9 +6,10 @@ import { useDailyLogs } from '../hooks/useDailyLogs';
 import { useFirebaseChildren } from '../../common/hooks/useFirebaseChildren';
 import { calculateDuration, isSameDay } from '../../common/utils/dateHelpers';
 import {
-  findLastLogOfType,
+  findLastLog,
   findOpenSleep,
   isIntakeFeedingLog,
+  isPumpingLog,
   isStaleOpenSleep,
 } from '../utils/logHelpers';
 import QuickLogButtons, { type SleepMode } from '../components/dailylog/QuickLogButtons';
@@ -70,9 +71,16 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
     絕對不能改成 localStorage：孩子的資料不放在裝置上，而且一位有兩個孩子的
     家長，一個喝配方奶一個親餵，共用一份記憶只會讓兩張表都填錯。
   */
-  const lastFeeding = findLastLogOfType(logs, 'feeding');
-  const lastDiaper = findLastLogOfType(logs, 'diaper');
-  const lastLogForForm = modalType === 'diaper' ? lastDiaper : modalType === 'feeding' ? lastFeeding : null;
+  const lastFeeding = findLastLog(logs, isIntakeFeedingLog);
+  const lastPumping = findLastLog(logs, isPumpingLog);
+  const lastDiaper = findLastLog(logs, (log) => log.type === 'diaper');
+  /*
+    表單沿用的是「上一筆同類型的紀錄」，擠奶也算——剛擠完的人多半是要再擠一次。
+    「再記一次」則把兩者拆開：擠奶不是一餐，也不該擋住「再餵一次上次那餐」。
+  */
+  const lastFeedingForm = findLastLog(logs, (log) => log.type === 'feeding');
+  const lastLogForForm =
+    modalType === 'diaper' ? lastDiaper : modalType === 'feeding' ? lastFeedingForm : null;
 
   // Handlers
   const openLogForm = (type: 'feeding' | 'sleep' | 'diaper') => {
@@ -336,6 +344,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
             <div className="mt-3">
               <RepeatLastLog
                 lastFeeding={lastFeeding}
+                lastPumping={lastPumping}
                 lastDiaper={lastDiaper}
                 onRepeat={handleRepeat}
               />

@@ -13,7 +13,7 @@ import {
   getFeedingTypeLabel,
   getDiaperTypeLabel,
   getConsistencyLabel,
-  findLastLogOfType,
+  findLastLog,
   STALE_OPEN_SLEEP_MINUTES,
   findOpenSleep,
   isOpenSleep,
@@ -386,7 +386,7 @@ describe('logHelpers', () => {
     });
   });
 
-  describe('findLastLogOfType', () => {
+  describe('findLastLog', () => {
     it('returns the newest log of that type, ignoring the others', () => {
       const logs = [
         feedingLog('older', at(-300), { amount: 90 }),
@@ -394,8 +394,8 @@ describe('logHelpers', () => {
         diaperLog('d1', at(-10), 'both', 'soft'),
       ];
 
-      expect(findLastLogOfType(logs, 'feeding')?.id).toBe('newest');
-      expect(findLastLogOfType(logs, 'diaper')?.id).toBe('d1');
+      expect(findLastLog(logs, (log) => log.type === 'feeding')?.id).toBe('newest');
+      expect(findLastLog(logs, (log) => log.type === 'diaper')?.id).toBe('d1');
     });
 
     /*
@@ -403,8 +403,8 @@ describe('logHelpers', () => {
       to its plain defaults rather than showing an empty state or throwing.
     */
     it('returns null when the child has never logged that type', () => {
-      expect(findLastLogOfType([diaperLog('d1', at(-10), 'pee')], 'feeding')).toBeNull();
-      expect(findLastLogOfType([], 'sleep')).toBeNull();
+      expect(findLastLog([diaperLog('d1', at(-10), 'pee')], (log) => log.type === 'feeding')).toBeNull();
+      expect(findLastLog([], (log) => log.type === 'sleep')).toBeNull();
     });
   });
 

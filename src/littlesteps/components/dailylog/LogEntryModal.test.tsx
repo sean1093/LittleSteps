@@ -149,6 +149,43 @@ describe('沿用上一筆', () => {
     expect(screen.getByLabelText('奶量（ml）')).toHaveValue(null);
   });
 
+  /*
+    上一筆是「開啟的那一刻讀一次」，不是要追蹤的值。共用孩子的另一位照顧者
+    存進一筆紀錄，監聽器就會送回新的物件——如果 effect 追著它跑，這位家長正在
+    打的奶量會被無聲洗掉，而這個 app 別的地方正是花力氣在保住她打到一半的東西。
+  */
+  it('別人存了一筆之後，這裡打到一半的奶量不會被洗掉', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <LogEntryModal
+        isOpen
+        onClose={() => {}}
+        onSave={onSave}
+        logType="feeding"
+        lastLog={lastFormula}
+      />,
+    );
+
+    await user.clear(screen.getByLabelText('奶量（ml）'));
+    await user.type(screen.getByLabelText('奶量（ml）'), '85');
+    await user.type(screen.getByLabelText('備註'), '喝到一半睡著');
+
+    // 另一位照顧者存了一筆 200ml：監聽器送回一個新的物件。
+    rerender(
+      <LogEntryModal
+        isOpen
+        onClose={() => {}}
+        onSave={onSave}
+        logType="feeding"
+        lastLog={{ ...lastFormula, id: 'f-other', data: { feedingType: 'formula', amount: 200 } }}
+      />,
+    );
+
+    expect(screen.getByLabelText('奶量（ml）')).toHaveValue(85);
+    expect(screen.getByLabelText('備註')).toHaveValue('喝到一半睡著');
+  });
+
   it('編輯既有紀錄時看到的是那一筆，不是上一筆', () => {
     const editingLog: DailyLog = {
       id: 'f-edit',
