@@ -160,7 +160,9 @@ export function useClinicSummary(
       return b.date.localeCompare(a.date);
     });
 
-    const vaccineSummary = calculateVaccineSummary(vaccineProgress);
+    // 下一劑只認公費：這份摘要是拿去給醫師看的，把自費產品寫成「下一劑」
+    // 等於在診間替它背書。理由與年齡界線見 vaccineSchedule.nextScheduledDose。
+    const vaccineSummary = calculateVaccineSummary(vaccineProgress, currentChild.birthday);
     const nextVaccine = vaccineSummary.nextVaccine
       ? {
           name: vaccineSummary.nextVaccine.name,

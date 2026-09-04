@@ -1,6 +1,11 @@
 import { MilestoneProgress, VaccineProgress, VaccineSchedule } from '../../types';
 import { milestones } from '../../littlesteps/data/milestones';
 import { vaccineSchedules } from '../../littlesteps/data/vaccines';
+import {
+  SCHEDULED_FUNDING,
+  nextScheduledDose,
+  resolveVaccineDoses,
+} from '../../littlesteps/utils/vaccineSchedule';
 
 /**
  * 計算里程碑達成率
@@ -76,6 +81,14 @@ export interface VaccineSummary {
     timing: string;
     doseNumber: number;
   };
+  /**
+   * 還沒記錄的公費劑次數。
+   *
+   * 下一劑只認公費，也只認還沒被孩子的年齡拋在後面的劑次，所以「沒有下一劑」
+   * 不再等於「都打完了」：一個從來沒記錄過的五歲孩子兩者都不是。少了這個
+   * 數字，卡片只能在兩種相反的情況說同一句「皆已接種完成」。
+   */
+  remainingNationalDoses: number;
 }
 
 /**
@@ -89,7 +102,9 @@ export interface VaccineSummary {
 const scheduledDoseNumber = (vaccine: VaccineSchedule): number => vaccine.currentDose ?? 1;
 
 export function calculateVaccineSummary(
-  vaccineProgress: VaccineProgress
+  vaccineProgress: VaccineProgress,
+  birthday: string,
+  today: Date = new Date()
 ): VaccineSummary {
   // 分母＝時程表記錄數（每筆一劑）。
   const totalDoses = vaccineSchedules.length;
@@ -97,10 +112,13 @@ export function calculateVaccineSummary(
   // 分子只認每筆記錄自己那一劑：由目錄反查進度，孤兒 vaccineId 自然被忽略；
   // 同一筆底下殘留的其他劑次鍵也不得重複計入，否則分子會超過分母、突破 100%。
   let administeredCount = 0;
+  let remainingNationalDoses = 0;
   vaccineSchedules.forEach(vaccine => {
     const dose = vaccineProgress[vaccine.id]?.doses[scheduledDoseNumber(vaccine)];
     if (dose?.administered) {
       administeredCount++;
+    } else if (vaccine.funding === SCHEDULED_FUNDING) {
+      remainingNationalDoses++;
     }
   });
 
@@ -108,45 +126,43 @@ export function calculateVaccineSummary(
     ? Math.round((administeredCount / totalDoses) * 100)
     : 0;
 
-  // Find the next vaccine to be administered
-  const nextVaccine = findNextVaccine(vaccineProgress);
-
   return {
     totalDoses,
     administeredCount,
     administrationRate,
-    nextVaccine,
+    nextVaccine: findNextVaccine(vaccineProgress, birthday, today),
+    remainingNationalDoses,
   };
 }
 
 /**
- * Find the next vaccine to be administered
+ * 下一劑。
+ *
+ * 這裡原本自己算一遍：把整份時程表按 ageInMonths 排序，回傳第一筆沒接種的，
+ * 既不看 funding 也不看孩子多大。疫苗頁那邊（littlesteps/utils/vaccineSchedule）
+ * 早就只認公費，於是同一個問題有兩個答案，而自費劑次落在出生、2、4、6、18
+ * 個月，全部排在公費劑次前面——儀表板卡片與拿給小兒科醫師看的摘要，會用和
+ * 免費劑次一模一樣的字推銷一支要自己付錢的產品。
+ *
+ * 現在問的是同一個實作：規則、理由與年齡界線都寫在 nextScheduledDose 上。
  */
 function findNextVaccine(
-  vaccineProgress: VaccineProgress
+  vaccineProgress: VaccineProgress,
+  birthday: string,
+  today: Date
 ): VaccineSummary['nextVaccine'] {
-  // Sort vaccines by age for sequential recommendation
-  const sortedVaccines = [...vaccineSchedules].sort((a, b) => {
-    const ageA = a.ageInMonths ?? 999;
-    const ageB = b.ageInMonths ?? 999;
-    return ageA - ageB;
-  });
+  const dose = nextScheduledDose(
+    resolveVaccineDoses(birthday, vaccineSchedules, vaccineProgress, today),
+    today
+  );
+  if (!dose) return undefined;
 
-  // 找出第一筆尚未接種的記錄。每筆記錄只承載一劑，系列的下一劑在下一筆記錄裡，
-  // 不能在同一筆裡從 1 數到 `doses`。
-  for (const vaccine of sortedVaccines) {
-    const doseNumber = scheduledDoseNumber(vaccine);
-    if (!vaccineProgress[vaccine.id]?.doses[doseNumber]?.administered) {
-      return {
-        id: vaccine.id,
-        name: vaccine.name,
-        timing: vaccine.timing,
-        doseNumber,
-      };
-    }
-  }
-
-  return undefined; // All scheduled doses have been administered
+  return {
+    id: dose.vaccineId,
+    name: dose.name,
+    timing: dose.timing,
+    doseNumber: dose.doseNumber,
+  };
 }
 
 /**

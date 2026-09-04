@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } 
 import type { MilestoneProgress, VaccineProgress, VaccineSchedule } from '../../types';
 import { milestones } from '../../littlesteps/data/milestones';
 import { vaccineSchedules } from '../../littlesteps/data/vaccines';
+import { addMonths } from './dateHelpers';
 import {
   calculateMilestoneSummary,
   calculateVaccineSummary,
@@ -192,6 +193,20 @@ describe('summaryCalculator', () => {
     // 把 `doses` 加總會把 4 劑膨脹成 16 劑。
     const TOTAL_DOSES = vaccineSchedules.length;
 
+    /** 公費劑次。下一劑只認這些，理由寫在 vaccineSchedule.nextScheduledDose。 */
+    const NATIONAL = vaccineSchedules.filter(vaccine => vaccine.funding === 'national');
+
+    /** 最早的公費劑次。 */
+    const EARLIEST_NATIONAL = NATIONAL.reduce((earliest, vaccine) =>
+      (vaccine.ageInMonths ?? 999) < (earliest.ageInMonths ?? 999) ? vaccine : earliest
+    );
+
+    /**
+     * 不指名任何一筆真實資料：時程表本身會增修（劑數調整、產品拆分），而這裡
+     * 驗的是分子分母與「下一劑」的規則，不是某一版時程表剛好長什麼樣子。
+     */
+    const [FIRST, SECOND, THIRD] = vaccineSchedules;
+
     const byId = (id: string): VaccineSchedule => {
       const vaccine = vaccineSchedules.find(candidate => candidate.id === id);
       if (!vaccine) {
@@ -200,11 +215,10 @@ describe('summaryCalculator', () => {
       return vaccine;
     };
 
-    const HEPB_BIRTH = byId('hepb-birth');
-    const RSV_MONTHLY_BIRTH = byId('rsv-monthly-birth');
-    const RSV_BIRTH = byId('rsv-birth');
-    const HEPB_1M = byId('hepb-1m');
-    const PENTAVALENT_18M = byId('pentavalent-18m');
+    /** 下一劑是從出生日推算的，所以每個呼叫都要給生日；分子分母與它無關。 */
+    const BIRTHDAY = '2026-01-15';
+    /** today 一律注入，否則測試會隨真實時鐘漂移。 */
+    const at = (iso: string) => new Date(`${iso}T12:00:00`);
 
     /** 該筆記錄所代表的劑次，與接種頁寫入進度時使用的鍵一致。 */
     const doseOf = (vaccine: VaccineSchedule): number => vaccine.currentDose ?? 1;
@@ -217,24 +231,24 @@ describe('summaryCalculator', () => {
       doses: { [doseOf(vaccine)]: { administered: true, administeredDate } }
     });
 
-    /** 整份時程表都完成接種的進度。 */
-    const administerAll = (): VaccineProgress =>
-      Object.fromEntries(vaccineSchedules.map(vaccine => [vaccine.id, administer(vaccine)]));
+    /** 指定的每一筆記錄都完成接種的進度。 */
+    const administered = (vaccines: VaccineSchedule[]): VaccineProgress =>
+      Object.fromEntries(vaccines.map(vaccine => [vaccine.id, administer(vaccine)]));
 
     it('derives the denominator from the number of scheduled doses', () => {
       expect(TOTAL_DOSES).toBeGreaterThan(0);
-      expect(calculateVaccineSummary({}).totalDoses).toBe(vaccineSchedules.length);
+      expect(calculateVaccineSummary({}, BIRTHDAY).totalDoses).toBe(vaccineSchedules.length);
     });
 
     it('does not inflate the denominator with the series length of every record', () => {
       const summedSeriesLengths = vaccineSchedules.reduce((sum, vaccine) => sum + vaccine.doses, 0);
       // 資料集真的含多劑疫苗，否則這個測試不具鑑別力。
       expect(summedSeriesLengths).toBeGreaterThan(vaccineSchedules.length);
-      expect(calculateVaccineSummary({}).totalDoses).not.toBe(summedSeriesLengths);
+      expect(calculateVaccineSummary({}, BIRTHDAY).totalDoses).not.toBe(summedSeriesLengths);
     });
 
     it('reports nothing administered for empty progress', () => {
-      const summary = calculateVaccineSummary({});
+      const summary = calculateVaccineSummary({}, BIRTHDAY);
       expect(summary.totalDoses).toBe(TOTAL_DOSES);
       expect(summary.administeredCount).toBe(0);
       expect(summary.administrationRate).toBe(0);
@@ -242,12 +256,11 @@ describe('summaryCalculator', () => {
 
     it('aggregates administered doses across records and ignores pending ones', () => {
       const progress: VaccineProgress = {
-        [HEPB_BIRTH.id]: administer(HEPB_BIRTH, '2026-01-02'),
-        [HEPB_1M.id]: administer(HEPB_1M, '2026-02-02'),
-        [RSV_BIRTH.id]: { doses: { [doseOf(RSV_BIRTH)]: { administered: false } } }
+        ...administered([FIRST, SECOND]),
+        [THIRD.id]: { doses: { [doseOf(THIRD)]: { administered: false } } }
       };
 
-      const summary = calculateVaccineSummary(progress);
+      const summary = calculateVaccineSummary(progress, BIRTHDAY);
 
       expect(summary.administeredCount).toBe(2);
       expect(summary.totalDoses).toBe(TOTAL_DOSES);
@@ -255,11 +268,15 @@ describe('summaryCalculator', () => {
     });
 
     it('ignores dose numbers that belong to another record of the same series', () => {
-      // hepb-1m 只承載第 2 劑，第 1 劑記在 hepb-birth。
-      expect(doseOf(HEPB_1M)).toBe(2);
+      // 承載第 2 劑的那筆記錄不認第 1 劑：第 1 劑記在系列的前一筆。
+      const secondDoseRecord = vaccineSchedules.find(vaccine => doseOf(vaccine) === 2);
+      expect(secondDoseRecord).toBeDefined();
       const strayDoses: DoseProgress = { 1: { administered: true, administeredDate: '2026-02-02' } };
 
-      const summary = calculateVaccineSummary({ [HEPB_1M.id]: { doses: strayDoses } });
+      const summary = calculateVaccineSummary(
+        { [secondDoseRecord!.id]: { doses: strayDoses } },
+        BIRTHDAY
+      );
 
       expect(summary.administeredCount).toBe(0);
       expect(summary.administrationRate).toBe(0);
@@ -275,28 +292,29 @@ describe('summaryCalculator', () => {
         }
       };
 
-      const summary = calculateVaccineSummary(progress);
+      const summary = calculateVaccineSummary(progress, BIRTHDAY);
       expect(summary.administeredCount).toBe(0);
       expect(summary.administrationRate).toBe(0);
     });
 
     it('reaches 100% with no next vaccine once every scheduled dose is done', () => {
-      const summary = calculateVaccineSummary(administerAll());
+      const summary = calculateVaccineSummary(administered(vaccineSchedules), BIRTHDAY);
 
       expect(summary.administeredCount).toBe(TOTAL_DOSES);
       expect(summary.administrationRate).toBe(100);
       expect(summary.nextVaccine).toBeUndefined();
+      expect(summary.remainingNationalDoses).toBe(0);
     });
 
     it('caps a record at one dose even when the whole series is logged under it', () => {
-      const progress = administerAll();
+      const progress = administered(vaccineSchedules);
       const seriesUnderOneRecord: DoseProgress = {};
-      for (let doseNumber = 1; doseNumber <= HEPB_BIRTH.doses + 2; doseNumber++) {
+      for (let doseNumber = 1; doseNumber <= FIRST.doses + 2; doseNumber++) {
         seriesUnderOneRecord[doseNumber] = { administered: true, administeredDate: '2026-01-01' };
       }
-      progress[HEPB_BIRTH.id] = { doses: seriesUnderOneRecord };
+      progress[FIRST.id] = { doses: seriesUnderOneRecord };
 
-      const summary = calculateVaccineSummary(progress);
+      const summary = calculateVaccineSummary(progress, BIRTHDAY);
 
       expect(summary.administeredCount).toBe(TOTAL_DOSES);
       expect(summary.administrationRate).toBe(100);
@@ -304,11 +322,9 @@ describe('summaryCalculator', () => {
 
     it('always yields an integer rate between 0 and 100', () => {
       for (let count = 0; count <= vaccineSchedules.length; count++) {
-        const progress: VaccineProgress = Object.fromEntries(
-          vaccineSchedules.slice(0, count).map(vaccine => [vaccine.id, administer(vaccine)])
-        );
+        const progress = administered(vaccineSchedules.slice(0, count));
 
-        const { administrationRate } = calculateVaccineSummary(progress);
+        const { administrationRate } = calculateVaccineSummary(progress, BIRTHDAY);
 
         expect(Number.isInteger(administrationRate)).toBe(true);
         expect(administrationRate).toBeGreaterThanOrEqual(0);
@@ -316,72 +332,100 @@ describe('summaryCalculator', () => {
       }
     });
 
-    it('suggests the earliest first dose when nothing has been given', () => {
-      // The birth dose really is the earliest slot in the schedule.
-      expect(HEPB_BIRTH.ageInMonths).toBe(
-        Math.min(...vaccineSchedules.map(vaccine => vaccine.ageInMonths ?? 999))
+    it('counts only publicly funded doses as remaining', () => {
+      // 這個數字讓卡片分得清「還沒記完」與「都打完了」——兩種情況都沒有下一劑。
+      expect(NATIONAL.length).toBeLessThan(TOTAL_DOSES);
+      expect(calculateVaccineSummary({}, BIRTHDAY).remainingNationalDoses).toBe(NATIONAL.length);
+      expect(
+        calculateVaccineSummary(administered(NATIONAL), BIRTHDAY).remainingNationalDoses
+      ).toBe(0);
+    });
+
+    it('advances past an optional dose once the first recorded dose is logged', () => {
+      // 這是實際的壞法，比「排序上自費在前面」嚴重得多：家長一記下出生第一劑，
+      // 卡片就永遠停在那一列健保有條件給付的產品，之後每一劑公費都跳不過去——
+      // 因為家長不會去買的劑次永遠不會被記錄，「第一筆沒接種的」就永遠不動。
+      const progress = administered([EARLIEST_NATIONAL]);
+      const twoMonthsIn = at(addMonths(BIRTHDAY, 2));
+
+      const { nextVaccine } = calculateVaccineSummary(progress, BIRTHDAY, twoMonthsIn);
+
+      // 要往前走，不是「不回答」：回傳 undefined 也會讓上面那個排除測試通過。
+      expect(nextVaccine).toBeDefined();
+      expect(nextVaccine!.id).not.toBe(EARLIEST_NATIONAL.id);
+      expect(byId(nextVaccine!.id).funding).toBe('national');
+    });
+
+    it('never offers a dose from outside the public schedule as the next one', () => {
+      // 公費都記完之後，不看 funding 的版本會把最早的自費或健保有條件給付
+      // 劑次端出來當「下次接種」，用的還是和免費劑次一模一樣的字。
+      const summary = calculateVaccineSummary(administered(NATIONAL), BIRTHDAY, at('2026-03-20'));
+
+      // 時程表上確實還有沒記錄的劑次，否則這個測試不具鑑別力。
+      expect(summary.administeredCount).toBeLessThan(summary.totalDoses);
+      expect(summary.nextVaccine).toBeUndefined();
+      expect(summary.remainingNationalDoses).toBe(0);
+    });
+
+    it('skips a dose that is not publicly funded even when it comes first', () => {
+      const paidEarly = vaccineSchedules.filter(
+        vaccine => vaccine.funding !== 'national' && (vaccine.ageInMonths ?? 999) <= 2
       );
-      expect(calculateVaccineSummary({}).nextVaccine).toEqual({
-        id: HEPB_BIRTH.id,
-        name: HEPB_BIRTH.name,
-        timing: HEPB_BIRTH.timing,
-        doseNumber: 1
-      });
-    });
+      // 自費劑次就是排在公費劑次前面的那些；沒有這種資料就驗不到東西。
+      expect(paidEarly.length).toBeGreaterThan(0);
 
-    it('moves on to the following record once the current dose is administered', () => {
-      const progress: VaccineProgress = {
-        [HEPB_BIRTH.id]: administer(HEPB_BIRTH)
-      };
+      const progress = administered(NATIONAL.filter(v => (v.ageInMonths ?? 999) <= 2));
+      const { nextVaccine } = calculateVaccineSummary(progress, BIRTHDAY, at('2026-03-20'));
 
-      expect(calculateVaccineSummary(progress).nextVaccine).toEqual({
-        id: RSV_MONTHLY_BIRTH.id,
-        name: RSV_MONTHLY_BIRTH.name,
-        timing: RSV_MONTHLY_BIRTH.timing,
-        doseNumber: 1
-      });
-    });
-
-    it('continues a multi-dose series in the record that carries the next dose', () => {
-      const progress: VaccineProgress = {
-        [HEPB_BIRTH.id]: administer(HEPB_BIRTH),
-        [RSV_MONTHLY_BIRTH.id]: administer(RSV_MONTHLY_BIRTH),
-        [RSV_BIRTH.id]: administer(RSV_BIRTH)
-      };
-
-      expect(calculateVaccineSummary(progress).nextVaccine).toEqual({
-        id: HEPB_1M.id,
-        name: HEPB_1M.name,
-        timing: HEPB_1M.timing,
-        doseNumber: 2
-      });
+      expect(nextVaccine).toBeDefined();
+      expect(byId(nextVaccine!.id).funding).toBe('national');
+      expect(byId(nextVaccine!.id).ageInMonths).toBeGreaterThan(2);
     });
 
     it('reports the dose number the pending record stands for, not dose 1', () => {
-      expect(doseOf(PENTAVALENT_18M)).toBeGreaterThan(1);
-      const progress: VaccineProgress = Object.fromEntries(
-        vaccineSchedules
-          .filter(vaccine => vaccine.id !== PENTAVALENT_18M.id)
-          .map(vaccine => [vaccine.id, administer(vaccine)])
-      );
+      const laterDose = NATIONAL.find(vaccine => doseOf(vaccine) > 1);
+      expect(laterDose).toBeDefined();
 
-      expect(calculateVaccineSummary(progress).nextVaccine).toEqual({
-        id: PENTAVALENT_18M.id,
-        name: PENTAVALENT_18M.name,
-        timing: PENTAVALENT_18M.timing,
-        doseNumber: doseOf(PENTAVALENT_18M)
+      const progress = administered(NATIONAL.filter(v => v.id !== laterDose!.id));
+      const dueDay = addMonths(BIRTHDAY, laterDose!.ageInMonths!);
+
+      expect(calculateVaccineSummary(progress, BIRTHDAY, at(dueDay)).nextVaccine).toEqual({
+        id: laterDose!.id,
+        name: laterDose!.name,
+        timing: laterDose!.timing,
+        doseNumber: doseOf(laterDose!)
       });
+    });
+
+    it('offers the earliest publicly funded dose to a newborn', () => {
+      const nextVaccine = calculateVaccineSummary({}, BIRTHDAY, at(BIRTHDAY)).nextVaccine;
+
+      expect(nextVaccine?.id).toBe(EARLIEST_NATIONAL.id);
+      expect(nextVaccine?.doseNumber).toBe(doseOf(EARLIEST_NATIONAL));
     });
 
     it('treats a recorded-but-not-administered dose as still pending', () => {
       const progress: VaccineProgress = {
-        [HEPB_BIRTH.id]: { doses: { 1: { administered: false } } }
+        [EARLIEST_NATIONAL.id]: {
+          doses: { [doseOf(EARLIEST_NATIONAL)]: { administered: false } }
+        }
       };
 
-      expect(calculateVaccineSummary(progress).nextVaccine).toMatchObject({
-        id: HEPB_BIRTH.id,
-        doseNumber: 1
-      });
+      expect(
+        calculateVaccineSummary(progress, BIRTHDAY, at(BIRTHDAY)).nextVaccine
+      ).toMatchObject({ id: EARLIEST_NATIONAL.id });
+    });
+
+    it('offers no next dose once every remaining one is behind the child', () => {
+      // 從來沒記錄過的學齡兒童：每一劑都遠超出可以補打的範圍，「下一劑」因此
+      // 沒有答案——但那不等於「都打完了」，remainingNationalDoses 才說得清楚。
+      const lastScheduled = Math.max(...vaccineSchedules.map(vaccine => vaccine.ageInMonths ?? 0));
+      expect(lastScheduled).toBeLessThan(12 * 7);
+
+      const summary = calculateVaccineSummary({}, BIRTHDAY, at('2033-01-15'));
+
+      expect(summary.nextVaccine).toBeUndefined();
+      expect(summary.remainingNationalDoses).toBe(NATIONAL.length);
     });
   });
 
