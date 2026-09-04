@@ -96,6 +96,18 @@ export const vaccineSchedules: VaccineSchedule[] = [
     sideEffects: ["發燒", "注射部位腫脹", "煩躁不安", "食慾下降"],
     notes: "含白喉、破傷風、百日咳、小兒麻痺、b型嗜血桿菌"
   },
+  // 13 價肺炎鏈球菌的公費常規時程是 3 劑：出生滿 2 個月、4 個月與 12-15 個月。
+  // 曾經多出來的「24 個月第 4 劑」沒有出現在任何官方頁面上，連它自己引用的那
+  // 一頁都寫著常規只有 3 劑。
+  //
+  // 高危險群那一劑是真的——「如為高危險群對象，出生滿6個月時可增加接種1劑」
+  // ——但它不是常規時程的第 4 劑，而 funding 沒有一個值說得出「公費，但只給
+  // 名單上的孩子」：標成 national，提醒引擎會對每一個健康寶寶的家長說「你漏
+  // 打了一劑公費疫苗」；標成 nhi-conditional，付錢的人就從公費變成健保。
+  // 所以它寫在第 2 劑的 notes 裡：家長在還來得及問醫師的月齡讀到它，而不是
+  // 收到一則對他們並不成立的逾期提醒。高危險群的認定見疾管署
+  // 「幼童肺炎鏈球菌高危險群之ICD code參考表」
+  // https://www.cdc.gov.tw/Category/Page/t-6cjd2WDeB6NdExzrQCVw
   {
     id: "pneumococcal-2m",
     name: "13價肺炎鏈球菌疫苗 第1劑",
@@ -104,7 +116,7 @@ export const vaccineSchedules: VaccineSchedule[] = [
     sourceUrl: "https://www.cdc.gov.tw/Category/Page/mIlV6UzT8mIK49ADAOjz2w",
     ageInMonths: 2,
     ageLabel: "2個月",
-    doses: 4,
+    doses: 3,
     currentDose: 1,
     sideEffects: ["發燒", "注射部位紅腫疼痛", "煩躁", "嗜睡"]
   },
@@ -141,9 +153,10 @@ export const vaccineSchedules: VaccineSchedule[] = [
     sourceUrl: "https://www.cdc.gov.tw/Category/Page/mIlV6UzT8mIK49ADAOjz2w",
     ageInMonths: 4,
     ageLabel: "4個月",
-    doses: 4,
+    doses: 3,
     currentDose: 2,
-    sideEffects: ["發燒", "注射部位紅腫疼痛", "煩躁", "嗜睡"]
+    sideEffects: ["發燒", "注射部位紅腫疼痛", "煩躁", "嗜睡"],
+    notes: "高危險群幼兒（如免疫功能不全、人工耳植入、慢性心臟或肺部疾病等）出生滿6個月時可公費增加接種1劑，孩子算不算高危險群請洽小兒科醫師"
   },
   {
     id: "rotavirus-4m",
@@ -245,9 +258,10 @@ export const vaccineSchedules: VaccineSchedule[] = [
     sourceUrl: "https://www.cdc.gov.tw/Category/Page/mIlV6UzT8mIK49ADAOjz2w",
     ageInMonths: 12,
     ageLabel: "12個月",
-    doses: 4,
+    doses: 3,
     currentDose: 3,
-    sideEffects: ["發燒", "注射部位紅腫疼痛", "煩躁", "嗜睡"]
+    sideEffects: ["發燒", "注射部位紅腫疼痛", "煩躁", "嗜睡"],
+    notes: "公費常規時程共3劑，接種完這一劑就完成了"
   },
   {
     id: "mmr-12m",
@@ -365,19 +379,6 @@ export const vaccineSchedules: VaccineSchedule[] = [
     currentDose: 2,
     sideEffects: ["發燒", "注射部位紅腫", "頭痛"],
     notes: "與第1劑間隔12個月；完成此劑即完成幼兒常規接種"
-  },
-  {
-    id: "pneumococcal-2y",
-    name: "13價肺炎鏈球菌疫苗 第4劑",
-    timing: "2-5歲補接種",
-    funding: "national",
-    sourceUrl: "https://www.cdc.gov.tw/Category/Page/mIlV6UzT8mIK49ADAOjz2w",
-    ageInMonths: 24,
-    ageLabel: "2歲",
-    doses: 4,
-    currentDose: 4,
-    sideEffects: ["發燒", "注射部位紅腫疼痛", "煩躁", "嗜睡"],
-    notes: "高風險幼兒追加"
   },
   {
     id: "mmr-5y",

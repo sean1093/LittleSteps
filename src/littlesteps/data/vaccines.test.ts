@@ -7,12 +7,21 @@ import { vaccineSchedules } from './vaccines';
 
 /**
  * 明列同一支疫苗的所有劑次記錄。
- * 以顯式清單而非 id 前綴推導，因為 id 命名不規則
- * （例：`pneumococcal-15v-6m` 與 `pneumococcal-12m` 並非同一支疫苗）。
+ *
+ * 成員用述詞而不是 id 前綴：前綴一樣不代表同一支疫苗。
+ * `pneumococcal-15v-6m` 是另一支自費疫苗，不是 13 價的其中一劑。述詞說得出
+ * 「哪些不算」，清單才不會被一列同前綴的新資料默默吸收。
  */
-const VACCINE_FAMILIES: Record<string, { idPrefix: string; ids: string[] }> = {
-  日本腦炎: { idPrefix: 'je-', ids: ['je-15m', 'je-27m'] },
-  A型肝炎: { idPrefix: 'hepa-', ids: ['hepa-12m', 'hepa-18m'] },
+const VACCINE_FAMILIES: Record<
+  string,
+  { belongs: (id: string) => boolean; ids: string[] }
+> = {
+  日本腦炎: { belongs: (id) => id.startsWith('je-'), ids: ['je-15m', 'je-27m'] },
+  A型肝炎: { belongs: (id) => id.startsWith('hepa-'), ids: ['hepa-12m', 'hepa-18m'] },
+  '13價肺炎鏈球菌（公費常規時程）': {
+    belongs: (id) => id.startsWith('pneumococcal-') && id !== 'pneumococcal-15v-6m',
+    ids: ['pneumococcal-2m', 'pneumococcal-4m', 'pneumococcal-12m'],
+  },
 };
 
 const byId = (id: string): VaccineSchedule | undefined =>
@@ -21,10 +30,10 @@ const byId = (id: string): VaccineSchedule | undefined =>
 describe('vaccineSchedules 時程正確性', () => {
   describe.each(Object.entries(VACCINE_FAMILIES))(
     '%s',
-    (_name, { idPrefix, ids }) => {
+    (_name, { belongs, ids }) => {
       it('資料集中恰好只有這些劑次記錄', () => {
         const actual = vaccineSchedules
-          .filter((v) => v.id.startsWith(idPrefix))
+          .filter((v) => belongs(v.id))
           .map((v) => v.id)
           .sort();
         expect(actual).toEqual([...ids].sort());
@@ -63,6 +72,22 @@ describe('vaccineSchedules 時程正確性', () => {
     expect(byId('hepa-18m')!.ageInMonths).toBe(27);
     expect(byId('hepa-18m')!.timing).toBe('出生滿27個月');
   });
+
+  it('13 價肺炎鏈球菌的公費時程就是來源寫的 3 劑：2、4、12-15 個月', () => {
+    // 疾管署：「全面推動嬰幼兒接種3劑PCV13，接種時程依序為出生滿2個月、
+    // 4個月及12-15個月，如為高危險群對象，出生滿6個月時可增加接種1劑」。
+    //
+    // 這一條比對的是來源，不是資料自己前後一致：曾經有一列 24 個月的「第 4
+    // 劑」標成公費，而且四列都寫 doses: 4——內部完全自洽，只是和官方時程不
+    // 一樣。15 價是另一支自費疫苗，不屬於這個時程。
+    const pcv13 = vaccineSchedules.filter(
+      (v) => v.id.startsWith('pneumococcal-') && v.id !== 'pneumococcal-15v-6m',
+    );
+
+    expect(pcv13.map((v) => v.ageInMonths).sort((a, b) => a! - b!)).toEqual([2, 4, 12]);
+    expect([...new Set(pcv13.map((v) => v.doses))]).toEqual([3]);
+    expect([...new Set(pcv13.map((v) => v.funding))]).toEqual(['national']);
+  });
 });
 
 /**
@@ -92,6 +117,16 @@ describe('vaccineSchedules 的出處', () => {
     conditional.forEach((v) => {
       expect(v.eligibility?.trim(), `${v.id} 缺少 eligibility`).toBeTruthy();
     });
+  });
+
+  it('沒有一劑宣稱的劑次大於自己的總劑數', () => {
+    // 「第 4 劑／共 3 劑」這種列一定有一邊是編的。這一條是回歸防護：
+    // 它擋的是下一次，不是這一次。
+    const impossible = vaccineSchedules
+      .filter((v) => (v.currentDose ?? 1) > v.doses)
+      .map((v) => `${v.id} 第 ${v.currentDose} 劑／共 ${v.doses} 劑`);
+
+    expect(impossible).toEqual([]);
   });
 
   it('檔頭的查證日期不是未來', () => {
