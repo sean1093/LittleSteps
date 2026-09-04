@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { PregnancyWikiCategory } from '../../types';
 import { getLucideIcon } from '../../common/lucideIcons';
+import { matchesKeyword } from '../../common/wiki/matchesKeyword';
 import {
   pregnancyWikiArticles,
   pregnancyWikiCategoryColors,
@@ -16,8 +17,8 @@ const CATEGORIES: PregnancyWikiCategory[] = [
 ];
 
 describe('pregnancyWikiArticles', () => {
-  it('共 24 篇，且 id 唯一', () => {
-    expect(pregnancyWikiArticles).toHaveLength(24);
+  it('共 25 篇，且 id 唯一', () => {
+    expect(pregnancyWikiArticles).toHaveLength(25);
     const ids = pregnancyWikiArticles.map((a) => a.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
@@ -71,6 +72,63 @@ describe('pregnancyWikiArticles', () => {
         fallback,
       );
     }
+  });
+});
+
+/**
+ * The vaccination advice used to live as two bullets inside the cold-and-fever
+ * article, so a mother searching for what she has to be vaccinated against had
+ * to already be reading about catching a cold. These pin the two properties
+ * that matter: the topic is findable on its own, and it exists in exactly one
+ * place so the two copies cannot drift apart.
+ */
+describe('pregnancy vaccination advice', () => {
+  it('searching for the word for vaccine finds an article about vaccination itself', () => {
+    const hits = pregnancyWikiArticles.filter((a) => matchesKeyword(a, '疫苗'));
+    expect(hits.length).toBeGreaterThan(0);
+
+    const dedicated = hits.filter((a) => a.title.includes('疫苗'));
+    expect(dedicated.map((a) => a.id)).toEqual(['health-vaccination']);
+  });
+
+  it('names all four vaccines with their funding status', () => {
+    const article = pregnancyWikiArticles.find((a) => a.id === 'health-vaccination')!;
+    const body = article.solutions.map((s) => `${s.step}${s.detail}`).join('\n');
+
+    for (const vaccine of ['流感', 'Tdap', 'COVID-19', 'RSV']) {
+      expect(body, vaccine).toContain(vaccine);
+    }
+    for (const funding of ['公費', '自費']) {
+      expect(body, funding).toContain(funding);
+    }
+    // The window and the reason it exists, not just the weeks.
+    expect(body).toMatch(/28-36\s*週/);
+    expect(body).toContain('胎盤');
+  });
+
+  it('keeps the advice in one article instead of two copies', () => {
+    for (const marker of ['Tdap', '28-36 週', '公費流感疫苗接種對象']) {
+      const owners = pregnancyWikiArticles
+        .filter((a) =>
+          [
+            a.title,
+            a.summary,
+            ...a.causes,
+            ...a.warningSignals,
+            ...a.solutions.flatMap((s) => [s.step, s.detail]),
+          ].some((text) => text.includes(marker)),
+        )
+        .map((a) => a.id);
+      expect(owners, marker).toEqual(['health-vaccination']);
+    }
+  });
+
+  it('says what it is not: the obstetrician decides', () => {
+    const article = pregnancyWikiArticles.find((a) => a.id === 'health-vaccination')!;
+    const body = article.solutions.map((s) => s.detail).join('\n');
+
+    expect(body).toContain('不是給你個人的醫療建議');
+    expect(body).toContain('產檢醫師');
   });
 });
 
