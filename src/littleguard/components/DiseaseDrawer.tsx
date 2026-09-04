@@ -9,6 +9,7 @@ import { DISEASE_INFO, DISEASE_PART_INFO } from '../data/diseases';
 import {
   STATUS_COPY,
   describeGeoRatio,
+  inSentence,
   describeVisits,
   formatRate,
   statusOf,
@@ -116,7 +117,7 @@ export default function DiseaseDrawer({
           <h3 className="text-ink font-medium mb-2">最近 8 週</h3>
           {/* 折線用 currentColor，服務色從 serviceTheme 取，不寫死在元件裡。 */}
           <div className={SERVICE_THEME.littleguard.ink}>
-            <Sparkline values={cell.spark} label={`${disease}最近 8 週的就診率變化`} />
+            <Sparkline values={cell.spark} label={`${inSentence(disease)}最近 8 週的就診率變化`} />
           </div>
           {showStatus && <p className={`text-sm mt-1 ${copy.tone}`}>{copy.label}</p>}
         </section>
@@ -185,7 +186,7 @@ export default function DiseaseDrawer({
         </div>
 
         <a href={info.sourceUrl} target="_blank" rel="noreferrer" className="btn-secondary w-full">
-          疾管署的{disease}說明
+          疾管署的{inSentence(disease)}說明
         </a>
       </div>
     </ModalFrame>

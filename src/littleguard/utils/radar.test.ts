@@ -15,6 +15,7 @@ import {
   summariseBoard,
   describeVisits,
   describeGeoRatio,
+  inSentence,
 } from './radar';
 import { DISEASE_PART_OF } from '../data/diseases';
 
@@ -35,20 +36,40 @@ function cell(overrides: Partial<RadarCell>): RadarCell {
   };
 }
 
+describe('inSentence', () => {
+  it('西文病名在中文句子裡前後留空白', () => {
+    // 「這一週COVID-19比平常多」擠在一起，而全 repo 其他文案都是「WHO 的標準」
+    // 這種寫法。
+    expect(inSentence('COVID-19')).toBe(' COVID-19 ');
+  });
+
+  it('中文病名不加空白', () => {
+    // 加了會變成「這一週類流感 比平常多」。
+    expect(inSentence('類流感')).toBe('類流感');
+  });
+
+  it('只有貼著中文的那一側不加', () => {
+    expect(inSentence('類流感、COVID-19')).toBe('類流感、COVID-19 ');
+  });
+});
+
 describe('statusOf 的邊界', () => {
+  // 邊界綁在 RADAR_THRESHOLDS 上，不再抄一份數字：門檻是實測百分位，資料一
+  // 加就會變（加進 COVID-19 那次 P90 從 1.77 移到 1.9），而這三條要守的是
+  // 「下界本身算在內」這個規則，不是那三個值。值本身由下面那條對著 JSON 比。
   it('P90 是「最近變多，多留意」的下界，且下界本身算在內', () => {
-    expect(statusOf(cell({ ratio: 1.77 }))).toBe('risingStrong');
-    expect(statusOf(cell({ ratio: 1.769 }))).toBe('rising');
+    expect(statusOf(cell({ ratio: RADAR_THRESHOLDS.p90 }))).toBe('risingStrong');
+    expect(statusOf(cell({ ratio: RADAR_THRESHOLDS.p90 - 0.001 }))).toBe('rising');
   });
 
   it('P75 是「稍微變多」的下界', () => {
-    expect(statusOf(cell({ ratio: 1.26 }))).toBe('rising');
-    expect(statusOf(cell({ ratio: 1.259 }))).toBe('steady');
+    expect(statusOf(cell({ ratio: RADAR_THRESHOLDS.p75 }))).toBe('rising');
+    expect(statusOf(cell({ ratio: RADAR_THRESHOLDS.p75 - 0.001 }))).toBe('steady');
   });
 
   it('P25 是「跟平常差不多」的下界', () => {
-    expect(statusOf(cell({ ratio: 0.78 }))).toBe('steady');
-    expect(statusOf(cell({ ratio: 0.779 }))).toBe('falling');
+    expect(statusOf(cell({ ratio: RADAR_THRESHOLDS.p25 }))).toBe('steady');
+    expect(statusOf(cell({ ratio: RADAR_THRESHOLDS.p25 - 0.001 }))).toBe('falling');
   });
 });
 
@@ -187,7 +208,7 @@ describe('formatWeekRange', () => {
 
 describe('門檻常數', () => {
   it('與 spec §4.5 的百分位一致', () => {
-    expect(RADAR_THRESHOLDS).toEqual({ p25: 0.78, p75: 1.26, p90: 1.77 });
+    expect(RADAR_THRESHOLDS).toEqual({ p25: 0.74, p75: 1.29, p90: 1.9 });
   });
 });
 
@@ -301,6 +322,25 @@ describe('describeVisits', () => {
   it('差距不到 5% 就說差不多，不把雜訊講成趨勢', () => {
     expect(describeVisits({ ...args, cell: cell({ visits: 389, ratio: 0.96 }) })).toBe(
       '台北市 0-2 歲這一週有 389 次因類流感就診，跟前 8 週的平常值差不多。',
+    );
+  });
+
+  it('翻倍以上改講「幾倍」，不要家長自己把 165% 加回去', () => {
+    // 2.65 在 double 裡略小於 2.65，所以 toFixed(1) 給 2.6 而不是 2.7。這是
+    // 出貨資料真正會產生的字串（台北市 0-2 歲 COVID-19 這一週），不要「修」成
+    // 四捨五入——句子開頭已經說了「大約是」。
+    expect(
+      describeVisits({ ...args, disease: 'COVID-19', cell: cell({ visits: 71, ratio: 2.65 }) }),
+    ).toBe('台北市 0-2 歲這一週有 71 次因 COVID-19 就診，大約是前 8 週平常值的 2.6 倍。');
+  });
+
+  it('剛好翻倍就開始講倍數，差一點還是講百分比', () => {
+    // 兩種說法在這個點一樣清楚，所以邊界要寫死，否則同一格這週講倍數下週講 %。
+    expect(describeVisits({ ...args, cell: cell({ visits: 40, ratio: 2 }) })).toContain(
+      '大約是前 8 週平常值的 2.0 倍',
+    );
+    expect(describeVisits({ ...args, cell: cell({ visits: 40, ratio: 1.99 }) })).toContain(
+      '多約 99%',
     );
   });
 

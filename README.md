@@ -113,10 +113,11 @@ group headings answer it rather than leaving six equal rows to be read through.
 - Clustered markers with a spatial index, so the national dataset stays usable at any zoom
 
 ### LittleGuard — disease radar
-- **Six infectious diseases common in children**, one upstream dataset each (enterovirus, hand-foot-and-mouth disease, herpangina, influenza-like illness, diarrhoea, chickenpox): weekly outpatient visits, split across the 22 counties and three age bands (0-2 / 3-6 / 7-12)
-- **Four rows on the board, not six**: hand-foot-and-mouth disease and herpangina are the two clinical presentations of an enterovirus infection, and the upstream enterovirus dataset is exactly their sum — equal in all 66 cells (22 counties × 3 age bands), for visits, for rates and for each of the 8 sparkline weeks. Three rows side by side counted the same outpatient visits three times, so the board lists enterovirus once and breaks the two forms out inside its drawer, and a contract test goes red if upstream ever stops being an exact partition
+- **Seven infectious diseases common in children**, one upstream dataset each (enterovirus, hand-foot-and-mouth disease, herpangina, influenza-like illness, COVID-19, diarrhoea, chickenpox): weekly outpatient visits, split across the 22 counties and three age bands (0-2 / 3-6 / 7-12)
+- **Five rows on the board, not seven**: hand-foot-and-mouth disease and herpangina are the two clinical presentations of an enterovirus infection, and the upstream enterovirus dataset is exactly their sum — equal in all 66 cells (22 counties × 3 age bands), for visits, for rates and for each of the 8 sparkline weeks. Three rows side by side counted the same outpatient visits three times, so the board lists enterovirus once and breaks the two forms out inside its drawer, and a contract test goes red if upstream ever stops being an exact partition
+- COVID-19 counts outpatient visits, which is a different thing from the notifiable disease: since 20 March 2023 only cases with complications have to be reported, and on 1 September 2024 the notifiable disease was renamed to cover the severe form only, so the CDC page the drawer links to describes that rather than the visits counted here. The dataset is current to the same week as the other six
 - Status compares a county with **its own previous 8 weeks**, not with the same week in earlier years: the 2020-2022 control measures nearly erased enterovirus, so a five-year same-week baseline makes every week look abnormal
-- Thresholds are percentiles of the measured distribution (P25 0.78 / P75 1.26 / P90 1.77, n=48,725), recomputed into the JSON on every rebuild, so a test goes red when the constants in code drift away from the data
+- Thresholds are percentiles of the measured distribution (P25 0.74 / P75 1.29 / P90 1.9, median 0.99, n=54,468), recomputed into the JSON on every rebuild, so a test goes red when the constants in code drift away from the data. Adding COVID-19 moved P90 from 1.77 to 1.9 and the test caught it — 12 of the 264 pre-existing board cells shifted one step at the boundary as a result, none by more
 - Nine statuses, with `noBaseline` (not enough data to compare) deliberately separate from `none` (no recent cases): "the previous 8 weeks cannot produce a baseline" and "the baseline really is zero" are different things, and only the second one supports "this week it starts appearing"
 - A cell whose denominator is too small says "small sample" or "not enough data" instead of being given an invented status — weekly visits for ages 0-2 in Lienchiang and Kinmen are two-digit numbers
 - **The board explains itself before it counts**: a short explainer sits above the county picker, and one line above the rows answers the whole board for the selected county and age band — which diseases are above their usual level, that none of them are, or that the county is too small to tell either way. The line is withheld once the data is expired, because a board that old cannot support it, and it only says the rest are unchanged when every remaining row is genuinely comparable
@@ -336,8 +337,8 @@ OpenStreetMap models an interchange as a single node with a single line code,
 so 13 of 21 known interchanges would have been labelled with half their lines.
 
 Disease radar data lives at `public/data/diseaseRadar.json`, aggregated by
-`scripts/buildDiseaseRadar.cjs` from six Taiwan CDC CSV files (~47 MB) down to
-68.5 KB. That is 14.7 KB gzipped, so it stays inside the PWA precache and the
+`scripts/buildDiseaseRadar.cjs` from seven Taiwan CDC CSV files (~51 MB) down to
+79.1 KB. That is 17.0 KB gzipped, so it stays inside the PWA precache and the
 board opens offline. The certificate chain served by `od.cdc.gov.tw` is
 incomplete, so the script carries the two TWCA certificates under
 `scripts/data/`; do not "fix" that by turning off TLS verification.

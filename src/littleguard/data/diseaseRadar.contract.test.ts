@@ -6,7 +6,7 @@ import { DISEASE_PART_OF } from './diseases';
 
 /**
  * public/data/diseaseRadar.json 由 scripts/buildDiseaseRadar.cjs 從疾管署的
- * 六支健保門診就診人次 CSV 聚合而來。這些測試守的是「重跑管線後資料仍然可用」
+ * 七支健保門診就診人次 CSV 聚合而來。這些測試守的是「重跑管線後資料仍然可用」
  * ——上游改欄位、改端點或回傳殘缺資料時要在這裡爆掉，而不是等家長打開板才
  * 看到一片空白或一個算錯的狀態。
  */
@@ -16,7 +16,7 @@ const data = JSON.parse(
 );
 
 const AGE_BANDS = ['0~2', '3~6', '7~12'];
-const DISEASES = ['腸病毒', '手足口病', '疱疹性咽峽炎', '類流感', '腹瀉', '水痘'];
+const DISEASES = ['腸病毒', '手足口病', '疱疹性咽峽炎', '類流感', 'COVID-19', '腹瀉', '水痘'];
 
 describe('diseaseRadar.json 檔頭', () => {
   it('週次格式與疫情週日期區間對得上', () => {
@@ -33,8 +33,8 @@ describe('diseaseRadar.json 檔頭', () => {
     expect(data.verifiedOn <= new Date().toISOString().slice(0, 10)).toBe(true);
   });
 
-  it('六支來源網址與授權都留著', () => {
-    expect(data.sourceUrls).toHaveLength(6);
+  it('七支來源網址與授權都留著', () => {
+    expect(data.sourceUrls).toHaveLength(DISEASES.length);
     data.sourceUrls.forEach((url: string) =>
       expect(url).toMatch(/^https:\/\/od\.cdc\.gov\.tw\/eic\/NHI_.+\.csv$/),
     );
@@ -43,7 +43,8 @@ describe('diseaseRadar.json 檔頭', () => {
 
   it('門檻校準有樣本，且百分位單調遞增', () => {
     expect(data.calibration.sampleSize).toBeGreaterThan(10000);
-    expect(data.calibration.trendP25).toBeLessThan(data.calibration.trendP75);
+    expect(data.calibration.trendP25).toBeLessThan(data.calibration.trendP50);
+    expect(data.calibration.trendP50).toBeLessThan(data.calibration.trendP75);
     expect(data.calibration.trendP75).toBeLessThan(data.calibration.trendP90);
   });
 });
