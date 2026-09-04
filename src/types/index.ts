@@ -134,6 +134,15 @@ export interface ChildProfile {
   name: string;
   birthday: string; // YYYY-MM-DD
   gender?: Gender; // Optional: for growth chart percentiles
+  /**
+   * 出生時的妊娠週數與天數，例如 32 週 3 天。只有早產兒需要填。
+   *
+   * 有了它，生長曲線、里程碑與發展檢核才算得出矯正年齡（見
+   * common/correctedAge）。沒填一律當足月處理，行為與這個欄位存在之前完全
+   * 相同。公費疫苗與兒童健檢刻意不受它影響——那些時程照實際出生日期算。
+   */
+  gestationalAgeWeeks?: number;
+  gestationalAgeDays?: number;
   milestoneProgress: MilestoneProgress;
   vaccineProgress: VaccineProgress;
   foodTrackingProgress?: FoodTrackingProgress; // Optional: complementary food tracking

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Gender } from '../../types';
+import type { GestationalAge } from '../../common/correctedAge';
 import AddChildModal from '../../common/components/AddChildModal';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
@@ -7,7 +8,12 @@ import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 interface NoChildNoticeProps {
   /** 這一頁在沒有寶寶資料時該說什麼，語氣各頁不同。 */
   description: string;
-  onAddChild: (name: string, birthday: string, gender?: Gender) => Promise<void>;
+  onAddChild: (
+    name: string,
+    birthday: string,
+    gender?: Gender,
+    gestationalAge?: GestationalAge,
+  ) => Promise<void>;
   onJoinChild?: (uuid: string) => Promise<void>;
 }
 
@@ -44,7 +50,11 @@ export default function NoChildNotice({
         // `then(() => setOpen(false))`，不論成敗都關——新增失敗的家長會以為
         // 寶寶建好了，回到同一張「還沒有寶寶資料」的畫面卻不知道為什麼。
         onJoin={onJoinChild}
-        onSave={onAddChild}
+        // 位置要對齊：AddChildModal 的第 4、5 個參數是孕期用的，這裡不提供
+        // 孕期分頁，所以直接跳過。
+        onSave={(name, birthday, gender, _isPregnancy, _dueDate, gestationalAge) =>
+          onAddChild(name, birthday, gender, gestationalAge)
+        }
       />
     </>
   );

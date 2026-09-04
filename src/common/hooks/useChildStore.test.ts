@@ -113,7 +113,14 @@ describe('useChildStore (Firebase mode)', () => {
       await result.current.addChild('小華', '2026-02-02', 'female');
     });
 
-    expect(h.firebaseChildren.addChild).toHaveBeenCalledWith('小華', '2026-02-02', 1, 'female', undefined);
+    expect(h.firebaseChildren.addChild).toHaveBeenCalledWith(
+      '小華',
+      '2026-02-02',
+      1,
+      'female',
+      undefined,
+      undefined,
+    );
   });
 
   it('傳給資料層的寶寶數是 childCount，不是已經載入的那幾個', async () => {
@@ -127,7 +134,14 @@ describe('useChildStore (Firebase mode)', () => {
       await result.current.joinChild('uuid-1');
     });
 
-    expect(h.firebaseChildren.addChild).toHaveBeenCalledWith('小華', '2026-02-02', 1, undefined, undefined);
+    expect(h.firebaseChildren.addChild).toHaveBeenCalledWith(
+      '小華',
+      '2026-02-02',
+      1,
+      undefined,
+      undefined,
+      undefined,
+    );
     expect(h.firebaseChildren.joinChild).toHaveBeenCalledWith('uuid-1', 1);
   });
 
@@ -175,6 +189,7 @@ describe('useChildStore (Firebase mode)', () => {
       0,
       undefined,
       '2026-12-01',
+      undefined,
     );
   });
 
@@ -191,6 +206,7 @@ describe('useChildStore (Firebase mode)', () => {
       '2024-08-27',
       0,
       'male',
+      undefined,
       undefined,
     );
   });
@@ -231,6 +247,7 @@ describe('useChildStore (Firebase mode)', () => {
       '2026-12-01',
       undefined,
       true,
+      undefined,
     );
   });
 
@@ -248,6 +265,7 @@ describe('useChildStore (Firebase mode)', () => {
       '2026-02-02',
       undefined,
       false,
+      undefined,
     );
   });
 

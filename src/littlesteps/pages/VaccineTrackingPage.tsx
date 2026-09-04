@@ -17,6 +17,7 @@ import { stagger, listItem, sheet, backdrop, tap, collapse } from '../../common/
 import { useCentreSelectedChip } from '../../common/ui/useCentreSelectedChip';
 import { pressable } from '../../common/ui/pressable';
 import { vaccineMonthForChild } from '../utils/ageDefaults';
+import { isCorrecting } from '../../common/correctedAge';
 
 type FundingFilter = 'all' | 'public' | 'private';
 type MonthFilter = 'all' | number;
@@ -159,6 +160,15 @@ export default function VaccineTrackingPage({
   return (
     <div className="screen">
       <div className="screen-body">
+        {/* 早產寶寶的家長會發現生長曲線用矯正年齡、這一頁卻不是，於是懷疑
+            哪一邊算錯了。差別是真的：公費疫苗的時程依出生日期排定，早產兒
+            不例外。與其讓家長自己拼湊，不如在這裡講清楚。 */}
+        {currentChild && isCorrecting(currentChild) && (
+          <p className="card mb-4 text-sm text-ink-muted">
+            公費疫苗與兒童健檢的時程依<strong className="text-ink">實際出生日期</strong>
+            計算，不因早產而延後。生長曲線與發展檢核用的才是矯正年齡。
+          </p>
+        )}
         {/* 四張參考表原本是四顆固定按鈕，加上兩排篩選器，在 390px 上吃掉
             將近一半的畫面才看到第一劑疫苗。參考表是偶爾才查的東西，收進
             一個可展開的列；篩選器留在外面，因為它們每次都要用。 */}
