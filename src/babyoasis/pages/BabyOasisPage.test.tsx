@@ -347,6 +347,19 @@ describe('底部面板', () => {
       timeout: 3000,
     });
   });
+
+  it('詳情面板給得出回報的路，而且未登入就看得到', async () => {
+    // 這一頁完全公開，測試裡也沒有 AuthProvider——就是站在鎖著的門口的那個
+    // 人看到的畫面。入口消失的話，那趟白跑沒有任何地方回報得掉。
+    const user = await renderReady();
+
+    await user.click(screen.getAllByTestId('marker')[0]);
+    const detail = await screen.findByRole('dialog', { name: ROOMS[0].name });
+
+    expect(
+      within(detail).getByRole('button', { name: /這裡的資訊不對？/ }),
+    ).toBeInTheDocument();
+  });
 });
 
 /**

@@ -4,6 +4,7 @@ import type { Venue } from '../../types';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { listItem, tap } from '../../common/ui/motion';
 import { formatDate } from '../../common/utils/dateHelpers';
+import VenueReportButton from '../../common/components/VenueReportButton';
 import { venueTagLabels } from '../data/venueTags';
 
 interface VenueCardProps {
@@ -31,6 +32,9 @@ export default function VenueCard({ venue }: VenueCardProps) {
 
   const isFree = venue.tags.includes('free');
   const needsBooking = venue.tags.includes('needsBooking');
+
+  // 查證日期同時出現在卡片下緣與回報附帶的脈絡裡，兩處必須是同一個字串。
+  const verifiedOn = formatDate(venue.verifiedOn);
 
   // 費用與預約自成一列，其餘設施才排進標籤區，否則最要緊的兩件事會被淹沒。
   const facilityTags = venue.tags.filter(
@@ -99,9 +103,34 @@ export default function VenueCard({ venue }: VenueCardProps) {
         )}
       </div>
 
-      <p className="text-xs text-ink-faint mt-3">
-        資料查證於 {formatDate(venue.verifiedOn)}，出發前請再確認
-      </p>
+      {/* 查證日期與「這裡的資訊不對？」是同一件事的兩面：一個說我們什麼時候
+          問過，一個給家長回話的路。只有親子館掛得上——那份名冊是政府公開資料
+          且沒有開放時間欄位，餐廳那份是我們逐家查證的。 */}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <p className="text-xs text-ink-faint">
+          資料查證於 {verifiedOn}，出發前請再確認
+        </p>
+        {venue.kind === 'centre' && (
+          <VenueReportButton
+            // -ml-4 吃掉 btn-ghost 自己的左內距，讓字對齊卡片的文字欄，
+            // 而不是看起來縮進了一格。
+            className="text-sm shrink-0 -ml-4"
+            target={{
+              service: 'littleouting',
+              id: venue.id,
+              name: venue.name,
+              address: venue.address,
+              claims: [
+                // 名冊一處都沒有開放時間，18 個縣市全缺。回報要把這件事說出來，
+                // 收件匣才分得清「時間寫錯了」和「我們根本沒有時間資料」。
+                { label: '開放時間' },
+                { label: '預約', value: needsBooking ? '需預約' : undefined },
+                { label: '查證日期', value: verifiedOn },
+              ],
+            }}
+          />
+        )}
+      </div>
     </motion.div>
   );
 }

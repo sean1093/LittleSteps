@@ -1,11 +1,36 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import ModalFrame from './ModalFrame';
+import { tap } from '../ui/motion';
+import { SERVICE_THEME } from '../ui/serviceTheme';
+import {
+  CLAIM_NOT_PUBLISHED,
+  VENUE_REPORT_NOTE_LIMIT,
+  VENUE_REPORT_REASONS,
+  VENUE_REPORT_REASON_LABEL,
+  venueReportContent,
+  venueReportTitle,
+  type VenueReportReason,
+  type VenueReportTarget,
+} from '../venueReport';
 
 interface FeedbackModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (title: string, content: string) => Promise<void>;
   userName: string;
+  /**
+   * 有值時這張表單是「場館資料回報」：家長勾一個原因就送得出去，名稱、編號、
+   * 地址與畫面上的說法由這裡自己附上，不必再從剛剛看的那一頁抄一次。
+   *
+   * `signIn` 有值本身就代表現在沒有人登入。回報要寫進資料庫，而規則要求
+   * auth != null，所以那時給的是「登入是為了什麼」加一顆登入鍵——而不是把
+   * 入口整個藏起來，那正是家長站在鎖著的哺乳室門口卻無話可說的原因。
+   */
+  venue?: {
+    target: VenueReportTarget;
+    signIn: (() => void) | null;
+  };
 }
 
 const FIELD =
@@ -13,14 +38,64 @@ const FIELD =
 
 const LABEL = 'block text-sm font-medium text-ink mb-1';
 
+/**
+ * 一併送出的脈絡，先讓家長看過。
+ *
+ * 回報自動附資料和「背著家長送資料」只差在有沒有攤開來給他看，而這一段就是
+ * 攤開來的那一份。
+ */
+function ReportContext({ target }: { target: VenueReportTarget }) {
+  return (
+    <div className="mb-4 p-4 bg-secondary-soft rounded-2xl">
+      <p className="text-sm font-semibold text-ink">{target.name}</p>
+      <p className="text-xs text-ink-muted mt-0.5">{target.address}</p>
+      <dl className="mt-2 space-y-1">
+        {target.claims.map((claim) => (
+          <div key={claim.label} className="flex gap-2 text-xs">
+            <dt className="text-ink-faint shrink-0">{claim.label}</dt>
+            <dd className="text-ink-muted">{claim.value ?? CLAIM_NOT_PUBLISHED}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="text-xs text-ink-faint mt-2 leading-relaxed">
+        以上會跟著回報一起送出，你不用再打一次。
+      </p>
+    </div>
+  );
+}
+
+/**
+ * 未登入時講清楚登入是為了什麼。
+ *
+ * 和被擋下的私人頁面同一個作法：留在原地把理由講出來，而不是讓入口消失或把
+ * 家長帶去別的網址。
+ */
+function SignInNotice({ onSignIn }: { onSignIn: () => void }) {
+  return (
+    <div>
+      <p className="text-sm text-ink leading-relaxed">
+        回報會連同這一處的名稱與編號存進我們的收件匣，所以要先登入：我們才知道同一筆資料有幾個人回報過，也才擋得掉大量灌水的假回報。
+      </p>
+      <p className="text-sm text-ink-muted leading-relaxed mt-2">
+        登入只會用到你的 Google 名稱與信箱，不會建立寶寶檔案，也不會碰到任何孩子的資料。
+      </p>
+      <button type="button" onClick={onSignIn} className="btn-primary w-full mt-4">
+        用 Google 登入
+      </button>
+    </div>
+  );
+}
+
 export default function FeedbackModal({
   isOpen,
   onClose,
   onSubmit,
   userName,
+  venue,
 }: FeedbackModalProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [reason, setReason] = useState<VenueReportReason | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,12 +104,17 @@ export default function FeedbackModal({
     if (isOpen) {
       setTitle('');
       setContent('');
+      setReason(null);
       setError(null);
       setIsSubmitting(false);
     }
   }, [isOpen]);
 
   const validateForm = (): string | null => {
+    if (venue) {
+      // 補充說明是選填的：勾一個原因就是一份完整的回報。
+      return reason === null ? '請選一個原因' : null;
+    }
     if (!title.trim()) {
       return '請輸入標題';
     }
@@ -61,7 +141,15 @@ export default function FeedbackModal({
     setError(null);
 
     try {
-      await onSubmit(title.trim(), content.trim());
+      // 場館回報的標題與內容一律由畫面組出來，家長只出原因與（選填的）那一句話。
+      const payload =
+        venue && reason !== null
+          ? {
+              title: venueReportTitle(venue.target, reason),
+              content: venueReportContent(venue.target, reason, content),
+            }
+          : { title: title.trim(), content: content.trim() };
+      await onSubmit(payload.title, payload.content);
       onClose();
     } catch (err: unknown) {
       console.error('提交回報失敗:', err);
@@ -74,91 +162,169 @@ export default function FeedbackModal({
   const contentLength = content.trim().length;
   const isContentValid = contentLength >= 10;
 
+  // `.chip-on` 的珊瑚紅是 LittleSteps 的品牌色；回報表單是從某個服務的畫面上
+  // 開出來的，選項就跟著那個服務的顏色，做法比照 RoomSearch 的篩選籤。
+  const theme = venue ? SERVICE_THEME[venue.target.service] : null;
+
+  const errorBox = error && (
+    <div className="bg-primary-light border border-primary/40 rounded-2xl p-3">
+      <p className="text-sm text-primary-dark">{error}</p>
+    </div>
+  );
+
   return (
     <ModalFrame
       isOpen={isOpen}
       onClose={onClose}
-      title="問題回報"
+      title={venue ? '這裡的資訊不對？' : '問題回報'}
       closeDisabled={isSubmitting}
     >
-      <div className="mb-4 p-4 bg-secondary-soft rounded-2xl">
-        <p className="text-sm text-ink">
-          感謝 <span className="font-semibold">{userName}</span> 的回報！
-        </p>
-        <p className="text-xs text-ink-muted mt-1">
-          您的意見將幫助我們改善 LittleSteps
-        </p>
-      </div>
+      {venue ? (
+        <>
+          <ReportContext target={venue.target} />
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="feedbackTitle" className={LABEL}>
-            標題 <span className="text-primary-dark">*</span>
-          </label>
-          <input
-            id="feedbackTitle"
-            type="text"
-            value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
-              setError(null);
-            }}
-            className={FIELD}
-            placeholder="簡短描述您的問題或建議"
-            maxLength={100}
-            disabled={isSubmitting}
-          />
-        </div>
+          {venue.signIn ? (
+            <SignInNotice onSignIn={venue.signIn} />
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <fieldset disabled={isSubmitting}>
+                <legend className={LABEL}>
+                  哪裡不對？ <span className="text-primary-dark">*</span>
+                </legend>
+                <div className="flex flex-wrap gap-2">
+                  {VENUE_REPORT_REASONS.map((id) => {
+                    const isOn = reason === id;
+                    return (
+                      <motion.button
+                        key={id}
+                        type="button"
+                        whileTap={tap}
+                        onClick={() => {
+                          setReason(isOn ? null : id);
+                          setError(null);
+                        }}
+                        aria-pressed={isOn}
+                        className={`chip ${
+                          isOn && theme ? `chip-on ${theme.fill} ${theme.fillText} border-transparent` : ''
+                        }`}
+                      >
+                        {VENUE_REPORT_REASON_LABEL[id]}
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </fieldset>
 
-        <div>
-          <label htmlFor="feedbackContent" className={LABEL}>
-            詳細內容 <span className="text-primary-dark">*</span>
-          </label>
-          <textarea
-            id="feedbackContent"
-            value={content}
-            onChange={(e) => {
-              setContent(e.target.value);
-              setError(null);
-            }}
-            className={`${FIELD} resize-none`}
-            rows={6}
-            placeholder="請詳細描述您遇到的問題或想要的功能（至少 10 個字）"
-            disabled={isSubmitting}
-          />
-          <div className="flex justify-between items-center mt-1">
-            <p className={`text-xs ${
-              contentLength === 0 ? 'text-ink-faint' :
-              isContentValid ? 'text-mint-dark' : 'text-butter-dark'
-            }`}>
-              {contentLength === 0 ? '請輸入至少 10 個字' :
-               isContentValid ? `已輸入 ${contentLength} 個字` :
-               `還需要 ${10 - contentLength} 個字`}
+              <div>
+                <label htmlFor="venueReportNote" className={LABEL}>
+                  還想補一句？（選填）
+                </label>
+                <textarea
+                  id="venueReportNote"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  className={`${FIELD} resize-none`}
+                  rows={3}
+                  placeholder="例如：門鎖著、已經改成儲藏室、搬到三樓了"
+                  maxLength={VENUE_REPORT_NOTE_LIMIT}
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              {errorBox}
+
+              <button
+                type="submit"
+                disabled={isSubmitting || reason === null}
+                className="btn-primary w-full"
+              >
+                {isSubmitting ? '送出中...' : '送出回報'}
+              </button>
+            </form>
+          )}
+
+          <p className="text-xs text-ink-muted text-center mt-4 leading-relaxed">
+            回報會進到我們的收件匣，由人確認後才會改資料，地圖上的內容不會立刻變動。
+          </p>
+        </>
+      ) : (
+        <>
+          <div className="mb-4 p-4 bg-secondary-soft rounded-2xl">
+            <p className="text-sm text-ink">
+              感謝 <span className="font-semibold">{userName}</span> 的回報！
             </p>
-            <p className="text-xs text-ink-faint">
-              {contentLength}/500
+            <p className="text-xs text-ink-muted mt-1">
+              您的意見將幫助我們改善 LittleSteps
             </p>
           </div>
-        </div>
 
-        {error && (
-          <div className="bg-primary-light border border-primary/40 rounded-2xl p-3">
-            <p className="text-sm text-primary-dark">{error}</p>
-          </div>
-        )}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="feedbackTitle" className={LABEL}>
+                標題 <span className="text-primary-dark">*</span>
+              </label>
+              <input
+                id="feedbackTitle"
+                type="text"
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  setError(null);
+                }}
+                className={FIELD}
+                placeholder="簡短描述您的問題或建議"
+                maxLength={100}
+                disabled={isSubmitting}
+              />
+            </div>
 
-        <button
-          type="submit"
-          disabled={isSubmitting || !isContentValid || !title.trim()}
-          className="btn-primary w-full"
-        >
-          {isSubmitting ? '送出中...' : '送出回報'}
-        </button>
-      </form>
+            <div>
+              <label htmlFor="feedbackContent" className={LABEL}>
+                詳細內容 <span className="text-primary-dark">*</span>
+              </label>
+              <textarea
+                id="feedbackContent"
+                value={content}
+                onChange={(e) => {
+                  setContent(e.target.value);
+                  setError(null);
+                }}
+                className={`${FIELD} resize-none`}
+                rows={6}
+                placeholder="請詳細描述您遇到的問題或想要的功能（至少 10 個字）"
+                disabled={isSubmitting}
+              />
+              <div className="flex justify-between items-center mt-1">
+                <p className={`text-xs ${
+                  contentLength === 0 ? 'text-ink-faint' :
+                  isContentValid ? 'text-mint-dark' : 'text-butter-dark'
+                }`}>
+                  {contentLength === 0 ? '請輸入至少 10 個字' :
+                   isContentValid ? `已輸入 ${contentLength} 個字` :
+                   `還需要 ${10 - contentLength} 個字`}
+                </p>
+                <p className="text-xs text-ink-faint">
+                  {contentLength}/500
+                </p>
+              </div>
+            </div>
 
-      <p className="text-xs text-ink-muted text-center mt-4">
-        我們會仔細閱讀每一則回報，謝謝您的支持
-      </p>
+            {errorBox}
+
+            <button
+              type="submit"
+              disabled={isSubmitting || !isContentValid || !title.trim()}
+              className="btn-primary w-full"
+            >
+              {isSubmitting ? '送出中...' : '送出回報'}
+            </button>
+          </form>
+
+          <p className="text-xs text-ink-muted text-center mt-4">
+            我們會仔細閱讀每一則回報，謝謝您的支持
+          </p>
+        </>
+      )}
     </ModalFrame>
   );
 }
