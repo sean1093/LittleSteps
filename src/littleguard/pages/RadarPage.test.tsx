@@ -31,8 +31,8 @@ function child(birthday: string): ChildProfile {
     milestoneProgress: {},
     vaccineProgress: {},
     createdAt: '2022-03-14T00:00:00.000Z',
-    createdBy: 'u-1',
-    members: { 'u-1': true },
+    createdBy: 'u-9f3c2e1a',
+    members: { 'u-9f3c2e1a': true },
   };
 }
 
@@ -442,7 +442,7 @@ describe('記住上次選的縣市與年齡層', () => {
 
     const dump = Object.entries(localStorage).map(([key, value]) => `${key}=${value}`).join('\n');
     expect(dump).toContain('高雄市');
-    for (const secret of ['小明', '2022-03-14', 'c-9c1f7a44', 'u-1']) {
+    for (const secret of ['小明', '2022-03-14', 'c-9c1f7a44', 'u-9f3c2e1a']) {
       expect(dump).not.toContain(secret);
     }
     expect(dump).not.toContain('3~6');
