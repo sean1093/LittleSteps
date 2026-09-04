@@ -149,12 +149,17 @@ export default function ClinicSummaryPage({
             <InfoItem label="性別" value={genderText(data.gender)} />
             <InfoItem label="生日" value={formatDate(data.birthday)} />
             <InfoItem label="目前年齡" value={data.ageDisplay} />
+            {data.gestationalAge && <InfoItem label="出生週數" value={data.gestationalAge} />}
+            {data.correctedAgeDisplay && (
+              <InfoItem label="矯正年齡" value={data.correctedAgeDisplay} />
+            )}
           </div>
 
           {data.latestGrowth && (
             <div className="mt-5 pt-4 border-t border-ink/10">
               <p className="text-sm text-ink-muted mb-3">
                 最新測量（{formatDate(data.latestGrowth.date)}）
+                {data.correctedAgeDisplay && '，百分位以矯正年齡計算'}
               </p>
               <div className="grid grid-cols-3 gap-3">
                 {data.latestGrowth.weight !== undefined && (

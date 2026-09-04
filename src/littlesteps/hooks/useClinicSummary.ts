@@ -3,6 +3,7 @@ import type { ChildProfile, DailyLog, FeedingData, SleepData, DiaperData } from 
 import { useGrowthTracking } from './useGrowthTracking';
 import { getRecentLogs, calculateSleepDuration } from '../utils/logHelpers';
 import { calculateAgeDisplay, calculateVaccineSummary } from '../../common/utils/summaryCalculator';
+import { correctedAgeMonths, gestationalAgeLabel, isCorrecting } from '../../common/correctedAge';
 import { vaccineSchedules } from '../data/vaccines';
 import { careTaskTemplates } from '../../littleexplorer/data/careTasks';
 import { prenatalCheckupSchedule } from '../../littlebloom/data/prenatalCheckups';
@@ -20,6 +21,14 @@ export interface ClinicSummaryData {
   birthday: string;
   gender?: string;
   ageDisplay: string;
+  /**
+   * 早產寶寶才有：出生週數與矯正年齡。
+   *
+   * 這一頁的百分位是用矯正年齡算的，年齡那一欄卻是實際年齡。摘要是要拿去給
+   * 醫師看的，兩個數字並排卻沒說哪一個對應哪一個，等於讓醫師自己猜。
+   */
+  gestationalAge?: string;
+  correctedAgeDisplay?: string;
 
   /**
    * 產檢、疫苗、成長、兒童健檢併成的一條時間軸。
@@ -98,6 +107,11 @@ export function useClinicSummary(
 
     // --- Basic info ---
     const ageDisplay = calculateAgeDisplay(currentChild.birthday);
+    const correcting = isCorrecting(currentChild);
+    const gestationalAge = correcting ? (gestationalAgeLabel(currentChild) ?? undefined) : undefined;
+    const correctedAgeDisplay = correcting
+      ? `${correctedAgeMonths(currentChild)} 個月`
+      : undefined;
 
     // --- Growth records (already sorted newest-first by the hook) ---
     const recentGrowthRecords = growthRecords.slice(0, 3).map((r) => ({
@@ -272,6 +286,8 @@ export function useClinicSummary(
       birthday: currentChild.birthday,
       gender: currentChild.gender,
       ageDisplay,
+      gestationalAge,
+      correctedAgeDisplay,
       latestGrowth,
       recentGrowthRecords,
       administeredVaccines,
@@ -312,6 +328,11 @@ export function buildClinicSummaryText(data: ClinicSummaryData, notes: string): 
     `生日：${formatDate(data.birthday)}`,
     `年齡：${data.ageDisplay}`,
   ];
+
+  // 百分位是用矯正年齡算的，所以矯正年齡要跟著出現在同一段裡。
+  if (data.correctedAgeDisplay) {
+    lines.push(`出生週數：${data.gestationalAge ?? '早產'}`, `矯正年齡：${data.correctedAgeDisplay}（生長百分位以此計算）`);
+  }
 
   if (data.latestGrowth) {
     const { date, weight, height, headCircumference, percentile } = data.latestGrowth;

@@ -84,10 +84,16 @@ export default function GrowthChartDisplay({
       return { percentile, points };
     });
 
+    // 圖上要不要標「矯正年齡」，用最新那一筆測量當天判斷——橫軸畫的就是這
+    // 些紀錄的年齡。records 由 useGrowthTracking 依日期新到舊排好。
+    const correctable = { birthday, gestationalAgeWeeks, gestationalAgeDays };
+
     return {
       recordsWithAge,
       percentileCurves,
       maxAge,
+      correcting: isCorrecting(correctable, new Date(validRecords[0].date)),
+      gestationLabel: gestationalAgeLabel(correctable),
       minValue: Math.min(
         ...percentileCurves[0].points.map((p) => p.value),
         ...recordsWithAge.map((r) => r.value)
@@ -98,13 +104,6 @@ export default function GrowthChartDisplay({
       ),
     };
   }, [records, measurementType, gender, birthday, gestationalAgeWeeks, gestationalAgeDays]);
-
-  // 最後一筆測量當天要不要矯正——圖上大部分的點都落在同一段時間裡，用最新
-  // 那一筆判斷就跟橫軸實際上畫的一致。
-  const latestDate = records.length > 0 ? new Date(records[0].date) : new Date();
-  const correctable = { birthday: birthday ?? '', gestationalAgeWeeks, gestationalAgeDays };
-  const correcting = Boolean(birthday) && isCorrecting(correctable, latestDate);
-  const gestationLabel = gestationalAgeLabel(correctable);
 
   if (!chartData) {
     return (
@@ -120,7 +119,8 @@ export default function GrowthChartDisplay({
     );
   }
 
-  const { recordsWithAge, percentileCurves, maxAge, minValue, maxValue } = chartData;
+  const { recordsWithAge, percentileCurves, maxAge, minValue, maxValue, correcting, gestationLabel } =
+    chartData;
 
   /*
     A phone-sized coordinate space, like `ReportChart`. This used to be 800x500
