@@ -201,6 +201,17 @@ describe('一句話總結', () => {
     expect(screen.getByText('這一週沒有哪一種比平常明顯多。')).toBeInTheDocument();
   });
 
+  it('整塊板都比不出來的時候不給安心的那句話', async () => {
+    // 連江縣 0-2 歲四列都是「資料不足」，這一行就得跟著承認。
+    const it = await renderReady();
+    await it.click(screen.getByRole('button', { name: '連江縣' }));
+    expect(screen.getAllByText('資料不足').length).toBe(4);
+    expect(screen.queryByText(/沒有哪一種比平常明顯多/)).not.toBeInTheDocument();
+    expect(
+      screen.getByText('這一週的資料還不夠，比不出這幾種病最近多還是少。'),
+    ).toBeInTheDocument();
+  });
+
   it('資料過期就不給這句話——它跟狀態一樣是撐不起來的判斷', async () => {
     await renderReady(fixture('2026-06-28', '2026-07-04'));
     expect(screen.queryByText(/沒有哪一種比平常明顯多/)).not.toBeInTheDocument();

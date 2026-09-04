@@ -143,10 +143,21 @@ const CALM: readonly RadarStatus[] = ['steady', 'falling', 'none'];
  * 每週打開的家長要的是「這禮拜有沒有什麼要留意的」，不是自己讀四列狀態再心算。
  * 沒有哪一列變多時也要把話說完整：一行只在有事時才出現的字，本身就是警示燈
  * 號，而「這一週沒有哪一種比平常明顯多」才是多數週該看到的句子。
+ *
+ * 但那句話得有東西撐著。整塊板一列都比不出來時就不能給——「沒有哪一種比平常明
+ * 顯多」是拿不存在的資料讓人安心，而板上那四列明明白白寫著「資料不足」。
  */
 export function summariseBoard(rows: readonly DiseaseCell[]): string {
   const notable = rows.filter((row) => NOTABLE.includes(statusOf(row.cell)));
-  if (notable.length === 0) return '這一週沒有哪一種比平常明顯多。';
+  if (notable.length === 0) {
+    // 連江縣 0-2 歲整塊板都是「資料不足」，這一行就得跟著承認比不出來，不能反
+    // 過來替沒有的資料背書。一列比得出來就夠撐起那句話：其餘每一列都已經在板
+    // 上自己說了狀態。
+    if (rows.length > 0 && !rows.some((row) => CALM.includes(statusOf(row.cell)))) {
+      return '這一週的資料還不夠，比不出這幾種病最近多還是少。';
+    }
+    return '這一週沒有哪一種比平常明顯多。';
+  }
   const names = notable.map((row) => row.disease).join('、');
   const rest = rows.filter((row) => !NOTABLE.includes(statusOf(row.cell)));
   // 「其他」要嘛說得準，要嘛不說。每一列都在變多時那個「其他」是空的；剩下
