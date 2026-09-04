@@ -51,7 +51,8 @@ group headings answer it rather than leaving six equal rows to be read through.
 - **Quick log** — feeding, sleep and nappies in a couple of taps
 - **Sleep analysis** — patterns, quality scoring and advice from the logs
 - **Sleep guide** — sleep needs from 0 to 3 years, safety rules and training methods
-- **Growth charts** — WHO curves (P3/P15/P50/P85/P97) for weight, height and head circumference
+- **Growth charts** — WHO curves (P3/P15/P50/P85/P97) for weight, height and head circumference, plotted against corrected age for a preterm baby
+- **Corrected age for prematurity** — a birth before 37 weeks shifts growth percentiles, the chart's x-axis, the milestone band and the toddler development checks by the weeks the baby was early, until a corrected 24 months. Publicly funded vaccines and health checks are deliberately left on the birth date, which is how the MOHW schedules them, and both of those screens say so
 - **Weaning guide** — stage-based weaning plus the 4×3 allergen-introduction method and a per-food trial log
 - **Care guide** — age-appropriate care and safety
 - **Baby wiki** — 15 common health issues
@@ -176,6 +177,8 @@ users/$uid                 email, displayName, childrenIds, currentChildId
                            to subscribe to — authorisation is members, below
 children/$childId          id, name, birthday, gender, createdAt, createdBy,
                            isPregnancy, pregnancyData
+                           gestationalAgeWeeks, gestationalAgeDays
+                                                   preterm, for corrected age
                            members/$uid: true      authorisation
                            joinOpen                may a code holder join?
                            milestoneProgress, vaccineProgress, toothProgress,

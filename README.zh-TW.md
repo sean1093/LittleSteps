@@ -48,7 +48,8 @@
 - **快速日誌** — 餵奶、睡眠、尿布，點兩下就記完
 - **睡眠分析** — 從日誌看出作息型態、品質評分與建議
 - **睡眠指南** — 0 到 3 歲的睡眠需求、安全守則與訓練方法
-- **成長曲線圖** — 體重、身高、頭圍的 WHO 曲線（P3/P15/P50/P85/P97）
+- **成長曲線圖** — 體重、身高、頭圍的 WHO 曲線（P3/P15/P50/P85/P97）；早產寶寶畫在矯正年齡上
+- **早產矯正年齡** — 未滿 37 週出生的話，生長百分位、曲線橫軸、里程碑區間與幼兒發展檢核都往回推早產的週數，直到矯正年齡滿 24 個月。公費疫苗與兒童健檢刻意照實際出生日期算（衛福部的時程就是這樣排的），那兩頁會把這件事寫出來
 - **副食品指南** — 分階段的副食品進程，加上 4×3 過敏原導入法與逐項食物的嘗試記錄
 - **照顧重點** — 依月齡該做的照顧與安全提醒
 - **寶寶百科** — 15 個常見健康問題
@@ -158,6 +159,8 @@ users/$uid                 email, displayName, childrenIds, currentChildId
                            授權看的是下面的 members
 children/$childId          id, name, birthday, gender, createdAt, createdBy,
                            isPregnancy, pregnancyData
+                           gestationalAgeWeeks, gestationalAgeDays
+                                                   早產週數，用來算矯正年齡
                            members/$uid: true      授權
                            joinOpen                持有代碼的人可以加入嗎？
                            milestoneProgress, vaccineProgress, toothProgress,
