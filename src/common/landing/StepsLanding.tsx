@@ -10,7 +10,6 @@ type PublicContent = 'littlesteps/baby-wiki' | 'littlesteps/care-guide' | 'littl
 interface StepsLandingProps {
   /** 只能指向 LittleSteps 免登入的內容；功能頁要先登入，導過去只會退回這一頁。 */
   onNavigate: (page: PublicContent) => void;
-  /** 這一頁只在未登入時渲染，所以登入按鈕沒有條件——見下方元件註解。 */
   onSignIn: () => Promise<void>;
 }
 
