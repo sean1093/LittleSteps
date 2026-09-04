@@ -79,6 +79,7 @@ function open(disease = '腸病毒', overrides: Partial<RadarCell> = {}, onClose
       cell={cell(overrides)}
       parts={disease === '腸病毒' ? enteroParts() : undefined}
       data={data()}
+      county="台北市"
       age="3~6"
       showStatus
       onClose={onClose}
@@ -87,6 +88,9 @@ function open(disease = '腸病毒', overrides: Partial<RadarCell> = {}, onClose
 }
 
 const bodyText = () => screen.getByRole('dialog').textContent ?? '';
+
+/** 詳細數字預設收著，要斷言 dl 裡的東西就得先按開。 */
+const openDetails = () => userEvent.setup().click(screen.getByRole('button', { name: '詳細數字' }));
 
 describe('抽屜的順序', () => {
   it('先說這個名字在資料裡是什麼，再給可以做的事，數字放最後', () => {
@@ -99,7 +103,7 @@ describe('抽屜的順序', () => {
       '可以做什麼',
       '什麼情況要看醫生',
       '最近 8 週',
-      '統計基數',
+      '次因腸病毒就診',
     ].map((needle) => body.indexOf(needle));
     order.forEach((at) => expect(at).toBeGreaterThan(-1));
     expect(order).toEqual([...order].sort((a, b) => a - b));
@@ -109,7 +113,7 @@ describe('抽屜的順序', () => {
     open();
     const body = bodyText();
     expect(body.indexOf('可以做什麼')).toBeGreaterThan(-1);
-    expect(body.indexOf('可以做什麼')).toBeLessThan(body.indexOf('統計基數'));
+    expect(body.indexOf('可以做什麼')).toBeLessThan(body.indexOf('次因腸病毒就診'));
   });
 });
 
@@ -134,10 +138,51 @@ describe('抽屜的內容', () => {
     expect(items[0]).toHaveTextContent(DISEASE_INFO['腸病毒'].actions[0]);
   });
 
-  it('率、人次、分母三個都給，數字才讀得懂', () => {
+  it('數字先用一句話講完：哪裡、幾歲、幾次、跟平常差多少', () => {
+    // 「423.0/萬」是統計人員的單位；家長要的是「這一週有幾次，比平常多還是少」。
+    open('類流感', { visits: 413, ratio: 1.44 });
+    expect(
+      screen.getByText('台北市 3-6 歲這一週有 413 次因類流感就診，比前 8 週的平常值多約 44%。'),
+    ).toBeInTheDocument();
+  });
+
+  it('第二句回答「那這裡跟全台比呢」', () => {
+    open('類流感', { geoRatio: 1.4 });
+    expect(screen.getByText('跟全國同一週相比，這裡偏多。')).toBeInTheDocument();
+  });
+
+  it('全國比不出來就不寫第二句，不編一個方向', () => {
+    open('類流感', { geoRatio: null });
+    expect(screen.queryByText(/跟全國同一週相比/)).not.toBeInTheDocument();
+  });
+
+  it('詳細數字預設收著，按下去才展開', async () => {
+    open();
+    const toggle = screen.getByRole('button', { name: '詳細數字' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText('統計基數')).not.toBeInTheDocument();
+    expect(bodyText()).not.toContain('169.0/萬');
+
+    await openDetails();
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('統計基數')).toBeInTheDocument();
+    // aria-controls 要真的指得到展開出來的那一塊，不是掛一個不存在的 id。
+    expect(document.getElementById(toggle.getAttribute('aria-controls') ?? '')).toContainElement(
+      screen.getByText('統計基數'),
+    );
+  });
+
+  it('詳細數字那顆按鈕按得到——44px 是拇指的下限', () => {
+    open();
+    expect(screen.getByRole('button', { name: '詳細數字' }).className).toContain('min-h-tap');
+  });
+
+  it('率、人次、分母三個都給，數字才讀得懂', async () => {
     // 只給「169.0/萬」的話沒人知道那是幾個人；只給「35 人次」的話沒人知道
     // 是幾個人裡的 35 個。分母是這一格數字的可信度本身。
     open();
+    await openDetails();
     const body = bodyText();
     expect(body).toContain('169.0/萬');
     expect(body).toContain('35 人次');
@@ -145,13 +190,15 @@ describe('抽屜的內容', () => {
     expect(body).toContain('2,071 次門診');
   });
 
-  it('說清楚「/萬」跟統計基數是什麼意思', () => {
+  it('說清楚「/萬」跟統計基數是什麼意思', async () => {
     open();
+    await openDetails();
     expect(screen.getByText(/每一萬次健保門診/)).toBeInTheDocument();
   });
 
-  it('前 8 週中位數與全國同一週都拿得到，才比得出來', () => {
+  it('前 8 週中位數與全國同一週都拿得到，才比得出來', async () => {
     open();
+    await openDetails();
     const body = bodyText();
     expect(screen.getByText('前 8 週中位數')).toBeInTheDocument();
     expect(body).toContain('79.4/萬');
@@ -159,7 +206,7 @@ describe('抽屜的內容', () => {
     expect(body).toContain('128.5/萬');
   });
 
-  it('全國那一層抓不到就顯示破折號，不留空格也不編一個數字', () => {
+  it('全國那一層抓不到就顯示破折號，不留空格也不編一個數字', async () => {
     const bare = data();
     bare.national = {};
     render(
@@ -167,11 +214,13 @@ describe('抽屜的內容', () => {
         disease="腸病毒"
         cell={cell()}
         data={bare}
+        county="台北市"
         age="3~6"
         showStatus
         onClose={noop}
       />,
     );
+    await openDetails();
     expect(screen.getByText('全國同一週').parentElement).toHaveTextContent('—');
   });
 
@@ -230,6 +279,7 @@ describe('抽屜的狀態與樣本', () => {
           disease="腸病毒"
           cell={CELL_BY_STATUS[status]}
           data={data()}
+          county="台北市"
           age="3~6"
           showStatus
           onClose={noop}
@@ -241,23 +291,26 @@ describe('抽屜的狀態與樣本', () => {
     },
   );
 
-  it('樣本夠的時候不加但書', () => {
+  it('樣本夠的時候不加但書', async () => {
     open();
+    await openDetails();
     expect(screen.queryByText(/容易上下跳動/)).not.toBeInTheDocument();
   });
 
-  it.each(['small', 'insufficient'] as const)('樣本是 %s 就說一聲', (reliability) => {
+  it.each(['small', 'insufficient'] as const)('樣本是 %s 就說一聲', async (reliability) => {
     const view = open('腸病毒', { reliability, denom: 300 });
+    await openDetails();
     expect(screen.getByText(/容易上下跳動/)).toBeInTheDocument();
     view.unmount();
   });
 
-  it('資料不足的那一格不畫線，也不假裝算得出比率', () => {
+  it('資料不足的那一格不畫線，也不假裝算得出比率', async () => {
     const { container } = render(
       <DiseaseDrawer
         disease="腸病毒"
         cell={CELL_BY_STATUS.insufficient}
         data={data()}
+        county="台北市"
         age="3~6"
         showStatus
         onClose={noop}
@@ -265,6 +318,12 @@ describe('抽屜的狀態與樣本', () => {
     );
     expect(container.querySelector('svg[role="img"]')).toBeNull();
     expect(screen.getByText('資料不足')).toBeInTheDocument();
+    // 第一句照樣講得出人次，比不出來的部分用板上同一套說法帶過。
+    expect(
+      screen.getByText(`台北市 3-6 歲這一週有 0 次因腸病毒就診，${STATUS_COPY.noBaseline.label}。`),
+    ).toBeInTheDocument();
+
+    await openDetails();
     // 率與中位數都算不出來；人次與分母是實際數到的，照實給。
     expect(screen.getByText('這一週').parentElement).toHaveTextContent('—（0 人次）');
     expect(bodyText()).toContain('42 次門診');
@@ -291,6 +350,7 @@ describe('抽屜的資料新舊', () => {
         disease="腸病毒"
         cell={radarCell}
         data={data()}
+        county="台北市"
         age="3~6"
         showStatus={showStatus}
         onClose={noop}
@@ -309,10 +369,13 @@ describe('抽屜的資料新舊', () => {
     view.unmount();
   });
 
-  it('收起的只有那一行文字：折線、率、人次、分母都還在', () => {
+  it('收起的只有那一行文字：折線、人次那句話與詳細數字都還在', async () => {
     // spec §7 收的是「可能已經錯的判斷」，折線是數字自己的圖形呈現，不是判斷。
     drawer(cell(), false);
     expect(screen.getByRole('img', { name: /腸病毒最近 8 週/ })).toBeInTheDocument();
+    expect(screen.getByText(/這一週有 35 次因腸病毒就診/)).toBeInTheDocument();
+
+    await openDetails();
     const body = bodyText();
     expect(body).toContain('169.0/萬');
     expect(body).toContain('35 人次');
@@ -342,8 +405,9 @@ describe('抽屜的語氣', () => {
     expect(container.innerHTML).not.toContain('text-red');
   });
 
-  it('數字沒有被放大成頭條', () => {
+  it('數字沒有被放大成頭條', async () => {
     open();
+    await openDetails();
     const numbers = screen.getByText('統計基數').closest('dl');
     expect(numbers?.innerHTML ?? '').not.toMatch(/text-(lg|xl|2xl|3xl|4xl)/);
   });

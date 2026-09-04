@@ -37,6 +37,16 @@ export interface DiseaseCell {
 
 export const RADAR_THRESHOLDS = { p25: 0.78, p75: 1.26, p90: 1.77 } as const;
 
+/**
+ * 「跟全國同一週比」的門檻，一樣是實測分布不是手感：spec §geoRatio 的 42,882
+ * 個樣本裡，縣市率 ÷ 全國率的 P25 是 0.66、P75 是 1.19（中位數 0.93）。低於
+ * P25 說偏少、高於 P75 說偏多，中間一律說差不多。
+ *
+ * 與 RADAR_THRESHOLDS 是兩個獨立的問題——一個問「比這裡自己的前 8 週」，一個
+ * 問「比全台同一週」，不合併成一個分數。
+ */
+export const GEO_THRESHOLDS = { p25: 0.66, p75: 1.19 } as const;
+
 /** 資料超過兩個更新週期沒進來就標註，超過五週就收起狀態。 */
 export const FRESHNESS_DAYS = { stale: 14, expired: 35 } as const;
 
@@ -108,6 +118,16 @@ export function formatWeekRange(weekStart: string, weekEnd: string): string {
   return `${Number(startMonth)}/${Number(startDay)}–${Number(endMonth)}/${Number(endDay)}`;
 }
 
+/**
+ * 家長講「零到兩歲」，不講「0~2」。板上的年齡籤與抽屜的句子共用這一份；上游
+ * 哪天多切一個年齡層，取不到就退回原字串，籤照樣選得動。
+ */
+export const AGE_LABEL: Record<string, string> = {
+  '0~2': '0-2 歲',
+  '3~6': '3-6 歲',
+  '7~12': '7-12 歲',
+};
+
 /** 「比平常多」的三種狀態。比平常少、跟平常差不多與資料不足都不必特別提。 */
 const NOTABLE: readonly RadarStatus[] = ['risingStrong', 'rising', 'emerged'];
 
@@ -136,4 +156,45 @@ export function summariseBoard(rows: readonly DiseaseCell[]): string {
     return `這一週${names}比平常多。`;
   }
   return `這一週${names}比平常多，其他沒有變多。`;
+}
+
+/**
+ * 比不出來的時候照實說，而且用板上同一套說法：家長剛在那一列讀過「還不夠資料
+ * 比較」，抽屜裡再換一組講法，只會讓人以為是兩件不同的事。
+ */
+function reasonWithoutRatio(cell: RadarCell): string {
+  if (cell.trendBase === 0) {
+    return (cell.rate ?? 0) > 0 ? STATUS_COPY.emerged.label : STATUS_COPY.none.label;
+  }
+  return STATUS_COPY.noBaseline.label;
+}
+
+/**
+ * 抽屜的第一句：這一格的白話版。
+ *
+ * 「423.0/萬」是統計人員的單位，家長讀不出任何可以做的事；「台北市 0-2 歲這
+ * 週有 413 次因類流感就診，比前 8 週的平常值多約 44%」講的是同一件事，而且不
+ * 用先學單位。差距四捨五入不到 5% 就說差不多——那個位數的變動是雜訊，寫成
+ * 「多約 3%」等於把雜訊講成趨勢。
+ */
+export function describeVisits(input: {
+  county: string;
+  age: string;
+  disease: string;
+  cell: RadarCell;
+}): string {
+  const { county, age, disease, cell } = input;
+  const head = `${county} ${AGE_LABEL[age] ?? age}這一週有 ${cell.visits} 次因${disease}就診`;
+  if (cell.ratio === null) return `${head}，${reasonWithoutRatio(cell)}。`;
+  const percent = Math.round(Math.abs(cell.ratio - 1) * 100);
+  if (percent < 5) return `${head}，跟前 8 週的平常值差不多。`;
+  return `${head}，比前 8 週的平常值${cell.ratio > 1 ? '多' : '少'}約 ${percent}%。`;
+}
+
+/** 抽屜的第二句：跟全國同一週比。geoRatio 算不出來就不給句子，不編一個。 */
+export function describeGeoRatio(geoRatio: number | null): string | null {
+  if (geoRatio === null) return null;
+  const where =
+    geoRatio < GEO_THRESHOLDS.p25 ? '偏少' : geoRatio > GEO_THRESHOLDS.p75 ? '偏多' : '差不多';
+  return `跟全國同一週相比，這裡${where}。`;
 }
