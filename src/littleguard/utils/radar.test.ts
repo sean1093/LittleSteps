@@ -245,6 +245,25 @@ describe('summariseBoard', () => {
     expect(summariseBoard([])).toBe('這一週沒有哪一種比平常明顯多。');
   });
 
+  it('一列都比不出來的時候承認比不出來，不替沒有的資料背書', () => {
+    // 連江縣 0-2 歲整塊板都是「資料不足」。那一週給「沒有哪一種比平常明顯多」，
+    // 等於用不存在的資料讓家長安心，而且跟板上四列直接打對台。
+    const rows = [
+      { disease: '腸病毒', cell: cell({ reliability: 'insufficient' }) },
+      { disease: '類流感', cell: cell({ reliability: 'small' }) },
+      { disease: '腹瀉', cell: cell({ trendBase: null, ratio: null }) },
+    ];
+    expect(summariseBoard(rows)).toBe('這一週的資料還不夠，比不出這幾種病最近多還是少。');
+  });
+
+  it('只要有一列比得出來，那句話就撐得起來', () => {
+    const rows = [
+      { disease: '腸病毒', cell: cell({ reliability: 'insufficient' }) },
+      { disease: '類流感', cell: cell({ ratio: 1.0 }) },
+    ];
+    expect(summariseBoard(rows)).toBe('這一週沒有哪一種比平常明顯多。');
+  });
+
   it('shipped 資料的每一塊板，總結都不含 spec 的禁用詞', () => {
     const data = JSON.parse(
       readFileSync(join(HERE, '../../../public/data/diseaseRadar.json'), 'utf8'),
