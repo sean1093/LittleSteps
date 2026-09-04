@@ -287,6 +287,16 @@ export default function ClinicSummaryPage({
               </p>
             </div>
           )}
+
+          {data.unrecordedNationalDoses !== undefined && (
+            // 沒有下一劑時這一段不能空著：醫師看到疫苗段落沒有下一步，讀出來
+            // 的是「沒事要談」，而事實是還有這麼多劑公費疫苗沒有紀錄。
+            <div className="mt-4 p-3 rounded-xl bg-secondary-light border border-secondary/30">
+              <p className="text-sm font-medium text-secondary-dark leading-relaxed">
+                尚有 {data.unrecordedNationalDoses} 劑公費疫苗沒有記錄，沒有記錄不代表沒打，可對照兒童健康手冊補登
+              </p>
+            </div>
+          )}
         </motion.section>
 
         {/* ===== Section 4: 近 7 天日常摘要 ===== */}

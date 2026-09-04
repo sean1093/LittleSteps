@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import type { ChildProfile } from '../../types';
-import { useClinicSummary } from './useClinicSummary';
+import { toLocalDateKey } from '../../common/utils/dateHelpers';
+import { vaccineSchedules } from '../data/vaccines';
+import { buildClinicSummaryText, useClinicSummary } from './useClinicSummary';
 
 /**
  * 回歸測試：看診摘要在真實資料下會整頁白掉。
@@ -64,5 +66,48 @@ describe('useClinicSummary', () => {
 
     expect(result.current.data?.gestationalAge).toBeUndefined();
     expect(result.current.data?.correctedAgeDisplay).toBeUndefined();
+  });
+
+  // 下一劑只認公費，也不再回答已經被年齡拋在後面的劑次，所以「沒有下一劑」
+  // 變成常見的情形。這一段若就這樣少一行，醫師讀到的是「沒事要談」。
+  describe('沒有下一劑時', () => {
+    const NATIONAL_DOSES = vaccineSchedules.filter((v) => v.funding === 'national').length;
+
+    /** 相對於今天推算，測試才不會隨時間過期。 */
+    const yearsAgo = (years: number): string => {
+      const date = new Date();
+      date.setFullYear(date.getFullYear() - years);
+      return toLocalDateKey(date);
+    };
+
+    const schoolAgeChild = (): ChildProfile =>
+      ({ ...childWithoutProgressMaps(), birthday: yearsAgo(7) }) as ChildProfile;
+
+    it('改為說出還有幾劑公費疫苗沒有記錄', () => {
+      const { result } = renderHook(() => useClinicSummary(schoolAgeChild(), [], null));
+
+      expect(result.current.data?.nextVaccine).toBeUndefined();
+      expect(result.current.data?.unrecordedNationalDoses).toBe(NATIONAL_DOSES);
+    });
+
+    it('這句話也要進得了可複製的文字版——那才是真的貼給診所的東西', () => {
+      const { result } = renderHook(() => useClinicSummary(schoolAgeChild(), [], null));
+      const text = buildClinicSummaryText(result.current.data!, '');
+
+      expect(text).toContain(`尚有 ${NATIONAL_DOSES} 劑公費疫苗沒有記錄`);
+      expect(text).not.toContain('下一劑：');
+    });
+
+    it('有下一劑時不加這一行，改回報下一劑', () => {
+      // 新生兒：出生那一劑就是下一劑。
+      const newborn = { ...childWithoutProgressMaps(), birthday: yearsAgo(0) } as ChildProfile;
+      const { result } = renderHook(() => useClinicSummary(newborn, [], null));
+      const text = buildClinicSummaryText(result.current.data!, '');
+
+      expect(result.current.data?.nextVaccine).toBeDefined();
+      expect(result.current.data?.unrecordedNationalDoses).toBeUndefined();
+      expect(text).toContain('下一劑：');
+      expect(text).not.toContain('沒有記錄不代表沒打');
+    });
   });
 });
