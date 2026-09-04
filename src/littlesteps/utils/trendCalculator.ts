@@ -1,5 +1,5 @@
 import { DailyLog, FeedingData, SleepData, DiaperData } from '../../types';
-import { filterLogsByDate, calculateSleepDuration } from './logHelpers';
+import { filterLogsByDate, calculateSleepDuration, isStaleOpenSleep } from './logHelpers';
 import { getSleepRequirementForAge } from '../data/sleep';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
@@ -21,12 +21,18 @@ export interface TrendData {
   sparklinePoints: number[];
 }
 
-/** 一個指標要看哪一種紀錄才算「那天有記」 */
-const LOG_TYPE_FOR: Record<MetricType, DailyLog['type']> = {
-  feeding_count: 'feeding',
-  feeding_amount: 'feeding',
-  sleep_duration: 'sleep',
-  poop_count: 'diaper',
+/**
+ * 一筆紀錄算不算「那天有記這個指標」。
+ *
+ * 睡眠要跳過忘了按「醒了」的那一筆。它沒有時長，卻會把那一天標成「有記睡眠
+ * 但只睡了 0 小時」——分數因此掉下來，而同一頁的睡眠區塊還印著每天 11 小時。
+ * 報告自己跟自己打架，比少一個數字更難解釋。
+ */
+const OBSERVES: Record<MetricType, (log: DailyLog) => boolean> = {
+  feeding_count: (log) => log.type === 'feeding',
+  feeding_amount: (log) => log.type === 'feeding',
+  sleep_duration: (log) => log.type === 'sleep' && !isStaleOpenSleep(log),
+  poop_count: (log) => log.type === 'diaper',
 };
 
 /**
@@ -42,7 +48,7 @@ function getDailyObservation(
   type: MetricType,
 ): number | null {
   const dayLogs = filterLogsByDate(logs, date);
-  if (!dayLogs.some((log) => log.type === LOG_TYPE_FOR[type])) return null;
+  if (!dayLogs.some((log) => OBSERVES[type](log))) return null;
 
   return getDailyValue(logs, date, type);
 }
@@ -95,7 +101,7 @@ function getDailyValue(
 
     case 'sleep_duration': {
       return dayLogs
-        .filter(log => log.type === 'sleep')
+        .filter((log) => log.type === 'sleep' && !isStaleOpenSleep(log))
         .reduce((sum, log) => {
           const data = log.data as SleepData;
           const duration = data.duration || calculateSleepDuration(data) || 0;

@@ -56,7 +56,12 @@ export default function NightWakingsPrompt({
         </button>
       </div>
 
-      <div className="mt-3 flex gap-2">
+      {/*
+        min-w-tap 加上換行：五個 flex-1 在 320px 的卡片裡各自擠不到 44px，而這
+        一下是單手、凌晨三點按的。寧可換行也不要少一個選項——少的那個選項就是
+        少掉的資訊。
+      */}
+      <div className="mt-3 flex flex-wrap gap-2">
         {CHOICES.map((count) => (
           <button
             key={count}
@@ -64,7 +69,7 @@ export default function NightWakingsPrompt({
             disabled={isSaving}
             onClick={() => handlePick(count)}
             aria-label={`夜醒 ${count} 次`}
-            className="chip flex-1 justify-center disabled:opacity-50"
+            className="chip flex-1 min-w-tap justify-center disabled:opacity-50"
           >
             {count}
           </button>
@@ -73,7 +78,7 @@ export default function NightWakingsPrompt({
           type="button"
           disabled={isSaving}
           onClick={() => onOpenForm(log)}
-          className="chip flex-1 justify-center disabled:opacity-50"
+          className="chip flex-1 min-w-tap justify-center disabled:opacity-50"
         >
           更多
         </button>

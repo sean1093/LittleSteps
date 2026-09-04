@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { DailyLog, GrowthRecord, DiaperData } from '../../types';
 import type { WeeklyReport } from './reportGenerator';
+import { generateDailySeries } from './trendCalculator';
 import {
   calculateScores,
   generateSummaryText,
@@ -354,6 +355,33 @@ describe('reportGenerator', () => {
 
       expect(report.sleep.loggedDays).toBe(2);
       expect(report.sleep.avgDailyHours).toBe(12);
+    });
+
+    /*
+      The sleep SCORE reads its series through trendCalculator, not through
+      buildSleepData, so guarding one and not the other let a single forgotten
+      timer cost 25 points of the weekly sleep score and add a phantom day to
+      the denominator the page prints as evidence - while the sleep section on
+      that same page still read 11 hours a day. A report arguing with itself.
+    */
+    it('keeps a forgotten timer out of the sleep score, not just the averages', () => {
+      const openStart = '2026-06-15T00:00:00+08:00';
+      const forgotten: DailyLog = {
+        id: 'forgotten',
+        childId: 'child-1',
+        type: 'sleep',
+        timestamp: openStart,
+        data: { startTime: openStart },
+        createdAt: openStart,
+      };
+      const nights = WEEK_DATES.slice(0, 6).map((date) => sleepLog(date, 660));
+
+      const report = generateWeeklyReport([...nights, forgotten], [], 4);
+
+      expect(generateDailySeries([...nights, forgotten], 7, 'sleep_duration').at(-1)).toBeNull();
+      expect(report.scores.sleep.loggedDays).toBe(6);
+      expect(report.sleep.loggedDays).toBe(6);
+      expect(report.sleep.avgDailyHours).toBe(11);
     });
 
     it('withholds every score when only two days of a 30-day window were logged', () => {

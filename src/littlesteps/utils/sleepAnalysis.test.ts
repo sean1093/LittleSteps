@@ -29,7 +29,6 @@ const sleep = (daysAgo: number, hour: number, minute: number, hours: number): Da
       startTime: start.toISOString(),
       endTime: end.toISOString(),
       duration: hours * 60,
-      quality: 'good',
     },
     createdAt: start.toISOString(),
   } as DailyLog;
