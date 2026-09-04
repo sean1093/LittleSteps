@@ -71,7 +71,9 @@ export default function MrtPicker({ selected, onSelect, onClose }: MrtPickerProp
           />
         </div>
 
-        <div className="row-bleed flex gap-2 py-1">
+        {/* 換行而不是橫向捲動：五套系統只佔兩行，而捲動會把高雄捷運藏在畫面外，
+            高雄的家長不會知道有那顆籤。同 AreaPicker 的縣市籤。 */}
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setSystem(null)}
