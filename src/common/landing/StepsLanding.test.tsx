@@ -36,17 +36,17 @@ describe('StepsLanding', () => {
   });
 
   /**
-   * 登入按鈕原本包在 `{!user && ...}` 裡，而這一頁拿不到已登入的 user，所以
-   * 那個條件永遠成立、也永遠讀不出來（見元件註解）。條件拿掉之後才發現，整
-   * 份測試裡沒有一條斷言這顆按鈕存在——它是未登入訪客在這一頁唯一的下一步，
-   * 整段刪掉不會有任何測試變紅。這一條補上那個缺口。
+   * 這顆按鈕是未登入訪客在這一頁唯一的下一步，而整份測試原本沒有一條斷言它
+   * 存在：把它整段刪掉，其餘七條全數通過，包含三條在斷言這一頁文案的。用
+   * 正規表示式而不是整句比對，是因為要守的是「有一個入口會開始登入」，不是
+   * 這句文案的每一個字。
    */
   it('未登入的訪客拿到登入入口，按下去就開始登入', async () => {
     const user = userEvent.setup();
     const onSignIn = vi.fn();
     render(<StepsLanding onNavigate={vi.fn()} onSignIn={onSignIn} />);
 
-    await user.click(screen.getByRole('button', { name: '使用 Google 登入開始記錄' }));
+    await user.click(screen.getByRole('button', { name: /Google 登入/ }));
 
     expect(onSignIn).toHaveBeenCalledTimes(1);
   });
