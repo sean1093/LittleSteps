@@ -55,9 +55,57 @@ export function calculateSleepDuration(sleepData: SleepData): number | undefined
 }
 
 /**
+ * 睡眠沒有結束時間就是「還在睡」。超過這個時數幾乎一定是忘了按「醒了」，
+ * 不是真的睡了十幾個小時——這種紀錄不能算進任何統計：它會讓那一天看起來
+ * 「有記睡眠」卻只有 0 分鐘，把平均往下拉，而畫面上完全看不出原因。
+ */
+export const STALE_OPEN_SLEEP_MINUTES = 14 * 60;
+
+/** 還沒填結束時間的睡眠。 */
+export function isOpenSleep(log: DailyLog): boolean {
+  return log.type === 'sleep' && !(log.data as SleepData).endTime;
+}
+
+/** 從入睡到現在經過幾分鐘。時間壞掉或落在未來時回 0，不回負數。 */
+export function openSleepElapsedMinutes(sleepData: SleepData, now: Date = new Date()): number {
+  const startTime = new Date(sleepData.startTime).getTime();
+  if (Number.isNaN(startTime)) return 0;
+  return Math.max(0, Math.floor((now.getTime() - startTime) / (1000 * 60)));
+}
+
+/** 開著超過 STALE_OPEN_SLEEP_MINUTES 的睡眠：需要補結束時間，不列入統計。 */
+export function isStaleOpenSleep(log: DailyLog, now: Date = new Date()): boolean {
+  return (
+    isOpenSleep(log) &&
+    openSleepElapsedMinutes(log.data as SleepData, now) > STALE_OPEN_SLEEP_MINUTES
+  );
+}
+
+/**
+ * 這個孩子目前還沒結束的那一段睡眠。
+ *
+ * 同時只該有一段，取最新的一筆：舊資料若留下兩筆沒關的睡眠，家長要能先關掉
+ * 剛剛那一段，而不是被卡在一筆三天前忘記按的紀錄上。
+ */
+export function findOpenSleep(logs: DailyLog[]): DailyLog | null {
+  let open: DailyLog | null = null;
+  for (const log of logs) {
+    if (!isOpenSleep(log)) continue;
+    if (!open || new Date(log.timestamp).getTime() > new Date(open.timestamp).getTime()) {
+      open = log;
+    }
+  }
+  return open;
+}
+
+/**
  * 計算指定日期的每日摘要統計
  */
-export function calculateDailySummary(logs: DailyLog[], date?: string): DailySummary {
+export function calculateDailySummary(
+  logs: DailyLog[],
+  date?: string,
+  now: Date = new Date(),
+): DailySummary {
   const targetDate = date || toLocalDateKey();
   const dailyLogs = filterLogsByDate(logs, targetDate);
 
@@ -82,6 +130,8 @@ export function calculateDailySummary(logs: DailyLog[], date?: string): DailySum
       }
 
       case 'sleep': {
+        // 忘了按「醒了」的紀錄不是一段睡眠，是一個待補的欄位。
+        if (isStaleOpenSleep(log, now)) break;
         summary.sleepCount++;
         const sleepData = log.data as SleepData;
         const duration = sleepData.duration || calculateSleepDuration(sleepData) || 0;

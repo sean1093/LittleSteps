@@ -1,5 +1,5 @@
 import { DailyLog, GrowthRecord, FeedingData, SleepData, DiaperData } from '../../types';
-import { filterLogsByDate, calculateSleepDuration } from './logHelpers';
+import { filterLogsByDate, calculateSleepDuration, isStaleOpenSleep } from './logHelpers';
 import {
   TrendDirection,
   calculateTrend,
@@ -212,7 +212,9 @@ function buildSleepData(logs: DailyLog[], days: number, ageMonths: number) {
     const date = getDateNDaysAgo(i);
     const dayLogs = filterLogsByDate(logs, date);
 
-    const sleepLogs = dayLogs.filter(log => log.type === 'sleep');
+    // 忘了按「醒了」的睡眠不是那天的一段睡眠：算進來只會讓那天變成「有記錄
+    // 但只睡了 0 小時」，把平均往下拉。
+    const sleepLogs = dayLogs.filter(log => log.type === 'sleep' && !isStaleOpenSleep(log));
     let dayTotalMinutes = 0;
     let dayNightWakings = 0;
     // 那天完全沒記睡眠，夜醒次數就是不知道，不是 0。當成 0 會讓「太累沒記」

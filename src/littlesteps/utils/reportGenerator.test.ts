@@ -332,6 +332,30 @@ describe('reportGenerator', () => {
       expect(scores.poop).toEqual({ score: 100, label: '很棒！', loggedDays: 7 });
     });
 
+    /*
+      A sleep whose end time was never filled in contributes no minutes. Counted
+      as a logged sleep day it turns into "that day the baby slept 0 hours",
+      which drags the weekly average down and shows up nowhere on the page as
+      an explanation.
+    */
+    it('ignores a sleep left open for days when averaging the week', () => {
+      const forgottenStart = new Date('2026-06-13T20:00:00+08:00');
+      const forgotten: DailyLog = {
+        id: 'forgotten',
+        childId: 'child-1',
+        type: 'sleep',
+        timestamp: forgottenStart.toISOString(),
+        data: { startTime: forgottenStart.toISOString() },
+        createdAt: forgottenStart.toISOString(),
+      };
+      const logs = [sleepLog('2026-06-14', 720), sleepLog('2026-06-15', 720), forgotten];
+
+      const report = generateWeeklyReport(logs, [], 4);
+
+      expect(report.sleep.loggedDays).toBe(2);
+      expect(report.sleep.avgDailyHours).toBe(12);
+    });
+
     it('withholds every score when only two days of a 30-day window were logged', () => {
       const logs = ['2026-06-14', '2026-06-15'].flatMap((date) => [
         feedingLog(date, '06:00:00', 120),

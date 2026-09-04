@@ -13,6 +13,11 @@ import {
   getFeedingTypeLabel,
   getDiaperTypeLabel,
   getConsistencyLabel,
+  STALE_OPEN_SLEEP_MINUTES,
+  findOpenSleep,
+  isOpenSleep,
+  isStaleOpenSleep,
+  openSleepElapsedMinutes,
 } from './logHelpers';
 
 /** Frozen "now" used by every clock-dependent assertion. */
@@ -350,6 +355,66 @@ describe('logHelpers', () => {
       expect(summary.date).toBe('2026-06-15');
       expect(summary.feedingCount).toBe(2);
       expect(summary.totalFeedingAmount).toBe(240);
+    });
+
+    /*
+      An open sleep contributes no minutes, so a forgotten one used to sit in
+      the count as a session that lasted zero. Every average built on top of it
+      — the day view, the weekly report, the clinic summary — reads that as
+      "the baby slept, badly" instead of "nobody pressed the button".
+    */
+    it('drops a sleep left open past the stale threshold from the day total', () => {
+      const logs = [
+        sleepLog('finished', '2026-06-15T02:00:00.000Z', {
+          endTime: '2026-06-15T03:30:00.000Z',
+          duration: 90,
+        }),
+        sleepLog('forgotten', at(-15 * 60)),
+      ];
+
+      const summary = calculateDailySummary(logs, '2026-06-15');
+
+      expect(summary.sleepCount).toBe(1);
+      expect(summary.totalSleepDuration).toBe(90);
+    });
+
+    it('still counts a sleep that is open but younger than the threshold', () => {
+      const logs = [sleepLog('napping', at(-13 * 60))];
+
+      expect(calculateDailySummary(logs, '2026-06-15').sleepCount).toBe(1);
+    });
+  });
+
+  describe('open sleep sessions', () => {
+    it('treats a missing endTime as still sleeping', () => {
+      expect(isOpenSleep(sleepLog('s1', at(-30)))).toBe(true);
+      expect(
+        isOpenSleep(sleepLog('s2', at(-120), { endTime: at(-30), duration: 90 }))
+      ).toBe(false);
+      expect(isOpenSleep(feedingLog('f1', at(-30)))).toBe(false);
+    });
+
+    it('counts elapsed minutes from the start, never negative', () => {
+      expect(openSleepElapsedMinutes({ startTime: at(-95) })).toBe(95);
+      // 手動補記時把開始時間填在未來：算出負數會讓卡片印出「睡著了 -3 分鐘」。
+      expect(openSleepElapsedMinutes({ startTime: at(3) })).toBe(0);
+    });
+
+    it('only calls a sleep stale once it passes the threshold', () => {
+      expect(isStaleOpenSleep(sleepLog('s1', at(-STALE_OPEN_SLEEP_MINUTES)))).toBe(false);
+      expect(isStaleOpenSleep(sleepLog('s2', at(-STALE_OPEN_SLEEP_MINUTES - 1)))).toBe(true);
+    });
+
+    it('finds the newest sleep still open, ignoring closed ones', () => {
+      const logs = [
+        sleepLog('closed', at(-300), { endTime: at(-240), duration: 60 }),
+        sleepLog('older-open', at(-200)),
+        sleepLog('newest-open', at(-40)),
+        feedingLog('f1', at(-10)),
+      ];
+
+      expect(findOpenSleep(logs)?.id).toBe('newest-open');
+      expect(findOpenSleep([])).toBeNull();
     });
   });
 
