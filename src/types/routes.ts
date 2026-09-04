@@ -15,7 +15,7 @@
  * 從網址直接進來的頁面（深連結靜默掉回首頁），或反過來。
  *
  * 路徑而不是 hash：`#/littleexplorer/wiki` 之類的 fragment 不會送到伺服器，
- * 搜尋引擎一律忽略，整個站等於只有一個可索引的網址。84 篇查證過出處的
+ * 搜尋引擎一律忽略，整個站等於只有一個可索引的網址。85 篇查證過出處的
  * 百科文章因此完全搜不到。舊的 hash 連結由 redirectLegacyHash() 接住。
  */
 export const ROUTE_PATH = {
