@@ -11,6 +11,14 @@ interface LogEntryModalProps {
   onSave: (logData: Omit<DailyLog, 'id'>) => Promise<void>;
   logType: 'feeding' | 'sleep' | 'diaper';
   editingLog?: DailyLog | null;
+  /**
+   * 這個孩子上一筆同類型的紀錄，用來預填新增表單。
+   *
+   * 表單原本每次都從 `breast_left` 和空白奶量開始，所以一位喝配方奶的家長
+   * 一天要重打同樣的 120 八次，而且是凌晨三點單手抱著小孩打。這裡帶進來的是
+   * 真的填進欄位的值，不是灰色提示：家長要看得見接下來會存進去什麼。
+   */
+  lastLog?: DailyLog | null;
 }
 
 /* Repeated verbatim on eight fields below. */
@@ -25,6 +33,7 @@ export default function LogEntryModal({
   onSave,
   logType,
   editingLog,
+  lastLog,
 }: LogEntryModalProps) {
   // Common fields
   const [timestamp, setTimestamp] = useState(getCurrentDateTimeLocal());
@@ -82,20 +91,27 @@ export default function LogEntryModal({
         setNotes(data.notes || '');
       }
     } else {
-      // Reset form for new entry
+      /*
+        新增：時間永遠是現在，其餘沿用上一筆同類型的紀錄。備註不沿用——那是
+        當下那一次的事，重複出現只會變成錯的敘述。第一次記錄的孩子沒有上一筆，
+        就回到原本的預設值，不需要空狀態也不該報錯。
+      */
+      const lastFeeding = logType === 'feeding' ? (lastLog?.data as FeedingData | undefined) : undefined;
+      const lastDiaper = logType === 'diaper' ? (lastLog?.data as DiaperData | undefined) : undefined;
+
       setTimestamp(getCurrentDateTimeLocal());
       setStartTime(getCurrentDateTimeLocal());
       setEndTime('');
       setNightWakings('');
-      setDuration('');
-      setAmount('');
       setNotes('');
-      setFeedingType('breast_left');
-      setSide('');
-      setDiaperType('pee');
-      setConsistency('normal');
+      setDuration(lastFeeding?.duration?.toString() ?? '');
+      setAmount(lastFeeding?.amount?.toString() ?? '');
+      setFeedingType(lastFeeding?.feedingType ?? 'breast_left');
+      setSide(lastFeeding?.side ?? '');
+      setDiaperType(lastDiaper?.type ?? 'pee');
+      setConsistency(lastDiaper?.consistency ?? 'normal');
     }
-  }, [editingLog, logType, isOpen]);
+  }, [editingLog, logType, isOpen, lastLog]);
 
   /*
     兩個欄位都是 datetime-local，各自帶日期，所以「22:30 睡到隔天 06:00」算出來

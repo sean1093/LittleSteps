@@ -99,6 +99,72 @@ describe('睡眠的起訖時間', () => {
   });
 });
 
+/*
+  這張表以前每次都從 breast_left 和空白奶量開始，所以一位餵配方奶的家長
+  一天要重打同樣的 120 八次。上一筆的值要真的填進欄位，不是灰色提示。
+*/
+describe('沿用上一筆', () => {
+  const lastFormula: DailyLog = {
+    id: 'f-last',
+    childId: 'c1',
+    type: 'feeding',
+    timestamp: '2026-09-01T02:00:00.000Z',
+    data: { feedingType: 'formula', amount: 120, duration: 10, notes: '喝很快' },
+    createdAt: '2026-09-01T02:00:00.000Z',
+  };
+
+  it('新增餵奶時帶出上次的類型與奶量，而且是真的填在欄位裡', () => {
+    renderModal({ logType: 'feeding', lastLog: lastFormula });
+
+    expect(screen.getByLabelText('類型 *')).toHaveValue('formula');
+    expect(screen.getByLabelText('奶量（ml）')).toHaveValue(120);
+    expect(screen.getByLabelText('時長（分鐘）')).toHaveValue(10);
+  });
+
+  it('備註不沿用：那是上一次那一餐的事', () => {
+    renderModal({ logType: 'feeding', lastLog: lastFormula });
+
+    expect(screen.getByLabelText('備註')).toHaveValue('');
+  });
+
+  it('尿布帶出上次的類型與性狀', () => {
+    const lastDiaper: DailyLog = {
+      id: 'd-last',
+      childId: 'c1',
+      type: 'diaper',
+      timestamp: '2026-09-01T02:00:00.000Z',
+      data: { type: 'both', consistency: 'soft' },
+      createdAt: '2026-09-01T02:00:00.000Z',
+    };
+    renderModal({ logType: 'diaper', lastLog: lastDiaper });
+
+    expect(screen.getByLabelText('類型 *')).toHaveValue('both');
+    expect(screen.getByLabelText('性狀')).toHaveValue('soft');
+  });
+
+  it('第一次記錄的孩子回到原本的預設值，不報錯也沒有空狀態', () => {
+    renderModal({ logType: 'feeding', lastLog: null });
+
+    expect(screen.getByLabelText('類型 *')).toHaveValue('breast_left');
+    expect(screen.getByLabelText('奶量（ml）')).toHaveValue(null);
+  });
+
+  it('編輯既有紀錄時看到的是那一筆，不是上一筆', () => {
+    const editingLog: DailyLog = {
+      id: 'f-edit',
+      childId: 'c1',
+      type: 'feeding',
+      timestamp: '2026-09-02T02:00:00.000Z',
+      data: { feedingType: 'solid', amount: 30 },
+      createdAt: '2026-09-02T02:00:00.000Z',
+    };
+    renderModal({ logType: 'feeding', editingLog, lastLog: lastFormula });
+
+    expect(screen.getByLabelText('類型 *')).toHaveValue('solid');
+    expect(screen.getByLabelText('奶量（ml）')).toHaveValue(30);
+  });
+});
+
 describe('擠奶', () => {
   /*
     #14 的整個論點就是擠出來的量不是寶寶喝進去的量。標題還寫著「餵奶記錄」
