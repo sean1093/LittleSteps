@@ -1,9 +1,9 @@
 import { useState, useMemo, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, BookOpen, Check, ChevronDown, Pill, ShieldAlert, X } from 'lucide-react';
+import { AlertTriangle, BookOpen, CalendarPlus, Check, ChevronDown, Pill, ShieldAlert, X } from 'lucide-react';
 import { getLucideIcon } from '../../common/lucideIcons';
 
-import { ChildProfile, VaccineFunding, VaccineProgress } from '../../types';
+import { ChildProfile, VaccineFunding, VaccineProgress, VaccineSchedule } from '../../types';
 import {
   vaccineSchedules,
   vaccineSideEffects,
@@ -18,6 +18,8 @@ import { useCentreSelectedChip } from '../../common/ui/useCentreSelectedChip';
 import { pressable } from '../../common/ui/pressable';
 import { vaccineMonthForChild } from '../utils/ageDefaults';
 import { isCorrecting } from '../../common/correctedAge';
+import { buildVaccineIcs, outstandingVaccineDoses, FUNDING_LABEL } from '../utils/vaccineCalendar';
+import { downloadCalendar } from '../../common/utils/icsExport';
 
 type FundingFilter = 'all' | 'national' | 'conditional' | 'self-paid';
 type MonthFilter = 'all' | number;
@@ -39,31 +41,30 @@ interface VaccineTrackingPageProps {
  * disc 是月齡圓圈的底色，badge 是名稱旁的標籤，note 是條件那一行的底色。
  * 三者同色系，家長掃一眼圓圈就知道這一劑要不要錢，不必逐張讀標籤。
  * 全部取自 tailwind.config.js 的 token；文字一律用 -dark（>=4.5:1）。
+ *
+ * 文字本身在 utils/vaccineCalendar 的 FUNDING_LABEL：匯出到行事曆的那一劑
+ * 得用同一個說法，不然同一件事在 app 裡和行事曆裡看起來像兩件事。
  */
 const FUNDING_UI: Record<
   VaccineFunding,
-  { label: string; disc: string; badge: string; note: string }
+  { disc: string; badge: string; note: string }
 > = {
   national: {
-    label: '公費',
     disc: 'bg-mint-dark',
     badge: 'bg-mint-light text-mint-dark',
     note: 'bg-mint-soft text-mint-dark',
   },
   'nhi-conditional': {
-    label: '健保有條件給付',
     disc: 'bg-secondary-dark',
     badge: 'bg-secondary-light text-secondary-dark',
     note: 'bg-secondary-soft text-secondary-dark',
   },
   'self-paid': {
-    label: '自費',
     disc: 'bg-butter-dark',
     badge: 'bg-butter-light text-butter-dark',
     note: 'bg-butter-soft text-butter-dark',
   },
   'local-varies': {
-    label: '各縣市不同',
     disc: 'bg-primary-dark',
     badge: 'bg-primary-light text-primary-dark',
     note: 'bg-primary-soft text-primary-dark',
@@ -149,6 +150,21 @@ export default function VaccineTrackingPage({
   const { scrollerRef, selectedRef } = useCentreSelectedChip(monthFilter);
 
   const availableMonths = AVAILABLE_MONTHS;
+
+  // 匯出刻意不跟著上面兩排篩選器：家長要的是一份完整的待接種清單進行事曆，
+  // 不是「現在畫面上這幾劑」。按鈕自己寫出劑數，按下去拿到的就是那個數字。
+  const outstanding = useMemo(
+    () =>
+      currentChild?.birthday
+        ? outstandingVaccineDoses(currentChild.birthday, vaccineSchedules, vaccineProgress)
+        : [],
+    [currentChild?.birthday, vaccineProgress],
+  );
+
+  const exportDoses = (schedules: VaccineSchedule[], filename: string) => {
+    if (!currentChild) return;
+    downloadCalendar(buildVaccineIcs(currentChild, schedules, vaccineProgress), filename);
+  };
 
   const filteredVaccines = useMemo(() => {
     let filtered = vaccineSchedules;
@@ -300,6 +316,20 @@ export default function VaccineTrackingPage({
           <span className="text-sm text-ink-muted">（共 {filteredVaccines.length} 項）</span>
         </div>
 
+        {outstanding.length > 0 && (
+          <motion.button
+            type="button"
+            whileTap={tap}
+            onClick={() =>
+              exportDoses(vaccineSchedules, `${currentChild?.name}-疫苗接種時程.ics`)
+            }
+            className="btn-secondary w-full mb-4 text-sm"
+          >
+            <CalendarPlus className="w-4 h-4" />
+            匯出未接種的 {outstanding.length} 劑到行事曆
+          </motion.button>
+        )}
+
         <AnimatePresence mode="popLayout">
           {/* Re-keying on the filters replays the stagger so a chip tap reads as
               a new list arriving. */}
@@ -360,7 +390,7 @@ export default function VaccineTrackingPage({
 
                                 <div className="flex flex-wrap items-center gap-2 text-sm text-ink-muted">
                                   <span>{vaccine.timing}</span>
-                                  <span className={`tag ${funding.badge}`}>{funding.label}</span>
+                                  <span className={`tag ${funding.badge}`}>{FUNDING_LABEL[vaccine.funding]}</span>
                                 </div>
 
                                 {/* 條件不必點開就看得到：健保給付綁的是早產、先天性
@@ -414,6 +444,21 @@ export default function VaccineTrackingPage({
                                   <span className="text-sm text-ink-muted">點擊記錄接種日期</span>
                                 )}
                               </button>
+                              {/* 只有還沒接種、而且算得出日期的劑次值得提醒；
+                                  已接種的那一劑進行事曆只是雜訊。 */}
+                              {!isAdministered && vaccine.ageInMonths !== undefined && currentChild?.birthday && (
+                                <motion.button
+                                  type="button"
+                                  whileTap={tap}
+                                  onClick={() =>
+                                    exportDoses([vaccine], `${currentChild.name}-${vaccine.name}.ics`)
+                                  }
+                                  aria-label={`${vaccine.name}：加入行事曆`}
+                                  className="btn-icon -m-2.5"
+                                >
+                                  <CalendarPlus className="w-5 h-5" />
+                                </motion.button>
+                              )}
                             </div>
 
                             {/* Description and Protection - Always shown */}
