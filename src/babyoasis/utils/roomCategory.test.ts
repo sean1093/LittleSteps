@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest';
 import type { NursingRoom } from '../../types';
 import {
   CATEGORY_CHIPS,
-  CATEGORY_LABEL,
   categoryOf,
   isInternalVenue,
   needsStaffHelp,
+  type RoomCategory,
 } from './roomCategory';
 
 /**
@@ -57,11 +57,13 @@ describe('categoryOf', () => {
     expect(categoryOf(room({ name: '台北君品國際大酒店' }))).toBe('other');
   });
 
-  it('labels every category, and every chip is a real category', () => {
-    CATEGORY_CHIPS.forEach((category) => expect(CATEGORY_LABEL[category]).toBeTruthy());
-    // The four non-chip categories exist for `isInternalVenue`, not for the UI.
-    expect(CATEGORY_CHIPS).not.toContain('workplace');
-    expect(CATEGORY_CHIPS).not.toContain('school');
+  it('offers no chip for a category that can be flagged as internal', () => {
+    // A chip for workplaces or campuses would invite a parent to browse rooms
+    // they cannot walk into. `Record<ChipCategory, string>` already guarantees
+    // every chip has a label; this is the part the type cannot state.
+    const chips: readonly RoomCategory[] = CATEGORY_CHIPS;
+    expect(chips).not.toContain('workplace');
+    expect(chips).not.toContain('school');
   });
 });
 

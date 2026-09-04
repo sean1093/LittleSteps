@@ -32,32 +32,32 @@ export type RoomCategory =
   | 'workplace'
   | 'other';
 
-export const CATEGORY_LABEL: Record<RoomCategory, string> = {
-  transport: '車站・機場',
-  shopping: '百貨・賣場',
-  medical: '醫院・衛生所',
-  leisure: '公園・戶外',
-  culture: '圖書館・展館',
-  welfare: '親子館・社福',
-  government: '公家機關',
-  school: '學校',
-  workplace: '公司・工廠',
-  other: '其他',
-};
-
 /**
  * The six a parent picks while planning where to go. The other four are
  * classified — `isInternalVenue` needs `workplace` and `school` — but nobody
- * plans an outing around a tax office, so they get no chip.
+ * plans an outing around a tax office, so they get no chip, and therefore no
+ * label either: a label nothing renders goes stale without anyone noticing.
  */
-export const CATEGORY_CHIPS: readonly RoomCategory[] = [
+export const CATEGORY_CHIPS = [
   'shopping',
   'transport',
   'medical',
   'leisure',
   'culture',
   'welfare',
-];
+] as const satisfies readonly RoomCategory[];
+
+export type ChipCategory = (typeof CATEGORY_CHIPS)[number];
+
+/** In chip order, so the row on screen reads the same as this table. */
+export const CATEGORY_LABEL: Record<ChipCategory, string> = {
+  shopping: '百貨・賣場',
+  transport: '車站・機場',
+  medical: '醫院・衛生所',
+  leisure: '公園・戶外',
+  culture: '圖書館・展館',
+  welfare: '親子館・社福',
+};
 
 /**
  * Ordered rule table, first match wins. The order carries as much of the
