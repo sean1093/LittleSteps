@@ -325,11 +325,12 @@ describe('nextScheduledDose', () => {
 describe('真實時程', () => {
   it('0-12 個月確實是重心：23 劑落在這個服務自己的範圍', () => {
     // 這個數字就是這個引擎存在的理由。變了要重新想清楚它該放哪個服務。
-    // 33 而不是 32：RSV 單株抗體拆成健保有條件給付與自費兩種產品。
+    // 32 而不是 31：RSV 單株抗體拆成健保有條件給付與自費兩種產品；而 24 個
+    // 月的肺炎鏈球菌「第 4 劑」不在裡面，官方時程沒有那一劑。
     const withAge = vaccineSchedules.filter((v) => v.ageInMonths !== undefined);
     const early = withAge.filter((v) => v.ageInMonths! <= 12);
 
-    expect(withAge).toHaveLength(33);
+    expect(withAge).toHaveLength(32);
     expect(early).toHaveLength(23);
   });
 
