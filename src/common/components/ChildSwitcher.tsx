@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { useOptionalChildStore } from '../contexts/ChildStoreContext';
@@ -43,13 +43,25 @@ interface ChildSwitcherProps {
 export default function ChildSwitcher({ service, className = '' }: ChildSwitcherProps) {
   const store = useOptionalChildStore();
   const [open, setOpen] = useState(false);
-  const panelId = useId();
+  const toggleRef = useRef<HTMLButtonElement>(null);
+
+  /**
+   * Closing hands focus back to the toggle. Both ways out of the panel
+   * destroy the element the keyboard is standing on — Escape may be pressed
+   * while an option has focus, and choosing a child unmounts the button that
+   * was just activated — so without this, focus falls to the body and a
+   * keyboard user has to tab in from the top of the page again.
+   */
+  const close = () => {
+    setOpen(false);
+    toggleRef.current?.focus();
+  };
 
   useEffect(() => {
     if (!open) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') close();
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
@@ -67,7 +79,7 @@ export default function ChildSwitcher({ service, className = '' }: ChildSwitcher
   const theme = SERVICE_THEME[service];
 
   const switchTo = (id: string) => {
-    setOpen(false);
+    close();
     // The store reports its own failures, and the name follows the database,
     // so a switch that does not land leaves the current child on screen.
     void store.setCurrentChild(id);
@@ -76,10 +88,10 @@ export default function ChildSwitcher({ service, className = '' }: ChildSwitcher
   return (
     <div className={className}>
       <button
+        ref={toggleRef}
         type="button"
         onClick={() => setOpen((wasOpen) => !wasOpen)}
         aria-expanded={open}
-        aria-controls={panelId}
         className={`chip max-w-full ${theme.tint}`}
       >
         <span className="text-xs shrink-0">寶寶</span>
@@ -93,7 +105,7 @@ export default function ChildSwitcher({ service, className = '' }: ChildSwitcher
 
       <AnimatePresence initial={false}>
         {open && (
-          <motion.div {...collapse} id={panelId} className="overflow-hidden">
+          <motion.div {...collapse} className="overflow-hidden">
             <ul aria-label="切換寶寶" className="flex flex-col items-start gap-2 pt-2">
               {others.map((child) => (
                 <li key={child.id} className="max-w-full">

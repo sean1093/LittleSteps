@@ -102,20 +102,25 @@ describe('an account with two children', () => {
     await user.click(screen.getByRole('button', { name: '小樹' }));
 
     expect(mocks.setCurrentChild).toHaveBeenCalledWith('c2');
+    // The button that was activated is now unmounted; without handing focus
+    // back, a keyboard user is dropped on the body.
+    expect(toggle).toHaveFocus();
   });
 
   it('closes on Escape without switching', async () => {
     const { user } = renderSwitcher([bean, tree], 'c1');
 
     await user.click(screen.getByRole('button', { name: '寶寶 小豆' }));
-    expect(screen.getByRole('button', { name: '小樹' })).toBeInTheDocument();
+    // Tab into the panel first: Escape pressed from the toggle would leave
+    // focus there anyway, so it would not prove focus is handed back.
+    await user.tab();
+    expect(screen.getByRole('button', { name: '小樹' })).toHaveFocus();
 
     await user.keyboard('{Escape}');
 
-    expect(screen.getByRole('button', { name: '寶寶 小豆' })).toHaveAttribute(
-      'aria-expanded',
-      'false',
-    );
+    const toggle = screen.getByRole('button', { name: '寶寶 小豆' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveFocus();
     expect(mocks.setCurrentChild).not.toHaveBeenCalled();
   });
 });
