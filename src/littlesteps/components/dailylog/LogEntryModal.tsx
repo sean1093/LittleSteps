@@ -111,7 +111,13 @@ export default function LogEntryModal({
       setDiaperType(lastDiaper?.type ?? 'pee');
       setConsistency(lastDiaper?.consistency ?? 'normal');
     }
-  }, [editingLog, logType, isOpen, lastLog]);
+    /*
+      lastLog 刻意不在相依陣列裡：它是「開啟的那一刻讀一次」，不是要追蹤的值。
+      追蹤它的話，另一位照顧者存進一筆紀錄就會讓監聽器送回新的物件、effect 重跑、
+      把這位家長正在打的奶量或備註洗掉——而且是無聲的。共用孩子的兩個人同時記錄
+      在這個 app 裡是常態，不是邊緣情況。
+    */
+  }, [editingLog, logType, isOpen]);
 
   /*
     兩個欄位都是 datetime-local，各自帶日期，所以「22:30 睡到隔天 06:00」算出來
