@@ -58,6 +58,12 @@ export default function RepeatLastLog({
   return (
     <div className="card">
       <p className="mb-2 text-sm text-ink-muted">再記一次上次的</p>
+      {/*
+        沒有 flex-1：.chip 是 nowrap 且 overflow visible，三顆並排時 flex-1 會把
+        它們壓到比文字還窄，而文字不會被裁掉，是溢出去疊在隔壁上——320px 下整排
+        讀起來是一串糊在一起的字。讓它們照內容決定寬度、需要時換行，標籤才還說得出
+        這顆按鈕會存什麼，而那正是這張卡存在的理由。
+      */}
       <div className="flex flex-wrap gap-2">
         {targets.map((target) => (
           <motion.button
@@ -65,7 +71,7 @@ export default function RepeatLastLog({
             type="button"
             whileTap={tap}
             onClick={() => onRepeat(target.log)}
-            className="chip flex-1 min-w-tap justify-center"
+            className="chip min-w-tap justify-center"
           >
             {target.label}（{describe(target.log)}）
           </motion.button>
