@@ -23,6 +23,37 @@ const log = (over: Partial<DailyLog> = {}): DailyLog =>
 
 const noop = () => {};
 
+describe('擠奶那一列', () => {
+  const pumping: DailyLog = {
+    id: 'p1',
+    childId: 'c1',
+    type: 'feeding',
+    timestamp: new Date().toISOString(),
+    data: { feedingType: 'pumping', amount: 150, duration: 20, side: 'left' },
+    createdAt: new Date().toISOString(),
+  };
+
+  it('標成擠奶而不是餵奶，而且不重複印一次類型', () => {
+    render(<LogTimeline logs={[pumping]} onEdit={() => {}} onDelete={() => {}} />);
+
+    expect(screen.getByText('擠奶')).toBeInTheDocument();
+    expect(screen.queryByText('餵奶')).toBeNull();
+    expect(screen.getByText('左側 · 20分鐘 · 150ml')).toBeInTheDocument();
+  });
+
+  it('瓶餵母乳仍然標成餵奶，並跟配方奶區分得出來', () => {
+    const bottle: DailyLog = {
+      ...pumping,
+      id: 'b1',
+      data: { feedingType: 'breast_milk_bottle', amount: 120 },
+    };
+    render(<LogTimeline logs={[bottle]} onEdit={() => {}} onDelete={() => {}} />);
+
+    expect(screen.getByText('餵奶')).toBeInTheDocument();
+    expect(screen.getByText('母乳瓶餵 · 120ml')).toBeInTheDocument();
+  });
+});
+
 describe('LogTimeline 的記錄者', () => {
   it('別人記的會標出是誰', () => {
     render(

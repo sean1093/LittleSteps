@@ -185,7 +185,9 @@ export default function LogEntryModal({
     const prefix = editingLog ? '編輯' : '新增';
     switch (logType) {
       case 'feeding':
-        return `${prefix}餵奶記錄`;
+        // 擠奶不是餵奶。標題還寫著「餵奶記錄」，等於畫面自己否認了這個 PR
+        // 要建立的區別。
+        return isPumping ? `${prefix}擠奶記錄` : `${prefix}餵奶記錄`;
       case 'sleep':
         return `${prefix}睡眠記錄`;
       case 'diaper':

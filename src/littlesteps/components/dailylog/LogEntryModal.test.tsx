@@ -100,6 +100,21 @@ describe('睡眠的起訖時間', () => {
 });
 
 describe('擠奶', () => {
+  /*
+    #14 的整個論點就是擠出來的量不是寶寶喝進去的量。標題還寫著「餵奶記錄」
+    的時候，畫面自己否認了那個區別，而那是媽媽真的會讀的地方。
+  */
+  it('選了擠奶之後，標題不再說這是一筆餵奶記錄', async () => {
+    const { user } = renderModal({ logType: 'feeding' });
+
+    expect(screen.getByRole('heading', { name: '新增餵奶記錄' })).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('類型 *'), 'pumping');
+
+    expect(screen.getByRole('heading', { name: '新增擠奶記錄' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '新增餵奶記錄' })).toBeNull();
+  });
+
   it('存成 pumping，帶擠出量、時間與哪一邊', async () => {
     const { user, onSave } = renderModal({ logType: 'feeding' });
 
