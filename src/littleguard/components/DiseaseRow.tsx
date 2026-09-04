@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import type { RadarCell } from '../../types';
 import { listItem } from '../../common/ui/motion';
-import { STATUS_COPY, formatRate, statusOf, type DiseaseCell } from '../utils/radar';
+import { STATUS_COPY, statusOf, type DiseaseCell } from '../utils/radar';
 
 interface Props {
   disease: string;
@@ -22,9 +22,10 @@ interface Props {
  * 文案與顏色一律從 STATUS_COPY 取，這裡不列任何狀態名單——radar.ts 之後再多
  * 幾個狀態，這一列都不用改，也不會漏掉哪一個。
  *
- * 兩行而不是一行：390px 的卡片內寬只有約 326px，「疱疹性咽峽炎 ＋ 最近變多，
- * 多留意 ＋ 169.0/萬 ＋ 35 人次」擠在同一行會溢出。病名配狀態、數字配人次，
- * 各自成一欄，也讓數字不必為了塞得下而縮字級。
+ * 右邊只留人次。「169.0/萬」是板上唯一一個家長沒辦法拿來做任何事的數字，而多
+ * 還是少已經由狀態文案講完了；把它拿掉，390px 的卡片內寬（約 326px）也就不必
+ * 再為了「疱疹性咽峽炎 ＋ 最近變多，多留意 ＋ 169.0/萬 ＋ 35 人次」擠在同一列
+ * 而縮字級。左邊病名配狀態、右邊人次，還是兩欄。
  *
  * parts 那一行小字是家長不用點進來就拿得到的答案：手足口病與疱疹性咽峽炎不是
  * 另外兩種病，是同一批就診人次的兩種表現，都算在這一列裡面。
@@ -47,12 +48,7 @@ export default function DiseaseRow({ disease, cell, parts, showStatus, onOpen }:
         )}
         {showStatus && <span className={`block text-sm mt-0.5 ${copy.tone}`}>{copy.label}</span>}
       </span>
-      <span className="shrink-0 text-right">
-        <span className="block text-ink tabular-nums">{formatRate(cell.rate)}</span>
-        <span className="block mt-0.5 text-sm text-ink-faint tabular-nums">
-          {cell.visits} 人次
-        </span>
-      </span>
+      <span className="shrink-0 text-ink tabular-nums">{cell.visits} 人次</span>
     </motion.button>
   );
 }

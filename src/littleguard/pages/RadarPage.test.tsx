@@ -148,6 +148,11 @@ describe('疫情雷達板', () => {
     expect(screen.getByText('含手足口病、疱疹性咽峽炎')).toBeInTheDocument();
   });
 
+  it('板下面說清楚右邊那個數字是什麼', async () => {
+    await renderReady();
+    expect(screen.getByText(/右邊的人次是這一週該縣市、該年齡層的健保門診就診次數/)).toBeInTheDocument();
+  });
+
   it('顯示疫情週的日期區間而不是週號', async () => {
     await renderReady();
     expect(screen.getByText(/8\/23–8\/29/)).toBeInTheDocument();
@@ -290,7 +295,9 @@ describe('資料新舊', () => {
       expect(screen.queryByText(label)).not.toBeInTheDocument();
       expect(dialog).not.toHaveTextContent(label);
     });
-    // 收起的是判斷，不是數字：率、人次、分母照給，也還連得出疾管署那一頁。
+    // 收起的是判斷，不是數字：那句話、率、分母照給，也還連得出疾管署那一頁。
+    expect(dialog).toHaveTextContent('這一週有 20 次因腸病毒就診');
+    await it.click(screen.getByRole('button', { name: '詳細數字' }));
     expect(dialog).toHaveTextContent('100.0/萬');
     expect(dialog).toHaveTextContent('2,000 次門診');
     expect(screen.getByRole('link', { name: /疾管署的腸病毒說明/ })).toBeInTheDocument();
@@ -359,7 +366,7 @@ describe('抽屜', () => {
     await it.click(screen.getByRole('button', { name: /腸病毒/ }));
     const body = screen.getByRole('dialog').textContent ?? '';
     expect(body.indexOf('可以做什麼')).toBeGreaterThan(-1);
-    expect(body.indexOf('可以做什麼')).toBeLessThan(body.indexOf('統計基數'));
+    expect(body.indexOf('可以做什麼')).toBeLessThan(body.indexOf('次因腸病毒就診'));
   });
 
   it('連得出疾管署', async () => {
@@ -371,10 +378,11 @@ describe('抽屜', () => {
     );
   });
 
-  it('板上放不下的分母在抽屜裡補上', async () => {
-    // 卡片只放得下率與人次；分母是這一格可不可信的關鍵，落點在抽屜。
+  it('板上放不下的分母在抽屜的詳細數字裡補上', async () => {
+    // 板上只放得下人次；率與分母是這一格可不可信的關鍵，落點在抽屜。
     const it = await renderReady();
     await it.click(screen.getByRole('button', { name: /腸病毒/ }));
+    await it.click(screen.getByRole('button', { name: '詳細數字' }));
     const body = screen.getByRole('dialog').textContent ?? '';
     expect(body).toContain('100.0/萬');
     expect(body).toContain('20 人次');
@@ -395,7 +403,7 @@ describe('抽屜', () => {
     await it.click(screen.getByRole('button', { name: /水痘/ }));
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveTextContent('最近沒有個案');
-    expect(dialog).toHaveTextContent('0 人次');
+    expect(dialog).toHaveTextContent('花蓮縣 3-6 歲這一週有 0 次因水痘就診');
   });
 
   it('資料不足的格子照樣打得開，據實說算不出來', async () => {
@@ -404,6 +412,7 @@ describe('抽屜', () => {
     await it.click(screen.getByRole('button', { name: /腸病毒/ }));
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveTextContent('資料不足');
+    await it.click(screen.getByRole('button', { name: '詳細數字' }));
     expect(dialog).toHaveTextContent('11 次門診');
     expect(dialog).toHaveTextContent(/容易上下跳動/);
     // 算不出來的率不編一個數字；人次與分母是實際數到的，照實給。

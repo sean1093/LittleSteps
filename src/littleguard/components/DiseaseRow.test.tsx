@@ -22,11 +22,10 @@ function cell(overrides: Partial<RadarCell> = {}): RadarCell {
 const noop = () => {};
 
 describe('DiseaseRow', () => {
-  it('病名、比率、人次都在同一列上', () => {
+  it('病名與人次都在同一列上', () => {
     render(<DiseaseRow disease="腸病毒" cell={cell()} showStatus onOpen={noop} />);
     const row = screen.getByRole('button');
     expect(row).toHaveTextContent('腸病毒');
-    expect(row).toHaveTextContent('12.3/萬');
     expect(row).toHaveTextContent('20 人次');
   });
 
@@ -49,22 +48,15 @@ describe('DiseaseRow', () => {
   it('showStatus 為 false 時收起狀態，數字照留', () => {
     render(<DiseaseRow disease="腸病毒" cell={cell()} showStatus={false} onOpen={noop} />);
     expect(screen.queryByText(STATUS_COPY.steady.label)).not.toBeInTheDocument();
-    expect(screen.getByRole('button')).toHaveTextContent('12.3/萬');
     expect(screen.getByRole('button')).toHaveTextContent('20 人次');
   });
 
-  it('算不出比率時寫破折號，不寫 0', () => {
-    render(
-      <DiseaseRow
-        disease="水痘"
-        cell={cell({ rate: null, trendBase: null, ratio: null, visits: 0 })}
-        showStatus
-        onOpen={noop}
-      />,
-    );
+  it('板上不放「/萬」——那是這一列上家長唯一沒辦法拿來做任何事的數字', () => {
+    // 「比平常多還是少」狀態文案已經講完了。率沒有刪掉，它在抽屜的詳細數字裡。
+    render(<DiseaseRow disease="腸病毒" cell={cell()} showStatus onOpen={noop} />);
     const row = screen.getByRole('button');
-    expect(row).toHaveTextContent('—');
-    expect(row).not.toHaveTextContent('0.0/萬');
+    expect(row).not.toHaveTextContent('/萬');
+    expect(row).not.toHaveTextContent('12.3');
   });
 
   it('有表現掛在底下的那一列，病名下面就寫出來', () => {

@@ -5,6 +5,7 @@ import { describe, it, expect } from 'vitest';
 import type { RadarCell } from '../../types';
 import {
   RADAR_THRESHOLDS,
+  GEO_THRESHOLDS,
   STATUS_COPY,
   FORBIDDEN_WORDS,
   statusOf,
@@ -12,6 +13,8 @@ import {
   formatRate,
   formatWeekRange,
   summariseBoard,
+  describeVisits,
+  describeGeoRatio,
 } from './radar';
 import { DISEASE_PART_OF } from '../data/diseases';
 
@@ -200,6 +203,12 @@ describe('門檻與 shipped 資料的校準', () => {
   });
 });
 
+describe('門檻常數（全國比較）', () => {
+  it('與 spec §geoRatio 的實測百分位一致', () => {
+    expect(GEO_THRESHOLDS).toEqual({ p25: 0.66, p75: 1.19 });
+  });
+});
+
 describe('summariseBoard', () => {
   const board = (ratios: Record<string, number>) =>
     Object.entries(ratios).map(([disease, ratio]) => ({ disease, cell: cell({ ratio }) }));
@@ -252,5 +261,62 @@ describe('summariseBoard', () => {
         expect(line).not.toMatch(/[↑↓→!！]/);
       }
     }
+  });
+});
+
+describe('describeVisits', () => {
+  const args = { county: '台北市', age: '0~2', disease: '類流感' };
+
+  it('先講人次，再講跟前 8 週的平常值差多少', () => {
+    expect(describeVisits({ ...args, cell: cell({ visits: 413, ratio: 1.44 }) })).toBe(
+      '台北市 0-2 歲這一週有 413 次因類流感就診，比前 8 週的平常值多約 44%。',
+    );
+  });
+
+  it('比平常少也照實說，不只講變多的那一半', () => {
+    expect(describeVisits({ ...args, cell: cell({ visits: 176, ratio: 0.64 }) })).toBe(
+      '台北市 0-2 歲這一週有 176 次因類流感就診，比前 8 週的平常值少約 36%。',
+    );
+  });
+
+  it('差距不到 5% 就說差不多，不把雜訊講成趨勢', () => {
+    expect(describeVisits({ ...args, cell: cell({ visits: 389, ratio: 0.96 }) })).toBe(
+      '台北市 0-2 歲這一週有 389 次因類流感就診，跟前 8 週的平常值差不多。',
+    );
+  });
+
+  it('比不出來的時候用板上同一套說法，不另外發明一組', () => {
+    const reasons = [
+      cell({ visits: 0, trendBase: null, ratio: null }),
+      cell({ visits: 0, rate: 0, trendBase: 0, ratio: null }),
+      cell({ visits: 3, rate: 12, trendBase: 0, ratio: null }),
+    ].map((radarCell) => describeVisits({ ...args, cell: radarCell }));
+    expect(reasons[0]).toContain(STATUS_COPY.noBaseline.label);
+    expect(reasons[1]).toContain(STATUS_COPY.none.label);
+    expect(reasons[2]).toContain(STATUS_COPY.emerged.label);
+    reasons.forEach((sentence) => expect(sentence).not.toContain('%'));
+  });
+
+  it('年齡層講家長的說法，不講資料的鍵值', () => {
+    const sentence = describeVisits({ ...args, age: '7~12', cell: cell({ visits: 20 }) });
+    expect(sentence).toContain('台北市 7-12 歲');
+    expect(sentence).not.toContain('7~12');
+  });
+});
+
+describe('describeGeoRatio', () => {
+  it('P25 與 P75 兩個切點本身都算「差不多」', () => {
+    // 邊界落在哪一邊要寫死，否則同一個 0.66 這週偏少、下週差不多。
+    expect(describeGeoRatio(GEO_THRESHOLDS.p25)).toBe('跟全國同一週相比，這裡差不多。');
+    expect(describeGeoRatio(GEO_THRESHOLDS.p75)).toBe('跟全國同一週相比，這裡差不多。');
+  });
+
+  it('低於 P25 說偏少，高於 P75 說偏多', () => {
+    expect(describeGeoRatio(0.65)).toBe('跟全國同一週相比，這裡偏少。');
+    expect(describeGeoRatio(1.2)).toBe('跟全國同一週相比，這裡偏多。');
+  });
+
+  it('算不出來就不給句子，不編一個', () => {
+    expect(describeGeoRatio(null)).toBeNull();
   });
 });
