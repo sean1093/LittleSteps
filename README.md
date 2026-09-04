@@ -85,8 +85,8 @@ shape.
   cannot answer it: a phone only knows where you are now. Only 56 rooms name a
   metro station in their own registered name, far fewer than there are
   stations, so the station coordinates come from OpenStreetMap (ODbL) rather
-  than from the room names. 800 m is measured, not guessed: 246 of the 260
-  stations have at least one room inside it, 7 on average
+  than from the room names. 800 m is measured, not guessed: 235 of the 260
+  stations have at least one room inside it, 7.3 on average and 5 at the median
 - County, then district, each district carrying its own room count: the 3,852
   rooms sit in 364 districts, so one flat list would be 364 chips
 - Six venue-type chips: malls, stations and airports, hospitals and clinics,
