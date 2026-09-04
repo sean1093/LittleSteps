@@ -55,11 +55,19 @@ describe('StepsLanding', () => {
     expect(screen.getByText(/可以移除其他成員/)).toBeInTheDocument();
   });
 
-  it('提到免費時一併說出一個帳號能追蹤幾個寶寶', () => {
+  /**
+   * 「免費」在哪裡出現，限制就要跟在哪裡——原本的頁面寫「永久免費」，一個帳號
+   * 最多兩個寶寶這件事整頁沒提。用 getAllByText 是因為要守的是每一處，不是
+   * 剛好存在的那一處。
+   */
+  it('提到免費的地方都一併說出一個帳號能追蹤幾個寶寶', () => {
     renderPage();
 
-    const freeTier = screen.getByText(/免費/);
-    expect(freeTier.textContent).toContain(`${MAX_CHILDREN} 個寶寶`);
+    const mentions = screen.getAllByText(/免費/);
+    expect(mentions.length).toBeGreaterThan(0);
+    mentions.forEach((mention) => {
+      expect(mention.textContent).toContain(`${MAX_CHILDREN} 個寶寶`);
+    });
   });
 
   /**
