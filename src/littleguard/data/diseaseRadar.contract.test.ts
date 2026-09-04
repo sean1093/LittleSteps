@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
+import { DISEASE_PART_OF } from './diseases';
 
 /**
  * public/data/diseaseRadar.json 由 scripts/buildDiseaseRadar.cjs 從疾管署的
@@ -98,6 +99,28 @@ describe('diseaseRadar.json 格子', () => {
           const cell = data.counties[county][age][disease];
           expect(cell.spark).toHaveLength(8);
           expect(cell.spark[7]).toBe(cell.rate);
+        }
+      }
+    }
+  });
+
+  it('腸病毒就是手足口病加疱疹性咽峽炎，不是另外兩種病', () => {
+    // 板上只列腸病毒一列、兩種表現收在它底下（DISEASE_PART_OF），成立的前提就
+    // 是這一條：上游那三支 CSV 是一個總量與它的兩個部分。哪天不再是精確的拆
+    // 分，這裡先紅——而不是讓抽屜裡那句「兩者相加就是腸病毒的全部」變成不實
+    // 陳述，或是讓板把同一批就診人次少算一次。
+    const partsOf: Record<string, string[]> = {};
+    for (const [part, parent] of Object.entries(DISEASE_PART_OF)) {
+      partsOf[parent] = [...(partsOf[parent] ?? []), part];
+    }
+    expect(Object.keys(partsOf).length).toBeGreaterThan(0);
+
+    for (const county of counties) {
+      for (const age of AGE_BANDS) {
+        const band = data.counties[county][age];
+        for (const [parent, parts] of Object.entries(partsOf)) {
+          const sum = parts.reduce((total, part) => total + band[part].visits, 0);
+          expect(band[parent].visits, `${county} ${age} ${parent}`).toBe(sum);
         }
       }
     }

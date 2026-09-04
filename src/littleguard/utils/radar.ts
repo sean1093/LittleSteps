@@ -29,6 +29,12 @@ export type RadarStatus =
 
 export type RadarFreshness = 'fresh' | 'stale' | 'expired';
 
+/** 板上的一列：病名配它這一週的格子。腸病毒的組成用這個形狀。 */
+export interface DiseaseCell {
+  disease: string;
+  cell: RadarCell;
+}
+
 export const RADAR_THRESHOLDS = { p25: 0.78, p75: 1.26, p90: 1.77 } as const;
 
 /** 資料超過兩個更新週期沒進來就標註，超過五週就收起狀態。 */

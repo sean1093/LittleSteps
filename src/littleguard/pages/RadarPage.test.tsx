@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RadarCell, RadarData } from '../../types';
+import { DISEASE_PART_OF } from '../data/diseases';
 import { STATUS_COPY } from '../utils/radar';
 import RadarPage from './RadarPage';
 
@@ -20,6 +21,9 @@ function cell(overrides: Partial<RadarCell> = {}): RadarCell {
 }
 
 const DISEASES = ['腸病毒', '手足口病', '疱疹性咽峽炎', '類流感', '腹瀉', '水痘'];
+
+/** 板上那四列：上游六支 dataset 減掉收在腸病毒底下的兩種表現。 */
+const BOARD = DISEASES.filter((name) => !(name in DISEASE_PART_OF));
 
 /** 九個狀態的文案，從 STATUS_COPY 取——之後多一個狀態，這裡自動跟著守。 */
 const STATUS_LABELS = Object.values(STATUS_COPY).map((entry) => entry.label);
@@ -91,11 +95,11 @@ function mockFetch(data: RadarData | null) {
   );
 }
 
-/** 板上的六列，照 DOM 順序。 */
+/** 板上的四列，照 DOM 順序。 */
 const renderedDiseases = () =>
   screen
     .getAllByRole('button')
-    .map((button) => DISEASES.find((name) => (button.textContent ?? '').startsWith(name)))
+    .map((button) => BOARD.find((name) => (button.textContent ?? '').startsWith(name)))
     .filter((name): name is string => name !== undefined);
 
 const user = () => userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
@@ -119,7 +123,7 @@ afterEach(() => {
 });
 
 describe('疫情雷達板', () => {
-  it('六種病都在，順序固定不隨狀態重排', async () => {
+  it('四列都在，順序固定不隨狀態重排', async () => {
     // 水痘（清單最後一個）最吵、腸病毒（第一個）最安靜。若有人把「變多」的
     // 排到最前面，這一條就會爆：那會讓每次打開都像在看壞消息排行榜。
     const data = fixture();
@@ -131,8 +135,17 @@ describe('疫情雷達板', () => {
           : cell(),
     );
     await renderReady(data);
-    expect(renderedDiseases()).toEqual(DISEASES);
+    expect(renderedDiseases()).toEqual(BOARD);
     expect(screen.getByText('最近變多，多留意')).toBeInTheDocument();
+  });
+
+  it('腸病毒只佔一列，兩種表現寫在它自己底下', async () => {
+    // 上游腸病毒那一支就是手足口病加疱疹性咽峽炎；三列並排等於把同一批就診人
+    // 次數三次。收起來之後，那兩個名字還是要看得到，否則家長會以為漏了。
+    await renderReady();
+    expect(renderedDiseases()).toHaveLength(4);
+    expect(screen.queryByText('手足口病')).not.toBeInTheDocument();
+    expect(screen.getByText('含手足口病、疱疹性咽峽炎')).toBeInTheDocument();
   });
 
   it('顯示疫情週的日期區間而不是週號', async () => {
@@ -182,7 +195,7 @@ describe('縣市與年齡層', () => {
 
   it('切換縣市會換掉整塊板', async () => {
     const it = await renderReady();
-    expect(screen.getAllByText('跟平常差不多').length).toBe(6);
+    expect(screen.getAllByText('跟平常差不多').length).toBe(4);
     await it.click(screen.getByRole('button', { name: '連江縣' }));
     expect(screen.queryByText('跟平常差不多')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '連江縣' })).toHaveClass('chip-on');
@@ -202,9 +215,9 @@ describe('縣市與年齡層', () => {
   it('樣本偏小與資料不足都據實顯示', async () => {
     const it = await renderReady();
     await it.click(screen.getByRole('button', { name: '連江縣' }));
-    expect(screen.getAllByText('資料不足').length).toBe(6);
+    expect(screen.getAllByText('資料不足').length).toBe(4);
     await it.click(screen.getByRole('button', { name: '3-6 歲' }));
-    expect(screen.getAllByText('樣本偏小，僅供參考').length).toBe(6);
+    expect(screen.getAllByText('樣本偏小，僅供參考').length).toBe(4);
   });
 });
 
@@ -213,15 +226,15 @@ describe('資料新舊', () => {
     await renderReady();
     expect(screen.queryByText(/有點舊了/)).not.toBeInTheDocument();
     expect(screen.queryByText(/超過一個月沒更新/)).not.toBeInTheDocument();
-    expect(screen.getAllByText('跟平常差不多').length).toBe(6);
+    expect(screen.getAllByText('跟平常差不多').length).toBe(4);
   });
 
   it('兩週以上沒更新就說一聲，但板照常顯示', async () => {
     await renderReady(fixture('2026-08-09', '2026-08-15'));
     expect(screen.getByText(/有點舊了/)).toBeInTheDocument();
     // 加一行但書而已，狀態與數字都還在。
-    expect(screen.getAllByText('跟平常差不多').length).toBe(6);
-    expect(renderedDiseases()).toEqual(DISEASES);
+    expect(screen.getAllByText('跟平常差不多').length).toBe(4);
+    expect(renderedDiseases()).toEqual(BOARD);
   });
 
   it('資料超過一個月就收起狀態，只留數字', async () => {
@@ -229,8 +242,8 @@ describe('資料新舊', () => {
     expect(screen.getByText(/超過一個月沒更新/)).toBeInTheDocument();
     expect(screen.queryByText('跟平常差不多')).not.toBeInTheDocument();
     // 數字還在，六列也還在——收起的是可能已經錯的判斷，不是整塊板。
-    expect(renderedDiseases()).toEqual(DISEASES);
-    expect(screen.getAllByText('20 人次').length).toBe(6);
+    expect(renderedDiseases()).toEqual(BOARD);
+    expect(screen.getAllByText('20 人次').length).toBe(4);
   });
 
   it('過期時抽屜裡也不顯示狀態，板收了抽屜就得跟著收', async () => {
@@ -312,7 +325,7 @@ describe('抽屜', () => {
     await it.click(screen.getByRole('button', { name: /腸病毒/ }));
     const body = screen.getByRole('dialog').textContent ?? '';
     expect(body.indexOf('可以做什麼')).toBeGreaterThan(-1);
-    expect(body.indexOf('可以做什麼')).toBeLessThan(body.indexOf('這一週'));
+    expect(body.indexOf('可以做什麼')).toBeLessThan(body.indexOf('統計基數'));
   });
 
   it('連得出疾管署', async () => {

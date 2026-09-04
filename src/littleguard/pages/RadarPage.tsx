@@ -6,6 +6,7 @@ import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger } from '../../common/ui/motion';
 import { useCentreSelectedChip } from '../../common/ui/useCentreSelectedChip';
 import type { RadarData } from '../../types';
+import { DISEASE_PART_OF } from '../data/diseases';
 import CountyPicker from '../components/CountyPicker';
 import DiseaseDrawer from '../components/DiseaseDrawer';
 import DiseaseRow from '../components/DiseaseRow';
@@ -58,6 +59,25 @@ export default function RadarPage() {
 
   const freshness = data ? freshnessOf(data.weekEnd) : 'fresh';
   const cells = data?.counties[county]?.[age];
+
+  /**
+   * 板上有哪幾列由資料自己決定：上游把腸病毒與它的兩種表現各給一支 CSV，三列
+   * 並排等於把同一批就診人次數了三次，所以「是別人的一部分」的那幾種不自成一
+   * 列，改掛在自己那一列底下。這裡不寫死名單——上游哪天多一種病，它自己就會
+   * 出現在板上。
+   */
+  const board = useMemo(() => {
+    if (!data || !cells) return [];
+    return data.diseases
+      .filter((disease) => !(disease in DISEASE_PART_OF))
+      .map((disease) => ({
+        disease,
+        cell: cells[disease],
+        parts: data.diseases
+          .filter((part) => DISEASE_PART_OF[part] === disease)
+          .map((part) => ({ disease: part, cell: cells[part] })),
+      }));
+  }, [data, cells]);
 
   if (failed || (data && !cells)) {
     return (
@@ -134,13 +154,14 @@ export default function RadarPage() {
             </section>
 
             <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-2">
-              {data.diseases.map((disease) => (
+              {board.map((row) => (
                 <DiseaseRow
-                  key={disease}
-                  disease={disease}
-                  cell={cells[disease]}
+                  key={row.disease}
+                  disease={row.disease}
+                  cell={row.cell}
+                  parts={row.parts}
                   showStatus={freshness !== 'expired'}
-                  onOpen={() => setOpen(disease)}
+                  onOpen={() => setOpen(row.disease)}
                 />
               ))}
             </motion.div>
@@ -155,6 +176,7 @@ export default function RadarPage() {
         <DiseaseDrawer
           disease={open}
           cell={cells[open]}
+          parts={board.find((row) => row.disease === open)?.parts}
           data={data}
           age={age}
           showStatus={freshness !== 'expired'}

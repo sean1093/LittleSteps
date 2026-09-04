@@ -67,6 +67,28 @@ describe('DiseaseRow', () => {
     expect(row).not.toHaveTextContent('0.0/萬');
   });
 
+  it('有表現掛在底下的那一列，病名下面就寫出來', () => {
+    // 板上這一行小字，是家長連點都不用點就拿得到的答案：那不是三種病。
+    render(
+      <DiseaseRow
+        disease="腸病毒"
+        cell={cell()}
+        parts={[
+          { disease: '手足口病', cell: cell({ visits: 80 }) },
+          { disease: '疱疹性咽峽炎', cell: cell({ visits: 96 }) },
+        ]}
+        showStatus
+        onOpen={noop}
+      />,
+    );
+    expect(screen.getByText('含手足口病、疱疹性咽峽炎')).toBeInTheDocument();
+  });
+
+  it('沒有東西掛在底下的那一列不多一行字', () => {
+    render(<DiseaseRow disease="類流感" cell={cell()} parts={[]} showStatus onOpen={noop} />);
+    expect(screen.queryByText(/^含/)).not.toBeInTheDocument();
+  });
+
   it('整列可點，點下去把病名交回去', async () => {
     const onOpen = vi.fn();
     const user = userEvent.setup();
