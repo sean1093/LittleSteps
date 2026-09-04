@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import type { ChildProfile } from '../../types';
+import type { ChildProfile, DailyLog, FeedingData } from '../../types';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
 import { vaccineSchedules } from '../data/vaccines';
 import { buildClinicSummaryText, useClinicSummary } from './useClinicSummary';
@@ -28,6 +28,66 @@ const childWithoutProgressMaps = (): ChildProfile =>
   }) as unknown as ChildProfile;
 
 describe('useClinicSummary', () => {
+  /*
+    這一頁是交到小兒科醫師手上的那一份。把擠出來的量當成寶寶喝進去的量，
+    是 #14 要防的最壞結果：六次瓶餵加六次擠奶會變成十二餐、兩倍奶量，
+    而讀的人沒有任何辦法看出來。
+  */
+  it('把擠奶排除在交給醫師的攝取量之外', () => {
+    const today = new Date();
+    const at = (hour: number) => {
+      const d = new Date(today);
+      d.setHours(hour, 0, 0, 0);
+      return d.toISOString();
+    };
+    const log = (id: string, data: FeedingData, hour: number): DailyLog => ({
+      id,
+      childId: 'c1',
+      type: 'feeding',
+      timestamp: at(hour),
+      data,
+      createdAt: at(hour),
+    });
+    const logs = [
+      log('b1', { feedingType: 'breast_milk_bottle', amount: 100 }, 6),
+      log('b2', { feedingType: 'breast_milk_bottle', amount: 100 }, 10),
+      log('p1', { feedingType: 'pumping', amount: 150, duration: 20 }, 7),
+      log('p2', { feedingType: 'pumping', amount: 150, duration: 20 }, 11),
+    ];
+
+    const { result } = renderHook(() =>
+      useClinicSummary(childWithoutProgressMaps(), logs, null)
+    );
+
+    expect(result.current.data?.weekSummary.avgFeedingCount).toBe(2);
+    expect(result.current.data?.weekSummary.avgFeedingAmount).toBe(200);
+  });
+
+  it('只擠了奶的一天不算「有記餵奶」，因為寶寶喝了多少仍然不知道', () => {
+    const at = (hour: number) => {
+      const d = new Date();
+      d.setHours(hour, 0, 0, 0);
+      return d.toISOString();
+    };
+    const logs: DailyLog[] = [
+      {
+        id: 'p1',
+        childId: 'c1',
+        type: 'feeding',
+        timestamp: at(7),
+        data: { feedingType: 'pumping', amount: 150 },
+        createdAt: at(7),
+      },
+    ];
+
+    const { result } = renderHook(() =>
+      useClinicSummary(childWithoutProgressMaps(), logs, null)
+    );
+
+    expect(result.current.data?.weekSummary.feedingDays).toBe(0);
+    expect(result.current.data?.weekSummary.avgFeedingAmount).toBe(0);
+  });
+
   it('孩子還沒勾過任何疫苗時不會炸掉', () => {
     const { result } = renderHook(() => useClinicSummary(childWithoutProgressMaps(), [], null));
 
