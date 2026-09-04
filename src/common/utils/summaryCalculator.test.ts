@@ -204,8 +204,14 @@ describe('summaryCalculator', () => {
     /**
      * 不指名任何一筆真實資料：時程表本身會增修（劑數調整、產品拆分），而這裡
      * 驗的是分子分母與「下一劑」的規則，不是某一版時程表剛好長什麼樣子。
+     *
+     * 要三個不同的 id：同一支疫苗的多劑共用一個 id，混進來會在進度物件裡互相
+     * 覆蓋，「三筆記錄」就變成兩筆。
      */
-    const [FIRST, SECOND, THIRD] = vaccineSchedules;
+    const [FIRST, SECOND, THIRD] = vaccineSchedules.filter(
+      (vaccine, index) =>
+        vaccineSchedules.findIndex(candidate => candidate.id === vaccine.id) === index
+    );
 
     const byId = (id: string): VaccineSchedule => {
       const vaccine = vaccineSchedules.find(candidate => candidate.id === id);
@@ -223,17 +229,21 @@ describe('summaryCalculator', () => {
     /** 該筆記錄所代表的劑次，與接種頁寫入進度時使用的鍵一致。 */
     const doseOf = (vaccine: VaccineSchedule): number => vaccine.currentDose ?? 1;
 
-    /** 將某筆記錄代表的那一劑標記為已接種。 */
-    const administer = (
-      vaccine: VaccineSchedule,
-      administeredDate = '2026-01-01'
-    ): VaccineProgress[string] => ({
-      doses: { [doseOf(vaccine)]: { administered: true, administeredDate } }
-    });
-
-    /** 指定的每一筆記錄都完成接種的進度。 */
-    const administered = (vaccines: VaccineSchedule[]): VaccineProgress =>
-      Object.fromEntries(vaccines.map(vaccine => [vaccine.id, administer(vaccine)]));
+    /**
+     * 指定的每一筆記錄都完成接種的進度。
+     *
+     * 同 id 的多劑要合併而不是覆蓋：五合一四筆共用一個 id，逐筆覆蓋只會留下
+     * 最後一劑，其餘三筆看起來就像沒打。
+     */
+    const administered = (vaccines: VaccineSchedule[]): VaccineProgress => {
+      const progress: VaccineProgress = {};
+      for (const vaccine of vaccines) {
+        const doses = progress[vaccine.id]?.doses ?? {};
+        doses[doseOf(vaccine)] = { administered: true, administeredDate: '2026-01-01' };
+        progress[vaccine.id] = { doses };
+      }
+      return progress;
+    };
 
     it('derives the denominator from the number of scheduled doses', () => {
       expect(TOTAL_DOSES).toBeGreaterThan(0);
