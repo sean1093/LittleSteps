@@ -98,3 +98,59 @@ describe('睡眠的起訖時間', () => {
     expect((saved.data as SleepData).duration).toBe(450);
   });
 });
+
+/*
+  週報畫了一張夜醒趨勢卡，但這個欄位全 app 沒有任何地方寫得進去，所以那張卡
+  永遠說「持平」——讀起來是「寶寶的夜醒沒有變化」，實情是從來沒有人問過。
+*/
+describe('夜醒次數', () => {
+  it('填了就存進這一段睡眠', async () => {
+    const { user, onSave } = renderModal({ logType: 'sleep' });
+
+    setDateTime('開始時間 *', '2026-09-01T22:30');
+    setDateTime('結束時間', '2026-09-02T06:00');
+    await user.click(screen.getByRole('button', { name: '增加夜醒次數' }));
+    await user.click(screen.getByRole('button', { name: '增加夜醒次數' }));
+    await user.click(screen.getByRole('button', { name: '儲存' }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    const saved = onSave.mock.calls[0][0] as Omit<DailyLog, 'id'>;
+    expect((saved.data as SleepData).nightWakings).toBe(2);
+  });
+
+  it('留白存的是「沒問到」，不是 0 次', async () => {
+    const { user, onSave } = renderModal({ logType: 'sleep' });
+
+    setDateTime('開始時間 *', '2026-09-01T22:30');
+    setDateTime('結束時間', '2026-09-02T06:00');
+    await user.click(screen.getByRole('button', { name: '儲存' }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    const saved = onSave.mock.calls[0][0] as Omit<DailyLog, 'id'>;
+    expect((saved.data as SleepData).nightWakings).toBeUndefined();
+  });
+
+  it('編輯既有紀錄時帶出原本的次數，且不會低於 0', async () => {
+    const editingLog: DailyLog = {
+      id: 'sleep-1',
+      childId: 'c1',
+      type: 'sleep',
+      timestamp: '2026-09-01T14:30:00.000Z',
+      data: {
+        startTime: '2026-09-01T14:30:00.000Z',
+        endTime: '2026-09-01T22:00:00.000Z',
+        duration: 450,
+        nightWakings: 1,
+      },
+      createdAt: '2026-09-01T14:30:00.000Z',
+    };
+    const { user } = renderModal({ logType: 'sleep', editingLog });
+
+    const field = screen.getByLabelText('夜醒次數');
+    expect(field).toHaveValue(1);
+
+    await user.click(screen.getByRole('button', { name: '減少夜醒次數' }));
+    await user.click(screen.getByRole('button', { name: '減少夜醒次數' }));
+    expect(field).toHaveValue(0);
+  });
+});

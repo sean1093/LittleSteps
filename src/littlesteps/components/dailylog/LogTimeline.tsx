@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion';
 import { Milk, Moon, Baby, Edit, Trash2 } from 'lucide-react';
 import { DailyLog, FeedingData, SleepData, DiaperData } from '../../../types';
-import { formatTime, formatDuration, isSameDay } from '../../../common/utils/dateHelpers';
+import { formatTime, formatDuration, isSameDay, calculateDuration } from '../../../common/utils/dateHelpers';
+import { isStaleOpenSleep } from '../../utils/logHelpers';
 import EmptyState from '../../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../../common/ui/serviceTheme';
 import { listItem, stagger } from '../../../common/ui/motion';
@@ -82,11 +83,16 @@ export default function LogTimeline({
       return parts.join(' · ');
     } else if (log.type === 'sleep') {
       const data = log.data as SleepData;
-      if (data.endTime && data.duration) {
-        return formatDuration(data.duration);
-      } else {
-        return '進行中';
-      }
+      const parts = [
+        data.endTime
+          ? formatDuration(data.duration ?? calculateDuration(data.startTime, data.endTime))
+          : isStaleOpenSleep(log)
+            ? '還沒有結束時間'
+            : '進行中',
+      ];
+      // undefined 是沒問到，0 是家長說沒醒——只有後者值得印出來。
+      if (data.nightWakings !== undefined) parts.push(`夜醒 ${data.nightWakings} 次`);
+      return parts.join(' · ');
     } else {
       const data = log.data as DiaperData;
       const typeMap = {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { Minus, Plus, X } from 'lucide-react';
 import { backdrop, sheet } from '../../../common/ui/motion';
 import { DailyLog, FeedingData, SleepData, DiaperData } from '../../../types';
 import { getCurrentDateTimeLocal, dateTimeLocalToISO, calculateDuration } from '../../../common/utils/dateHelpers';
@@ -37,6 +37,8 @@ export default function LogEntryModal({
   // Sleep fields
   const [startTime, setStartTime] = useState(getCurrentDateTimeLocal());
   const [endTime, setEndTime] = useState('');
+  /** 空字串是「沒問到」，'0' 是「家長說沒醒」——兩者存進去的值不一樣。 */
+  const [nightWakings, setNightWakings] = useState('');
 
   // Diaper fields
   const [diaperType, setDiaperType] = useState<DiaperData['type']>('pee');
@@ -68,6 +70,7 @@ export default function LogEntryModal({
         const data = editingLog.data as SleepData;
         setStartTime(data.startTime.slice(0, 16));
         setEndTime(data.endTime?.slice(0, 16) || '');
+        setNightWakings(data.nightWakings?.toString() ?? '');
         setNotes(data.notes || '');
       } else if (logType === 'diaper') {
         const data = editingLog.data as DiaperData;
@@ -80,6 +83,7 @@ export default function LogEntryModal({
       setTimestamp(getCurrentDateTimeLocal());
       setStartTime(getCurrentDateTimeLocal());
       setEndTime('');
+      setNightWakings('');
       setDuration('');
       setAmount('');
       setNotes('');
@@ -99,6 +103,12 @@ export default function LogEntryModal({
   const endMs = endTime ? new Date(endTime).getTime() : NaN;
   const hasSleepRange = logType === 'sleep' && !Number.isNaN(startMs) && !Number.isNaN(endMs);
   const sleepRangeError = hasSleepRange && endMs <= startMs ? RANGE_ERROR : null;
+
+  /** 從留白按下去就是 0：那是家長主動說「沒醒」，跟沒問到不一樣。 */
+  const stepNightWakings = (delta: number) => {
+    const current = parseInt(nightWakings, 10);
+    setNightWakings(String(Math.max(0, (Number.isNaN(current) ? 0 : current) + delta)));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,9 +130,12 @@ export default function LogEntryModal({
         } as FeedingData;
       } else if (logType === 'sleep') {
         finalTimestamp = dateTimeLocalToISO(startTime);
+        const parsedWakings = parseInt(nightWakings, 10);
         const sleepData: SleepData = {
           startTime: dateTimeLocalToISO(startTime),
           endTime: endTime ? dateTimeLocalToISO(endTime) : undefined,
+          // 留白就是沒問到，不能存成 0：夜醒趨勢與睡眠分數都得分得出這兩件事。
+          nightWakings: Number.isNaN(parsedWakings) ? undefined : Math.max(0, parsedWakings),
           notes: notes.trim() || undefined,
         };
         // Calculate duration if endTime is provided
@@ -296,6 +309,44 @@ export default function LogEntryModal({
                       </div>
                     )
                   )}
+
+                  {/*
+                    夜醒次數問在這裡，因為關掉一段睡眠就是想起這件事的那一刻。
+                    在這之前，週報有一張夜醒趨勢卡，但全 app 沒有任何地方寫得進
+                    這個欄位——那張卡永遠說「持平」。
+                  */}
+                  <div>
+                    <label htmlFor="sleep-night-wakings" className={LABEL}>夜醒次數</label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => stepNightWakings(-1)}
+                        className="btn-icon"
+                        aria-label="減少夜醒次數"
+                      >
+                        <Minus className="w-5 h-5" />
+                      </button>
+                      <input
+                        id="sleep-night-wakings"
+                        type="number"
+                        inputMode="numeric"
+                        value={nightWakings}
+                        onChange={(e) => setNightWakings(e.target.value)}
+                        className={`${FIELD} text-center`}
+                        placeholder="未記錄"
+                        min="0"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => stepNightWakings(1)}
+                        className="btn-icon"
+                        aria-label="增加夜醒次數"
+                      >
+                        <Plus className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <p className="mt-1 text-xs text-ink-faint">留白表示沒記，和記 0 次不一樣</p>
+                  </div>
                 </>
               )}
 
