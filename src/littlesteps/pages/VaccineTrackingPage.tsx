@@ -161,9 +161,15 @@ export default function VaccineTrackingPage({
     [currentChild?.birthday, vaccineProgress],
   );
 
-  const exportDoses = (schedules: VaccineSchedule[], filename: string) => {
+  // 算不出日期就沒有東西可匯出：沒有生日的孩子不顯示匯出。
+  const canExport = Boolean(currentChild?.birthday);
+
+  const exportDoses = (schedules: VaccineSchedule[], label: string) => {
     if (!currentChild) return;
-    downloadCalendar(buildVaccineIcs(currentChild, schedules, vaccineProgress), filename);
+    downloadCalendar(
+      buildVaccineIcs(currentChild, schedules, vaccineProgress),
+      `${currentChild.name}-${label}.ics`,
+    );
   };
 
   const filteredVaccines = useMemo(() => {
@@ -320,9 +326,7 @@ export default function VaccineTrackingPage({
           <motion.button
             type="button"
             whileTap={tap}
-            onClick={() =>
-              exportDoses(vaccineSchedules, `${currentChild?.name}-疫苗接種時程.ics`)
-            }
+            onClick={() => exportDoses(vaccineSchedules, '疫苗接種時程')}
             className="btn-secondary w-full mb-4 text-sm"
           >
             <CalendarPlus className="w-4 h-4" />
@@ -446,13 +450,11 @@ export default function VaccineTrackingPage({
                               </button>
                               {/* 只有還沒接種、而且算得出日期的劑次值得提醒；
                                   已接種的那一劑進行事曆只是雜訊。 */}
-                              {!isAdministered && vaccine.ageInMonths !== undefined && currentChild?.birthday && (
+                              {canExport && !isAdministered && vaccine.ageInMonths !== undefined && (
                                 <motion.button
                                   type="button"
                                   whileTap={tap}
-                                  onClick={() =>
-                                    exportDoses([vaccine], `${currentChild.name}-${vaccine.name}.ics`)
-                                  }
+                                  onClick={() => exportDoses([vaccine], vaccine.name)}
                                   aria-label={`${vaccine.name}：加入行事曆`}
                                   className="btn-icon -m-2.5"
                                 >

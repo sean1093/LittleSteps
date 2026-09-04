@@ -188,12 +188,9 @@ describe('buildVaccineIcs', () => {
       [schedule({ id: 'late', ageInMonths: 12 }), schedule({ id: 'early' })],
       {},
     );
-    const uids = [...unfold(ics).matchAll(/UID:(.+)\r\n/g)].map((match) => match[1]);
+    const dates = [...ics.matchAll(/DTSTART;VALUE=DATE:(\d+)/g)].map((match) => match[1]);
 
-    expect(uids).toEqual([
-      'child-a-early-1@littlesteps',
-      'child-a-late-1@littlesteps',
-    ]);
+    expect(dates).toEqual(['20260315', '20270115']);
   });
 
   it('gives two siblings different uids for the same dose', () => {
