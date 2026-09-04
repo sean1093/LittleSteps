@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
-import { User } from 'firebase/auth';
 import AppHomeButton from '../components/AppHomeButton';
 import { MAX_CHILDREN } from '../childLimits';
 import { fadeInUp, listItem, stagger, tap } from '../ui/motion';
@@ -11,7 +10,7 @@ type PublicContent = 'littlesteps/baby-wiki' | 'littlesteps/care-guide' | 'littl
 interface StepsLandingProps {
   /** 只能指向 LittleSteps 免登入的內容；功能頁要先登入，導過去只會退回這一頁。 */
   onNavigate: (page: PublicContent) => void;
-  user: User | null;
+  /** 這一頁只在未登入時渲染，所以登入按鈕沒有條件——見下方元件註解。 */
   onSignIn: () => Promise<void>;
 }
 
@@ -63,8 +62,13 @@ const PUBLIC_CONTENT: { title: string; detail: string; page: PublicContent }[] =
  * LittleSteps 未登入時的介紹頁。登入後要去哪由 LandingPage 統一決定——
  * 這裡原本也有一份 useEffect 會在登入瞬間跳去儀表板，但它不看使用者有沒有
  * 孩子，剛註冊的人會落在空的儀表板上。
+ *
+ * 這一頁拿不到已登入的 user，所以登入按鈕不需要條件：landingKindFor 只在
+ * `!user` 的兩個分支回傳 steps-intro，而 App 在同一次 render 裡用同一個
+ * user 算出 kind 並傳下來。原本那個 `{!user && ...}` 讀起來像這一頁有登入
+ * 後的樣子，但那個樣子不存在，也沒有辦法看到。
  */
-export default function StepsLanding({ onNavigate, user, onSignIn }: StepsLandingProps) {
+export default function StepsLanding({ onNavigate, onSignIn }: StepsLandingProps) {
   return (
     <div className="min-h-dscreen bg-warm-white">
       <div className="screen-body space-y-4">
@@ -114,19 +118,17 @@ export default function StepsLanding({ onNavigate, user, onSignIn }: StepsLandin
             目前免費使用，一個帳號最多追蹤 {MAX_CHILDREN} 個寶寶。
           </p>
 
-          {!user && (
-            <motion.button
-              type="button"
-              whileTap={tap}
-              onClick={onSignIn}
-              className="btn-primary w-full mt-6"
-            >
-              {/* 這裡原本掛一張 gstatic.com 的 Google 圖示。離線或被擋下時，
-                  已安裝的 PWA 的第一個畫面就會出現破圖——為了一個裝飾去依賴
-                  外部網域不值得，其他三處登入按鈕也都只有文字。 */}
-              使用 Google 登入開始記錄
-            </motion.button>
-          )}
+          <motion.button
+            type="button"
+            whileTap={tap}
+            onClick={onSignIn}
+            className="btn-primary w-full mt-6"
+          >
+            {/* 這裡原本掛一張 gstatic.com 的 Google 圖示。離線或被擋下時，
+                已安裝的 PWA 的第一個畫面就會出現破圖——為了一個裝飾去依賴
+                外部網域不值得，其他三處登入按鈕也都只有文字。 */}
+            使用 Google 登入開始記錄
+          </motion.button>
         </motion.section>
 
         <motion.section variants={fadeInUp} initial="hidden" animate="visible" className="space-y-2">

@@ -19,7 +19,7 @@ describe('StepsLanding', () => {
   });
 
   const renderPage = () =>
-    render(<StepsLanding onNavigate={vi.fn()} user={null} onSignIn={vi.fn()} />);
+    render(<StepsLanding onNavigate={vi.fn()} onSignIn={vi.fn()} />);
 
   it('提供通往所有服務的出口', () => {
     renderPage();
@@ -33,6 +33,22 @@ describe('StepsLanding', () => {
     await user.click(screen.getByRole('button', { name: '所有服務' }));
 
     expect(window.location.pathname).toBe('/');
+  });
+
+  /**
+   * 登入按鈕原本包在 `{!user && ...}` 裡，而這一頁拿不到已登入的 user，所以
+   * 那個條件永遠成立、也永遠讀不出來（見元件註解）。條件拿掉之後才發現，整
+   * 份測試裡沒有一條斷言這顆按鈕存在——它是未登入訪客在這一頁唯一的下一步，
+   * 整段刪掉不會有任何測試變紅。這一條補上那個缺口。
+   */
+  it('未登入的訪客拿到登入入口，按下去就開始登入', async () => {
+    const user = userEvent.setup();
+    const onSignIn = vi.fn();
+    render(<StepsLanding onNavigate={vi.fn()} onSignIn={onSignIn} />);
+
+    await user.click(screen.getByRole('button', { name: '使用 Google 登入開始記錄' }));
+
+    expect(onSignIn).toHaveBeenCalledTimes(1);
   });
 
   /**
@@ -78,7 +94,7 @@ describe('StepsLanding', () => {
     const user = userEvent.setup();
     const onNavigate = vi.fn();
     const onSignIn = vi.fn();
-    render(<StepsLanding onNavigate={onNavigate} user={null} onSignIn={onSignIn} />);
+    render(<StepsLanding onNavigate={onNavigate} onSignIn={onSignIn} />);
 
     await user.click(screen.getByRole('button', { name: /照顧重點/ }));
 
@@ -89,7 +105,7 @@ describe('StepsLanding', () => {
   it('留著睡眠指南的入口', async () => {
     const user = userEvent.setup();
     const onNavigate = vi.fn();
-    render(<StepsLanding onNavigate={onNavigate} user={null} onSignIn={vi.fn()} />);
+    render(<StepsLanding onNavigate={onNavigate} onSignIn={vi.fn()} />);
 
     await user.click(screen.getByRole('button', { name: /睡眠指南/ }));
 
