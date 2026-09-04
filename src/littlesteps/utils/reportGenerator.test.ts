@@ -378,7 +378,8 @@ describe('reportGenerator', () => {
 
       const report = generateWeeklyReport([...nights, forgotten], [], 4);
 
-      expect(generateDailySeries([...nights, forgotten], 7, 'sleep_duration').at(-1)).toBeNull();
+      const series = generateDailySeries([...nights, forgotten], 7, 'sleep_duration');
+      expect(series[series.length - 1]).toBeNull();
       expect(report.scores.sleep.loggedDays).toBe(6);
       expect(report.sleep.loggedDays).toBe(6);
       expect(report.sleep.avgDailyHours).toBe(11);

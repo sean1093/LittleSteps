@@ -9,6 +9,7 @@ import {
   getFeedingTrend,
   getSleepTrend,
   getPoopTrend,
+  generateDailySeries,
 } from './trendCalculator';
 
 /**
@@ -411,6 +412,30 @@ describe('trendCalculator', () => {
       const feedsOnly = getPoopTrend([], 7);
 
       expect(feedsOnly.direction).toBe('insufficient-data');
+    });
+  });
+
+  /*
+    A sleep whose end time was never filled in has no duration. Counted as an
+    observation it becomes a real zero for that day, which is not the same fact
+    as "we do not know" - and every score built on this series reads it as a
+    day the baby barely slept.
+  */
+  describe('a forgotten sleep timer is not an observation', () => {
+    it('leaves the day null instead of reporting zero hours', () => {
+      const openStart = `${TODAY}T00:00:00+08:00`;
+      const forgotten = makeLog('sleep', openStart, { startTime: openStart });
+
+      const series = generateDailySeries([forgotten], 1, 'sleep_duration');
+
+      expect(series).toEqual([null]);
+    });
+
+    it('still counts a sleep that is open but younger than the threshold', () => {
+      const recentStart = `${TODAY}T14:00:00+08:00`;
+      const napping = makeLog('sleep', recentStart, { startTime: recentStart });
+
+      expect(generateDailySeries([napping], 1, 'sleep_duration')).toEqual([0]);
     });
   });
 });
