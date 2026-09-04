@@ -21,6 +21,13 @@
  *   兩邊都不必捨棄。地圖筆數較多的部分是自願設置場所，對要找地方哺乳的
  *   家長一樣有用，且本來就在國健署的公開地圖上。
  *
+ * statutory 這個旗標記的是「這一筆出現在名單裡」
+ *   地圖同時收依法應設置與自願設置兩類場所，而兩類在地圖上長得一模一樣，
+ *   只有名單分得出來。差別對家長是實際的：自願設置的那些有不少是工廠、
+ *   科技公司與校園裡的哺集乳室，登記給員工或學生用，外人走不進去。名稱
+ *   看起來像公司或學校、又不在名單上，是唯一有來源可依據的判斷方式，所以
+ *   即使名單補不了任何欄位，成員資格本身也值得帶進輸出。
+ *
  * 為什麼不自行地理編碼
  *   免費的 OSM 系服務無法定位台灣門牌，實測：Nominatim 與 Photon 帶門牌號
  *   查詢 20 筆樣本 0 命中；去掉門牌號只查路名時，以 30 筆已知精確座標的
@@ -180,6 +187,10 @@ function readOdsDetails(odsPath) {
 
   const byAddress = new Map();
   const byCityName = new Map();
+  // 名單成員資格要逐列記下，包含樓層／開放時間／注意事項全空的那些列：
+  // 那幾列補不了欄位，但它們在名單上這件事本身就是資訊。
+  const statutoryAddresses = new Set();
+  const statutoryNames = new Set();
   rows.slice(1).forEach((cells) => {
     const row = {};
     ODS_COLUMNS.forEach((field, i) => {
@@ -188,6 +199,13 @@ function readOdsDetails(odsPath) {
     row.city = row.city.replace(/台/g, '臺').replace(/巿/g, '市');
     if (!row.name || !/[縣市]$/.test(row.city)) return;
 
+    const address = odsAddress(row);
+    const withVillage = `${row.city}${row.district}${row.village}${row.road}${row.section}${row.lane}${row.number}`;
+    statutoryAddresses.add(normalizeAddress(address));
+    statutoryAddresses.add(withoutVillage(address));
+    statutoryAddresses.add(normalizeAddress(withVillage));
+    statutoryNames.add(`${row.city}|${normalizeName(row.name)}`);
+
     const detail = {
       floor: row.floor || undefined,
       openingHours: row.hours || undefined,
@@ -195,15 +213,13 @@ function readOdsDetails(odsPath) {
     };
     if (!detail.floor && !detail.openingHours && !detail.remarks) return;
 
-    const address = odsAddress(row);
     byAddress.set(normalizeAddress(address), detail);
     byAddress.set(withoutVillage(address), detail);
-    const withVillage = `${row.city}${row.district}${row.village}${row.road}${row.section}${row.lane}${row.number}`;
     byAddress.set(normalizeAddress(withVillage), detail);
     byCityName.set(`${row.city}|${normalizeName(row.name)}`, detail);
   });
 
-  return { byAddress, byCityName };
+  return { byAddress, byCityName, statutoryAddresses, statutoryNames };
 }
 
 function main() {
@@ -237,6 +253,7 @@ function main() {
   const output = [];
   let withDetail = 0;
   let withFacilities = 0;
+  let statutoryCount = 0;
 
   rooms.forEach((room) => {
     const key = `${normalizeName(room.name)}@${normalizeAddress(room.address)}`;
@@ -249,6 +266,14 @@ function main() {
       details.byCityName.get(`${room.city}|${normalizeName(room.name)}`);
     if (detail) withDetail += 1;
 
+    // 和補欄位一樣的三段回退：先比正規化地址，再比去掉村里的地址，
+    // 最後才用縣市加名稱——名單的地址寫法與地圖不一致的那些筆靠這一段對上。
+    const statutory =
+      details.statutoryAddresses.has(normalizeAddress(room.address)) ||
+      details.statutoryAddresses.has(withoutVillage(room.address)) ||
+      details.statutoryNames.has(`${room.city}|${normalizeName(room.name)}`);
+    if (statutory) statutoryCount += 1;
+
     const facility =
       facilities[normalizeAddress(room.address)] || facilities[withoutVillage(room.address)];
     if (facility) withFacilities += 1;
@@ -260,6 +285,7 @@ function main() {
       address: room.address,
       city: room.city,
       ...(district ? { district } : {}),
+      ...(statutory ? { statutory: true } : {}),
       ...(detail && detail.floor ? { floor: detail.floor } : {}),
       latitude: +room.latitude.toFixed(7),
       longitude: +room.longitude.toFixed(7),
@@ -278,6 +304,7 @@ function main() {
   });
   console.log(`\n輸出 ${output.length} 筆，涵蓋 ${Object.keys(byCity).length} 縣市`);
   console.log(`  有開放時間或注意事項 ${withDetail} 筆，有設施明細 ${withFacilities} 筆`);
+  console.log(`  在依法應設置名單上 ${statutoryCount} 筆`);
   console.log(`  ${path.relative(ROOT, OUTPUT)} ${(fs.statSync(OUTPUT).size / 1024).toFixed(0)} KB`);
 }
 

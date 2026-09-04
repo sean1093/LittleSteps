@@ -407,6 +407,7 @@ export interface NursingRoom {
   address: string;                    // 地址
   city: string;                       // 縣市
   district?: string;                  // 鄉鎮市區
+  statutory?: boolean;                // 在「依法應設置哺集乳室公共場所名單」上；自願設置的場所沒有這個欄位
   floor?: string;                     // 樓層與室內位置
   latitude: number;                   // 緯度
   longitude: number;                  // 經度
