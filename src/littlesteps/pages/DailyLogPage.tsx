@@ -31,8 +31,11 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
   /**
    * 剛剛用「醒了」關掉的那一段。只活在這一次操作裡：想回答夜醒次數的人多按
    * 一下，直接走開的人什麼也沒記——而「沒記」跟「記了 0 次」本來就不一樣。
+   *
+   * 存的是寫進去的那份快照，不是 id：從 logs 重查會拿到監聽器還沒更新的舊值，
+   * 而接著補夜醒次數的那一筆會把整個 data 寫回去，剛設好的結束時間就沒了。
    */
-  const [justClosedSleepId, setJustClosedSleepId] = useState<string | null>(null);
+  const [justClosedSleep, setJustClosedSleep] = useState<DailyLog | null>(null);
 
   // Load data
   const { logs, loading, error } = useDailyLogs(currentChild?.id || null, user);
@@ -46,9 +49,6 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
   const diaperCount = todayLogs.filter((l) => l.type === 'diaper').length;
 
   const openSleep = findOpenSleep(logs);
-  const justClosedSleep = justClosedSleepId
-    ? (logs.find((log) => log.id === justClosedSleepId) ?? null)
-    : null;
   /*
     還在睡的那一段跨得過午夜，所以看今天時一定要看得到它，即使是昨晚入睡的。
     翻到過去的某一天時，只有那天入睡的才顯示。
@@ -102,7 +102,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
         createdBy: user?.uid,
         createdByName: user?.displayName ?? undefined,
       });
-      setJustClosedSleepId(null);
+      setJustClosedSleep(null);
       setSelectedDate(new Date(startedAt));
     } catch (error) {
       reportWriteFailure(error, '開始睡眠記錄失敗，請稍後再試');
@@ -121,17 +121,18 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
   const handleWake = async (log: DailyLog) => {
     if (!currentChild) return;
 
-    const sleepData = log.data as SleepData;
     const endTime = new Date().toISOString();
+    const closed: DailyLog = {
+      ...log,
+      data: {
+        ...(log.data as SleepData),
+        endTime,
+        duration: calculateDuration((log.data as SleepData).startTime, endTime),
+      },
+    };
     try {
-      await firebaseChildren.updateDailyLog(currentChild.id, log.id, {
-        data: {
-          ...sleepData,
-          endTime,
-          duration: calculateDuration(sleepData.startTime, endTime),
-        },
-      });
-      setJustClosedSleepId(log.id);
+      await firebaseChildren.updateDailyLog(currentChild.id, log.id, { data: closed.data });
+      setJustClosedSleep(closed);
     } catch (error) {
       reportWriteFailure(error, '結束睡眠記錄失敗，請稍後再試');
     }
@@ -144,7 +145,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
       await firebaseChildren.updateDailyLog(currentChild.id, log.id, {
         data: { ...(log.data as SleepData), nightWakings },
       });
-      setJustClosedSleepId(null);
+      setJustClosedSleep(null);
     } catch (error) {
       reportWriteFailure(error, '記錄夜醒次數失敗，請稍後再試');
     }
@@ -194,6 +195,8 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
 
     try {
       await firebaseChildren.deleteDailyLog(currentChild.id, logId);
+      // 剛關掉的那一段被刪了，就不該再問它的夜醒次數。
+      if (justClosedSleep?.id === logId) setJustClosedSleep(null);
     } catch (error) {
       console.error('刪除日誌失敗:', error);
       toast.show(error instanceof Error ? error.message : '刪除失敗，請稍後再試');
@@ -247,7 +250,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
           <DaySelector
             value={selectedDate}
             onChange={(date) => {
-              setJustClosedSleepId(null);
+              setJustClosedSleep(null);
               setSelectedDate(date);
             }}
           />
@@ -265,10 +268,10 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
               log={justClosedSleep}
               onRecord={handleRecordNightWakings}
               onOpenForm={(log) => {
-                setJustClosedSleepId(null);
+                setJustClosedSleep(null);
                 handleEdit(log);
               }}
-              onDismiss={() => setJustClosedSleepId(null)}
+              onDismiss={() => setJustClosedSleep(null)}
             />
           </motion.div>
         )}
