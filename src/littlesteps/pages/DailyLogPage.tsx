@@ -5,7 +5,12 @@ import { ChildProfile, DailyLog, SleepData } from '../../types';
 import { useDailyLogs } from '../hooks/useDailyLogs';
 import { useFirebaseChildren } from '../../common/hooks/useFirebaseChildren';
 import { calculateDuration, isSameDay } from '../../common/utils/dateHelpers';
-import { findOpenSleep, isIntakeFeedingLog, isStaleOpenSleep } from '../utils/logHelpers';
+import {
+  findLastLogOfType,
+  findOpenSleep,
+  isIntakeFeedingLog,
+  isStaleOpenSleep,
+} from '../utils/logHelpers';
 import QuickLogButtons, { type SleepMode } from '../components/dailylog/QuickLogButtons';
 import LogEntryModal from '../components/dailylog/LogEntryModal';
 import LogTimeline from '../components/dailylog/LogTimeline';
@@ -13,6 +18,7 @@ import DaySelector from '../components/dailylog/DaySelector';
 import OpenSleepCard from '../components/dailylog/OpenSleepCard';
 import NightWakingsPrompt from '../components/dailylog/NightWakingsPrompt';
 import ChildSwitcher from '../../common/components/ChildSwitcher';
+import RepeatLastLog from '../components/dailylog/RepeatLastLog';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem } from '../../common/ui/motion';
@@ -58,6 +64,15 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
   const showOpenSleep =
     openSleep !== null && (isToday || isSameDay((openSleep.data as SleepData).startTime, selectedDate));
   const sleepMode: SleepMode = !isToday ? 'log' : openSleep ? 'sleeping' : 'start';
+
+  /*
+    預填與「再記一次」都讀這個孩子自己的紀錄——logs 本來就只有他一個人的。
+    絕對不能改成 localStorage：孩子的資料不放在裝置上，而且一位有兩個孩子的
+    家長，一個喝配方奶一個親餵，共用一份記憶只會讓兩張表都填錯。
+  */
+  const lastFeeding = findLastLogOfType(logs, 'feeding');
+  const lastDiaper = findLastLogOfType(logs, 'diaper');
+  const lastLogForForm = modalType === 'diaper' ? lastDiaper : modalType === 'feeding' ? lastFeeding : null;
 
   // Handlers
   const openLogForm = (type: 'feeding' | 'sleep' | 'diaper') => {
@@ -108,6 +123,28 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
       setSelectedDate(new Date(startedAt));
     } catch (error) {
       reportWriteFailure(error, '開始睡眠記錄失敗，請稍後再試');
+    }
+  };
+
+  /** 一鍵重複：內容照抄上一筆，時間是現在，不開表單。 */
+  const handleRepeat = async (log: DailyLog) => {
+    if (!currentChild) return;
+
+    const now = new Date().toISOString();
+    try {
+      await firebaseChildren.addDailyLog(currentChild.id, {
+        childId: currentChild.id,
+        type: log.type,
+        timestamp: now,
+        // 備註屬於上一次那件事，不跟著複製。
+        data: { ...log.data, notes: undefined },
+        createdAt: now,
+        createdBy: user?.uid,
+        createdByName: user?.displayName ?? undefined,
+      });
+      setSelectedDate(new Date(now));
+    } catch (error) {
+      reportWriteFailure(error, '記錄失敗，請稍後再試');
     }
   };
 
@@ -295,6 +332,15 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
         <motion.div variants={listItem} className="mb-6">
           <h2 className="mb-3">快速記錄</h2>
           <QuickLogButtons onLogClick={handleQuickLog} sleepMode={sleepMode} />
+          {isToday && (
+            <div className="mt-3">
+              <RepeatLastLog
+                lastFeeding={lastFeeding}
+                lastDiaper={lastDiaper}
+                onRepeat={handleRepeat}
+              />
+            </div>
+          )}
           {/* 今天的睡眠鍵是「現在開始睡」，所以事後補一段完整睡眠需要自己的入口。 */}
           {isToday && (
             <div className="mt-2 flex justify-center">
@@ -336,6 +382,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
             onSave={handleSave}
             logType={modalType}
             editingLog={editingLog}
+            lastLog={lastLogForForm}
           />
         )}
       </motion.div>

@@ -19,7 +19,12 @@ const { addDailyLog, updateDailyLog, deleteDailyLog, readState } = vi.hoisted(()
 }));
 
 vi.mock('../hooks/useDailyLogs', () => ({
-  useDailyLogs: () => ({ logs: readState.logs, loading: false, error: readState.error }),
+  // 每個孩子只看得到自己的紀錄，就像真的 Firebase 監聽器一樣。
+  useDailyLogs: (childId: string | null) => ({
+    logs: readState.logs.filter((log) => log.childId === childId),
+    loading: false,
+    error: readState.error,
+  }),
 }));
 
 vi.mock('../../common/hooks/useFirebaseChildren', () => ({
@@ -127,6 +132,95 @@ describe('日檢視的餵奶次數', () => {
 
     const statsCard = screen.getByRole('heading', { name: '今日統計' }).parentElement!;
     expect(within(statsCard).getByText('餵奶').previousElementSibling).toHaveTextContent('6');
+  });
+});
+
+/*
+  表單每次都從 breast_left 和空白奶量開始，所以一位餵配方奶的家長一天要重打
+  同樣的 120 八次。記憶要跟著孩子走：一位有兩個孩子的家長，一個喝配方奶一個
+  親餵，用帳號記住上一次只會讓兩張表都填錯。
+*/
+describe('沿用上一筆', () => {
+  const childB: ChildProfile = { ...child, id: 'c2', name: '小米' };
+
+  const feedingLog = (id: string, childId: string, data: FeedingData): DailyLog => ({
+    id,
+    childId,
+    type: 'feeding',
+    timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    data,
+    createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+  });
+
+  beforeEach(() => {
+    readState.logs = [
+      feedingLog('a', 'c1', { feedingType: 'formula', amount: 120 }),
+      feedingLog('b', 'c2', { feedingType: 'breast_both', duration: 15 }),
+    ];
+    addDailyLog.mockResolvedValue('new-log');
+  });
+
+  it('開餵奶表單時帶出這個孩子上次的值', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <DailyLogPage currentChild={child} user={null} />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: '餵奶' }));
+
+    expect(await screen.findByLabelText('類型 *')).toHaveValue('formula');
+    expect(screen.getByLabelText('奶量（ml）')).toHaveValue(120);
+  });
+
+  it('換一個孩子，帶出的是那個孩子的值', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <DailyLogPage currentChild={childB} user={null} />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: '餵奶' }));
+
+    expect(await screen.findByLabelText('類型 *')).toHaveValue('breast_both');
+    expect(screen.getByLabelText('奶量（ml）')).toHaveValue(null);
+    expect(screen.getByLabelText('時長（分鐘）')).toHaveValue(15);
+  });
+
+  it('一鍵重複：內容照抄上一筆，時間是現在，不開表單', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <DailyLogPage currentChild={child} user={null} />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: /再記一次|餵奶（配方奶 120 ml）/ }));
+
+    expect(addDailyLog).toHaveBeenCalledTimes(1);
+    const [, written] = addDailyLog.mock.calls[0];
+    expect(written.type).toBe('feeding');
+    expect(written.data).toMatchObject({ feedingType: 'formula', amount: 120 });
+    expect(Date.now() - Date.parse(written.timestamp)).toBeLessThan(1000);
+    expect(screen.queryByRole('heading', { name: '新增餵奶記錄' })).toBeNull();
+  });
+
+  it('還沒有任何紀錄的孩子沒有重複鍵，表單也回到原本的預設值', async () => {
+    readState.logs = [];
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <DailyLogPage currentChild={child} user={null} />
+      </ToastProvider>,
+    );
+
+    expect(screen.queryByText('再記一次上次的')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '餵奶' }));
+    expect(await screen.findByLabelText('類型 *')).toHaveValue('breast_left');
+    expect(screen.getByLabelText('奶量（ml）')).toHaveValue(null);
   });
 });
 

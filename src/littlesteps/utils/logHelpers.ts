@@ -116,6 +116,24 @@ export function isIntakeFeedingLog(log: DailyLog): boolean {
 }
 
 /**
+ * 這個孩子最近一筆某類型的紀錄，用來預填表單。
+ *
+ * 記憶跟著孩子走，不跟著帳號：兩個孩子的家長常常一個喝配方奶、一個親餵，
+ * 用帳號記住上一次只會讓兩張表都填錯。這裡的 `logs` 本來就是單一孩子的，
+ * 所以「按孩子分」是免費的——真正要避免的是把它搬到 localStorage 去。
+ */
+export function findLastLogOfType(logs: DailyLog[], type: DailyLog['type']): DailyLog | null {
+  let latest: DailyLog | null = null;
+  for (const log of logs) {
+    if (log.type !== type) continue;
+    if (!latest || new Date(log.timestamp).getTime() > new Date(latest.timestamp).getTime()) {
+      latest = log;
+    }
+  }
+  return latest;
+}
+
+/**
  * 計算指定日期的每日摘要統計
  */
 export function calculateDailySummary(

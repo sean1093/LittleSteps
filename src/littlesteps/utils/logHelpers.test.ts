@@ -13,6 +13,7 @@ import {
   getFeedingTypeLabel,
   getDiaperTypeLabel,
   getConsistencyLabel,
+  findLastLogOfType,
   STALE_OPEN_SLEEP_MINUTES,
   findOpenSleep,
   isOpenSleep,
@@ -382,6 +383,28 @@ describe('logHelpers', () => {
       const logs = [sleepLog('napping', at(-13 * 60))];
 
       expect(calculateDailySummary(logs, '2026-06-15').sleepCount).toBe(1);
+    });
+  });
+
+  describe('findLastLogOfType', () => {
+    it('returns the newest log of that type, ignoring the others', () => {
+      const logs = [
+        feedingLog('older', at(-300), { amount: 90 }),
+        feedingLog('newest', at(-60), { amount: 120 }),
+        diaperLog('d1', at(-10), 'both', 'soft'),
+      ];
+
+      expect(findLastLogOfType(logs, 'feeding')?.id).toBe('newest');
+      expect(findLastLogOfType(logs, 'diaper')?.id).toBe('d1');
+    });
+
+    /*
+      A child with no history is the first-ever log. The form has to fall back
+      to its plain defaults rather than showing an empty state or throwing.
+    */
+    it('returns null when the child has never logged that type', () => {
+      expect(findLastLogOfType([diaperLog('d1', at(-10), 'pee')], 'feeding')).toBeNull();
+      expect(findLastLogOfType([], 'sleep')).toBeNull();
     });
   });
 
