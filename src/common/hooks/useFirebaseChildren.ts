@@ -2,6 +2,7 @@ import { ref, set, update, remove, get, push, type DatabaseReference } from 'fir
 import { database } from '../../lib/firebase';
 import { CareTaskRecord, ChildProfile, DailyLog, DiaryEntry, FoodTrialRecord, Gender } from '../../types';
 import { removeUndefined } from '../utils/firebaseData';
+import type { GestationalAge } from '../correctedAge';
 import { lmpFromDueDate, toLocalDateKey } from '../utils/dateHelpers';
 import { CHILD_LIMIT_MESSAGE, MAX_CHILDREN } from '../childLimits';
 
@@ -33,6 +34,8 @@ export function useFirebaseChildren(userId: string | null) {
     gender?: Gender,
     /** 建立孕期檔案時傳入預產期；末次月經由 Naegele 法則回推。 */
     dueDate?: string,
+    /** 早產週數，只有家長填了才寫。見 common/correctedAge。 */
+    gestationalAge?: GestationalAge,
   ) => {
     if (!userId) throw new Error('User not authenticated');
 
@@ -47,6 +50,8 @@ export function useFirebaseChildren(userId: string | null) {
       name,
       birthday,
       gender,
+      gestationalAgeWeeks: gestationalAge?.weeks,
+      gestationalAgeDays: gestationalAge?.days,
       // 授權名單，不是 users/{uid}/childrenIds。建立者必須在同一筆寫入裡就是
       // 成員，否則規則擋下這筆——連他自己都讀不回這個孩子。
       members: { [userId]: true },
@@ -170,6 +175,7 @@ export function useFirebaseChildren(userId: string | null) {
     birthday: string,
     gender?: Gender,
     isPregnancy?: boolean,
+    gestationalAge?: GestationalAge,
   ) => {
     if (!userId) throw new Error('User not authenticated');
 
@@ -180,6 +186,12 @@ export function useFirebaseChildren(userId: string | null) {
         name,
         birthday,
         gender,
+        // 寫 null 而不是留空：呼叫端只有編輯表單，送過來的一定是當下完整的
+        // 表單狀態，所以「沒有值」就是「家長把它清掉了」。用 undefined 的話
+        // removeUndefined 會整個拔掉這兩個 key，舊的週數就永遠留在資料庫裡，
+        // 誤填一次之後再也改不回足月。
+        gestationalAgeWeeks: gestationalAge?.weeks ?? null,
+        gestationalAgeDays: gestationalAge?.days ?? null,
         ...(isPregnancy
           ? {
               'pregnancyData/dueDate': birthday,

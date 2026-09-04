@@ -131,8 +131,8 @@ export default function LandingPage({
       <AddChildModal
         isOpen={addingChild}
         onClose={() => setAddingChild(false)}
-        onSave={(name, birthday, gender, _isPregnancy, dueDate) =>
-          store?.addChild(name, birthday, gender, dueDate)
+        onSave={(name, birthday, gender, _isPregnancy, dueDate, gestationalAge) =>
+          store?.addChild(name, birthday, gender, dueDate, gestationalAge)
         }
         onJoin={store?.joinChild}
       />

@@ -451,7 +451,9 @@ function AppContent() {
                 linkedCheckItemId,
               });
             }}
-            onAddChild={(name, birthday, gender) => addChild(name, birthday, gender)}
+            onAddChild={(name, birthday, gender, gestationalAge) =>
+              addChild(name, birthday, gender, undefined, gestationalAge)
+            }
             onJoinChild={joinChild}
           />
         )}
@@ -462,7 +464,9 @@ function AppContent() {
             reminderBadge={reminderBadge}
             onCompleteTask={upsertCareTaskRecord}
             onUndoTask={clearCareTaskRecord}
-            onAddChild={(name, birthday, gender) => addChild(name, birthday, gender)}
+            onAddChild={(name, birthday, gender, gestationalAge) =>
+              addChild(name, birthday, gender, undefined, gestationalAge)
+            }
             onJoinChild={joinChild}
           />
         )}
@@ -474,7 +478,9 @@ function AppContent() {
             onAdd={addDiaryEntry}
             onUpdate={updateDiaryEntry}
             onDelete={deleteDiaryEntry}
-            onAddChild={(name, birthday, gender) => addChild(name, birthday, gender)}
+            onAddChild={(name, birthday, gender, gestationalAge) =>
+              addChild(name, birthday, gender, undefined, gestationalAge)
+            }
             onJoinChild={joinChild}
           />
         )}

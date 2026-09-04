@@ -9,6 +9,7 @@ import type {
   ToddlerTipCategory,
   Gender,
 } from '../../types';
+import { isCorrecting, type GestationalAge } from '../../common/correctedAge';
 import { isPregnancyProfile } from '../../common/pregnancy';
 import { calculateAge, formatDate, toLocalDateKey } from '../../common/utils/dateHelpers';
 import { calculateAgeDisplay } from '../../common/utils/summaryCalculator';
@@ -58,7 +59,12 @@ interface RemindersPageProps {
    * 新增／加入寶寶。LittleExplorer 自己開新增視窗，不把家長送去 LittleSteps
    * ——共用的是帳號與孩子資料，不是彼此的畫面。
    */
-  onAddChild: (name: string, birthday: string, gender?: Gender) => Promise<void>;
+  onAddChild: (
+    name: string,
+    birthday: string,
+    gender?: Gender,
+    gestationalAge?: GestationalAge,
+  ) => Promise<void>;
   onJoinChild?: (uuid: string) => Promise<void>;
 }
 
@@ -357,6 +363,14 @@ export default function RemindersPage({
     >
       {outOfRange ?? (
         <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-4">
+          {/* 這一頁的到期日全部依出生日期算，與生長曲線用的矯正年齡不同。
+              早產兒的家長看得到兩套年齡，所以要說明哪一套用在哪裡——政府的
+              健檢與疫苗時程沒有矯正年齡這回事。 */}
+          {currentChild && isCorrecting(currentChild) && (
+            <motion.p variants={listItem} className={`card text-sm ${THEME.muted}`}>
+              健檢、疫苗與塗氟的到期日依實際出生日期計算，不因早產而延後。矯正年齡用在生長曲線與發展檢核。
+            </motion.p>
+          )}
           {actionable.length === 0 ? (
             <motion.div variants={listItem}>
               <EmptyState

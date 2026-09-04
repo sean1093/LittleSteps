@@ -13,6 +13,7 @@ import type {
 } from '../../types';
 import { isPregnancyProfile, resolvePregnancyChild } from '../pregnancy';
 import { CHILD_LIMIT_MESSAGE, MAX_CHILDREN } from '../childLimits';
+import type { GestationalAge } from '../correctedAge';
 import { useToast } from '../ui/toast';
 import { useUserChildren } from './useUserChildren';
 import { useFirebaseChildren } from './useFirebaseChildren';
@@ -43,9 +44,21 @@ export interface ChildStore {
     administered: boolean,
     date?: string,
   ) => Promise<void>;
-  addChild: (name: string, birthday: string, gender?: Gender, dueDate?: string) => Promise<void>;
+  addChild: (
+    name: string,
+    birthday: string,
+    gender?: Gender,
+    dueDate?: string,
+    gestationalAge?: GestationalAge,
+  ) => Promise<void>;
   joinChild: (childUuid: string) => Promise<void>;
-  updateChild: (id: string, name: string, birthday: string, gender?: Gender) => Promise<void>;
+  updateChild: (
+    id: string,
+    name: string,
+    birthday: string,
+    gender?: Gender,
+    gestationalAge?: GestationalAge,
+  ) => Promise<void>;
   deleteChild: (id: string) => Promise<void>;
   /**
    * 收回分享：把其他成員移出這個孩子的名單，並關掉加入。分享視窗自己出訊息，
@@ -179,6 +192,7 @@ export function useChildStore(user: User | null): ChildStore {
     birthday: string,
     gender?: Gender,
     dueDate?: string,
+    gestationalAge?: GestationalAge,
   ) => {
     if (!user) return;
     // 上限比的是 childCount（帳號名下所有 id），不是 childProfiles.length。
@@ -188,7 +202,7 @@ export function useChildStore(user: User | null): ChildStore {
       return;
     }
     try {
-      await firebaseChildren.addChild(name, birthday, childCount, gender, dueDate);
+      await firebaseChildren.addChild(name, birthday, childCount, gender, dueDate, gestationalAge);
       logChildProfileAction('create');
     } catch (error) {
       console.error('新增寶寶失敗:', error);
@@ -211,7 +225,13 @@ export function useChildStore(user: User | null): ChildStore {
     }
   };
 
-  const updateChild = async (id: string, name: string, birthday: string, gender?: Gender) => {
+  const updateChild = async (
+    id: string,
+    name: string,
+    birthday: string,
+    gender?: Gender,
+    gestationalAge?: GestationalAge,
+  ) => {
     if (!user) return;
     try {
       await firebaseChildren.updateChild(
@@ -220,6 +240,7 @@ export function useChildStore(user: User | null): ChildStore {
         birthday,
         gender,
         isPregnancyProfile(childProfiles.find((child) => child.id === id)),
+        gestationalAge,
       );
       logChildProfileAction('update');
     } catch (error) {

@@ -4,6 +4,7 @@ import { Edit, LogOut, Share2, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useOptionalChildStore } from '../contexts/ChildStoreContext';
 import { isPregnancyProfile } from '../pregnancy';
+import type { GestationalAge } from '../correctedAge';
 import type { ChildProfile, Gender } from '../../types';
 import { backdrop, sheet } from '../ui/motion';
 import { useDialogA11y } from '../ui/useDialogA11y';
@@ -61,11 +62,12 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
     gender?: Gender,
     _isPregnancy?: boolean,
     dueDate?: string,
+    gestationalAge?: GestationalAge,
   ) => {
     if (editingChild) {
-      await store?.updateChild(editingChild.id, name, birthday, gender);
+      await store?.updateChild(editingChild.id, name, birthday, gender, gestationalAge);
     } else {
-      await store?.addChild(name, birthday, gender, dueDate);
+      await store?.addChild(name, birthday, gender, dueDate, gestationalAge);
     }
     setEditingChild(null);
   };

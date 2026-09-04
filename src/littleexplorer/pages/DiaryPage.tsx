@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { PenLine, Sprout, Trash2, X } from 'lucide-react';
 import type { ChildProfile, DiaryEntry, DiaryMood, Gender } from '../../types';
+import type { GestationalAge } from '../../common/correctedAge';
 import { calculateAgeDisplay } from '../../common/utils/summaryCalculator';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
@@ -37,7 +38,12 @@ interface DiaryPageProps {
    * 新增／加入寶寶。LittleExplorer 自己開新增視窗，不把家長送去 LittleSteps
    * ——共用的是帳號與孩子資料，不是彼此的畫面。
    */
-  onAddChild: (name: string, birthday: string, gender?: Gender) => Promise<void>;
+  onAddChild: (
+    name: string,
+    birthday: string,
+    gender?: Gender,
+    gestationalAge?: GestationalAge,
+  ) => Promise<void>;
   onJoinChild?: (uuid: string) => Promise<void>;
 }
 
