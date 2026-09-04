@@ -3,9 +3,12 @@ import { cleanup } from '@testing-library/react';
 // Registers jest-dom matchers AND augments Vitest's Assertion types.
 import '@testing-library/jest-dom/vitest';
 
-// Cleanup after each test
+// Cleanup after each test. `localStorage` is part of that: view preferences
+// (src/common/preferences.ts) persist across a page load by design, so without
+// this a chip tapped in one test decides what the next test opens on.
 afterEach(() => {
   cleanup();
+  localStorage.clear();
 });
 
 // Mock Firebase functions
