@@ -79,6 +79,22 @@ shape.
 ### BabyOasis — nursing-room map
 - **3,852 nursing rooms across all 22 counties**, from MOHW open data
 - Locate-me search returning the nearest 8 within 10 km, with real distances
+- County, then district, each district carrying its own room count: the 3,852
+  rooms sit in 364 districts, so one flat list would be 364 chips
+- Six venue-type chips: malls, stations and airports, hospitals and clinics,
+  parks and outdoor spaces, libraries and exhibition halls, family centres and
+  social welfare
+- **2,792 of the 3,852 rooms are on the statutory public-venue list**; the other
+  1,060 were provided voluntarily. The dataset carries no venue type and both
+  kinds look identical on the map, so that list is the only source-backed way
+  to tell a shopping centre from a factory canteen
+- 474 rooms read as staff-or-student-only — 228 workplaces and 246 campuses,
+  none of them on the statutory list. They are labelled as internal venues
+  rather than hidden, because the venue type is inferred from the registered
+  name and hiding a real room by default is the worse error. One tap on the
+  exclude-internal-venues chip removes all 474
+- 973 rooms whose remarks require a service desk are labelled as such, so a
+  parent asks at the desk rather than looking for a door that is locked
 - Facilities, opening hours, phone, and a one-tap Google Maps handoff
 - Clustered markers with a spatial index, so the national dataset stays usable at any zoom
 

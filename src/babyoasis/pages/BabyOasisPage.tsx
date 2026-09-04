@@ -25,8 +25,9 @@ import AppBar from '../../common/ui/AppBar';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { sheet, tap } from '../../common/ui/motion';
-import { createSpatialIndex, type Located } from '../utils/spatialIndex';
-import RoomSearch from '../components/RoomSearch';
+import { createSpatialIndex, distanceBetween, type Located } from '../utils/spatialIndex';
+import RoomSearch, { NO_FILTERS, type RoomFilters } from '../components/RoomSearch';
+import { categoryOf, isInternalVenue } from '../utils/roomCategory';
 
 // Import leaflet CSS
 import 'leaflet/dist/leaflet.css';
@@ -319,6 +320,58 @@ const SelectedRoomFocus = ({ room }: { room: NursingRoom | null }) => {
 };
 
 /**
+ * 篩選之後把地圖框到剩下的那些點上。
+ *
+ * 篩了「臺北市 士林區」卻還停在全台視角，家長看到的只是同一片叢集少了幾顆，
+ * 得自己縮放拖曳去找篩選結果在哪裡。這裡直接算出剩下這些點的外接範圍飛過去，
+ * 縣市與行政區因此不需要任何中心點座標表——資料本身就有座標。
+ *
+ * 每一批篩選結果只框一次，這是靠記住上一次框過的那個陣列做到的：篩選條件
+ * 沒動、只是關掉了詳情面板時，地圖必須留在家長剛剛看的地方，不能把他拉回
+ * 整區的視角。選定某一筆的期間也完全不動，那時 SelectedRoomFocus 正在把
+ * 地圖帶到那一筆上，兩個都動會互相搶。
+ *
+ * maxZoom 用 MARKER_ZOOM，否則只剩一筆時會貼到最大倍率，家長認不出那是哪裡。
+ */
+const FilteredAreaFocus = ({
+  rooms,
+  active,
+}: {
+  rooms: readonly NursingRoom[];
+  active: boolean;
+}) => {
+  const map = useMap();
+  const framed = useRef<readonly NursingRoom[] | null>(null);
+
+  useEffect(() => {
+    if (rooms === framed.current) return;
+    framed.current = rooms;
+    if (!active || rooms.length === 0) return;
+
+    let south = rooms[0].latitude;
+    let north = south;
+    let west = rooms[0].longitude;
+    let east = west;
+    rooms.forEach((room) => {
+      if (room.latitude < south) south = room.latitude;
+      if (room.latitude > north) north = room.latitude;
+      if (room.longitude < west) west = room.longitude;
+      if (room.longitude > east) east = room.longitude;
+    });
+    map.fitBounds(
+      [
+        [south, west],
+        [north, east],
+      ],
+      // 上緣要留給標題列與搜尋列，它們是浮在地圖上的。
+      { paddingTopLeft: [24, 180], paddingBottomRight: [24, 48], maxZoom: MARKER_ZOOM },
+    );
+  }, [rooms, active, map]);
+
+  return null;
+};
+
+/**
  * 定位後的鄰近清單，和詳情面板一樣是對話框：Escape 關得掉、焦點會進來。
  */
 const NearbyRoomsSheet = ({
@@ -403,6 +456,13 @@ const GEOLOCATION_TIMEOUT = 3;
 /** 資料還沒到、到了、載不進來——空白的地圖必須讀得出是哪一種。 */
 type LoadState = 'loading' | 'ready' | 'failed';
 
+/**
+ * 清單排序用的中文定序器。等同 `localeCompare(other, 'zh-Hant')`，但整份
+ * 3,852 筆實測 2.6 ms 而不是 21.6 ms：localeCompare 帶 locale 參數時每次
+ * 比較都重建一個 collator，而排序會呼叫它四萬次以上。
+ */
+const COLLATOR = new Intl.Collator('zh-Hant');
+
 const BabyOasisPage = () => {
   const toast = useToast();
   const theme = SERVICE_THEME.babyoasis;
@@ -412,6 +472,7 @@ const BabyOasisPage = () => {
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [showNearby, setShowNearby] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
+  const [filters, setFilters] = useState<RoomFilters>(NO_FILTERS);
 
   // 每次載入配一個序號，只有最新那次能寫進 state：重試時先前那次可能後到，
   // 卸載之後也不該再寫。
@@ -447,8 +508,40 @@ const BabyOasisPage = () => {
     };
   }, [loadRooms]);
 
+  /*
+    篩選在這裡做一次就好：標記、附近清單與搜尋結果吃的必須是同一批，各自篩
+    一次的話家長會在清單裡看到地圖上沒有的哺乳室。
+
+    預設一個條件都不套。分類是從場所名稱推論出來的，不是國健署發布的欄位，
+    預設就藏掉真實存在的哺乳室是更糟的那種錯。
+  */
+  const isFiltered =
+    filters.city !== null ||
+    filters.district !== null ||
+    filters.category !== null ||
+    filters.excludeInternal;
+
+  // 區域選單自己要算有哪些縣市、各行政區幾筆，所以這一層先不套區域。
+  const areaRooms = useMemo(() => {
+    if (filters.category === null && !filters.excludeInternal) return nursingRooms;
+    return nursingRooms.filter(
+      (room) =>
+        (filters.category === null || categoryOf(room) === filters.category) &&
+        (!filters.excludeInternal || !isInternalVenue(room)),
+    );
+  }, [nursingRooms, filters.category, filters.excludeInternal]);
+
+  const filteredRooms = useMemo(() => {
+    if (filters.city === null) return areaRooms;
+    return areaRooms.filter(
+      (room) =>
+        room.city === filters.city &&
+        (filters.district === null || room.district === filters.district),
+    );
+  }, [areaRooms, filters.city, filters.district]);
+
   // 建索引 0.4 ms，之後每次最近查詢 0.007 ms；逐筆線性掃描則是 0.5 ms。
-  const index = useMemo(() => createSpatialIndex(nursingRooms), [nursingRooms]);
+  const index = useMemo(() => createSpatialIndex(filteredRooms), [filteredRooms]);
 
   const nearby = useMemo(() => {
     if (!userLocation) return [];
@@ -456,13 +549,33 @@ const BabyOasisPage = () => {
   }, [index, userLocation]);
 
   /*
+    清單順序。國健署回傳的順序是它自己的查詢順序，讀起來像亂數：同一條路上的
+    三筆會散在清單的三個地方。有定位就照距離，沒有就照行政區再照名稱。
+  */
+  const sortedRooms = useMemo(() => {
+    if (userLocation) {
+      const [lat, lng] = userLocation;
+      // 先把距離算好再排。放在比較函式裡的話，每一筆會被重算 log n 次。
+      return filteredRooms
+        .map((room) => ({ room, km: distanceBetween(lat, lng, room.latitude, room.longitude) }))
+        .sort((a, b) => a.km - b.km)
+        .map((entry) => entry.room);
+    }
+    return [...filteredRooms].sort(
+      (a, b) =>
+        COLLATOR.compare(a.district ?? '', b.district ?? '') ||
+        COLLATOR.compare(a.name, b.name),
+    );
+  }, [filteredRooms, userLocation]);
+
+  /*
     近四千個 <Marker> 只跟資料有關。先前這串直接寫在 render 裡，而 selectedRoom、
     showNearby、userLocation 都住在同一個元件——點開一筆哺乳室就把全部標記重建
-    一次。抽成只依 nursingRooms 的 memo 之後，選取只動面板與地圖視角。
+    一次。抽成只依 filteredRooms 的 memo 之後，選取只動面板與地圖視角。
   */
   const markers = useMemo(
     () =>
-      nursingRooms.map((room) => (
+      filteredRooms.map((room) => (
         <Marker
           key={room.id}
           position={[room.latitude, room.longitude]}
@@ -470,7 +583,7 @@ const BabyOasisPage = () => {
           eventHandlers={{ click: () => setSelectedRoom(room) }}
         />
       )),
-    [nursingRooms],
+    [filteredRooms],
   );
 
   // 身分穩定的關閉函式：面板的 Escape 監聽掛在它上面，每次 render 換一個新的
@@ -516,7 +629,9 @@ const BabyOasisPage = () => {
           title={theme.name}
           subtitle={
             loadState === 'ready'
-              ? `全台 ${nursingRooms.length} 處哺乳室`
+              ? isFiltered
+                ? `篩選後 ${filteredRooms.length} 處`
+                : `全台 ${nursingRooms.length} 處哺乳室`
               : loadState === 'failed'
                 ? '資料載入失敗'
                 : '正在載入資料…'
@@ -533,7 +648,14 @@ const BabyOasisPage = () => {
             外層不吃指標事件，否則搜尋列旁邊的透明留白會把地圖的拖曳攔下來。 */}
         <div className="max-w-2xl mx-auto px-4 pt-3 pointer-events-none">
           {loadState === 'ready' ? (
-            <RoomSearch rooms={nursingRooms} theme={theme} onSelect={setSelectedRoom} />
+            <RoomSearch
+              rooms={sortedRooms}
+              areaRooms={areaRooms}
+              theme={theme}
+              filters={filters}
+              onFiltersChange={setFilters}
+              onSelect={setSelectedRoom}
+            />
           ) : (
             /* 資料沒到就不給搜尋框：對空陣列搜尋每次都回「找不到符合的哺乳室」，
                等於把「還在載入」和「載入失敗」都說成這一帶沒有哺乳室。 */
@@ -572,6 +694,17 @@ const BabyOasisPage = () => {
 
         {/* 選了哪一筆，地圖就跟到哪一筆 */}
         <SelectedRoomFocus room={selectedRoom} />
+
+        {/* 篩了條件就把視角帶到剩下的那些點上；選定某一筆時讓給上面那個。 */}
+        <FilteredAreaFocus
+          rooms={filteredRooms}
+          active={
+            isFiltered &&
+            selectedRoom === null &&
+            filteredRooms.length > 0 &&
+            filteredRooms.length < nursingRooms.length
+          }
+        />
 
         {/*
           全台近四千個點必須分群，否則低倍率下會糊成一片而且互相遮蔽。
