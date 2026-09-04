@@ -50,6 +50,20 @@ export default function VenueReportButton({
   onOpenChange,
 }: VenueReportButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
+  /*
+    Whether the form has ever been opened from this button.
+
+    The family-centre list renders 30 cards, so an unconditional portal put 30
+    empty positioned nodes on `body` and mounted 30 `FeedbackModal` instances
+    behind them on every list render - for a form a parent opens at most once.
+    Latching on first open instead of guarding on `isOpen` costs one boolean
+    and keeps the closing animation: `ModalFrame` runs its exit inside its own
+    `AnimatePresence`, which needs the subtree to still be mounted while
+    `isOpen` goes false. Guarding on `isOpen` unmounts it in the same frame and
+    the sheet vanishes instead of sliding away - the exact mistake documented
+    on `RoomDetailSheet`.
+  */
+  const [hasOpened, setHasOpened] = useState(false);
   const auth = useOptionalAuth();
   const user = auth?.user ?? null;
   const { submitFeedback } = useFirebaseChildren(user?.uid ?? null);
@@ -74,6 +88,7 @@ export default function VenueReportButton({
         type="button"
         whileTap={tap}
         onClick={() => {
+          setHasOpened(true);
           setIsOpen(true);
           onOpenChange?.(true);
         }}
@@ -101,24 +116,25 @@ export default function VenueReportButton({
           underneath the map. z-[2500] is the layer the account sheet already
           uses for exactly this; the toast stays above at z-[3000] so the
           confirmation is still readable. */}
-      {createPortal(
-        <div className="relative z-[2500]">
-          <FeedbackModal
-            isOpen={isOpen}
-            onClose={() => {
-              setIsOpen(false);
-              onOpenChange?.(false);
-            }}
-            onSubmit={handleSubmit}
-            userName={user?.displayName || '用戶'}
-            venue={{
-              target,
-              signIn: user ? null : () => void auth?.signInWithGoogle(),
-            }}
-          />
-        </div>,
-        document.body,
-      )}
+      {hasOpened &&
+        createPortal(
+          <div className="relative z-[2500]">
+            <FeedbackModal
+              isOpen={isOpen}
+              onClose={() => {
+                setIsOpen(false);
+                onOpenChange?.(false);
+              }}
+              onSubmit={handleSubmit}
+              userName={user?.displayName || '用戶'}
+              venue={{
+                target,
+                signIn: user ? null : () => void auth?.signInWithGoogle(),
+              }}
+            />
+          </div>,
+          document.body,
+        )}
     </>
   );
 }
