@@ -117,33 +117,78 @@ export function resolveVaccineDoses(
 export const OVERDUE_LOOKBACK_DAYS = 90;
 
 /**
- * 現在該提醒家長的劑次。
+ * 只有公費常規時程算「時程」。
  *
- * 三個條件：
- *   1. 已經到期或剛逾期，還沒接種。「還沒到」的不放——把未來半年每一劑都列出來
- *      等於沒有重點。
- *   2. 逾期不超過 OVERDUE_LOOKBACK_DAYS。
- *   3. 只算 national，也就是疾管署公費常規時程。自費疫苗是選擇不是時程，把它
- *      畫成「你漏打了」會讓家長以為自己欠了一劑國家規定的疫苗——這和幼兒期
- *      提醒清單刻意排除自費劑次是同一個判斷。
+ * 自費疫苗是選擇不是時程，把它畫成「你漏打了」會讓家長以為自己欠了一劑國家
+ * 規定的疫苗——這和幼兒期提醒清單刻意排除自費劑次是同一個判斷。
  *
  * nhi-conditional 刻意也不放進來，即使它可能不用錢。健保給付綁的是「1 歲以下
  * 高危險群」這類條件，而這個 app 不知道這個孩子算不算——把它列成到期的待辦，
  * 等於對每一個健康寶寶的家長說「你漏打了一劑」，那是新的錯誤資訊，只是換了
  * 方向。條件本身在疫苗頁上不必展開就看得到，該知道的家長在那裡會看到。
+ *
+ * 這是全 app 唯一決定這件事的地方：提醒清單、下一劑、儀表板卡片與看診摘要
+ * 都指向這個常數。兩份各自判斷 funding 的實作就是 #25 本身——不看 funding
+ * 的那一份不只偶爾答錯，而是一旦家長記下出生第一劑就永遠卡在自費那一列，
+ * 因為不會去買的劑次永遠不會被記錄，「第一筆沒接種的」就永遠不會往前走。
+ */
+export const SCHEDULED_FUNDING: VaccineSchedule['funding'] = 'national';
+
+/**
+ * 「還在這個孩子的時程上」——下一劑與提醒清單共用的同一條規則。
+ *
+ * 逾期超過 OVERDUE_LOOKBACK_DAYS 的不算：那一劑已經在孩子身後，是要和醫師
+ * 對帳的病史，不是往前的下一步。還沒到的算——那才是接下來要做的事。
+ *
+ * 回傳判斷函式而不是直接判斷：cutoff 一次算完，不必每一劑重新解析日期。
+ */
+const stillOnSchedule = (today: Date) => {
+  const cutoff = parseLocalDate(toLocalDateKey(today)).getTime() -
+    (OVERDUE_LOOKBACK_DAYS + DUE_WINDOW_DAYS) * MS_PER_DAY;
+
+  return (dose: ResolvedVaccineDose): boolean => {
+    if (dose.funding !== SCHEDULED_FUNDING) return false;
+    if (dose.status === 'done') return false;
+    if (dose.status !== 'overdue') return true;
+
+    return parseLocalDate(dose.dueDate).getTime() >= cutoff;
+  };
+};
+
+/**
+ * 現在該提醒家長的劑次。
+ *
+ * 在 stillOnSchedule 之上再排除「還沒到」的：把未來半年每一劑都列出來等於
+ * 沒有重點。這也是它和 nextScheduledDose 唯一的差別——一個回答「今天要做
+ * 什麼」，一個回答「接下來是哪一劑」。
  */
 export function actionableVaccineDoses(
   doses: ResolvedVaccineDose[],
   today: Date = new Date(),
 ): ResolvedVaccineDose[] {
-  const cutoff = parseLocalDate(toLocalDateKey(today)).getTime() -
-    (OVERDUE_LOOKBACK_DAYS + DUE_WINDOW_DAYS) * MS_PER_DAY;
+  const onSchedule = stillOnSchedule(today);
 
-  return doses.filter((dose) => {
-    if (dose.funding !== 'national') return false;
-    if (dose.status === 'due') return true;
-    if (dose.status !== 'overdue') return false;
+  return doses.filter((dose) => dose.status !== 'upcoming' && onSchedule(dose));
+}
 
-    return parseLocalDate(dose.dueDate).getTime() >= cutoff;
-  });
+/**
+ * 這個孩子的「下一劑」。儀表板卡片與看診摘要都在問這個問題。
+ *
+ * 這個問題原本有兩個答案：這裡的公費規則，以及 summaryCalculator 自己按
+ * ageInMonths 排序、回傳第一筆沒接種的版本。後者不看 funding，而自費劑次落在
+ * 出生、2、4、6、18 個月，全部排在公費劑次前面——於是把公費打完的家長，會被
+ * 用和免費劑次一模一樣的字告知「下次接種」是一支要自己付錢的產品。現在只剩
+ * 這一個答案。
+ *
+ * 也不再無視孩子多大：早就超出回顧範圍的劑次不是下一步，但還沒到的算——
+ * 那正是「下次接種」要回答的東西。
+ *
+ * doses 必須是 resolveVaccineDoses 的輸出（已依到期日遞增），所以第一筆符合的
+ * 就是最早的那一劑。
+ */
+export function nextScheduledDose(
+  doses: ResolvedVaccineDose[],
+  today: Date = new Date(),
+): ResolvedVaccineDose | undefined {
+  return doses.find(stillOnSchedule(today));
 }
