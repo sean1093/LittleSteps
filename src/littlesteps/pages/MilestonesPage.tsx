@@ -7,6 +7,7 @@ import MonthPicker from '../components/shared/MonthPicker';
 import CategoryFilter from '../components/food/CategoryFilter';
 import MilestoneCard from '../components/milestone/MilestoneCard';
 import MilestoneModal from '../components/milestone/MilestoneModal';
+import ChildSwitcher from '../../common/components/ChildSwitcher';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem, fadeInUp } from '../../common/ui/motion';
@@ -46,6 +47,8 @@ export default function MilestonesPage({
   return (
     <div className="screen">
       <div className="screen-body">
+        <ChildSwitcher service="littlesteps" className="mb-4" />
+
         <div className="mb-4">
           <MonthPicker ranges={monthRanges} selected={selectedMonth} onChange={setSelectedMonth} />
         </div>

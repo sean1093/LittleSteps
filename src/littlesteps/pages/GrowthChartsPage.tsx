@@ -7,6 +7,7 @@ import { useGrowthTracking } from '../hooks/useGrowthTracking';
 import GrowthRecordList from '../components/growth/GrowthRecordList';
 import AddGrowthRecordModal from '../components/growth/AddGrowthRecordModal';
 import GrowthChartDisplay from '../components/growth/GrowthChartDisplay';
+import ChildSwitcher from '../../common/components/ChildSwitcher';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem } from '../../common/ui/motion';
@@ -93,7 +94,10 @@ export default function GrowthChartsPage({
         animate="visible"
         className="screen-body-wide"
       >
-        <motion.div variants={listItem} className="flex justify-end mb-5">
+        <motion.div variants={listItem} className="flex items-start justify-end mb-5">
+          {/* mr-auto 而不是把這一列改成 justify-between：切換器在單寶寶帳號下
+              不渲染，那時這一列只剩「新增記錄」，仍然要靠 justify-end 靠右。 */}
+          <ChildSwitcher service="littlesteps" className="mr-auto" />
           <button onClick={() => setIsModalOpen(true)} className="btn-primary">
             <Plus className="w-5 h-5" />
             <span>新增記錄</span>
