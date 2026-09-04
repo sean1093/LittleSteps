@@ -44,9 +44,9 @@ const PAGE_META: Record<Page, PageMeta> = {
       '依月齡整理新生兒到 1 歲的照顧重點：餵食、睡眠、安全與常見狀況，內容標註資料來源與查證日期。',
   },
   'littlesteps/vaccine-tracking': {
-    title: '寶寶疫苗接種時程追蹤｜公費與自費疫苗｜LittleSteps',
+    title: '寶寶疫苗接種時程追蹤｜公費、健保給付與自費｜LittleSteps',
     description:
-      '依衛福部建議時程記錄寶寶疫苗接種，含公費與自費疫苗、接種時機與可能副作用。',
+      '依衛福部建議時程記錄寶寶疫苗接種，逐劑標明公費、健保有條件給付或自費與出處，含接種時機與可能副作用。',
   },
   'littlesteps/complementary-food': {
     title: '副食品添加完整指南｜4-12 個月｜LittleSteps',
