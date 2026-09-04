@@ -41,17 +41,38 @@ group headings answer it rather than leaving six equal rows to be read through.
 ### LittleBloom — pregnancy companion
 - **Weekly pregnancy guide** — week-by-week body changes and what to watch for
 - **Prenatal schedule** — the 14 government-funded prenatal checkups, with dates and clinics recorded
-- **Pregnancy knowledge base** — 24 articles: causes, what to do, when to see a doctor
+- **Pregnancy knowledge base** — 25 articles: causes, what to do, when to see a doctor, including which vaccines pregnancy needs — influenza, Tdap, COVID-19 and the maternal RSV vaccine — with each one's funding status and the week window for Tdap
 - **Birth registration** — converts a pregnancy profile into a baby profile, which is what moves a family from LittleBloom to LittleSteps
 
 ### LittleSteps — baby growth tracking
 - **Growth overview** — one screen summarising milestones, vaccines, sleep, nappies and food
 - **Milestone tracking** — 33 milestones across physical, motor, cognitive and feeding
-- **Vaccine tracking** — 33 doses on Taiwan's MOHW schedule (21 government-funded,
-  1 conditionally reimbursed by the NHI, 11 self-paid), each citing the CDC page it
-  came from, with side-effect and emergency guidance
-- **Quick log** — feeding, sleep and nappies in a couple of taps
-- **Sleep analysis** — patterns, quality scoring and advice from the logs
+- **Vaccine tracking** — 35 doses on Taiwan's MOHW schedule (20 government-funded,
+  1 conditionally reimbursed by the NHI, 14 self-paid), each citing the CDC page it
+  came from, with side-effect and emergency guidance. A dose that is due to change
+  funding on a known date says so, and a test goes red once that date passes while
+  the row still states the old funding
+- **Calendar export** — the outstanding doses export as an ICS file, one action for
+  everything still due and one per dose, each event naming the dose, its funding
+  state and the recommended window, with a week's warning
+- **Next dose** — the dashboard card and the clinic summary name only publicly funded
+  doses, resolved by one shared implementation that also drops doses the child has
+  aged past, so a dose the family would have to buy is never presented as the next
+  scheduled one
+- **Quick log** — feeding, sleep and nappies in a couple of taps, or one tap to repeat
+  the last one. The form reopens with the values this child was logged with, scoped to
+  the child rather than the account, so a parent of a formula-fed and a breastfed baby
+  gets each one's own defaults. A sleep can be started and ended in one tap from the
+  day view, with a live elapsed count; one left open past 14 hours is flagged as
+  needing an end time and excluded from every sleep total, average and score
+- **Pumping and bottled breast milk** — a pumping session records volume, minutes and
+  optionally which side, and is kept out of every intake total, feed count and feeding
+  alert, with its own section in the weekly report. Breast milk given by bottle counts
+  as a feed with a measured volume and stays distinguishable from formula
+- **Sleep analysis** — patterns, advice, and a quality score measuring how long each
+  finished session lasted and how many night wakings the parent recorded. Night
+  wakings are recordable on the sleep form and as a prompt straight after a one-tap
+  close, so the weekly trend reflects real data
 - **Sleep guide** — sleep needs from 0 to 3 years, safety rules and training methods
 - **Growth charts** — WHO curves (P3/P15/P50/P85/P97) for weight, height and head circumference, plotted against corrected age for a preterm baby
 - **Corrected age for prematurity** — a birth before 37 weeks shifts growth percentiles, the chart's x-axis, the milestone band and the toddler development checks by the weeks the baby was early, until a corrected 24 months. Publicly funded vaccines and health checks are deliberately left on the birth date, which is how the MOHW schedules them, and both of those screens say so
@@ -60,6 +81,10 @@ group headings answer it rather than leaving six equal rows to be read through.
 - **Baby wiki** — 15 common health issues
 - **Clinic summary** — generates a summary to hand to a paediatrician
 - **Weekly / monthly report** — trends and development insight
+- **Current child, named where you log** — the daily log, growth charts and milestone
+  screens name the child they are about; with more than one eligible child that name
+  is the switcher, one tap to reveal the others and one to choose. One-child accounts
+  see no extra control
 
 ### LittleExplorer — toddler companion
 - **Development checks** — 30 checks over 12-36 months in five stages, plus a primary-teeth chart
@@ -82,6 +107,11 @@ group headings answer it rather than leaving six equal rows to be read through.
   national restaurant feed has a Kids-Friendly field that is empty in all 3,632
   records
 - A before-you-go checklist — the eleven questions that decide whether a trip out works
+- **Report a wrong record** — a parent standing at the venue can dispute what the app
+  claims: gone, cannot get in, hours wrong, undisclosed registration, or wrong
+  location, with the venue id, name and the disputed claim attached automatically. A
+  signed-out parent sees the action and is told what signing in is for. Reports land
+  in the feedback inbox and never change what the list shows
 - No map, on purpose: no official family-centre source carries coordinates, and
   geocoding Taiwanese street addresses was tested and rejected (see below)
 
@@ -114,6 +144,12 @@ group headings answer it rather than leaving six equal rows to be read through.
   parent asks at the desk rather than looking for a door that is locked
 - Facilities, opening hours, phone, and a one-tap Google Maps handoff
 - Clustered markers with a spatial index, so the national dataset stays usable at any zoom
+- **Report a wrong record** — the same action as LittleOuting, on the room sheet:
+  a parent at a locked door can say so, with the room id, name and the claim being
+  disputed attached automatically
+- **Area and venue-type filters survive a reload.** The chosen metro station and the
+  map viewport deliberately do not: a location anchor is about where you are standing
+  now, not about who the family is
 
 ### LittleGuard — disease radar
 - **Seven infectious diseases common in children**, one upstream dataset each (enterovirus, hand-foot-and-mouth disease, herpangina, influenza-like illness, COVID-19, diarrhoea, chickenpox): weekly outpatient visits, split across the 22 counties and three age bands (0-2 / 3-6 / 7-12)
@@ -126,6 +162,9 @@ group headings answer it rather than leaving six equal rows to be read through.
 - **The board explains itself before it counts**: a short explainer sits above the county picker, and one line above the rows answers the whole board for the selected county and age band — which diseases are above their usual level, that none of them are, or that the county is too small to tell either way. The line is withheld once the data is expired, because a board that old cannot support it, and it only says the rest are unchanged when every remaining row is genuinely comparable
 - **A row leads with plain language, not with a rate**: the board shows the week's visits, and the drawer opens with two sentences — how many visits this county and age band had this week and how that compares with its own previous 8 weeks, then whether the county sits above or below the national figure for the same week. The rate per 10,000 outpatient visits, the previous-8-week median, the national rate and the denominator sit behind a "detailed numbers" disclosure, collapsed by default: a number like 423.0 per 10,000 visits is a health statistician's unit, and the sentence says the same thing without asking a parent to learn it. The national comparison has its own measured percentiles (P25 0.66 / P75 1.19)
 - The tone is deliberately restrained: notice this, do not panic about it. Every "more than usual" comes with something a parent can do, and the strongest colour it reaches is `butter-dark`
+- **Opens on the county you last chose.** For a signed-in parent the age band comes
+  from the child's birthday rather than the stored value, because a child's age is the
+  better answer and it updates itself
 
 ---
 
@@ -133,6 +172,13 @@ group headings answer it rather than leaving six equal rows to be read through.
 
 **Signing in is required for anything that reads or writes a child's records.**
 Knowledge content is not.
+
+What a parent *chooses to look at* is remembered on the device — county, age band,
+tab and venue filters, in `src/common/preferences.ts` under a versioned key. That is
+view state and nothing else: no child's name, birthday, id or records ever goes to
+`localStorage`, the module's key set is closed on both read and write so a widened
+caller cannot smuggle one in, and a test asserts it. It is the only client-storage
+write in the product.
 
 `src/common/routePolicy.ts` holds a **public allowlist**, deliberately not a
 "needs auth" blocklist: this app stores children's health data, so forgetting to
@@ -197,7 +243,7 @@ feedbacks/$feedbackId      title, content, userId, timestamp
 ```
 
 The child node holds who the child is, plus progress against fixed lists — 33
-milestones, 33 vaccine doses, 30 development checks — so it is bounded. The
+milestones, 35 vaccine doses, 30 development checks — so it is bounded. The
 three collections under `childRecords` are not: they grow by one row per nappy,
 forever. They sit in a sibling subtree because the child listener subscribes to
 the whole `children/$childId` node, so with the logs inside it one nappy change

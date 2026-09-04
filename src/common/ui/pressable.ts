@@ -6,7 +6,7 @@ import type { KeyboardEvent } from 'react';
  * Several expandable rows are `motion.div`s with an `onClick` — the wiki
  * article card, the sleep-training method accordion, the food stage accordion,
  * the food record rows. A mouse works; a keyboard does not reach them at all,
- * which on the wiki meant all 84 articles across the three knowledge bases
+ * which on the wiki meant all 85 articles across the three knowledge bases
  * could be seen but never opened without a pointer.
  *
  * They stay `div`s rather than becoming `<button>`s because each contains
