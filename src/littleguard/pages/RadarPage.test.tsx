@@ -412,9 +412,10 @@ describe('抽屜', () => {
     await it.click(screen.getByRole('button', { name: /腸病毒/ }));
     const dialog = screen.getByRole('dialog');
     expect(dialog).toHaveTextContent('資料不足');
+    // 樣本偏小的但書不必先展開就看得到。
+    expect(dialog).toHaveTextContent(/容易上下跳動/);
     await it.click(screen.getByRole('button', { name: '詳細數字' }));
     expect(dialog).toHaveTextContent('11 次門診');
-    expect(dialog).toHaveTextContent(/容易上下跳動/);
     // 算不出來的率不編一個數字；人次與分母是實際數到的，照實給。
     expect(dialog).toHaveTextContent('—（0 人次）');
   });

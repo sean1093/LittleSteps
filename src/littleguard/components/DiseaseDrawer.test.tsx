@@ -291,16 +291,19 @@ describe('抽屜的狀態與樣本', () => {
     },
   );
 
-  it('樣本夠的時候不加但書', async () => {
+  it('樣本夠的時候不加但書', () => {
     open();
-    await openDetails();
     expect(screen.queryByText(/容易上下跳動/)).not.toBeInTheDocument();
   });
 
-  it.each(['small', 'insufficient'] as const)('樣本是 %s 就說一聲', async (reliability) => {
+  it.each(['small', 'insufficient'] as const)('樣本是 %s 就在第一層說一聲', (reliability) => {
+    // 但書跟第一層那句百分比同層：要收起來的是統計欄位，不是保留意見。
     const view = open('腸病毒', { reliability, denom: 300 });
-    await openDetails();
     expect(screen.getByText(/容易上下跳動/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '詳細數字' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
     view.unmount();
   });
 
