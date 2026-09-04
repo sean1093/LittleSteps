@@ -11,7 +11,10 @@ import type { RadarCell } from '../../types';
  *    用在「比平常多一點」上會讀成急診警報。
  *
  * 門檻不是手感，是實測分布的百分位：以「本週 ÷ 前 8 週中位數」為基準，近 3 年
- * 48,725 個樣本的 P25/P75/P90 分別是 0.78 / 1.26 / 1.77（中位數 1.01）。
+ * 54,468 個樣本的 P25/P75/P90 分別是 0.74 / 1.29 / 1.9（中位數 0.99）。這些
+ * 數字由 buildDiseaseRadar.cjs 每次重建時算進 JSON 的 calibration，下面的常數
+ * 一旦與它脫節，radar.test.ts 就會紅——加進 COVID-19 那一支資料時就是這樣
+ * 被抓到的，七種病的分布把 P90 從 1.77 推到 1.9。
  * 曾經考慮過的「前 5 年同週中位數」被否決，因為 2020-2022 的防疫措施讓腸病毒
  * 幾乎消失，那個基線下 ratio 的中位數是 1.63，門檻怎麼訂都會全年亮燈。
  */
@@ -35,7 +38,7 @@ export interface DiseaseCell {
   cell: RadarCell;
 }
 
-export const RADAR_THRESHOLDS = { p25: 0.78, p75: 1.26, p90: 1.77 } as const;
+export const RADAR_THRESHOLDS = { p25: 0.74, p75: 1.29, p90: 1.9 } as const;
 
 /**
  * 「跟全國同一週比」的門檻，一樣是實測分布不是手感：spec §geoRatio 的 42,882
@@ -158,7 +161,7 @@ export function summariseBoard(rows: readonly DiseaseCell[]): string {
     }
     return '這一週沒有哪一種比平常明顯多。';
   }
-  const names = notable.map((row) => row.disease).join('、');
+  const names = inSentence(notable.map((row) => row.disease).join('、'));
   const rest = rows.filter((row) => !NOTABLE.includes(statusOf(row.cell)));
   // 「其他」要嘛說得準，要嘛不說。每一列都在變多時那個「其他」是空的；剩下
   // 的列裡只要有一列比不出來，就不能替它保證「跟平常差不多」——板上那一列
@@ -181,12 +184,30 @@ function reasonWithoutRatio(cell: RadarCell): string {
 }
 
 /**
+ * 中文句子裡夾一個西文病名時前後留空白。
+ *
+ * 「COVID-19比平常多」「次因COVID-19就診」擠在一起，而這個 repo 其他文案一律
+ * 是「WHO 的標準」「14 次公費產檢」這種寫法。純中文病名不能加，否則會變成
+ * 「類流感 比平常多」——所以只看頭尾那一個字是不是漢字。
+ */
+export function inSentence(name: string): string {
+  const head = /^[\u3400-\u9fff]/.test(name) ? '' : ' ';
+  const tail = /[\u3400-\u9fff]$/.test(name) ? '' : ' ';
+  return `${head}${name}${tail}`;
+}
+
+/**
  * 抽屜的第一句：這一格的白話版。
  *
  * 「423.0/萬」是統計人員的單位，家長讀不出任何可以做的事；「台北市 0-2 歲這
  * 週有 413 次因類流感就診，比前 8 週的平常值多約 44%」講的是同一件事，而且不
  * 用先學單位。差距四捨五入不到 5% 就說差不多——那個位數的變動是雜訊，寫成
  * 「多約 3%」等於把雜訊講成趨勢。
+ *
+ * 翻倍以上改講「幾倍」：「多約 165%」要在腦子裡先加一次才知道是多少，而
+ * 「大約是平常的 2.7 倍」直接就是那個意思。門檻放在剛好翻倍，因為那正是兩種
+ * 說法一樣清楚的地方。往下掉不用這一套——再怎麼掉都不會超過 100%，而「0.4 倍」
+ * 比「少約 60%」難讀。
  */
 export function describeVisits(input: {
   county: string;
@@ -195,10 +216,11 @@ export function describeVisits(input: {
   cell: RadarCell;
 }): string {
   const { county, age, disease, cell } = input;
-  const head = `${county} ${AGE_LABEL[age] ?? age}這一週有 ${cell.visits} 次因${disease}就診`;
+  const head = `${county} ${AGE_LABEL[age] ?? age}這一週有 ${cell.visits} 次因${inSentence(disease)}就診`;
   if (cell.ratio === null) return `${head}，${reasonWithoutRatio(cell)}。`;
   const percent = Math.round(Math.abs(cell.ratio - 1) * 100);
   if (percent < 5) return `${head}，跟前 8 週的平常值差不多。`;
+  if (percent >= 100) return `${head}，大約是前 8 週平常值的 ${cell.ratio.toFixed(1)} 倍。`;
   return `${head}，比前 8 週的平常值${cell.ratio > 1 ? '多' : '少'}約 ${percent}%。`;
 }
 

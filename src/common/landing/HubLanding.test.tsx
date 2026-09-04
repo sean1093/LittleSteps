@@ -30,7 +30,7 @@ describe('HubLanding', () => {
     littleexplorer: '12-36 個月成長檢核',
     littleouting: '全台 234 間親子館',
     babyoasis: '全台 22 縣市、3,852 處',
-    littleguard: '六種兒童常見傳染病',
+    littleguard: '七種兒童常見傳染病',
   };
 
   /** Derived from the same list the page maps over. */

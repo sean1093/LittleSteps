@@ -725,6 +725,8 @@ export interface RadarData {
   ageBands: string[];
   calibration: {
     trendP25: number;
+    /** 中位數。撐起「ratio 接近 1 就是平常」這個前提，radar.ts 的門檻註解引用它。 */
+    trendP50: number;
     trendP75: number;
     trendP90: number;
     sampleSize: number;

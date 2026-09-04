@@ -58,7 +58,7 @@ function data(): RadarData {
     license: '政府資料開放授權條款-第1版',
     diseases: DISEASES,
     ageBands: ['0~2', '3~6', '7~12'],
-    calibration: { trendP25: 0.78, trendP75: 1.26, trendP90: 1.77, sampleSize: 48725 },
+    calibration: { trendP25: 0.74, trendP50: 0.99, trendP75: 1.29, trendP90: 1.9, sampleSize: 54468 },
     national: { '0~2': national, '3~6': national, '7~12': national },
     counties: {},
   };

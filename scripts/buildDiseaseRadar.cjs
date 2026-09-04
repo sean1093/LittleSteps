@@ -4,7 +4,7 @@
 /**
  * 疾管署「健保門診及住院就診人次統計」→ LittleGuard 疫情雷達的預聚合 JSON。
  *
- * 六支 CSV 合計約 47 MB，聚合後 67 KB（gzip 14 KB），所以這份產出可以進 PWA
+ * 七支 CSV 合計約 51 MB，聚合後 79 KB（gzip 17 KB），所以這份產出可以進 PWA
  * precache（`vite.config.ts` 的 globPatterns 已含 json，globIgnores 只排除
  * 1.1 MB 的 nursingRooms.json），板因此離線可用。
  *
@@ -35,12 +35,15 @@ const SOURCE_NAME = '衛生福利部疾病管制署 健保門診及住院就診�
 const LICENSE = '政府資料開放授權條款-第1版';
 const BASE = 'https://od.cdc.gov.tw/eic/';
 
-/** 板上的六種病，順序就是畫面順序，不依狀態重排。 */
+/** 板上的七種病，順序就是畫面順序，不依狀態重排。 */
 const DISEASES = [
   { name: '腸病毒', file: 'NHI_EnteroviralInfection.csv' },
   { name: '手足口病', file: 'NHI_HandFootMouthDisease.csv' },
   { name: '疱疹性咽峽炎', file: 'NHI_Herpangina.csv' },
   { name: '類流感', file: 'NHI_Influenza_like_illness.csv' },
+  // 檔名帶連字號（NHI_COVID-19.csv），和其他六支的命名不一致，是上游就這樣。
+  // 排在類流感後面：兩者都是呼吸道，家長在板上會一起看。
+  { name: 'COVID-19', file: 'NHI_COVID-19.csv' },
   { name: '腹瀉', file: 'NHI_Diarrhea.csv' },
   { name: '水痘', file: 'NHI_Varicella.csv' },
 ];
@@ -309,6 +312,9 @@ function calibrate(parsed, counties, latestYear) {
   ratios.sort((a, b) => a - b);
   return {
     trendP25: round2(percentile(ratios, 0.25)),
+    // 中位數是 radar.ts 那段註解在用的數字：它撐起「ratio 接近 1 就是平常」
+    // 這個前提。留在產出裡，註解才不會引用一個沒人能重算的值。
+    trendP50: round2(percentile(ratios, 0.5)),
     trendP75: round2(percentile(ratios, 0.75)),
     trendP90: round2(percentile(ratios, 0.9)),
     sampleSize: ratios.length,
@@ -319,9 +325,9 @@ async function main() {
   const buffers = await Promise.all(DISEASES.map((d) => download(BASE + d.file)));
   const parsed = buffers.map((b, i) => ({ ...DISEASES[i], ...parseDisease(b) }));
 
-  // 六支共同存在的最新一週：任一支缺該週就退一週，否則六張卡會來自不同週。
+  // 七支共同存在的最新一週：任一支缺該週就退一週，否則七張卡會來自不同週。
   const common = [...parsed[0].weeks].filter((w) => parsed.every((p) => p.weeks.has(w)));
-  if (common.length === 0) throw new Error('六支資料沒有共同的週次');
+  if (common.length === 0) throw new Error('七支資料沒有共同的週次');
   const latest = Math.max(...common);
   const year = Math.floor(latest / 100);
   const week = latest % 100;
