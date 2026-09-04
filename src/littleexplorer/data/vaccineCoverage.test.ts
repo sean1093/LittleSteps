@@ -25,9 +25,9 @@ const isToddlerAge = (months: number) =>
 const DOCUMENTED_EXCLUSIONS: Record<string, string> = {
   // 疾管署的常規公費 PCV13 是 2、4、6 個月加滿 12-15 個月追加 1 劑，
   // 到 12-15 個月就結束；careTasks 收的是 pneumococcal-12m 那一劑。
-  // vaccines.ts 另有一筆 24 個月的「第 4 劑」且標為 public，對得上的應該是
+  // vaccines.ts 另有一筆 24 個月的「第 4 劑」且標為 national，對得上的應該是
   // 「開放 2-5 歲幼童補接種」那個追加計畫，而不是每個孩子都要打的常規劑次。
-  // 兩者語意不同，維持不放進常規提醒；這筆記錄的名稱與 fundingType 需要
+  // 兩者語意不同，維持不放進常規提醒；這筆記錄的名稱與 funding 需要
   // 對照官方頁面重新確認，不在測試裡擅自改動醫療資料。
   'pneumococcal-2y': '常規公費時程止於 12-15 個月追加劑；24 個月屬 2-5 歲補接種計畫，非常規劑次',
 };
@@ -39,7 +39,7 @@ describe('幼兒期疫苗提醒的涵蓋範圍', () => {
 
   const toddlerPublicDoses = vaccineSchedules.filter(
     (vaccine) =>
-      vaccine.fundingType === 'public' && isToddlerAge(vaccine.ageInMonths ?? -1),
+      vaccine.funding === 'national' && isToddlerAge(vaccine.ageInMonths ?? -1),
   );
 
   it('掃描範圍不是空的', () => {
@@ -72,7 +72,7 @@ describe('幼兒期疫苗提醒的涵蓋範圍', () => {
     // 把自費選項混進法定時程，會讓家長以為漏打了。
     const privateToddlerDoses = vaccineSchedules.filter(
       (vaccine) =>
-        vaccine.fundingType === 'private' && isToddlerAge(vaccine.ageInMonths ?? -1),
+        vaccine.funding === 'self-paid' && isToddlerAge(vaccine.ageInMonths ?? -1),
     );
     expect(privateToddlerDoses.length).toBeGreaterThan(0);
   });

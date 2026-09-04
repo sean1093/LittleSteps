@@ -56,9 +56,6 @@ function verificationDates(source: string): string[] {
  * 這份名單只能變短。
  */
 const UNDATED: Record<string, string> = {
-  'littlesteps/data/vaccines.ts':
-    '疾管署公費時程，最需要日期的一份。檔內已自承 hepa 兩劑的時程自 114/1/1 變動過，' +
-    '而檔案本身沒有任何日期能顯示那次變動何時被追上——優先補。',
   'littlesteps/data/milestones.ts': '發展里程碑，需對照國健署兒童健康手冊逐條查證後再標日期。',
   'littlesteps/data/babyWiki.ts':
     '15 篇寶寶百科。另外兩份 wiki（littlebloom、littleexplorer）都有引用與日期，' +

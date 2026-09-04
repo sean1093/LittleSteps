@@ -41,7 +41,7 @@ export interface ResolvedVaccineDose {
   name: string;
   /** 疾管署寫的建議時間，逐字沿用，不改寫成數字 */
   timing: string;
-  fundingType: VaccineSchedule['fundingType'];
+  funding: VaccineSchedule['funding'];
   /** 建議接種日 = 出生日 + ageInMonths */
   dueDate: string;
   status: ScheduleStatus;
@@ -89,7 +89,7 @@ export function resolveVaccineDoses(
         doseNumber,
         name: vaccine.name,
         timing: vaccine.timing,
-        fundingType: vaccine.fundingType,
+        funding: vaccine.funding,
         dueDate,
         status: resolveScheduleStatus(
           completedDate,
@@ -123,9 +123,14 @@ export const OVERDUE_LOOKBACK_DAYS = 90;
  *   1. 已經到期或剛逾期，還沒接種。「還沒到」的不放——把未來半年每一劑都列出來
  *      等於沒有重點。
  *   2. 逾期不超過 OVERDUE_LOOKBACK_DAYS。
- *   3. 只算公費。自費疫苗是選擇不是時程，把它畫成「你漏打了」會讓家長以為
- *      自己欠了一劑國家規定的疫苗——這和幼兒期提醒清單刻意排除自費劑次
- *      是同一個判斷。
+ *   3. 只算 national，也就是疾管署公費常規時程。自費疫苗是選擇不是時程，把它
+ *      畫成「你漏打了」會讓家長以為自己欠了一劑國家規定的疫苗——這和幼兒期
+ *      提醒清單刻意排除自費劑次是同一個判斷。
+ *
+ * nhi-conditional 刻意也不放進來，即使它可能不用錢。健保給付綁的是「1 歲以下
+ * 高危險群」這類條件，而這個 app 不知道這個孩子算不算——把它列成到期的待辦，
+ * 等於對每一個健康寶寶的家長說「你漏打了一劑」，那是新的錯誤資訊，只是換了
+ * 方向。條件本身在疫苗頁上不必展開就看得到，該知道的家長在那裡會看到。
  */
 export function actionableVaccineDoses(
   doses: ResolvedVaccineDose[],
@@ -135,7 +140,7 @@ export function actionableVaccineDoses(
     (OVERDUE_LOOKBACK_DAYS + DUE_WINDOW_DAYS) * MS_PER_DAY;
 
   return doses.filter((dose) => {
-    if (dose.fundingType !== 'public') return false;
+    if (dose.funding !== 'national') return false;
     if (dose.status === 'due') return true;
     if (dose.status !== 'overdue') return false;
 

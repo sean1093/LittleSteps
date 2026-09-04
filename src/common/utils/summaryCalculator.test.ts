@@ -201,6 +201,7 @@ describe('summaryCalculator', () => {
     };
 
     const HEPB_BIRTH = byId('hepb-birth');
+    const RSV_MONTHLY_BIRTH = byId('rsv-monthly-birth');
     const RSV_BIRTH = byId('rsv-birth');
     const HEPB_1M = byId('hepb-1m');
     const PENTAVALENT_18M = byId('pentavalent-18m');
@@ -334,9 +335,9 @@ describe('summaryCalculator', () => {
       };
 
       expect(calculateVaccineSummary(progress).nextVaccine).toEqual({
-        id: RSV_BIRTH.id,
-        name: RSV_BIRTH.name,
-        timing: RSV_BIRTH.timing,
+        id: RSV_MONTHLY_BIRTH.id,
+        name: RSV_MONTHLY_BIRTH.name,
+        timing: RSV_MONTHLY_BIRTH.timing,
         doseNumber: 1
       });
     });
@@ -344,6 +345,7 @@ describe('summaryCalculator', () => {
     it('continues a multi-dose series in the record that carries the next dose', () => {
       const progress: VaccineProgress = {
         [HEPB_BIRTH.id]: administer(HEPB_BIRTH),
+        [RSV_MONTHLY_BIRTH.id]: administer(RSV_MONTHLY_BIRTH),
         [RSV_BIRTH.id]: administer(RSV_BIRTH)
       };
 

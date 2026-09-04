@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, BookOpen, Check, ChevronDown, Pill, ShieldAlert, X } from 'lucide-react';
 import { getLucideIcon } from '../../common/lucideIcons';
 
-import { ChildProfile, VaccineProgress } from '../../types';
+import { ChildProfile, VaccineFunding, VaccineProgress } from '../../types';
 import {
   vaccineSchedules,
   vaccineSideEffects,
@@ -19,7 +19,7 @@ import { pressable } from '../../common/ui/pressable';
 import { vaccineMonthForChild } from '../utils/ageDefaults';
 import { isCorrecting } from '../../common/correctedAge';
 
-type FundingFilter = 'all' | 'public' | 'private';
+type FundingFilter = 'all' | 'national' | 'conditional' | 'self-paid';
 type MonthFilter = 'all' | number;
 
 interface VaccineTrackingPageProps {
@@ -33,10 +33,55 @@ interface VaccineTrackingPageProps {
   ) => void;
 }
 
-const FUNDING_FILTERS: { value: FundingFilter; label: string }[] = [
-  { value: 'all', label: '全部疫苗' },
-  { value: 'public', label: '公費疫苗' },
-  { value: 'private', label: '自費疫苗' },
+/**
+ * 四種付費狀態各自長什麼樣。
+ *
+ * disc 是月齡圓圈的底色，badge 是名稱旁的標籤，note 是條件那一行的底色。
+ * 三者同色系，家長掃一眼圓圈就知道這一劑要不要錢，不必逐張讀標籤。
+ * 全部取自 tailwind.config.js 的 token；文字一律用 -dark（>=4.5:1）。
+ */
+const FUNDING_UI: Record<
+  VaccineFunding,
+  { label: string; disc: string; badge: string; note: string }
+> = {
+  national: {
+    label: '公費',
+    disc: 'bg-mint-dark',
+    badge: 'bg-mint-light text-mint-dark',
+    note: 'bg-mint-soft text-mint-dark',
+  },
+  'nhi-conditional': {
+    label: '健保有條件給付',
+    disc: 'bg-secondary-dark',
+    badge: 'bg-secondary-light text-secondary-dark',
+    note: 'bg-secondary-soft text-secondary-dark',
+  },
+  'self-paid': {
+    label: '自費',
+    disc: 'bg-butter-dark',
+    badge: 'bg-butter-light text-butter-dark',
+    note: 'bg-butter-soft text-butter-dark',
+  },
+  'local-varies': {
+    label: '各縣市不同',
+    disc: 'bg-primary-dark',
+    badge: 'bg-primary-light text-primary-dark',
+    note: 'bg-primary-soft text-primary-dark',
+  },
+};
+
+/**
+ * 篩選器是四顆而不是五顆：健保有條件給付與各縣市不同併成「有條件」。
+ *
+ * 家長在這一頁問的是「這一劑要不要付錢」，答案只有三種——不用、要、看你符不符
+ * 合條件。健保給付和縣市加碼都落在第三種，而且都得讀那一行條件才知道自己算不
+ * 算，拆成兩顆 chip 是把同一個動作分成兩次。390px 上也放不下五顆。
+ */
+const FUNDING_FILTERS: { value: FundingFilter; label: string; funding: VaccineFunding[] }[] = [
+  { value: 'all', label: '全部', funding: [] },
+  { value: 'national', label: '公費', funding: ['national'] },
+  { value: 'conditional', label: '有條件', funding: ['nhi-conditional', 'local-varies'] },
+  { value: 'self-paid', label: '自費', funding: ['self-paid'] },
 ];
 
 /**
@@ -108,8 +153,9 @@ export default function VaccineTrackingPage({
   const filteredVaccines = useMemo(() => {
     let filtered = vaccineSchedules;
 
-    if (fundingFilter !== 'all') {
-      filtered = filtered.filter(v => v.fundingType === fundingFilter);
+    const allowed = FUNDING_FILTERS.find((o) => o.value === fundingFilter)?.funding ?? [];
+    if (allowed.length > 0) {
+      filtered = filtered.filter(v => allowed.includes(v.funding));
     }
 
     if (monthFilter !== 'all') {
@@ -285,6 +331,7 @@ export default function VaccineTrackingPage({
                     {/* Vaccines in this month */}
                     <div className="space-y-3">
                       {vaccines.map((vaccine) => {
+                        const funding = FUNDING_UI[vaccine.funding];
                         const doseNum = vaccine.currentDose || 1;
                         const isAdministered = isDoseAdministered(vaccine.id, doseNum);
                         const doseDate = getDoseDate(vaccine.id, doseNum);
@@ -302,10 +349,7 @@ export default function VaccineTrackingPage({
                             <div className="flex items-start gap-3 mb-3">
                               <div className={`
                                 w-16 h-16 rounded-full flex-shrink-0 flex flex-col items-center justify-center text-white font-bold
-                                ${vaccine.fundingType === 'public'
-                                  ? 'bg-mint-dark'
-                                  : 'bg-primary-dark'
-                                }
+                                ${funding.disc}
                               `}>
                                 <div className="text-lg leading-none">{vaccine.ageInMonths || 0}</div>
                                 <div className="text-xs font-normal opacity-90 mt-0.5">個月</div>
@@ -316,14 +360,17 @@ export default function VaccineTrackingPage({
 
                                 <div className="flex flex-wrap items-center gap-2 text-sm text-ink-muted">
                                   <span>{vaccine.timing}</span>
-                                  <span className={`tag ${
-                                    vaccine.fundingType === 'public'
-                                      ? 'bg-mint-light text-mint-dark'
-                                      : 'bg-butter-light text-butter-dark'
-                                  }`}>
-                                    {vaccine.fundingType === 'public' ? '公費' : '自費'}
-                                  </span>
+                                  <span className={`tag ${funding.badge}`}>{funding.label}</span>
                                 </div>
+
+                                {/* 條件不必點開就看得到：健保給付綁的是早產、先天性
+                                    心臟病這些條件，而需要知道的家長正是最沒空多點
+                                    一下的那群。 */}
+                                {vaccine.eligibility && (
+                                  <p className={`text-sm rounded-xl px-3 py-2 mt-2 ${funding.note}`}>
+                                    {vaccine.eligibility}
+                                  </p>
+                                )}
 
                                 {vaccine.notes && (
                                   <p className="text-sm text-ink-muted mt-1">{vaccine.notes}</p>
