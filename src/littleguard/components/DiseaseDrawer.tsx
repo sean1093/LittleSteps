@@ -39,7 +39,8 @@ interface Props {
  * 數字那一段先用整句話講完：「台北市 0-2 歲這一週有 413 次因類流感就診，比前 8
  * 週的平常值多約 44%」與「423.0/萬」講的是同一件事，但前者不用先學單位。率、
  * 前 8 週中位數、全國同一週與分母都沒有刪掉，收在「詳細數字」裡——要核對的人
- * 打得開，只是不再是家長讀到的第一層。
+ * 打得開，只是不再是家長讀到的第一層。樣本偏小的但書不收：它修飾的是第一層
+ * 那句話，收起來就等於把保留意見藏在一次點擊後面。
  *
  * 「這一週的組成」回答的是板上那行小字來不及講完的問題：手足口病與疱疹性咽峽
  * 炎不是另外兩種病，兩者相加就是腸病毒這一格，所以板上只列一項。
@@ -123,6 +124,13 @@ export default function DiseaseDrawer({
         <section className="space-y-1">
           <p className="text-ink">{describeVisits({ county, age, disease, cell })}</p>
           {geo && <p className="text-ink">{geo}</p>}
+          {/* 但書跟著它修飾的那句話。第一層講得出「多約 44%」，就得在同一層說
+              清楚那個百分比有多穩——收進「詳細數字」等於把保留意見藏起來。 */}
+          {cell.reliability !== 'ok' && (
+            <p className="text-sm text-ink-faint">
+              這個縣市的這個年齡層每週就診人數偏少，數字容易上下跳動，看趨勢就好。
+            </p>
+          )}
         </section>
 
         <div>
@@ -170,12 +178,6 @@ export default function DiseaseDrawer({
                   <p className="text-sm text-ink-faint">
                     「/萬」是每一萬次健保門診裡有幾次是這個病，統計基數就是那一週的門診總次數。
                   </p>
-
-                  {cell.reliability !== 'ok' && (
-                    <p className="text-sm text-ink-faint">
-                      這個縣市的這個年齡層每週就診人數偏少，數字容易上下跳動，看趨勢就好。
-                    </p>
-                  )}
                 </div>
               </motion.div>
             )}
