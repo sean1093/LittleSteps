@@ -73,6 +73,12 @@
 ### BabyOasis — 哺乳室地圖
 - **全台 22 縣市共 3,852 間哺乳室**，來自衛福部開放資料
 - 定位搜尋會回傳 10 公里內最近的 8 間，附上實際距離
+- **選一站就回答「這一站附近有什麼」**：全台 260 個捷運與輕軌車站，選定之後
+  列出 800 公尺內最近的 8 處，附上步行距離。那才是家長真正在排的行程，而定位
+  鈕回答不了——手機只知道你現在在哪。哺乳室資料裡只有 56 處的登記名稱帶
+  「捷運」，遠少於實際站數，所以站點座標取自 OpenStreetMap（ODbL），不是從
+  場所名稱推。800 公尺是量出來的：260 站裡有 246 站在這個半徑內至少有一處，
+  平均 7 處
 - 先選縣市再選鄉鎮市區，每一區都帶著自己的哺乳室筆數：3,852 處分佈在 364 個
   鄉鎮市區，攤成一張平面清單就是 364 顆 chip
 - 六顆場所類型 chip：百貨・賣場、車站・機場、醫院・衛生所、公園・戶外、
@@ -292,6 +298,14 @@ formula 是 keg-only，`/opt/homebrew/opt/openjdk/bin` 必須在 `PATH` 上，�
 `public/data/familyCentres.json`，來自 `scripts/buildFamilyCentres.cjs`。它被
 排除在 PWA 預快取之外，改成第一次進地圖時才抓 — 1.1 MB 不該讓一個從來不開
 BabyOasis 的人下載。
+
+捷運站清單在 `src/babyoasis/data/mrtStations.json`，由
+`scripts/buildMrtStations.cjs` 從 OpenStreetMap 的 Overpass API 重新產生。它
+放在 `src/` 裡直接 import 而不是另外抓：22 KB 本來就該待在 BabyOasis 那個
+lazy chunk 裡，而選站的選單必須立刻打開。腳本只留帶有 `network` 或 `operator`
+標記的車站，未通車的路線因此被排除；輸出裡也刻意沒有路線名 — OpenStreetMap
+把轉乘站記成一個節點、只帶一條線的代號，21 個已知轉乘站有 13 個會被標成只有
+一半的路線。
 
 疫情雷達的資料在 `public/data/diseaseRadar.json`，由
 `scripts/buildDiseaseRadar.cjs` 把衛生福利部疾病管制署（疾管署）的六個 CSV
