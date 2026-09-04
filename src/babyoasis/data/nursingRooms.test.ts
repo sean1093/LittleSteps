@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { NursingRoom } from '../../types';
+import { categoryOf, isInternalVenue } from '../utils/roomCategory';
 
 /**
  * public/data/nursingRooms.json 由 scripts/buildNursingRooms.cjs 從國健署的
@@ -86,5 +87,29 @@ describe('全國哺乳室資料', () => {
   it('電話不含換行或空白，可直接用於 tel: 連結', () => {
     const malformed = rooms.filter((room) => room.phone && /\s/.test(room.phone));
     expect(malformed.map((room) => `${room.name}: ${room.phone}`)).toEqual([]);
+  });
+
+  it('statutory 只會是 true 或整個不存在，不會出現 false', () => {
+    // 產生器一律省略假值欄位；寫成 false 會讓 `!room.statutory` 的判斷與
+    // 「欄位存在」的判斷不再等價。
+    const wrong = rooms.filter((room) => 'statutory' in room && room.statutory !== true);
+    expect(wrong.map((room) => `${room.name}: ${String(room.statutory)}`)).toEqual([]);
+  });
+
+  it('多數記錄在依法應設置名單上', () => {
+    // 名單約 2,800 筆，地圖多出來的是自願設置場所。掉到兩千以下代表比對鍵
+    // 壞了，內部場所的判斷會跟著失真。
+    expect(rooms.filter((room) => room.statutory).length).toBeGreaterThan(2000);
+  });
+
+  it('場所分類把絕大多數記錄歸到具體類別，其他類不超過 12%', () => {
+    // 規則表比對的是登記名稱，上游改寫名稱格式時會靜靜地把整批場所推進
+    // 「其他」——那時 chip 篩出來的東西會愈來愈少，卻不會有任何錯誤。
+    const other = rooms.filter((room) => categoryOf(room) === 'other');
+    expect(other.length / rooms.length).toBeLessThan(0.12);
+  });
+
+  it('確實存在一批公司或校園又不在名單上的場所，內部場所提示才有意義', () => {
+    expect(rooms.filter(isInternalVenue).length).toBeGreaterThan(100);
   });
 });

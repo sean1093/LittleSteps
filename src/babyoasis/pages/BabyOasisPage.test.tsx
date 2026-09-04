@@ -25,7 +25,8 @@ import BabyOasisPage from './BabyOasisPage';
 // 所有 import 之上，靜態 binding 在它執行時不保證已經初始化。
 vi.mock('react-leaflet', async () => {
   const { createElement, Fragment } = await import('react');
-  const map = { flyTo: () => {}, getZoom: () => 12 };
+  // fitBounds 是篩選後把視角帶到剩下那些點上用的，和 flyTo 一樣只要存在。
+  const map = { flyTo: () => {}, getZoom: () => 12, fitBounds: () => {} };
   return {
     MapContainer: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
     TileLayer: () => null,
@@ -47,7 +48,10 @@ vi.mock('react-leaflet-cluster', async () => {
   };
 });
 
-/** 兩筆座標相鄰，第三筆在高雄——附近清單才篩得出東西。 */
+/**
+ * 兩筆座標相鄰，第三筆在高雄——附近清單才篩得出東西。第四筆是公司行號又不在
+ * 依法應設置名單上，篩選才有東西可以排除。
+ */
 const ROOMS: NursingRoom[] = [
   {
     id: 'tpe-sogo-zhongxiao',
@@ -75,6 +79,15 @@ const ROOMS: NursingRoom[] = [
     district: '前鎮區',
     latitude: 22.5956,
     longitude: 120.3065,
+  },
+  {
+    id: 'ntpc-foxconn',
+    name: '鴻海精密工業股份有限公司(虎躍廠)',
+    address: '新北市土城區自由街 2 號',
+    city: '新北市',
+    district: '土城區',
+    latitude: 24.9721,
+    longitude: 121.4432,
   },
 ];
 
@@ -267,5 +280,45 @@ describe('底部面板', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument(), {
       timeout: 3000,
     });
+  });
+});
+
+/**
+ * 篩選必須同時作用在副標題與地圖上。清單少了幾筆而標記還是全台那一片，是家長
+ * 最容易誤讀的一種狀態：他會以為篩選壞了，或以為那些點都符合條件。
+ */
+describe('篩選', () => {
+  it('排除內部場所之後，副標題與地圖標記一起收', async () => {
+    const user = await renderReady();
+    expect(screen.getByText(`全台 ${ROOMS.length} 處哺乳室`)).toBeInTheDocument();
+    expect(screen.getAllByTestId('marker')).toHaveLength(ROOMS.length);
+
+    await user.click(screen.getByRole('button', { name: '排除內部場所' }));
+
+    // 鴻海那一筆是公司行號又不在名單上，只剩三筆。
+    expect(await screen.findByText('篩選後 3 處')).toBeInTheDocument();
+    expect(screen.getAllByTestId('marker')).toHaveLength(3);
+    expect(screen.queryByText(/全台 \d+ 處哺乳室/)).not.toBeInTheDocument();
+  });
+
+  it('選了場所類型，標記只留那一類', async () => {
+    const user = await renderReady();
+
+    await user.click(screen.getByRole('button', { name: '百貨・賣場' }));
+
+    expect(await screen.findByText('篩選後 3 處')).toBeInTheDocument();
+    expect(screen.getAllByTestId('marker')).toHaveLength(3);
+  });
+
+  it('只選縣市時重新框地圖，但不列出那個縣市的整份清單', async () => {
+    const user = await renderReady();
+
+    await user.click(screen.getByRole('button', { name: '全部縣市' }));
+    await user.click(await screen.findByRole('button', { name: '臺北市' }));
+
+    expect(await screen.findByText('篩選後 2 處')).toBeInTheDocument();
+    expect(screen.getAllByTestId('marker')).toHaveLength(2);
+    // 臺北市實際有 611 處，那份清單沒有人會讀。
+    expect(screen.queryByText(/共 \d+ 處/)).not.toBeInTheDocument();
   });
 });
