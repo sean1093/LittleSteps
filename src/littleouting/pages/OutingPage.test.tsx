@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Venue } from '../../types';
 import { CENTRE_ACCESS, CENTRE_ACCESS_UNVERIFIED, CENTRE_DATA_ATTRIBUTION } from '../data/centreAccess';
 import { outingChecklist } from '../data/outingChecklist';
 import { restaurants } from '../data/restaurants';
+import { savePreferences } from '../../common/preferences';
 import OutingPage from './OutingPage';
 
 /**
@@ -301,6 +302,94 @@ describe('切換分頁時的篩選狀態', () => {
     await screen.findByRole('heading', { name: '這是精選，不是完整名單' });
 
     expect(screen.getByRole('searchbox', { name: '搜尋親子餐廳' })).toBeInTheDocument();
+  });
+});
+
+/**
+ * 記住上次停在哪。
+ *
+ * 家長帶孩子出門會回到同一頁看同一個縣市；搜尋字串刻意不記，那是一次性的問句，
+ * 不是「我家在哪」。
+ */
+describe('記住上次的分頁與縣市', () => {
+  /*
+    重新整理：卸載再掛一次，只有記在裝置上的東西活得下來。不能用 renderLoaded
+    等「共 N 處」——記著的縣市會篩掉幾筆，數字對不上；只等它有數字就好。
+  */
+  const reload = async () => {
+    cleanup();
+    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => CENTRES });
+    const user = userEvent.setup();
+    render(<OutingPage />);
+    await screen.findByText(/共 \d+ 處/);
+    return user;
+  };
+
+  it('選了縣市，重新整理之後還是那個縣市', async () => {
+    const user = await renderLoaded();
+    await user.click(cityChip(UNVERIFIED_CITY));
+
+    await reload();
+
+    expect(cityChip(UNVERIFIED_CITY)).toHaveAttribute('aria-pressed', 'true');
+    expect(cityChip('全部縣市')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('停在親子餐廳那一頁，重新整理之後還在親子餐廳', async () => {
+    const user = await renderLoaded();
+    await user.click(screen.getByRole('button', { name: '親子餐廳' }));
+    await screen.findByRole('heading', { name: '這是精選，不是完整名單' });
+
+    cleanup();
+    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => CENTRES });
+    render(<OutingPage />);
+
+    expect(await screen.findByRole('heading', { name: '這是精選，不是完整名單' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '親子餐廳' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('停在出發前那一頁也記得住', async () => {
+    const user = await renderLoaded();
+    await user.click(screen.getByRole('button', { name: '出發前' }));
+
+    cleanup();
+    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => CENTRES });
+    render(<OutingPage />);
+
+    expect(
+      await screen.findByRole('heading', { name: outingChecklist[0].question }),
+    ).toBeInTheDocument();
+  });
+
+  it('記下來的縣市不在這一頁的名冊裡時，當成全部縣市', async () => {
+    // 餐廳只有 6 個縣市有，上游也可能改字。留著對不上的那個縣市，家長會拿到
+    // 一張空清單，而那顆被選中的籌碼根本畫不出來，看不出是什麼在篩。
+    savePreferences({ outingCity: '不存在市' });
+    await renderLoaded();
+
+    expect(cityChip('全部縣市')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByText('找不到符合的場地')).not.toBeInTheDocument();
+  });
+
+  it('清掉裝置上的資料就回到原本的行為：親子館、全部縣市', async () => {
+    const user = await renderLoaded();
+    await user.click(screen.getByRole('button', { name: '親子餐廳' }));
+    await screen.findByRole('heading', { name: '這是精選，不是完整名單' });
+
+    localStorage.clear();
+    await reload();
+
+    expect(screen.getByRole('button', { name: '親子館' })).toHaveAttribute('aria-pressed', 'true');
+    expect(cityChip('全部縣市')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('搜尋字串不記——那是一次性的問句', async () => {
+    const user = await renderLoaded();
+    await user.type(screen.getByRole('searchbox', { name: '搜尋親子館' }), '芝山');
+
+    await reload();
+
+    expect(screen.getByRole('searchbox', { name: '搜尋親子館' })).toHaveValue('');
   });
 });
 
