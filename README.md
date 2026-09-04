@@ -47,7 +47,7 @@ group headings answer it rather than leaving six equal rows to be read through.
 ### LittleSteps — baby growth tracking
 - **Growth overview** — one screen summarising milestones, vaccines, sleep, nappies and food
 - **Milestone tracking** — 33 milestones across physical, motor, cognitive and feeding
-- **Vaccine tracking** — 32 doses on Taiwan's MOHW schedule (21 government-funded, 11 self-paid), with side-effect and emergency guidance
+- **Vaccine tracking** — 33 doses on Taiwan's MOHW schedule, each carrying how it is funded (21 government-funded, 1 conditionally reimbursed by the NHI, 11 self-paid) and the CDC page it came from, with side-effect and emergency guidance
 - **Quick log** — feeding, sleep and nappies in a couple of taps
 - **Sleep analysis** — patterns, quality scoring and advice from the logs
 - **Sleep guide** — sleep needs from 0 to 3 years, safety rules and training methods
@@ -195,7 +195,7 @@ feedbacks/$feedbackId      title, content, userId, timestamp
 ```
 
 The child node holds who the child is, plus progress against fixed lists — 33
-milestones, 32 vaccine doses, 30 development checks — so it is bounded. The
+milestones, 33 vaccine doses, 30 development checks — so it is bounded. The
 three collections under `childRecords` are not: they grow by one row per nappy,
 forever. They sit in a sibling subtree because the child listener subscribes to
 the whole `children/$childId` node, so with the logs inside it one nappy change

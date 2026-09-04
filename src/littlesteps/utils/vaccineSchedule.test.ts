@@ -25,7 +25,8 @@ const vaccine = (over: Partial<VaccineSchedule> = {}): VaccineSchedule =>
     id: 'v1',
     name: '測試疫苗 第1劑',
     timing: '出生滿 2 個月',
-    fundingType: 'public',
+    funding: 'national',
+    sourceUrl: 'https://www.cdc.gov.tw/Category/Page/TxRW-x3WzvPhvEtxM628GA',
     ageInMonths: 2,
     ageLabel: '2個月',
     doses: 1,
@@ -156,13 +157,15 @@ describe('actionableVaccineDoses', () => {
     });
   });
 
-  it('自費疫苗不算漏打——那是選擇，不是時程', () => {
+  it('公費以外的劑次不算漏打——那是選擇或條件，不是時程', () => {
     // 把 RSV 單株抗體畫成「你漏打了」，家長會以為自己欠了一劑國家規定的疫苗。
+    // 健保有條件給付的那一支同樣不放：app 不知道這個孩子算不算高危險群。
     const doses = resolveVaccineDoses(BIRTHDAY, vaccineSchedules, {}, at('2026-06-15'));
     const actionable = actionableVaccineDoses(doses, at('2026-06-15'));
 
-    expect(doses.some((dose) => dose.fundingType === 'private')).toBe(true);
-    actionable.forEach((dose) => expect(dose.fundingType).toBe('public'));
+    expect(doses.some((dose) => dose.funding === 'self-paid')).toBe(true);
+    expect(doses.some((dose) => dose.funding === 'nhi-conditional')).toBe(true);
+    actionable.forEach((dose) => expect(dose.funding).toBe('national'));
   });
 
   it('剛出生時仍然提醒出生那幾劑', () => {
@@ -175,13 +178,14 @@ describe('actionableVaccineDoses', () => {
 });
 
 describe('真實時程', () => {
-  it('0-12 個月確實是重心：22 劑落在這個服務自己的範圍', () => {
+  it('0-12 個月確實是重心：23 劑落在這個服務自己的範圍', () => {
     // 這個數字就是這個引擎存在的理由。變了要重新想清楚它該放哪個服務。
+    // 33 而不是 32：RSV 單株抗體拆成健保有條件給付與自費兩種產品。
     const withAge = vaccineSchedules.filter((v) => v.ageInMonths !== undefined);
     const early = withAge.filter((v) => v.ageInMonths! <= 12);
 
-    expect(withAge).toHaveLength(32);
-    expect(early).toHaveLength(22);
+    expect(withAge).toHaveLength(33);
+    expect(early).toHaveLength(23);
   });
 
   it('一歲生日當天，出生那一劑早就逾期，一歲那幾劑剛到期', () => {
