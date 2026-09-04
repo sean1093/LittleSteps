@@ -12,6 +12,16 @@ interface VenueReportButtonProps {
   target: VenueReportTarget;
   /** A card footer and a bottom sheet want different spacing and type size. */
   className?: string;
+  /**
+   * Told whenever the form opens or closes.
+   *
+   * A dialog that hosts this button needs to know: both its Escape handler
+   * and the form's are document-level listeners, so one keypress reaches both
+   * and would dismiss the host as well as the form. The host suppresses its
+   * own Escape while this is open. Surfaces with nothing underneath - the
+   * family-centre card - can ignore it.
+   */
+  onOpenChange?: (open: boolean) => void;
 }
 
 /**
@@ -34,7 +44,11 @@ interface VenueReportButtonProps {
  * on their own in unit tests, where there is no `AuthProvider`. No context
  * means signed out — which is the state this button most needs to explain.
  */
-export default function VenueReportButton({ target, className }: VenueReportButtonProps) {
+export default function VenueReportButton({
+  target,
+  className,
+  onOpenChange,
+}: VenueReportButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const auth = useOptionalAuth();
   const user = auth?.user ?? null;
@@ -59,7 +73,10 @@ export default function VenueReportButton({ target, className }: VenueReportButt
       <motion.button
         type="button"
         whileTap={tap}
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          setIsOpen(true);
+          onOpenChange?.(true);
+        }}
         // Thirty cards in one list carry this same button. Announced as nothing
         // but "這裡的資訊不對？", a screen reader user cannot tell which venue
         // they are about to report.
@@ -88,7 +105,10 @@ export default function VenueReportButton({ target, className }: VenueReportButt
         <div className="relative z-[2500]">
           <FeedbackModal
             isOpen={isOpen}
-            onClose={() => setIsOpen(false)}
+            onClose={() => {
+              setIsOpen(false);
+              onOpenChange?.(false);
+            }}
             onSubmit={handleSubmit}
             userName={user?.displayName || '用戶'}
             venue={{

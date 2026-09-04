@@ -360,6 +360,28 @@ describe('底部面板', () => {
       within(detail).getByRole('button', { name: /這裡的資訊不對？/ }),
     ).toBeInTheDocument();
   });
+
+  it('回報表單開著時，Escape 只關表單，詳情面板留在原地', async () => {
+    // 兩張對話框的 Escape 監聽器都掛在 document 上，同一次按鍵兩邊都收得到。
+    // 一次關掉兩層的話，家長取消回報就會連自己剛剛在看哪一筆都一起失去。
+    const user = await renderReady();
+
+    await user.click(screen.getAllByTestId('marker')[0]);
+    const detail = await screen.findByRole('dialog', { name: ROOMS[0].name });
+    await user.click(within(detail).getByRole('button', { name: /這裡的資訊不對？/ }));
+    expect(await screen.findByRole('dialog', { name: '這裡的資訊不對？' })).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+
+    await waitFor(
+      () =>
+        expect(
+          screen.queryByRole('dialog', { name: '這裡的資訊不對？' }),
+        ).not.toBeInTheDocument(),
+      { timeout: 3000 },
+    );
+    expect(screen.getByRole('dialog', { name: ROOMS[0].name })).toBeInTheDocument();
+  });
 });
 
 /**
