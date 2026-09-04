@@ -10,7 +10,12 @@ import GrowthChartDisplay from '../components/growth/GrowthChartDisplay';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem } from '../../common/ui/motion';
-import { calculateAge, formatDate } from '../../common/utils/dateHelpers';
+import { formatDate } from '../../common/utils/dateHelpers';
+import {
+  correctedAgeMonths,
+  gestationalAgeLabel,
+  isCorrecting,
+} from '../../common/correctedAge';
 import { WHO_MAX_AGE_MONTHS } from '../data/growthChartData';
 
 interface GrowthChartsPageProps {
@@ -35,8 +40,7 @@ export default function GrowthChartsPage({
   const { records, loading, error, addRecord, updateRecord, deleteRecord } = useGrowthTracking(
     currentChild?.id || null,
     user,
-    currentChild?.gender,
-    currentChild?.birthday
+    currentChild ?? undefined,
   );
 
   /*
@@ -72,8 +76,14 @@ export default function GrowthChartsPage({
 
   const latestRecord = records[0]; // Already sorted newest first
   const hasRecords = records.length > 0;
+  // 早產兒的百分位、曲線與這裡的年齡都用矯正年齡。WHO 的涵蓋範圍也一樣：
+  // 判斷「超出三歲」要用同一把尺，否則一個矯正年齡 35 個月的早產兒會先被
+  // 告知圖表不再適用，卻還畫得出來。
+  const correcting = isCorrecting(currentChild);
+  const displayAgeMonths = correctedAgeMonths(currentChild);
+  const gestationLabel = gestationalAgeLabel(currentChild);
   // 孩子已經超出 WHO 的涵蓋範圍。只在這時候說，還沒滿三歲的家長不需要看到。
-  const pastWhoRange = calculateAge(currentChild.birthday) > WHO_MAX_AGE_MONTHS;
+  const pastWhoRange = displayAgeMonths > WHO_MAX_AGE_MONTHS;
 
   return (
     <div className="screen">
@@ -93,7 +103,14 @@ export default function GrowthChartsPage({
         {/* Latest Record Summary */}
         {latestRecord && (
           <motion.div variants={listItem} className="panel mb-6">
-            <p className="text-sm text-ink-muted mb-4">最新記錄: {formatDate(latestRecord.date)}</p>
+            <div className="mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <p className="text-sm text-ink-muted">最新記錄: {formatDate(latestRecord.date)}</p>
+              {correcting && (
+                <p className="text-sm font-medium text-primary-dark">
+                  矯正年齡 {displayAgeMonths} 個月（{gestationLabel}）
+                </p>
+              )}
+            </div>
             <div className="grid grid-cols-3 gap-3">
               {latestRecord.weight !== undefined && (
                 <div className="flex flex-col items-center p-4 bg-primary-soft rounded-2xl">
@@ -165,6 +182,8 @@ export default function GrowthChartsPage({
                 measurementType={selectedChart}
                 gender={currentChild.gender}
                 birthday={currentChild.birthday}
+                gestationalAgeWeeks={currentChild.gestationalAgeWeeks}
+                gestationalAgeDays={currentChild.gestationalAgeDays}
               />
             </motion.div>
           </>

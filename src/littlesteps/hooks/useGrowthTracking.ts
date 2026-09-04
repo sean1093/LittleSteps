@@ -1,9 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ref, set, onValue, remove } from 'firebase/database';
 import { database } from '../../lib/firebase';
-import type { GrowthRecord, Gender } from '../../types';
+import type { ChildProfile, GrowthRecord, Gender } from '../../types';
 import { calculateZScore, calculatePercentile } from '../utils/growthCalculator';
+import { growthAgeMonths } from '../../common/correctedAge';
 import { removeUndefined } from '../../common/utils/firebaseData';
+
+/**
+ * 算百分位需要孩子的哪些欄位。整份 ChildProfile 傳進來也可以，型別相容。
+ *
+ * 早產週數在這裡不是選配：拿實際月齡去查 WHO 標準，一個 32 週出生、體重完全
+ * 正常的寶寶會落到第 3 百分位附近，而這張圖正是家長要拿去給醫師看的那一頁。
+ */
+export type GrowthChild = Partial<
+  Pick<ChildProfile, 'gender' | 'birthday' | 'gestationalAgeWeeks' | 'gestationalAgeDays'>
+>;
 
 interface UseGrowthTrackingResult {
   records: GrowthRecord[];
@@ -24,21 +35,42 @@ interface UseGrowthTrackingResult {
  *
  * 紀錄住在 childRecords/{childId}/growthRecords，不在孩子本體裡：測量筆數沒有
  * 上限，跟著檔案走的話，每一次勾里程碑都會把整份成長史再推送一次給每位家長。
+ *
+ * 百分位在讀取時重算，而不是只信資料庫裡那一份。百分位本來是寫入當下算好存
+ * 進去的，所以早產矯正上線之前寫下的每一筆都是用實際月齡算的——只改寫入端的
+ * 話，那些紀錄會永遠停在偏低的百分位，而它們正是家長最在意的那幾筆。存的那
+ * 一份仍然照寫，資料庫形狀與規則都不動。
  */
 export function useGrowthTracking(
   childId: string | null,
   user: { uid: string } | null,
-  childGender?: Gender,
-  childBirthday?: string
+  child?: GrowthChild,
 ): UseGrowthTrackingResult {
-  const [records, setRecords] = useState<GrowthRecord[]>([]);
+  const [storedRecords, setStoredRecords] = useState<GrowthRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+
+  const { gender: childGender, birthday: childBirthday } = child ?? {};
+  const gestationalAgeWeeks = child?.gestationalAgeWeeks;
+  const gestationalAgeDays = child?.gestationalAgeDays;
+
+  const records = useMemo(
+    () =>
+      storedRecords.map((record) =>
+        withPercentiles(record, {
+          gender: childGender,
+          birthday: childBirthday,
+          gestationalAgeWeeks,
+          gestationalAgeDays,
+        }),
+      ),
+    [storedRecords, childGender, childBirthday, gestationalAgeWeeks, gestationalAgeDays],
+  );
 
   // Real-time listener
   useEffect(() => {
     if (!childId || !user) {
-      setRecords([]);
+      setStoredRecords([]);
       setError(false);
       setLoading(false);
       return;
@@ -46,7 +78,7 @@ export function useGrowthTracking(
 
     // 換孩子時連 records 一起清掉，否則新快照抵達之前，上一個孩子的身高體重
     // 會掛在新孩子的名字與成長曲線上。
-    setRecords([]);
+    setStoredRecords([]);
     setError(false);
     setLoading(true);
     const recordsRef = ref(database, `childRecords/${childId}/growthRecords`);
@@ -54,7 +86,7 @@ export function useGrowthTracking(
       recordsRef,
       (snapshot) => {
         const data = snapshot.val();
-        setRecords(data ? sortRecordsByDate(Object.values(data) as GrowthRecord[]) : []);
+        setStoredRecords(data ? sortRecordsByDate(Object.values(data) as GrowthRecord[]) : []);
         setLoading(false);
       },
       (err) => {
@@ -71,7 +103,7 @@ export function useGrowthTracking(
       throw new Error('No child selected');
     }
     validateRecord(record);
-    const recordWithPercentiles = await calculatePercentiles(record, childGender, childBirthday);
+    const recordWithPercentiles = withPercentiles(record, child);
     const newRecord: GrowthRecord = {
       ...recordWithPercentiles,
       id: crypto.randomUUID(),
@@ -93,7 +125,7 @@ export function useGrowthTracking(
     }
     const updated = { ...existing, ...updates };
     validateRecord(updated);
-    const updatedWithPercentiles = await calculatePercentiles(updated, childGender, childBirthday);
+    const updatedWithPercentiles = withPercentiles(updated, child);
     const recordRef = ref(database, `childRecords/${childId}/growthRecords/${recordId}`);
     await set(recordRef, removeUndefined({ ...updatedWithPercentiles, id: recordId }));
   };
@@ -169,35 +201,33 @@ function validateRecord(record: Omit<GrowthRecord, 'id'>): void {
 }
 
 /**
- * Calculate percentiles for measurements
+ * 依 WHO 標準算出這一筆測量的百分位，早產兒用矯正年齡。
+ *
+ * 三件事值得說明：
+ *
+ * 1. 有存好的百分位也一律重算。這個函式原本會在 `record.percentile` 有值時
+ *    直接回傳——寫入時算一次就不再動。矯正機制上線後，那個捷徑等於保證舊的
+ *    早產紀錄永遠是錯的。百分位只是快取，不是使用者輸入，重算是安全的。
+ * 2. 算不出來時保留原本存著的那一份，不清空。缺性別或生日的情況下把
+ *    percentile 覆蓋成 `{}`，畫面會從「第 45 百分位」變成什麼都沒有。
+ * 3. 同步。原本掛著 async 卻沒有任何 await；讀取端每一筆都要算，多包一層
+ *    promise 只是讓 useMemo 沒辦法用。
  */
-async function calculatePercentiles(
-  record: Omit<GrowthRecord, 'id'>,
-  gender?: Gender,
-  birthday?: string
-): Promise<Omit<GrowthRecord, 'id'>> {
-  // If percentiles already provided, return as-is
-  if (
-    record.percentile &&
-    (record.percentile.weight !== undefined ||
-      record.percentile.height !== undefined ||
-      record.percentile.headCircumference !== undefined)
-  ) {
-    return record;
-  }
-
-  // Need gender and birthday to calculate percentiles
+function withPercentiles<T extends Omit<GrowthRecord, 'id'>>(record: T, child?: GrowthChild): T {
+  const gender = child?.gender;
+  const birthday = child?.birthday;
   if (!gender || !birthday) {
     return record;
   }
 
-  // Calculate age in months
-  const birthDate = new Date(birthday);
-  const recordDate = new Date(record.date);
-  const ageMonths =
-    (recordDate.getFullYear() - birthDate.getFullYear()) * 12 +
-    (recordDate.getMonth() - birthDate.getMonth()) +
-    (recordDate.getDate() - birthDate.getDate()) / 30; // Approximate
+  const ageMonths = growthAgeMonths(
+    {
+      birthday,
+      gestationalAgeWeeks: child?.gestationalAgeWeeks,
+      gestationalAgeDays: child?.gestationalAgeDays,
+    },
+    new Date(record.date),
+  );
 
   const percentile: {
     weight?: number;
@@ -207,30 +237,37 @@ async function calculatePercentiles(
 
   try {
     if (record.weight !== undefined) {
-      const zScore = calculateZScore(record.weight, ageMonths, 'weight', gender);
-      percentile.weight = calculatePercentile(zScore);
+      percentile.weight = percentileFor(record.weight, ageMonths, 'weight', gender);
     }
-
     if (record.height !== undefined) {
-      const zScore = calculateZScore(record.height, ageMonths, 'height', gender);
-      percentile.height = calculatePercentile(zScore);
+      percentile.height = percentileFor(record.height, ageMonths, 'height', gender);
     }
-
     if (record.headCircumference !== undefined) {
-      const zScore = calculateZScore(
+      percentile.headCircumference = percentileFor(
         record.headCircumference,
         ageMonths,
         'headCircumference',
-        gender
+        gender,
       );
-      percentile.headCircumference = calculatePercentile(zScore);
     }
   } catch (error) {
+    // 超出 WHO 標準的年齡範圍（0-36 個月）會丟錯。既有的百分位留著，好過把
+    // 畫面上的數字換成空白。
     console.warn('Failed to calculate percentiles:', error);
+    return record;
   }
 
   return {
     ...record,
     percentile,
   };
+}
+
+function percentileFor(
+  measurement: number,
+  ageMonths: number,
+  type: 'weight' | 'height' | 'headCircumference',
+  gender: Gender,
+): number {
+  return calculatePercentile(calculateZScore(measurement, ageMonths, type, gender));
 }

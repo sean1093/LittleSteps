@@ -7,12 +7,16 @@ import {
 } from '../../data/growthChartData';
 import EmptyState from '../../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../../common/ui/serviceTheme';
+import { growthAgeMonths, gestationalAgeLabel, isCorrecting } from '../../../common/correctedAge';
 
 interface GrowthChartDisplayProps {
   records: GrowthRecord[];
   measurementType: MeasurementType;
   gender?: Gender;
   birthday?: string;
+  /** 早產週數。有填的話，每個點都畫在矯正年齡上。 */
+  gestationalAgeWeeks?: number;
+  gestationalAgeDays?: number;
 }
 
 export default function GrowthChartDisplay({
@@ -20,6 +24,8 @@ export default function GrowthChartDisplay({
   measurementType,
   gender,
   birthday,
+  gestationalAgeWeeks,
+  gestationalAgeDays,
 }: GrowthChartDisplayProps) {
   const chartData = useMemo(() => {
     if (!gender || !birthday || records.length === 0) {
@@ -36,14 +42,13 @@ export default function GrowthChartDisplay({
 
     if (validRecords.length === 0) return null;
 
-    // Calculate age in months for each record
-    const birthDate = new Date(birthday);
+    // 每個點畫在那一天的年齡上；早產兒是矯正年齡，否則一個體重完全正常的
+    // 32 週寶寶會整條線都貼在第 3 百分位附近。
     const recordsWithAge = validRecords.map((record) => {
-      const recordDate = new Date(record.date);
-      const ageMonths =
-        (recordDate.getFullYear() - birthDate.getFullYear()) * 12 +
-        (recordDate.getMonth() - birthDate.getMonth()) +
-        (recordDate.getDate() - birthDate.getDate()) / 30;
+      const ageMonths = growthAgeMonths(
+        { birthday, gestationalAgeWeeks, gestationalAgeDays },
+        new Date(record.date),
+      );
 
       let value: number;
       if (measurementType === 'weight') value = record.weight!;
@@ -92,7 +97,14 @@ export default function GrowthChartDisplay({
         ...recordsWithAge.map((r) => r.value)
       ),
     };
-  }, [records, measurementType, gender, birthday]);
+  }, [records, measurementType, gender, birthday, gestationalAgeWeeks, gestationalAgeDays]);
+
+  // 最後一筆測量當天要不要矯正——圖上大部分的點都落在同一段時間裡，用最新
+  // 那一筆判斷就跟橫軸實際上畫的一致。
+  const latestDate = records.length > 0 ? new Date(records[0].date) : new Date();
+  const correctable = { birthday: birthday ?? '', gestationalAgeWeeks, gestationalAgeDays };
+  const correcting = Boolean(birthday) && isCorrecting(correctable, latestDate);
+  const gestationLabel = gestationalAgeLabel(correctable);
 
   if (!chartData) {
     return (
@@ -296,6 +308,14 @@ export default function GrowthChartDisplay({
           {label.name} ({label.unit})
         </text>
       </svg>
+
+      {/* 圖上的橫軸換成矯正年齡了，那就要說出來——否則家長會拿它跟健康手冊
+          上依實際月齡標的那張圖對不起來。 */}
+      {correcting && (
+        <p className="mt-3 text-xs text-ink-muted">
+          橫軸為矯正年齡（{gestationLabel}），已扣除早產的週數。
+        </p>
+      )}
 
       {/* Legend */}
       <div className="mt-5 flex flex-wrap gap-4 justify-center text-sm">

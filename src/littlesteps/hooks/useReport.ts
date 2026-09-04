@@ -24,8 +24,7 @@ export function useReport(
   const { records: growthRecords, loading: growthLoading } = useGrowthTracking(
     currentChild?.id || null,
     user,
-    currentChild?.gender,
-    currentChild?.birthday
+    currentChild ?? undefined,
   );
 
   // 月齡只餵給睡眠建議的年齡分段，整數月就夠。這裡原本自己算一份帶小數的
