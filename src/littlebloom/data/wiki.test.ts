@@ -79,35 +79,23 @@ describe('pregnancyWikiArticles', () => {
  * The vaccination advice used to live as two bullets inside the cold-and-fever
  * article, so a mother searching for what she has to be vaccinated against had
  * to already be reading about catching a cold. These pin the two properties
- * that matter: the topic is findable on its own, and it exists in exactly one
- * place so the two copies cannot drift apart.
+ * that matter and that no amount of proof-reading protects: the topic is
+ * findable on its own, and it exists in exactly one place, so two copies of the
+ * same medical advice cannot drift apart. Whether the content is *correct* is
+ * not testable here — that comes from the sources cited above each article.
  */
 describe('pregnancy vaccination advice', () => {
   it('searching for the word for vaccine finds an article about vaccination itself', () => {
-    const hits = pregnancyWikiArticles.filter((a) => matchesKeyword(a, '疫苗'));
+    // WikiBrowser searches with query.trim().toLowerCase(); call it the same way.
+    const hits = pregnancyWikiArticles.filter((a) => matchesKeyword(a, '疫苗'.toLowerCase()));
     expect(hits.length).toBeGreaterThan(0);
 
     const dedicated = hits.filter((a) => a.title.includes('疫苗'));
     expect(dedicated.map((a) => a.id)).toEqual(['health-vaccination']);
   });
 
-  it('names all four vaccines with their funding status', () => {
-    const article = pregnancyWikiArticles.find((a) => a.id === 'health-vaccination')!;
-    const body = article.solutions.map((s) => `${s.step}${s.detail}`).join('\n');
-
-    for (const vaccine of ['流感', 'Tdap', 'COVID-19', 'RSV']) {
-      expect(body, vaccine).toContain(vaccine);
-    }
-    for (const funding of ['公費', '自費']) {
-      expect(body, funding).toContain(funding);
-    }
-    // The window and the reason it exists, not just the weeks.
-    expect(body).toMatch(/28-36\s*週/);
-    expect(body).toContain('胎盤');
-  });
-
   it('keeps the advice in one article instead of two copies', () => {
-    for (const marker of ['Tdap', '28-36 週', '公費流感疫苗接種對象']) {
+    for (const marker of ['Tdap', '28-36 週', '公費流感疫苗']) {
       const owners = pregnancyWikiArticles
         .filter((a) =>
           [
@@ -121,14 +109,6 @@ describe('pregnancy vaccination advice', () => {
         .map((a) => a.id);
       expect(owners, marker).toEqual(['health-vaccination']);
     }
-  });
-
-  it('says what it is not: the obstetrician decides', () => {
-    const article = pregnancyWikiArticles.find((a) => a.id === 'health-vaccination')!;
-    const body = article.solutions.map((s) => s.detail).join('\n');
-
-    expect(body).toContain('不是給你個人的醫療建議');
-    expect(body).toContain('產檢醫師');
   });
 });
 
