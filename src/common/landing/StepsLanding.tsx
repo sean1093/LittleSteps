@@ -20,8 +20,11 @@ interface StepsLandingProps {
  * 中間還夾著一段行銷文案；整頁要滑到 1,300px 才出現第一個功能。寫法改成跟
  * LittleBloom、LittleExplorer 的介紹頁一樣：一句這是什麼，接著一條一條說做得到
  * 什麼，最後只留一個入口。
+ *
+ * 匯出是為了讓測試逐項走過，而不是手抄一份標題清單（同 HubLanding 的
+ * SERVICE_GROUPS）：抄的那份會跟著這一份一起被改，於是漏掉一項不會變紅。
  */
-const FEATURES = [
+export const FEATURES = [
   {
     title: '里程碑與生長曲線',
     detail: '記下會翻身、會坐、會叫爸媽的那一天；身高體重自動對照 WHO 生長標準。',
@@ -46,8 +49,11 @@ const FEATURES = [
  *
  * 入口頁只說「知識內容不需登入」，這一頁說得出是哪幾份、按哪裡進去——這是它
  * 比入口頁多給的東西，睡眠指南的入口也只有這裡有。
+ *
+ * 該列哪幾頁不由這裡決定：判準是 routePolicy 裡不需登入的 LittleSteps 內容頁，
+ * 測試就是拿那份清單來比對的。
  */
-const PUBLIC_CONTENT: { title: string; detail: string; page: PublicContent }[] = [
+export const PUBLIC_CONTENT: { title: string; detail: string; page: PublicContent }[] = [
   { title: '照顧重點', detail: '各階段專業照護建議', page: 'littlesteps/care-guide' },
   { title: '寶寶百科', detail: '常見照顧問題與處理方式', page: 'littlesteps/baby-wiki' },
   {
