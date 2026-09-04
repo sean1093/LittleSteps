@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import StepsLanding, { FEATURES, PUBLIC_CONTENT } from './StepsLanding';
 import { MAX_CHILDREN } from '../childLimits';
-import { requiresAuth, serviceOf } from '../routePolicy';
+import { SERVICE_HOME, requiresAuth, serviceOf } from '../routePolicy';
 import { ROUTE_PATH, type Page } from '../../types/routes';
 
 /**
@@ -100,9 +100,14 @@ describe('StepsLanding', () => {
    * 寶寶百科那一項原本的處境。
    */
   it('每一個免登入的 LittleSteps 內容頁都在這一頁列得出來', () => {
+    // 服務首頁本身不算「列得出來的內容」——這一頁就是它。今天它需要登入，所以
+    // 這個條件還用不到；寫出來是為了讓它哪天變公開時，這一條要求的是內容清單
+    // 完整，而不是要求這一頁連到自己。
     const readableWithoutAccount = (Object.keys(ROUTE_PATH) as Page[]).filter(
       (page) =>
-        serviceOf(page) === 'littlesteps' && page !== 'littlesteps' && !requiresAuth(page),
+        serviceOf(page) === 'littlesteps' &&
+        page !== SERVICE_HOME.littlesteps &&
+        !requiresAuth(page),
     );
 
     expect([...PUBLIC_CONTENT.map((item) => item.page)].sort()).toEqual(
