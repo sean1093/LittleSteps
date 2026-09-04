@@ -133,13 +133,51 @@ describe('HubLanding', () => {
     expect(card).toHaveTextContent('幼兒百科與成長日記');
   });
 
-  it('旅程時間軸的幼兒期節點可點，並導向 LittleExplorer', async () => {
-    const user = userEvent.setup();
-    const onNavigate = vi.fn();
-    render(<HubLanding onNavigate={onNavigate} />);
+  it('兩組加起來正好是每一個服務，一個不多一個不少', () => {
+    render(<HubLanding onNavigate={vi.fn()} />);
 
-    await user.click(screen.getByText('1-3 歲'));
-    expect(onNavigate).toHaveBeenCalledWith('littleexplorer');
+    // 分組之後，「漏掉一個服務」變成「那個服務沒有入口」的新途徑：它不會少一
+    // 張卡，而是整組不見。所以這裡對的是渲染結果，不是那份常數。
+    const named = screen
+      .getAllByRole('heading')
+      .map((heading) => heading.textContent)
+      .filter((text): text is string => SUB_APPS.some((app) => app.name === text));
+    expect([...named].sort()).toEqual(SUB_APPS.map((app) => app.name).sort());
+
+    expect(screen.getByRole('heading', { name: '依孩子的階段' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '不分年齡，隨時用得上' })).toBeInTheDocument();
+  });
+
+  it('三個階段服務都說得出自己的年齡範圍', () => {
+    render(<HubLanding onNavigate={vi.fn()} />);
+
+    // 「寶寶成長」與「幼兒期陪伴」分不出一歲三個月的孩子該進哪一個。這三行
+    // 原本在頁尾的旅程時間軸上，時間軸拿掉之後資訊必須留在卡片上。
+    expect(cardOf('LittleBloom')).toHaveTextContent('0-40 週');
+    expect(cardOf('LittleSteps')).toHaveTextContent('0-12 月');
+    expect(cardOf('LittleExplorer')).toHaveTextContent('1-3 歲');
+  });
+
+  it('不分年齡那一組不需要登入，組標題就這麼說', () => {
+    render(<HubLanding onNavigate={vi.fn()} />);
+
+    // routePolicy 的公開允許清單裡確實有這三個；說法與那份清單對得上。
+    expect(screen.getByText('都不需要登入，出門前打開就好。')).toBeInTheDocument();
+  });
+
+  it('有孩子時只標出目前階段那一張卡', () => {
+    render(<HubLanding onNavigate={vi.fn()} currentService="littlesteps" />);
+
+    // 六個服務並排時家長第一個問題是「哪一個是我的」。標記回答它，而標兩張
+    // 就等於沒答。未登入或還沒有孩子時 currentService 是 undefined，這一頁
+    // 對訪客與以前完全一樣。
+    expect(cardOf('LittleSteps')).toHaveTextContent('目前階段');
+    expect(screen.getAllByText('目前階段')).toHaveLength(1);
+  });
+
+  it('沒有孩子時不標任何一張卡', () => {
+    render(<HubLanding onNavigate={vi.fn()} />);
+    expect(screen.queryByText('目前階段')).not.toBeInTheDocument();
   });
 
   it('未登入時進入點自己就給得出登入，也說清楚登入換到什麼', async () => {

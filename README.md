@@ -23,6 +23,12 @@ One entry point at `/#/` lists six services. They share a design system, an
 auth model and a data layer; each keeps its own palette and its own navigation
 shape.
 
+The entry page groups them the way the `Stage` column below does, because the
+two halves are not the same kind of thing: three services follow the child's
+age and a family uses one at a time, and three are usable at any age and are
+fully public. A parent's first question there is "which one is mine", so the
+group headings answer it rather than leaving six equal rows to be read through.
+
 | | Service | Stage | Navigation |
 |---|---|---|---|
 | 🌸 | **LittleBloom** | Pregnancy · weeks 0-40 | hub + back button |
