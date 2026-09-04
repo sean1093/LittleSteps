@@ -29,7 +29,7 @@ export type RadarStatus =
 
 export type RadarFreshness = 'fresh' | 'stale' | 'expired';
 
-/** 板上的一列：病名配它這一週的格子。腸病毒的組成用這個形狀。 */
+/** 板上的一列：病名配它這一週的格子。板的總結與腸病毒的組成都用這個形狀。 */
 export interface DiseaseCell {
   disease: string;
   cell: RadarCell;
@@ -106,4 +106,34 @@ export function formatWeekRange(weekStart: string, weekEnd: string): string {
   const [, startMonth, startDay] = weekStart.split('-');
   const [, endMonth, endDay] = weekEnd.split('-');
   return `${Number(startMonth)}/${Number(startDay)}–${Number(endMonth)}/${Number(endDay)}`;
+}
+
+/** 「比平常多」的三種狀態。比平常少、跟平常差不多與資料不足都不必特別提。 */
+const NOTABLE: readonly RadarStatus[] = ['risingStrong', 'rising', 'emerged'];
+
+/**
+ * 比較得出來、而且沒有變多的三種狀態。剩下的（算不出基線、樣本偏小、資料不足）
+ * 是「不知道」，不是「沒事」，所以總結不能把它們算進「其他」。
+ */
+const CALM: readonly RadarStatus[] = ['steady', 'falling', 'none'];
+
+/**
+ * 整塊板的一句話。
+ *
+ * 每週打開的家長要的是「這禮拜有沒有什麼要留意的」，不是自己讀四列狀態再心算。
+ * 沒有哪一列變多時也要把話說完整：一行只在有事時才出現的字，本身就是警示燈
+ * 號，而「這一週沒有哪一種比平常明顯多」才是多數週該看到的句子。
+ */
+export function summariseBoard(rows: readonly DiseaseCell[]): string {
+  const notable = rows.filter((row) => NOTABLE.includes(statusOf(row.cell)));
+  if (notable.length === 0) return '這一週沒有哪一種比平常明顯多。';
+  const names = notable.map((row) => row.disease).join('、');
+  const rest = rows.filter((row) => !NOTABLE.includes(statusOf(row.cell)));
+  // 「其他」要嘛說得準，要嘛不說。每一列都在變多時那個「其他」是空的；剩下
+  // 的列裡只要有一列比不出來，就不能替它保證「跟平常差不多」——板上那一列
+  // 明明寫著「還不夠資料比較」。
+  if (rest.length === 0 || !rest.every((row) => CALM.includes(statusOf(row.cell)))) {
+    return `這一週${names}比平常多。`;
+  }
+  return `這一週${names}比平常多，其他沒有變多。`;
 }
