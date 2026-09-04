@@ -66,18 +66,20 @@ function data(): RadarData {
 
 const noop = () => {};
 
-/** 腸病毒底下的兩種表現，形狀跟 RadarPage 餵進來的一樣。 */
-const enteroParts = () => [
-  { disease: '手足口病', cell: cell({ visits: 15 }) },
-  { disease: '疱疹性咽峽炎', cell: cell({ visits: 20 }) },
-];
-
+/** 腸病毒那一列底下掛兩種表現，形狀跟 RadarPage 餵進來的一樣；其他三列沒有。 */
 function open(disease = '腸病毒', overrides: Partial<RadarCell> = {}, onClose = noop) {
   return render(
     <DiseaseDrawer
       disease={disease}
       cell={cell(overrides)}
-      parts={disease === '腸病毒' ? enteroParts() : undefined}
+      parts={
+        disease === '腸病毒'
+          ? [
+              { disease: '手足口病', cell: cell({ visits: 15 }) },
+              { disease: '疱疹性咽峽炎', cell: cell({ visits: 20 }) },
+            ]
+          : undefined
+      }
       data={data()}
       county="台北市"
       age="3~6"

@@ -291,7 +291,7 @@ describe('資料新舊', () => {
     await renderReady(fixture('2026-06-28', '2026-07-04'));
     expect(screen.getByText(/超過一個月沒更新/)).toBeInTheDocument();
     expect(screen.queryByText('跟平常差不多')).not.toBeInTheDocument();
-    // 數字還在，六列也還在——收起的是可能已經錯的判斷，不是整塊板。
+    // 數字還在，四列也還在——收起的是可能已經錯的判斷，不是整塊板。
     expect(renderedDiseases()).toEqual(BOARD);
     expect(screen.getAllByText('20 人次').length).toBe(4);
   });
