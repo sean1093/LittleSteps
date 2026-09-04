@@ -158,3 +158,20 @@ describe('VenueCard 的設施標籤', () => {
     expect(screen.queryByRole('list')).not.toBeInTheDocument();
   });
 });
+
+describe('VenueCard 的資料回報', () => {
+  const reportButton = () => screen.queryByRole('button', { name: /這裡的資訊不對？/ });
+
+  it('親子館給得出回報的路，而且未登入就看得到', () => {
+    // 這張卡是公開頁面，沒有 AuthProvider 就等於未登入——正是站在門口的那個人。
+    render(<VenueCard venue={venue()} />);
+
+    expect(reportButton()).toBeInTheDocument();
+  });
+
+  it('餐廳不掛回報鍵：那份資料是我們逐家查證的，不是政府名冊', () => {
+    render(<VenueCard venue={venue({ kind: 'restaurant' })} />);
+
+    expect(reportButton()).not.toBeInTheDocument();
+  });
+});

@@ -21,13 +21,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { NursingRoom } from '../../types';
 import AppHomeButton from '../../common/components/AppHomeButton';
 import AccountButton from '../../common/components/AccountButton';
+import VenueReportButton from '../../common/components/VenueReportButton';
 import AppBar from '../../common/ui/AppBar';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { sheet, tap } from '../../common/ui/motion';
 import { createSpatialIndex, distanceBetween, type Located } from '../utils/spatialIndex';
 import RoomSearch, { NO_FILTERS, type RoomFilters } from '../components/RoomSearch';
-import { categoryOf, isInternalVenue } from '../utils/roomCategory';
+import { categoryOf, isInternalVenue, needsStaffHelp } from '../utils/roomCategory';
 import type { MrtStation } from '../data/mrtStations';
 
 // Import leaflet CSS
@@ -289,6 +290,33 @@ const RoomDetailSheet = ({ room, onClose }: RoomDetailSheetProps) => {
         >
           開始導航
         </a>
+
+        {/* 這份名單來自國健署的公開地圖，沒有「還在不在」這一欄，門鎖著也不會
+            有人回報給我們。站在門口的家長是唯一存在的事實來源，所以回報鍵就
+            放在這一筆資料旁邊，未登入照樣看得到。 */}
+        <VenueReportButton
+          className="w-full mt-2"
+          target={{
+            service: 'babyoasis',
+            id: room.id,
+            name: room.name,
+            address: room.address,
+            claims: [
+              { label: '開放時間', value: room.openingHours },
+              // 使用條件是我們從場所名稱與注意事項推出來的，不是來源寫的。
+              // 回報要把推論本身送出去，否則收件匣讀到「進不去」卻不知道我們
+              // 原本猜的是哪一種。
+              {
+                label: '使用條件',
+                value: isInternalVenue(room)
+                  ? '內部場所'
+                  : needsStaffHelp(room)
+                    ? '需洽服務台'
+                    : '沒有特別標註',
+              },
+            ],
+          }}
+        />
       </div>
     </motion.div>
   );
