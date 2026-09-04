@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 import type { VaccineSchedule } from '../../types';
 import { vaccineSchedules } from './vaccines';
+import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
 /**
  * 明列同一支疫苗的所有劑次記錄。
@@ -187,12 +188,24 @@ describe('已公告的付費方式改變', () => {
   const announced = vaccineSchedules.filter((v) => v.fundingChangesOn);
 
   it('每個日期都還沒到——過了就代表 funding 停在舊的', () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = toLocalDateKey(new Date());
     const passed = announced
       .filter((v) => v.fundingChangesOn! <= today)
       .map((v) => `${v.id} ${v.name}：${v.fundingChangesOn} 起的付費方式已經改了`);
 
     expect(passed, '改變日已過，請更新這幾列的 funding 並移除 fundingChangesOn').toEqual([]);
+  });
+
+  it('公告的出處跟著劑次走，不是只留在註解裡', () => {
+    // #10 立的規矩：一個宣稱要跟得到它的出處。這幾列最強的宣稱是「以後會改成
+    // 公費」，而 sourceUrl 指的是疾管署的產品頁——那一頁根本沒提這件事。所以
+    // 公告的網址必須另外出現在家長讀得到的欄位裡。
+    announced.forEach((v) => {
+      const shown = `${v.notes ?? ''} ${v.eligibility ?? ''}`;
+      const urls = (shown.match(/https:\/\/\S+/g) ?? []).filter((u) => u !== v.sourceUrl);
+
+      expect(urls, `${v.id} 的付費方式改變沒有附上公告出處`).not.toEqual([]);
+    });
   });
 
   it('日期寫成 YYYY-MM-DD，否則上面那條比不出大小', () => {

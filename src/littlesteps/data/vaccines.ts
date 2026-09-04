@@ -143,6 +143,11 @@ export const vaccineSchedules: VaccineSchedule[] = [
   // 接種 併同提供2劑型及3劑型疫苗」，並載明接種年齡最小為出生滿 6 週、最大
   // 不得超過 8 個月，每劑最短間隔 4 週，原則以同廠牌完成接種：
   // https://www.mohw.gov.tw/cp-16-87058-1.html
+  //
+  // 給 2027 年來翻這五列的人：改成 national 不只是換一個 funding 值。公告的
+  // 公費對象有年齡上限——「最小為出生滿6週，最大不得超過8個月」——所以那不是
+  // 一句「符合年齡就免費」，翻牌時要一併把上限寫進 eligibility 或 notes，
+  // 否則 9 個月大孩子的家長會被告知有一劑免費的疫苗可以打。
   {
     id: "rotavirus-2m",
     name: "口服輪狀病毒疫苗（2劑型） 第1劑",
@@ -155,7 +160,7 @@ export const vaccineSchedules: VaccineSchedule[] = [
     doses: 2,
     currentDose: 1,
     sideEffects: ["輕微腹瀉", "嘔吐", "煩躁"],
-    notes: "自費疫苗，最早出生滿6週可接種；2劑型的最後1劑不得晚於出生後24週，過了就補不回來。衛福部公告2027年1月1日起改為公費。口服後一週內，寶寶糞便中可能帶有病毒，更換尿布後務必徹底洗手。"
+    notes: "自費疫苗，最早出生滿6週可接種；2劑型的最後1劑不得晚於出生後24週，過了就補不回來。衛福部公告2027年1月1日起改為公費。口服後一週內，寶寶糞便中可能帶有病毒，更換尿布後務必徹底洗手。公告全文：https://www.mohw.gov.tw/cp-16-87058-1.html"
   },
   {
     id: "rotavirus-3dose-2m",
@@ -169,7 +174,7 @@ export const vaccineSchedules: VaccineSchedule[] = [
     doses: 3,
     currentDose: 1,
     sideEffects: ["輕微腹瀉", "嘔吐", "煩躁"],
-    notes: "自費疫苗，最早出生滿6週可接種，每劑間隔至少4週；3劑型的最後1劑不得晚於出生後32週，過了就補不回來。衛福部公告2027年1月1日起改為公費。口服後一週內，寶寶糞便中可能帶有病毒，更換尿布後務必徹底洗手。"
+    notes: "自費疫苗，最早出生滿6週可接種，每劑間隔至少4週；3劑型的最後1劑不得晚於出生後32週，過了就補不回來。衛福部公告2027年1月1日起改為公費。口服後一週內，寶寶糞便中可能帶有病毒，更換尿布後務必徹底洗手。公告全文：https://www.mohw.gov.tw/cp-16-87058-1.html"
   },
   {
     id: "pentavalent-4m",
@@ -208,7 +213,7 @@ export const vaccineSchedules: VaccineSchedule[] = [
     doses: 2,
     currentDose: 2,
     sideEffects: ["輕微腹瀉", "嘔吐", "煩躁"],
-    notes: "自費疫苗，2劑型的最後1劑不得晚於出生後24週接種，過了就補不回來。原則以同一廠牌完成接種。衛福部公告2027年1月1日起改為公費。"
+    notes: "自費疫苗，2劑型的最後1劑不得晚於出生後24週接種，過了就補不回來。原則以同一廠牌完成接種。衛福部公告2027年1月1日起改為公費。公告全文：https://www.mohw.gov.tw/cp-16-87058-1.html"
   },
   {
     id: "rotavirus-3dose-4m",
@@ -222,7 +227,7 @@ export const vaccineSchedules: VaccineSchedule[] = [
     doses: 3,
     currentDose: 2,
     sideEffects: ["輕微腹瀉", "嘔吐", "煩躁"],
-    notes: "自費疫苗，與前一劑間隔至少4週，原則以同一廠牌完成接種。3劑型還有第3劑，不得晚於出生後32週。衛福部公告2027年1月1日起改為公費。"
+    notes: "自費疫苗，與前一劑間隔至少4週，原則以同一廠牌完成接種。3劑型還有第3劑，不得晚於出生後32週。衛福部公告2027年1月1日起改為公費。公告全文：https://www.mohw.gov.tw/cp-16-87058-1.html"
   },
   {
     id: "menb-2m",
@@ -287,7 +292,7 @@ export const vaccineSchedules: VaccineSchedule[] = [
     doses: 3,
     currentDose: 3,
     sideEffects: ["輕微腹瀉", "嘔吐", "煩躁"],
-    notes: "自費疫苗，3劑型的最後1劑不得晚於出生後32週接種，過了就補不回來。2劑型沒有這一劑。衛福部公告2027年1月1日起改為公費。"
+    notes: "自費疫苗，3劑型的最後1劑不得晚於出生後32週接種，過了就補不回來。2劑型沒有這一劑。衛福部公告2027年1月1日起改為公費。公告全文：https://www.mohw.gov.tw/cp-16-87058-1.html"
   },
   // 六合一（含 B 肝的五合一升級版）疾管署沒有專頁，這裡引用的是五合一頁：
   // 它給的是這一劑替代掉的公費時程（2、4、6、18 個月），不是這個自費產品。
