@@ -62,6 +62,14 @@ export interface ClinicSummaryData {
     date?: string;
   }>;
   nextVaccine?: { name: string; timing: string; doseNumber: number };
+  /**
+   * 沒有下一劑時，還沒記錄的公費劑次數。
+   *
+   * 只在 nextVaccine 缺席、而且真的還有沒記錄的公費劑次時才有值。這一段少一行
+   * 的代價比看起來大：醫師讀到疫苗段落沒有下一步，結論是「沒事要談」，而事實
+   * 可能是這個孩子有 21 劑公費疫苗沒有紀錄。
+   */
+  unrecordedNationalDoses?: number;
 
   // 7-day daily summary
   weekSummary: {
@@ -170,6 +178,11 @@ export function useClinicSummary(
           doseNumber: vaccineSummary.nextVaccine.doseNumber,
         }
       : undefined;
+    // 沒有下一劑時這一段不能就這樣少一行——那會讓醫師以為沒事要談。
+    const unrecordedNationalDoses =
+      nextVaccine === undefined && vaccineSummary.remainingNationalDoses > 0
+        ? vaccineSummary.remainingNationalDoses
+        : undefined;
 
     // --- 7-day daily summary ---
     const recentLogs = getRecentLogs(dailyLogs, 7);
@@ -294,6 +307,7 @@ export function useClinicSummary(
       recentGrowthRecords,
       administeredVaccines,
       nextVaccine,
+      unrecordedNationalDoses,
       weekSummary,
       generatedAt: new Date().toISOString(),
     };
@@ -359,6 +373,11 @@ export function buildClinicSummaryText(data: ClinicSummaryData, notes: string): 
   if (data.nextVaccine) {
     lines.push(
       `下一劑：${data.nextVaccine.name}（第 ${data.nextVaccine.doseNumber} 劑），建議時間：${data.nextVaccine.timing}`
+    );
+  }
+  if (data.unrecordedNationalDoses !== undefined) {
+    lines.push(
+      `尚有 ${data.unrecordedNationalDoses} 劑公費疫苗沒有記錄，沒有記錄不代表沒打，可對照兒童健康手冊補登`
     );
   }
 
