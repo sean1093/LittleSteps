@@ -48,7 +48,7 @@ const currentTab = (label: string) => async () => {
 };
 
 const ROUTES: Probe[] = [
-  { path: '/', page: 'home', expect: heading('用愛陪伴，溫柔守護') },
+  { path: '/', page: 'home', expect: heading('從懷孕到三歲') },
   { path: '/littlesteps', page: 'littlesteps', expect: heading('開始記錄寶寶的成長') },
   { path: '/littlesteps/dashboard', page: 'littlesteps/dashboard', expect: heading('成長總覽') },
   { path: '/littlesteps/milestones', page: 'littlesteps/milestones', expect: heading('里程碑追蹤') },
@@ -92,13 +92,13 @@ describe('深連結', () => {
   it('認不得的路徑落回服務集合首頁，而不是空白畫面', async () => {
     visit('/does-not-exist');
     render(<App />);
-    await screen.findByRole('heading', { name: /用愛陪伴，溫柔守護/ });
+    await screen.findByRole('heading', { name: /從懷孕到三歲/ });
   });
 
   it('根路徑就是服務集合首頁', async () => {
     visit('/');
     render(<App />);
-    await screen.findByRole('heading', { name: /用愛陪伴，溫柔守護/ });
+    await screen.findByRole('heading', { name: /從懷孕到三歲/ });
   });
 });
 
@@ -121,7 +121,7 @@ describe('上一頁／下一頁', () => {
 
     visit('/garbage');
     window.dispatchEvent(new PopStateEvent('popstate'));
-    await screen.findByRole('heading', { name: /用愛陪伴，溫柔守護/ });
+    await screen.findByRole('heading', { name: /從懷孕到三歲/ });
   }, 20000);
 });
 

@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion';
-import { ChevronRight } from 'lucide-react';
 import type { User } from 'firebase/auth';
 import { fadeInUp, hoverLift, listItem, stagger, tap } from '../ui/motion';
 import { pressable } from '../ui/pressable';
@@ -12,14 +11,20 @@ import type { ServiceId } from '../ui/serviceTheme';
  * Public: reachable without signing in, so a first-time visitor can see what
  * the collection offers before deciding to hand over an account.
  *
- * 這一頁是選擇器，不是五份疊起來的產品首頁。原本一張卡片高約 300px：名稱、
- * 中文角色、一句行銷介紹、三到四條項目符號，再加一顆只是把標題重講一遍的
- * 全寬按鈕（LittleBloom 的按鈕寫「進入孕期陪伴」）。五張疊起來 2,161px，
- * 而畫面只有 844px 高——最後一個服務要滑過兩個螢幕才看得到。
+ * 這一頁是選擇器，不是六份疊起來的產品首頁。一張卡就是一列：圖示、名稱與
+ * 角色、一行「做得到什麼」。整列自己就是點擊區（pressable 讓鍵盤也進得去），
+ * 所以卡片裡不需要任何按鈕。名稱、角色與配色全部來自 SERVICE_THEME。
  *
- * 現在一張卡就是一列：圖示、名稱與角色、一行「做得到什麼」。整列自己就是
- * 點擊區（pressable 讓鍵盤也進得去），所以那顆按鈕不必存在。名稱、角色與
- * 配色全部來自 SERVICE_THEME，這裡只剩各服務真正不同的那一行。
+ * 但選擇器也得先讓人知道自己在選什麼。這一頁原本開頭三行是「用愛陪伴，溫柔
+ * 守護／每個階段都值得被用心記錄／為台灣新手爸媽量身打造」——讀完不知道這個
+ * app 做什麼，而全站其他每一頁都是照著「這頁實際上有什麼」寫的。標題現在說
+ * 得出這件事，六張卡也分成兩組：三個服務是跟著孩子年齡走的，一次只用一個；
+ * 另外三個不分年齡，出門前打開就好。原本頁尾那條「孕期 → 新生兒 → 幼兒期」
+ * 時間軸講的正是第一組，它唯一多給的資訊（年齡範圍）現在寫在卡片上，所以
+ * 同一組服務不再在一頁裡出現三次。
+ *
+ * 登入從標題底下移到頁尾：先看得到值，再決定要不要交出帳號。回頭的訪客不必
+ * 滑到底才找得到入口，右上角留一顆安靜的登入。
  */
 
 interface HubLandingProps {
@@ -65,15 +70,41 @@ const SERVICE_FEATURES: Record<ServiceId, string[]> = {
 };
 
 /**
- * 「孕期 → 新生兒 → 幼兒期」原本是三顆圓形圖示節點，用的正是上面卡片已經用過
- * 的同三個圖示——同一頁出現兩次。這裡只留這條時間軸真正在講的事：階段名稱、
- * 年齡區間，以及三者相連。
+ * 六個服務不是同一種東西。
+ *
+ * 前三個跟著孩子的年齡走，一次只用得到一個，孩子長大就換下一個；後三個不分
+ * 年齡，而且完全公開（見 routePolicy 的公開允許清單）。六列並排時這個差別
+ * 看不出來，家長只能逐列讀完再自己歸類。分組之後，第一個問題「哪一個是我
+ * 的」由組標題回答，不必替每個訪客再猜一次。
+ *
+ * 兩組加起來必須正好是 SERVICE_ORDER：漏掉一個服務就等於那個服務沒有入口，
+ * 沒有任何子應用會連到自己的手足。HubLanding.test.tsx 逐項比對。
  */
-const JOURNEY: { id: ServiceId; label: string; range: string }[] = [
-  { id: 'littlebloom', label: '孕期', range: '0-40 週' },
-  { id: 'littlesteps', label: '新生兒', range: '0-12 月' },
-  { id: 'littleexplorer', label: '幼兒期', range: '1-3 歲' },
+const GROUPS: { title: string; note: string; ids: ServiceId[] }[] = [
+  {
+    title: '依孩子的階段',
+    note: '一次看一個。孩子長大就換到下一個，紀錄留在同一個檔案裡。',
+    ids: ['littlebloom', 'littlesteps', 'littleexplorer'],
+  },
+  {
+    title: '不分年齡，隨時用得上',
+    note: '都不需要登入，出門前打開就好。',
+    ids: ['littleouting', 'babyoasis', 'littleguard'],
+  },
 ];
+
+/**
+ * 三個階段服務各自的年齡範圍。
+ *
+ * 「寶寶成長」和「幼兒期陪伴」這兩個角色名分不出一歲三個月的孩子該進哪一個，
+ * 而這正是入口頁要回答的問題。這三行原本掛在頁尾的旅程時間軸上——那條時間軸
+ * 其餘的內容（三個階段名、三個服務）卡片已經講過了，所以只留這裡。
+ */
+const STAGE_RANGE: Partial<Record<ServiceId, string>> = {
+  littlebloom: '0-40 週',
+  littlesteps: '0-12 月',
+  littleexplorer: '1-3 歲',
+};
 
 export default function HubLanding({
   onNavigate,
@@ -83,123 +114,137 @@ export default function HubLanding({
 }: HubLandingProps) {
   return (
     <div className="screen-body-wide space-y-10">
+      {/* 回頭的訪客不必為了登入滑到頁尾；安靜到不跟標題搶。 */}
+      {!user && onSignIn && (
+        <div className="flex justify-end">
+          <button type="button" onClick={onSignIn} className="btn-ghost">
+            登入
+          </button>
+        </div>
+      )}
+
       {/* Hero */}
       <motion.div
         initial="hidden"
         animate="visible"
         variants={stagger}
-        className="text-center pt-6"
+        className="text-center pt-2 sm:pt-6"
       >
+        {/* 中文不斷字，所以窄螢幕上一行標題會斷在「把」跟「每」之間。每個
+            意義段落各包一個 inline-block，換行就只會發生在段落之間；寬度夠時
+            仍然是一行。text-wrap: balance 幫不上忙——它平均行寬，不看標點。 */}
         <motion.h1
           variants={listItem}
-          className="text-3xl sm:text-4xl md:text-5xl text-ink mb-3"
+          className="text-3xl sm:text-4xl md:text-5xl text-ink mb-4"
         >
-          用愛陪伴，溫柔守護
+          <span className="inline-block">從懷孕到三歲，</span>
+          <span className="inline-block">陪你把每一步記下來</span>
         </motion.h1>
 
         <motion.p
           variants={listItem}
           className="text-base sm:text-lg text-ink-muted leading-relaxed max-w-2xl mx-auto"
         >
-          從懷孕到育兒，每個階段都值得被用心記錄
-          <br />
-          讓我們陪伴你走過這段珍貴的旅程
+          <span className="inline-block">六個服務、一個帳號。</span>
+          <span className="inline-block">
+            孕期到幼兒期的成長追蹤，加上出門在外用得到的哺乳室、親子館與這週的疫情。
+          </span>
         </motion.p>
+      </motion.div>
 
-        <motion.p variants={listItem} className="text-sm text-ink-faint mt-4">
-          為台灣新手爸媽與準媽媽量身打造
-        </motion.p>
-
-        {/* 未登入時，進入點本身就要給得出登入；否則訪客得先挑一個服務才找得到入口。 */}
-        {!user && onSignIn && (
-          <motion.div variants={listItem} className="mt-8">
-            <motion.button
-              type="button"
-              whileHover={hoverLift}
-              whileTap={tap}
-              onClick={onSignIn}
-              className="btn-primary"
-            >
-              使用 Google 登入
-            </motion.button>
-            <p className="text-xs text-ink-faint mt-3">
-              知識內容不需登入即可閱讀；記錄功能登入後才能跨裝置同步
-            </p>
+      {/* Service cards：一列一個服務，兩組 */}
+      {GROUPS.map((group) => (
+        <section key={group.title} className="space-y-3">
+          <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
+            <h2 className="text-ink">{group.title}</h2>
+            <p className="text-sm text-ink-muted mt-1">{group.note}</p>
           </motion.div>
-        )}
-      </motion.div>
 
-      {/* Service cards：一列一個服務 */}
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={stagger}
-        className="grid grid-cols-1 sm:grid-cols-2 gap-3"
-      >
-        {SERVICE_ORDER.map((id) => {
-          const theme = SERVICE_THEME[id];
-          const Icon = theme.icon;
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={stagger}
+            className="grid grid-cols-1 md:grid-cols-3 gap-3"
+          >
+            {group.ids.map((id) => {
+              const theme = SERVICE_THEME[id];
+              const Icon = theme.icon;
 
-          return (
-            <motion.div
-              key={id}
-              variants={listItem}
-              {...pressable(() => onNavigate(id))}
-              className="card-tap flex items-start gap-3"
-            >
-              <Icon className={`w-5 h-5 shrink-0 mt-1 ${theme.ink}`} aria-hidden="true" />
+              return (
+                <motion.div
+                  key={id}
+                  variants={listItem}
+                  {...pressable(() => onNavigate(id))}
+                  className="card-tap flex items-start gap-3"
+                >
+                  <Icon className={`w-5 h-5 shrink-0 mt-0.5 ${theme.ink}`} aria-hidden="true" />
 
-              <div className="flex-1 min-w-0">
-                <div className="flex items-baseline gap-2 flex-wrap">
-                  {/* 角色標籤放在 h2 外面：標題的可及名稱要正好是服務名。 */}
-                  <h2 className={theme.ink}>{theme.name}</h2>
-                  <span className={`text-xs ${theme.muted}`}>{theme.role}</span>
-                  {/* 六個服務並列時，家長第一個問題是「哪一個是我的」。
-                      標記回答它；順序刻意不動，見 serviceForStage。 */}
-                  {id === currentService && <span className="tag">目前階段</span>}
-                </div>
-                <p className={`text-sm ${theme.body} leading-snug mt-1`}>
-                  {SERVICE_FEATURES[id].join(' · ')}
-                </p>
-              </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      {/* 角色標籤放在 h3 外面：標題的可及名稱要正好是服務名。 */}
+                      <h3 className={theme.ink}>{theme.name}</h3>
+                      <span className={`text-xs ${theme.muted}`}>{theme.role}</span>
+                      {STAGE_RANGE[id] && (
+                        <span className="text-xs text-ink-faint">{STAGE_RANGE[id]}</span>
+                      )}
+                      {/* 家長第一個問題是「哪一個是我的」。組標題回答一半，這個
+                          標記回答另一半；順序刻意不動，見 serviceForStage。
+                          `.tag` 只給形狀不給顏色，配色要自己帶——不帶的話它就
+                          只是一段有 padding 的小字，看不出是標記。 */}
+                      {id === currentService && (
+                        <span className={`tag ${theme.tint} ${theme.ink}`}>目前階段</span>
+                      )}
+                    </div>
+                    <p className={`text-sm ${theme.body} leading-snug mt-1`}>
+                      {SERVICE_FEATURES[id].join(' · ')}
+                    </p>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        </section>
+      ))}
 
-              <ChevronRight
-                className="w-5 h-5 shrink-0 mt-1 text-ink-faint"
-                aria-hidden="true"
-              />
-            </motion.div>
-          );
-        })}
-      </motion.div>
-
-      {/* Journey */}
-      <motion.div
+      {/* 這一頁最有說服力的一段，而它原本只寫在各服務自己的頁面裡。 */}
+      <motion.section
         initial="hidden"
         animate="visible"
         variants={fadeInUp}
-        className="panel"
+        className="panel space-y-2"
       >
-        <h2 className="text-center mb-4 text-ink">陪伴你的育兒旅程</h2>
-        <ol className="flex items-center justify-center">
-          {JOURNEY.map((step, index) => (
-            <li key={step.id} className="flex items-center">
-              {index > 0 && (
-                <span className="w-4 sm:w-10 h-px bg-ink/15 shrink-0" aria-hidden="true" />
-              )}
-              <button
-                type="button"
-                onClick={() => onNavigate(step.id)}
-                className="min-h-tap px-3 rounded-2xl text-center hover:bg-ink/5 transition-colors"
-              >
-                <span className={`block text-sm font-semibold ${SERVICE_THEME[step.id].ink}`}>
-                  {step.label}
-                </span>
-                <span className="block text-xs text-ink-faint">{step.range}</span>
-              </button>
-            </li>
-          ))}
-        </ol>
-      </motion.div>
+        <h2 className="text-ink">資料從哪裡來</h2>
+        <p className="text-sm text-ink-muted leading-relaxed">
+          哺乳室與親子館的名單來自國健署與社家署的開放資料，每週的疫情數字來自疾管署的健保門診統計，生長曲線用的是
+          WHO 的標準。
+        </p>
+        <p className="text-sm text-ink-faint">每一頁都寫得出自己的來源與查證日期。</p>
+      </motion.section>
+
+      {/* 登入放在頁尾而不是標題底下：先看得到值，再決定要不要交出帳號。
+          那句「不登入能看什麼」全站只有這一份，就放在按鈕旁邊。 */}
+      {!user && onSignIn && (
+        <motion.section
+          initial="hidden"
+          animate="visible"
+          variants={fadeInUp}
+          className="panel text-center space-y-3"
+        >
+          <h2 className="text-ink">要記錄孩子的資料，才需要帳號</h2>
+          <p className="text-sm text-ink-muted">
+            知識內容不需登入即可閱讀；記錄功能登入後才能跨裝置同步
+          </p>
+          <motion.button
+            type="button"
+            whileHover={hoverLift}
+            whileTap={tap}
+            onClick={onSignIn}
+            className="btn-primary"
+          >
+            使用 Google 登入
+          </motion.button>
+        </motion.section>
+      )}
 
       <motion.p
         initial="hidden"
