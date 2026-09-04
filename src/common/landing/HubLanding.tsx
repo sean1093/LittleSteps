@@ -78,9 +78,11 @@ const SERVICE_FEATURES: Record<ServiceId, string[]> = {
  * 的」由組標題回答，不必替每個訪客再猜一次。
  *
  * 兩組加起來必須正好是 SERVICE_ORDER：漏掉一個服務就等於那個服務沒有入口，
- * 沒有任何子應用會連到自己的手足。HubLanding.test.tsx 逐項比對。
+ * 沒有任何子應用會連到自己的手足。第二組的「都不需要登入」也是一句對得起
+ * routePolicy 的承諾，不是修飾語。兩件事都由 HubLanding.test.tsx 對著來源
+ * 比，所以這份常數要匯出。
  */
-const GROUPS: { title: string; note: string; ids: ServiceId[] }[] = [
+export const SERVICE_GROUPS: { title: string; note: string; ids: ServiceId[] }[] = [
   {
     title: '依孩子的階段',
     note: '一次看一個。孩子長大就換到下一個，紀錄留在同一個檔案裡。',
@@ -153,7 +155,7 @@ export default function HubLanding({
       </motion.div>
 
       {/* Service cards：一列一個服務，兩組 */}
-      {GROUPS.map((group) => (
+      {SERVICE_GROUPS.map((group) => (
         <section key={group.title} className="space-y-3">
           <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
             <h2 className="text-ink">{group.title}</h2>

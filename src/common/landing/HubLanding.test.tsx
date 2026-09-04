@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import HubLanding from './HubLanding';
+import HubLanding, { SERVICE_GROUPS } from './HubLanding';
+import { requiresAuth } from '../routePolicy';
 import { SERVICE_ORDER, SERVICE_THEME } from '../ui/serviceTheme';
 import type { ServiceId } from '../ui/serviceTheme';
 
@@ -134,18 +135,18 @@ describe('HubLanding', () => {
   });
 
   it('兩組加起來正好是每一個服務，一個不多一個不少', () => {
+    // 分組之後，「漏掉一個服務」多了一條新途徑：不是少一張卡，而是整組不見。
+    // 對的是 SERVICE_ORDER 而不是渲染結果，因為重複列一個服務也要擋下來。
+    const grouped = SERVICE_GROUPS.flatMap((group) => group.ids);
+    expect([...grouped].sort()).toEqual([...SERVICE_ORDER].sort());
+    expect(new Set(grouped).size, '有服務被列進兩組').toBe(grouped.length);
+  });
+
+  it('組標題渲染得出來——它是「哪一個是我的」的答案', () => {
     render(<HubLanding onNavigate={vi.fn()} />);
-
-    // 分組之後，「漏掉一個服務」變成「那個服務沒有入口」的新途徑：它不會少一
-    // 張卡，而是整組不見。所以這裡對的是渲染結果，不是那份常數。
-    const named = screen
-      .getAllByRole('heading')
-      .map((heading) => heading.textContent)
-      .filter((text): text is string => SUB_APPS.some((app) => app.name === text));
-    expect([...named].sort()).toEqual(SUB_APPS.map((app) => app.name).sort());
-
-    expect(screen.getByRole('heading', { name: '依孩子的階段' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '不分年齡，隨時用得上' })).toBeInTheDocument();
+    for (const group of SERVICE_GROUPS) {
+      expect(screen.getByRole('heading', { name: group.title })).toBeInTheDocument();
+    }
   });
 
   it('三個階段服務都說得出自己的年齡範圍', () => {
@@ -158,11 +159,14 @@ describe('HubLanding', () => {
     expect(cardOf('LittleExplorer')).toHaveTextContent('1-3 歲');
   });
 
-  it('不分年齡那一組不需要登入，組標題就這麼說', () => {
-    render(<HubLanding onNavigate={vi.fn()} />);
-
-    // routePolicy 的公開允許清單裡確實有這三個；說法與那份清單對得上。
-    expect(screen.getByText('都不需要登入，出門前打開就好。')).toBeInTheDocument();
+  it('說「不需要登入」的那一組，routePolicy 確實這麼認定', () => {
+    // 這句話是承諾，不是修飾語：哪天有服務被移到需登入，入口頁就在騙人。
+    // 用註記去找那一組而不是寫死索引：組的順序是版面決定的，這條規則不是。
+    const promising = SERVICE_GROUPS.filter((group) => group.note.includes('不需要登入'));
+    expect(promising.length, '沒有任何一組說不需要登入了，這條規則要跟著改').toBe(1);
+    for (const id of promising[0].ids) {
+      expect(requiresAuth(id), `${id} 需要登入，組標題卻說不用`).toBe(false);
+    }
   });
 
   it('有孩子時只標出目前階段那一張卡', () => {
