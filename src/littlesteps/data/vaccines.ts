@@ -105,13 +105,22 @@ export const vaccineSchedules: VaccineSchedule[] = [
   // 一頁都寫著常規只有 3 劑。
   //
   // 高危險群那一劑是真的——「如為高危險群對象，出生滿6個月時可增加接種1劑」
-  // ——但它不是常規時程的第 4 劑，而 funding 沒有一個值說得出「公費，但只給
-  // 名單上的孩子」：標成 national，提醒引擎會對每一個健康寶寶的家長說「你漏
-  // 打了一劑公費疫苗」；標成 nhi-conditional，付錢的人就從公費變成健保。
-  // 所以它寫在第 2 劑的 notes 裡：家長在還來得及問醫師的月齡讀到它，而不是
-  // 收到一則對他們並不成立的逾期提醒。高危險群的認定見疾管署
-  // 「幼童肺炎鏈球菌高危險群之ICD code參考表」
-  // https://www.cdc.gov.tw/Category/Page/t-6cjd2WDeB6NdExzrQCVw
+  // ——但它刻意不做成一列，原因不在資料而在讀資料的兩個地方：
+  //
+  //   * vaccineSchedule.ts 的 actionableVaccineDoses 只看 funding === 'national'，
+  //     完全不看 eligibility。
+  //   * 儀表板的「下一劑」與看診摘要同樣只認 national。
+  //
+  // 所以一列 national + eligibility 的高危險群劑次，會對每一個健康寶寶的家
+  // 長說「你漏打了一劑公費疫苗」；而且沒有人會去記錄一劑自己不需要打的疫
+  // 苗，它就永遠卡在「下一劑」那張卡上——正是 #25 要修掉的那個毛病。改標
+  // nhi-conditional 也不行：那把付錢的人從公費寫成健保。
+  //
+  // 於是它寫在第 2 劑的 notes 裡：4 個月是 6 個月之前的最後一次門診，家長
+  // 在還來得及問醫師的時候讀到它。真正的缺口——時程表沒辦法表達「公費，但
+  // 只給名單上的孩子」——記在 #33，要修請從那兩個選取條件開始，不要直接把
+  // 這一列加回來。高危險群的認定見疾管署「幼童肺炎鏈球菌高危險群之ICD
+  // code參考表」https://www.cdc.gov.tw/Category/Page/t-6cjd2WDeB6NdExzrQCVw
   {
     id: "pneumococcal-2m",
     name: "13價肺炎鏈球菌疫苗 第1劑",
@@ -146,7 +155,7 @@ export const vaccineSchedules: VaccineSchedule[] = [
     doses: 2,
     currentDose: 1,
     sideEffects: ["輕微腹瀉", "嘔吐", "煩躁"],
-    notes: "自費疫苗，最早出生滿6週可接種，與第2劑間隔至少4週。衛福部公告2027年1月1日起納入幼兒公費疫苗。口服後一週內，寶寶糞便中可能帶有病毒，更換尿布後務必徹底洗手。"
+    notes: "自費疫苗，最早出生滿6週可接種；2劑型的最後1劑不得晚於出生後24週，過了就補不回來。衛福部公告2027年1月1日起改為公費。口服後一週內，寶寶糞便中可能帶有病毒，更換尿布後務必徹底洗手。"
   },
   {
     id: "rotavirus-3dose-2m",
@@ -160,7 +169,7 @@ export const vaccineSchedules: VaccineSchedule[] = [
     doses: 3,
     currentDose: 1,
     sideEffects: ["輕微腹瀉", "嘔吐", "煩躁"],
-    notes: "自費疫苗，最早出生滿6週可接種，每劑間隔至少4週。衛福部公告2027年1月1日起納入幼兒公費疫苗。口服後一週內，寶寶糞便中可能帶有病毒，更換尿布後務必徹底洗手。"
+    notes: "自費疫苗，最早出生滿6週可接種，每劑間隔至少4週；3劑型的最後1劑不得晚於出生後32週，過了就補不回來。衛福部公告2027年1月1日起改為公費。口服後一週內，寶寶糞便中可能帶有病毒，更換尿布後務必徹底洗手。"
   },
   {
     id: "pentavalent-4m",
@@ -199,7 +208,7 @@ export const vaccineSchedules: VaccineSchedule[] = [
     doses: 2,
     currentDose: 2,
     sideEffects: ["輕微腹瀉", "嘔吐", "煩躁"],
-    notes: "自費疫苗，2劑型的最後1劑不得晚於出生後24週接種，過了就補不回來。原則以同一廠牌完成接種。"
+    notes: "自費疫苗，2劑型的最後1劑不得晚於出生後24週接種，過了就補不回來。原則以同一廠牌完成接種。衛福部公告2027年1月1日起改為公費。"
   },
   {
     id: "rotavirus-3dose-4m",
@@ -213,7 +222,7 @@ export const vaccineSchedules: VaccineSchedule[] = [
     doses: 3,
     currentDose: 2,
     sideEffects: ["輕微腹瀉", "嘔吐", "煩躁"],
-    notes: "自費疫苗，與前一劑間隔至少4週。原則以同一廠牌完成接種。"
+    notes: "自費疫苗，與前一劑間隔至少4週，原則以同一廠牌完成接種。3劑型還有第3劑，不得晚於出生後32週。衛福部公告2027年1月1日起改為公費。"
   },
   {
     id: "menb-2m",
@@ -278,7 +287,7 @@ export const vaccineSchedules: VaccineSchedule[] = [
     doses: 3,
     currentDose: 3,
     sideEffects: ["輕微腹瀉", "嘔吐", "煩躁"],
-    notes: "自費疫苗，3劑型的最後1劑不得晚於出生後32週接種，過了就補不回來。2劑型沒有這一劑。"
+    notes: "自費疫苗，3劑型的最後1劑不得晚於出生後32週接種，過了就補不回來。2劑型沒有這一劑。衛福部公告2027年1月1日起改為公費。"
   },
   // 六合一（含 B 肝的五合一升級版）疾管署沒有專頁，這裡引用的是五合一頁：
   // 它給的是這一劑替代掉的公費時程（2、4、6、18 個月），不是這個自費產品。
