@@ -106,7 +106,12 @@ export function venueReportTitle(target: VenueReportTarget, reason: VenueReportR
 /**
  * One field per line, so the inbox reads as prose rather than as JSON. The
  * reason leads because it is the report; everything after it is what the app
- * was showing when the parent disagreed with it.
+ * held when the parent disagreed with it.
+ *
+ * Claims are marked 目前資料 rather than "what the screen showed": the access
+ * label on a nursing room is inferred, and the room sheet does not print it,
+ * so calling it a screen claim would be wrong on the surface that most needs
+ * to send it.
  */
 export function venueReportContent(
   target: VenueReportTarget,
@@ -121,7 +126,7 @@ export function venueReportContent(
     `場所編號：${target.id}`,
     `地址：${target.address}`,
     ...target.claims.map(
-      (claim) => `畫面上的${claim.label}：${claim.value ?? CLAIM_NOT_PUBLISHED}`,
+      (claim) => `${claim.label}（目前資料）：${claim.value ?? CLAIM_NOT_PUBLISHED}`,
     ),
   ];
 

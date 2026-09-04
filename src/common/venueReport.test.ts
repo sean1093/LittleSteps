@@ -51,7 +51,7 @@ describe('venueReportContent', () => {
   it('says a claim was never published rather than sending it blank', () => {
     const content = venueReportContent(target({ claims: [{ label: '開放時間' }] }), 'hoursWrong');
 
-    expect(content).toContain(`開放時間：${CLAIM_NOT_PUBLISHED}`);
+    expect(content).toContain(`開放時間（目前資料）：${CLAIM_NOT_PUBLISHED}`);
   });
 
   it('names the dataset the report came from', () => {
