@@ -104,7 +104,7 @@ export default function LandingPage({
   }
 
   if (kind === 'steps-intro') {
-    return <StepsLanding onNavigate={onNavigate} user={user} onSignIn={onSignIn} />;
+    return <StepsLanding onNavigate={onNavigate} onSignIn={onSignIn} />;
   }
 
   if (kind === 'hub') {
