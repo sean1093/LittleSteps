@@ -8,9 +8,10 @@ import { vaccineSchedules } from './vaccines';
 /**
  * 明列同一支疫苗的所有劑次記錄。
  *
- * 成員用述詞而不是 id 前綴：前綴一樣不代表同一支疫苗。
- * `pneumococcal-15v-6m` 是另一支自費疫苗，不是 13 價的其中一劑。述詞說得出
- * 「哪些不算」，清單才不會被一列同前綴的新資料默默吸收。
+ * 成員用述詞而不是 id 前綴：前綴一樣不代表同一支疫苗，也不代表同一種產品。
+ * `pneumococcal-15v-6m` 是另一支疫苗；輪狀病毒的 2 劑型與 3 劑型是兩種產品，
+ * 各有自己的劑數與最後期限。述詞說得出「哪些不算」，清單才不會被一列同前綴
+ * 的新資料默默吸收。
  */
 const VACCINE_FAMILIES: Record<
   string,
@@ -21,6 +22,14 @@ const VACCINE_FAMILIES: Record<
   '13價肺炎鏈球菌（公費常規時程）': {
     belongs: (id) => id.startsWith('pneumococcal-') && id !== 'pneumococcal-15v-6m',
     ids: ['pneumococcal-2m', 'pneumococcal-4m', 'pneumococcal-12m'],
+  },
+  '輪狀病毒（2劑型）': {
+    belongs: (id) => id.startsWith('rotavirus-') && !id.startsWith('rotavirus-3dose-'),
+    ids: ['rotavirus-2m', 'rotavirus-4m'],
+  },
+  '輪狀病毒（3劑型）': {
+    belongs: (id) => id.startsWith('rotavirus-3dose-'),
+    ids: ['rotavirus-3dose-2m', 'rotavirus-3dose-4m', 'rotavirus-3dose-6m'],
   },
 };
 
@@ -87,6 +96,13 @@ describe('vaccineSchedules 時程正確性', () => {
     expect(pcv13.map((v) => v.ageInMonths).sort((a, b) => a! - b!)).toEqual([2, 4, 12]);
     expect([...new Set(pcv13.map((v) => v.doses))]).toEqual([3]);
     expect([...new Set(pcv13.map((v) => v.funding))]).toEqual(['national']);
+  });
+
+  it('輪狀病毒 3 劑型有 6 個月那一劑，2 劑型沒有', () => {
+    // 兩種劑型的最後期限不同（24 週對 32 週），壓成一列就說不出這件事。
+    expect(byId('rotavirus-2m')!.doses).toBe(2);
+    expect(byId('rotavirus-3dose-2m')!.doses).toBe(3);
+    expect(byId('rotavirus-3dose-6m')!.ageInMonths).toBe(6);
   });
 });
 
@@ -157,5 +173,44 @@ describe('RSV 單株抗體的兩種產品', () => {
     for (const condition of ['1歲以下', '早產', '先天性心臟病', '慢性肺病']) {
       expect(reimbursed!.eligibility).toContain(condition);
     }
+  });
+});
+
+/**
+ * 已公告、但還沒生效的付費方式改變。
+ *
+ * 查證日期擋不住這一種錯：改變的日期是已知的，而且就落在保鮮期裡——檔案到
+ * 那天都還算「新鮮」，funding 卻已經是錯的。標上日期，下面第一條會在那天之
+ * 後轉紅，而不是等到有家長照著過期的付費方式做預算。
+ */
+describe('已公告的付費方式改變', () => {
+  const announced = vaccineSchedules.filter((v) => v.fundingChangesOn);
+
+  it('每個日期都還沒到——過了就代表 funding 停在舊的', () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const passed = announced
+      .filter((v) => v.fundingChangesOn! <= today)
+      .map((v) => `${v.id} ${v.name}：${v.fundingChangesOn} 起的付費方式已經改了`);
+
+    expect(passed, '改變日已過，請更新這幾列的 funding 並移除 fundingChangesOn').toEqual([]);
+  });
+
+  it('日期寫成 YYYY-MM-DD，否則上面那條比不出大小', () => {
+    announced.forEach((v) => {
+      expect(v.fundingChangesOn, `${v.id} 的 fundingChangesOn 格式不對`).toMatch(
+        /^\d{4}-\d{2}-\d{2}$/,
+      );
+    });
+  });
+
+  it('輪狀病毒的公費化日期寫在資料裡，不是只寫在註解裡', () => {
+    // 幼兒百科早就告訴家長 2027 年 1 月 1 日改公費，疫苗頁卻只寫自費。
+    // 兩份資料講同一件事就要一起過期，而不是各自過期。
+    const rotavirus = vaccineSchedules.filter((v) => v.id.startsWith('rotavirus-'));
+
+    expect(rotavirus.length).toBeGreaterThan(0);
+    rotavirus.forEach((v) => {
+      expect(v.fundingChangesOn, `${v.id} 少了公費化日期`).toBe('2027-01-01');
+    });
   });
 });
