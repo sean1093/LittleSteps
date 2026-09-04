@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { ChildProfile, ToddlerWikiArticle, ToddlerWikiCategory } from '../../types';
-import { calculateAge } from '../../common/utils/dateHelpers';
+import { correctedAgeMonths } from '../../common/correctedAge';
 import { calculateAgeDisplay } from '../../common/utils/summaryCalculator';
 import WikiBrowser from '../../common/components/wiki/WikiBrowser';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
@@ -73,7 +73,8 @@ interface ToddlerWikiPageProps {
  * 篩不掉它們。
  */
 export default function ToddlerWikiPage({ currentChild, reminderBadge }: ToddlerWikiPageProps) {
-  const ageMonths = currentChild ? calculateAge(currentChild.birthday) : null;
+  // 分段對應的是發育階段（「這個年紀在鬧什麼」），所以早產兒用矯正年齡。
+  const ageMonths = currentChild ? correctedAgeMonths(currentChild) : null;
   const inToddlerRange =
     ageMonths !== null && ageMonths >= TODDLER_MIN_MONTHS && ageMonths < TODDLER_MAX_MONTHS;
 
