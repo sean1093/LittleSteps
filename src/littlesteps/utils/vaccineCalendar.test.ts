@@ -111,6 +111,32 @@ describe('buildVaccineIcs', () => {
     expect(descriptionsOf(ics)[0]).toContain('建議接種時間：出生滿2個月');
   });
 
+  it('qualifies the funding line when the row announces a funding change', () => {
+    // The event outlives the export. Read on the day of the appointment, which
+    // can be after the change date, a bare "self-paid" is the first thing a
+    // parent sees about a dose that is no longer self-paid.
+    const ics = unfold(
+      buildVaccineIcs(
+        child,
+        [schedule({ funding: 'self-paid', fundingChangesOn: '2027-01-01' })],
+        {},
+      ),
+    );
+    const description = descriptionsOf(ics)[0];
+
+    expect(description).toContain('自費');
+    expect(description).toContain('2027-01-01');
+  });
+
+  it('leaves the funding line alone when nothing is announced', () => {
+    const description = descriptionsOf(
+      unfold(buildVaccineIcs(child, [schedule({ funding: 'self-paid' })], {})),
+    )[0];
+
+    expect(description).toContain('自費');
+    expect(description).not.toMatch(/\d{4}-\d{2}-\d{2} 起/);
+  });
+
   it('carries the eligibility condition and the note the dose already has', () => {
     const ics = buildVaccineIcs(
       child,
