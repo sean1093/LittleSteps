@@ -63,7 +63,7 @@ export function organizationJsonLd(): JsonLd {
     name: SITE_NAME,
     url: SITE_ORIGIN,
     inLanguage: LANGUAGE,
-    description: '從懷孕、新生兒到 1-3 歲幼兒，五個服務陪台灣爸媽走過每個階段',
+    description: '從懷孕、新生兒到 1-3 歲幼兒，六個服務陪台灣爸媽走過每個階段',
     publisher: publisher(),
   };
 }

@@ -24,7 +24,7 @@ const PAGE_META: Record<Page, PageMeta> = {
   home: {
     title: 'LittleSteps｜從孕期到 3 歲的台灣育兒陪伴',
     description:
-      '孕期產檢、寶寶里程碑與疫苗、幼兒發展檢核、親子好去處與全台哺乳室地圖。五個服務，陪台灣爸媽走過每個階段。',
+      '孕期產檢、寶寶里程碑與疫苗、幼兒發展檢核、親子好去處、全台哺乳室地圖與每週兒童傳染病。六個服務，陪台灣爸媽走過每個階段。',
   },
   littlesteps: {
     title: 'LittleSteps 寶寶追蹤｜0-1 歲里程碑、疫苗與日常記錄',
