@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import StepsLanding from './StepsLanding';
+import StepsLanding, { FEATURES, PUBLIC_CONTENT } from './StepsLanding';
 import { MAX_CHILDREN } from '../childLimits';
+import { requiresAuth, serviceOf } from '../routePolicy';
+import { ROUTE_PATH, type Page } from '../../types/routes';
 
 /**
  * 這一頁是所有「需要登入的 LittleSteps 路由」在未登入時的落點：登出之後、
@@ -87,28 +89,64 @@ describe('StepsLanding', () => {
   });
 
   /**
-   * 以下兩條是防守，不是這次修好的東西：免登入的內容標記與睡眠指南入口是這
-   * 一頁比入口頁多給的兩件事，改版時最容易連著行銷段落一起被掃掉。
+   * 該列哪幾份內容不是這一頁自己說了算。
+   *
+   * 這一頁是未登入訪客唯一看得到「不用帳號也讀得到哪些東西」的地方——入口頁
+   * 只說了「知識內容不需登入」這句概括，睡眠指南的入口也只有這裡有。所以判準
+   * 在 routePolicy：凡是不需登入的 LittleSteps 內容頁，這裡就該列得出來。
+   *
+   * 拿 ROUTE_PATH 與 requiresAuth 反推，而不是在測試裡手抄三個標題：手抄的那
+   * 份會跟著 PUBLIC_CONTENT 一起被改，於是刪掉一項不會有任何測試變紅——這正是
+   * 寶寶百科那一項原本的處境。
    */
-  it('免登入的內容直接導過去，不先要求登入', async () => {
+  it('每一個免登入的 LittleSteps 內容頁都在這一頁列得出來', () => {
+    const readableWithoutAccount = (Object.keys(ROUTE_PATH) as Page[]).filter(
+      (page) =>
+        serviceOf(page) === 'littlesteps' && page !== 'littlesteps' && !requiresAuth(page),
+    );
+
+    expect([...PUBLIC_CONTENT.map((item) => item.page)].sort()).toEqual(
+      [...readableWithoutAccount].sort(),
+    );
+  });
+
+  /**
+   * 逐項點過去，所以第四項要是接錯了、或根本沒渲染出來，這一條就會變紅，
+   * 不必有人記得回來補測試。順帶守住「免登入」這件事本身：讀這些內容不該
+   * 觸發登入。
+   */
+  it('每一則免登入內容都導到自己的頁面，而且不要求登入', async () => {
     const user = userEvent.setup();
     const onNavigate = vi.fn();
     const onSignIn = vi.fn();
     render(<StepsLanding onNavigate={onNavigate} onSignIn={onSignIn} />);
 
-    await user.click(screen.getByRole('button', { name: /照顧重點/ }));
+    for (const item of PUBLIC_CONTENT) {
+      await user.click(
+        screen.getByRole('button', { name: (name) => name.includes(item.title) }),
+      );
+    }
 
-    expect(onNavigate).toHaveBeenCalledWith('littlesteps/care-guide');
+    expect(onNavigate.mock.calls.map(([page]) => page)).toEqual(
+      PUBLIC_CONTENT.map((item) => item.page),
+    );
     expect(onSignIn).not.toHaveBeenCalled();
   });
 
-  it('留著睡眠指南的入口', async () => {
-    const user = userEvent.setup();
-    const onNavigate = vi.fn();
-    render(<StepsLanding onNavigate={onNavigate} onSignIn={vi.fn()} />);
+  /**
+   * 這一段是整頁對「這是什麼、我為什麼要登入」的全部回答。整塊刪掉之前不會有
+   * 任何測試變紅，而未登入的訪客看不到它就沒有理由登入。
+   *
+   * 守的是「每一項都寫得出來」，不是「剛好有五項」：項目增減是文案決定，沒有
+   * 另一份清單可以拿來對帳。長度的斷言只為了讓陣列被清空時不會靜默通過。
+   */
+  it('登入後做得到什麼，每一項都寫得出來', () => {
+    renderPage();
 
-    await user.click(screen.getByRole('button', { name: /睡眠指南/ }));
-
-    expect(onNavigate).toHaveBeenCalledWith('littlesteps/sleep-training');
+    expect(FEATURES.length).toBeGreaterThan(0);
+    for (const feature of FEATURES) {
+      expect(screen.getByText(feature.title)).toBeInTheDocument();
+      expect(screen.getByText(feature.detail)).toBeInTheDocument();
+    }
   });
 });
