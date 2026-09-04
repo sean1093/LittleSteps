@@ -290,8 +290,13 @@ export interface SleepData {
   startTime: string; // ISO 8601 format
   endTime?: string; // ISO 8601 format, undefined means still sleeping
   duration?: number; // minutes, auto-calculated
-  quality?: 'good' | 'fair' | 'poor'; // sleep quality assessment
-  nightWakings?: number; // number of times woke up during sleep
+  /**
+   * 這一段睡眠中間醒來幾次，關掉一段睡眠時填。
+   *
+   * undefined 是「沒問到」，0 是「家長說沒醒」。兩者不能混為一談：睡眠品質
+   * 分數若把沒問到當成沒醒，每一筆舊紀錄都會被算成完美的一夜。
+   */
+  nightWakings?: number;
   notes?: string;
 }
 
@@ -352,7 +357,6 @@ export interface SleepPattern {
     startTime: string; // ISO 8601
     endTime?: string; // ISO 8601
     duration: number; // minutes
-    quality?: 'good' | 'fair' | 'poor';
     nightWakings?: number;
   }[];
   totalDuration: number; // minutes

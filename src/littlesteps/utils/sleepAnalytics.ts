@@ -81,56 +81,50 @@ export function detectSleepingThroughNight(logs: DailyLog[]): boolean {
 }
 
 /**
+ * 睡眠品質分數的兩個成分。
+ *
+ * 原本有三個：時長 40、夜醒 30、品質 30。後面兩個讀的欄位當時沒有任何畫面
+ * 寫得進去，所以每一段睡眠都固定拿到夜醒的滿分 30——等於對每一位家長宣稱
+ * 「寶寶整夜沒醒」——再加上品質缺值的中性 20。一百分裡有五十分是常數。
+ *
+ * 現在夜醒記得起來了，quality 則整個刪掉。缺值不能當成沒醒：沒問到給中性分，
+ * 家長明白記了 0 次才給滿分。舊紀錄因此會比改動前少大約 10 分，那正是把
+ * 「沒人記過的完美一夜」收回來的差額。
+ */
+const DURATION_POINTS = { optimal: 60, long: 45, short: 30, tooShort: 15 } as const;
+const WAKINGS_POINTS = { none: 40, one: 27, two: 13, many: 0, unrecorded: 20 } as const;
+
+function durationPoints(minutes: number): number {
+  // Optimal: 2-3 hours per nap for babies
+  if (minutes >= 120 && minutes <= 180) return DURATION_POINTS.optimal;
+  if (minutes >= 60) return DURATION_POINTS.long;
+  if (minutes >= 30) return DURATION_POINTS.short;
+  return DURATION_POINTS.tooShort;
+}
+
+function wakingsPoints(nightWakings: number | undefined): number {
+  if (nightWakings === undefined) return WAKINGS_POINTS.unrecorded;
+  if (nightWakings <= 0) return WAKINGS_POINTS.none;
+  if (nightWakings === 1) return WAKINGS_POINTS.one;
+  if (nightWakings === 2) return WAKINGS_POINTS.two;
+  return WAKINGS_POINTS.many;
+}
+
+/**
  * Calculate sleep quality score (0-100)
- * Based on: duration, night wakings, and quality field
+ * Based on: session duration and recorded night wakings.
  */
 export function calculateSleepQualityScore(logs: DailyLog[]): number {
-  const sleepLogs = filterSleepLogs(logs);
+  // 還在睡的那一段沒有時長可以評分。當成「0 分鐘的一段睡眠」會在寶寶正在睡
+  // 的那一刻把整天的分數拉下來，而那正是這個函式現在拒絕做的事：拿沒有的
+  // 資料當成壞消息。
+  const sleepLogs = filterSleepLogs(logs).filter((log) => (log.data as SleepData).endTime);
   if (sleepLogs.length === 0) return 0;
 
-  let totalScore = 0;
-
-  sleepLogs.forEach(log => {
+  const totalScore = sleepLogs.reduce((total, log) => {
     const sleepData = log.data as SleepData;
-    let sessionScore = 0;
-
-    // Duration score (0-40 points)
-    // Optimal: 2-3 hours per nap for babies
-    const duration = sleepData.duration || 0;
-    if (duration >= 120 && duration <= 180) {
-      sessionScore += 40;
-    } else if (duration >= 60) {
-      sessionScore += 30;
-    } else if (duration >= 30) {
-      sessionScore += 20;
-    } else {
-      sessionScore += 10;
-    }
-
-    // Night wakings score (0-30 points)
-    const wakings = sleepData.nightWakings || 0;
-    if (wakings === 0) {
-      sessionScore += 30;
-    } else if (wakings === 1) {
-      sessionScore += 20;
-    } else if (wakings === 2) {
-      sessionScore += 10;
-    }
-
-    // Quality field score (0-30 points)
-    if (sleepData.quality === 'good') {
-      sessionScore += 30;
-    } else if (sleepData.quality === 'fair') {
-      sessionScore += 20;
-    } else if (sleepData.quality === 'poor') {
-      sessionScore += 10;
-    } else {
-      // If no quality specified, give neutral score
-      sessionScore += 20;
-    }
-
-    totalScore += sessionScore;
-  });
+    return total + durationPoints(sleepData.duration || 0) + wakingsPoints(sleepData.nightWakings);
+  }, 0);
 
   return Math.round(totalScore / sleepLogs.length);
 }
@@ -368,7 +362,6 @@ export function getSleepPatternsByDate(logs: DailyLog[], days: number = 7, baseD
         startTime: sleepData.startTime,
         endTime: sleepData.endTime,
         duration: sleepData.duration || 0,
-        quality: sleepData.quality,
         nightWakings: sleepData.nightWakings
       };
     });

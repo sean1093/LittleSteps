@@ -21,7 +21,6 @@ describe('sleepAnalytics', () => {
   const createSleepLog = (
     timestamp: string,
     duration: number,
-    quality?: 'good' | 'fair' | 'poor',
     nightWakings?: number
   ): DailyLog => {
     const startTime = new Date(timestamp);
@@ -36,7 +35,6 @@ describe('sleepAnalytics', () => {
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
         duration,
-        quality,
         nightWakings
       } as SleepData,
       createdAt: timestamp
@@ -160,9 +158,9 @@ describe('sleepAnalytics', () => {
   describe('calculateTotalNightWakings', () => {
     it('should sum up all night wakings', () => {
       const logs: DailyLog[] = [
-        createSleepLog('2026-04-06T10:00:00Z', 120, 'good', 0),
-        createSleepLog('2026-04-06T14:00:00Z', 180, 'fair', 2),
-        createSleepLog('2026-04-06T18:00:00Z', 90, 'poor', 3)
+        createSleepLog('2026-04-06T10:00:00Z', 120, 0),
+        createSleepLog('2026-04-06T14:00:00Z', 180, 2),
+        createSleepLog('2026-04-06T18:00:00Z', 90, 3)
       ];
 
       const total = calculateTotalNightWakings(logs);
@@ -209,22 +207,80 @@ describe('sleepAnalytics', () => {
   });
 
   describe('calculateSleepQualityScore', () => {
-    it('should give high score for good quality sleep with no wakings', () => {
-      const logs: DailyLog[] = [
-        createSleepLog('2026-04-06T10:00:00Z', 150, 'good', 0)
-      ];
+    it('awards full marks to an optimal session the parent said had no wakings', () => {
+      const logs: DailyLog[] = [createSleepLog('2026-04-06T10:00:00Z', 150, 0)];
 
-      const score = calculateSleepQualityScore(logs);
-      expect(score).toBeGreaterThanOrEqual(80);
+      expect(calculateSleepQualityScore(logs)).toBe(100);
     });
 
-    it('should give lower score for poor quality sleep with wakings', () => {
-      const logs: DailyLog[] = [
-        createSleepLog('2026-04-06T10:00:00Z', 60, 'poor', 3)
-      ];
+    /*
+      A log written before night wakings could be recorded says nothing about
+      wakings. Scoring it as a perfect night is how the old implementation told
+      every parent their baby slept through: `nightWakings || 0` cannot tell
+      "the parent said zero" from "we never asked".
+    */
+    it('does not award the no-wakings marks when nothing was recorded', () => {
+      const unrecorded = calculateSleepQualityScore([
+        createSleepLog('2026-04-06T10:00:00Z', 150),
+      ]);
+      const recordedZero = calculateSleepQualityScore([
+        createSleepLog('2026-04-06T10:00:00Z', 150, 0),
+      ]);
 
-      const score = calculateSleepQualityScore(logs);
-      expect(score).toBeLessThan(60);
+      expect(unrecorded).toBeLessThan(recordedZero);
+      expect(unrecorded).toBe(80);
+    });
+
+    it('scores a broken night below a session whose wakings were never recorded', () => {
+      const brokenNight = calculateSleepQualityScore([
+        createSleepLog('2026-04-06T10:00:00Z', 150, 3),
+      ]);
+      const unrecorded = calculateSleepQualityScore([
+        createSleepLog('2026-04-06T10:00:00Z', 150),
+      ]);
+
+      expect(brokenNight).toBeLessThan(unrecorded);
+      expect(brokenNight).toBe(60);
+    });
+
+    it('should give lower score for a short session with wakings', () => {
+      const logs: DailyLog[] = [createSleepLog('2026-04-06T10:00:00Z', 60, 3)];
+
+      expect(calculateSleepQualityScore(logs)).toBeLessThan(60);
+    });
+
+    /*
+      A nap in progress has no duration to judge. Scoring it as a zero-minute
+      session made the number drop the moment a parent started a sleep and
+      climb back when they ended it, which is the clock talking, not the baby.
+    */
+    it('leaves a sleep still in progress out of the score', () => {
+      const finished = createSleepLog('2026-04-06T10:00:00Z', 150);
+      const inProgress: DailyLog = {
+        id: 'open',
+        childId: 'child123',
+        type: 'sleep',
+        timestamp: '2026-04-06T14:00:00Z',
+        data: { startTime: '2026-04-06T14:00:00Z' } as SleepData,
+        createdAt: '2026-04-06T14:00:00Z',
+      };
+
+      expect(calculateSleepQualityScore([finished, inProgress])).toBe(
+        calculateSleepQualityScore([finished])
+      );
+    });
+
+    it('returns 0 when nothing has finished yet', () => {
+      const inProgress: DailyLog = {
+        id: 'open',
+        childId: 'child123',
+        type: 'sleep',
+        timestamp: '2026-04-06T14:00:00Z',
+        data: { startTime: '2026-04-06T14:00:00Z' } as SleepData,
+        createdAt: '2026-04-06T14:00:00Z',
+      };
+
+      expect(calculateSleepQualityScore([inProgress])).toBe(0);
     });
 
     it('should return 0 for empty logs', () => {
@@ -336,8 +392,8 @@ describe('sleepAnalytics', () => {
   describe('analyzeSleepPatterns', () => {
     it('should generate comprehensive sleep analytics', () => {
       const logs: DailyLog[] = [
-        createSleepLog('2026-04-06T10:00:00Z', 360, 'good', 0), // 6 hours
-        createSleepLog('2026-04-06T18:00:00Z', 120, 'fair', 1)  // 2 hours
+        createSleepLog('2026-04-06T10:00:00Z', 360, 0), // 6 hours
+        createSleepLog('2026-04-06T18:00:00Z', 120, 1)  // 2 hours
       ];
       const baseDate = new Date('2026-04-07T00:00:00Z');
 
@@ -355,7 +411,7 @@ describe('sleepAnalytics', () => {
 
     it('should generate recommendations', () => {
       const logs: DailyLog[] = [
-        createSleepLog('2026-04-06T10:00:00Z', 360, 'good', 0)
+        createSleepLog('2026-04-06T10:00:00Z', 360, 0)
       ];
       const baseDate = new Date('2026-04-07T00:00:00Z');
 
@@ -392,7 +448,7 @@ describe('sleepAnalytics', () => {
 
     it('should calculate quality score for each date', () => {
       const logs: DailyLog[] = [
-        createSleepLog('2026-04-06T10:00:00Z', 180, 'good', 0)
+        createSleepLog('2026-04-06T10:00:00Z', 180, 0)
       ];
       const baseDate = new Date('2026-04-07T00:00:00Z');
 
