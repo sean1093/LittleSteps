@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent, { type UserEvent } from '@testing-library/user-event';
 import type { NursingRoom } from '../../types';
 import { ToastProvider } from '../../common/ui/toast';
+import { savePreferences } from '../../common/preferences';
 import BabyOasisPage from './BabyOasisPage';
 
 /**
@@ -421,5 +422,96 @@ describe('篩選', () => {
     expect(screen.getAllByTestId('marker')).toHaveLength(2);
     // 臺北市實際有 611 處，那份清單沒有人會讀。
     expect(screen.queryByText(/共 \d+ 處/)).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * 記住上次篩到哪裡。
+ *
+ * 重新整理最常發生在出門途中——手機把 PWA 重載一次，而那正是最不該重新篩一次
+ * 的時候。位置類的東西刻意不記：選定的捷運站與地圖視角在回答「我現在站在哪」，
+ * 沿用上一次只會把家長帶到昨天去過的地方。
+ */
+describe('記住上次的篩選條件', () => {
+  /** 重新整理：卸載再掛一次，只有記在裝置上的東西活得下來。 */
+  const reload = async () => {
+    cleanup();
+    return renderReady();
+  };
+
+  it('區域、場所類型與排除內部場所，重新整理之後都還在', async () => {
+    const user = await renderReady();
+    await user.click(screen.getByRole('button', { name: '全部縣市' }));
+    await user.click(await screen.findByRole('button', { name: '臺北市' }));
+    await user.click(screen.getByRole('button', { name: '百貨・賣場' }));
+    await user.click(screen.getByRole('button', { name: '排除內部場所' }));
+    expect(await screen.findByText('篩選後 2 處')).toBeInTheDocument();
+
+    await reload();
+
+    expect(await screen.findByText('篩選後 2 處')).toBeInTheDocument();
+    expect(screen.getAllByTestId('marker')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: '百貨・賣場' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: '排除內部場所' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  it('清掉裝置上的資料就回到沒有任何篩選', async () => {
+    const user = await renderReady();
+    await user.click(screen.getByRole('button', { name: '排除內部場所' }));
+    expect(await screen.findByText('篩選後 3 處')).toBeInTheDocument();
+
+    localStorage.clear();
+    await reload();
+
+    expect(await screen.findByText(`全台 ${ROOMS.length} 處哺乳室`)).toBeInTheDocument();
+    expect(screen.getAllByTestId('marker')).toHaveLength(ROOMS.length);
+  });
+
+  it('記下來的縣市在今天的資料裡不存在時就放掉，不留一張空地圖', async () => {
+    // 國健署會改場所名稱，某個縣市也可能一筆都不剩。留著那個縣市，家長會拿到
+    // 一張空地圖，而空地圖講不出它是因為上次的一個選擇才空的。
+    savePreferences({ oasisCity: '不存在市', oasisDistrict: '不存在區' });
+    await renderReady();
+
+    expect(await screen.findByText(`全台 ${ROOMS.length} 處哺乳室`)).toBeInTheDocument();
+    expect(screen.getAllByTestId('marker')).toHaveLength(ROOMS.length);
+  });
+
+  it('縣市還在但行政區不在了，就只放掉行政區', async () => {
+    savePreferences({ oasisCity: '臺北市', oasisDistrict: '不存在區' });
+    await renderReady();
+
+    // 臺北市那兩筆都留著，只是不再限在某一個行政區。
+    expect(await screen.findByText('篩選後 2 處')).toBeInTheDocument();
+  });
+
+  it('記下來的場所類型不是籌碼上那六個時就不套用', async () => {
+    // 辦公場所與學校有分類但沒有籌碼。套上去會讓地圖無聲地少掉一半，而家長
+    // 看不到自己在篩什麼。
+    savePreferences({ oasisCategory: 'workplace' });
+    await renderReady();
+
+    expect(await screen.findByText(`全台 ${ROOMS.length} 處哺乳室`)).toBeInTheDocument();
+  });
+
+  it('選定的捷運站不記——那是「現在站在哪」，不是「我家在哪」', async () => {
+    const user = await renderReady();
+    await user.click(screen.getByRole('button', { name: '捷運站' }));
+    await user.type(screen.getByRole('searchbox', { name: '搜尋捷運站' }), '忠孝復興');
+    await user.click(screen.getByRole('button', { name: '忠孝復興' }));
+    expect(await screen.findByRole('dialog', { name: '捷運忠孝復興站附近' })).toBeInTheDocument();
+
+    await reload();
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(
+      screen.getAllByTestId('marker').filter((marker) => marker.dataset.title),
+    ).toEqual([]);
   });
 });

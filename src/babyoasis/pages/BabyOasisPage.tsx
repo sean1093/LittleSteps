@@ -26,9 +26,10 @@ import AppBar from '../../common/ui/AppBar';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { sheet, tap } from '../../common/ui/motion';
+import { readPreferences, savePreferences } from '../../common/preferences';
 import { createSpatialIndex, distanceBetween, type Located } from '../utils/spatialIndex';
 import RoomSearch, { NO_FILTERS, type RoomFilters } from '../components/RoomSearch';
-import { categoryOf, isInternalVenue, needsStaffHelp } from '../utils/roomCategory';
+import { CATEGORY_CHIPS, categoryOf, isInternalVenue, needsStaffHelp } from '../utils/roomCategory';
 import type { MrtStation } from '../data/mrtStations';
 
 // Import leaflet CSS
@@ -536,6 +537,45 @@ type LoadState = 'loading' | 'ready' | 'failed';
  */
 const COLLATOR = new Intl.Collator('zh-Hant');
 
+/**
+ * 上次篩到哪裡。
+ *
+ * 選定的捷運站與地圖視角刻意不記：那兩個在回答「我現在站在哪」，而這個裝置記
+ * 的是「我家在哪、我在找什麼」——重新整理發生在出門途中，篩選要還在，位置不該
+ * 沿用上一次。
+ */
+function restoredFilters(): RoomFilters {
+  const stored = readPreferences();
+  return {
+    ...NO_FILTERS,
+    city: stored.oasisCity,
+    // 沒有縣市的行政區篩不出任何東西，一起放掉。
+    district: stored.oasisCity === null ? null : stored.oasisDistrict,
+    // 分類必須真的是籌碼上那六個。另外四類（辦公場所、學校…）沒有籌碼，套上
+    // 去只會讓地圖無聲地少掉一半，而家長看不到自己在篩什麼。
+    category: CATEGORY_CHIPS.find((chip) => chip === stored.oasisCategory) ?? null,
+    excludeInternal: stored.oasisExcludeInternal,
+  };
+}
+
+/**
+ * 把上次的區域條件對一次今天的資料。
+ *
+ * 國健署會改場所名稱，某個行政區也可能一筆都不剩。對不上的那一項就地放掉：留
+ * 著的話家長會拿到一張空地圖，而空地圖講不出它是因為上次的一個選擇才空的。
+ */
+function reconcileFilters(filters: RoomFilters, rooms: readonly NursingRoom[]): RoomFilters {
+  if (filters.city === null) return filters;
+  if (!rooms.some((room) => room.city === filters.city)) {
+    return { ...filters, city: null, district: null };
+  }
+  if (filters.district === null) return filters;
+  const present = rooms.some(
+    (room) => room.city === filters.city && room.district === filters.district,
+  );
+  return present ? filters : { ...filters, district: null };
+}
+
 const BabyOasisPage = () => {
   const toast = useToast();
   const theme = SERVICE_THEME.babyoasis;
@@ -545,7 +585,7 @@ const BabyOasisPage = () => {
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [showNearby, setShowNearby] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
-  const [filters, setFilters] = useState<RoomFilters>(NO_FILTERS);
+  const [filters, setFilters] = useState<RoomFilters>(restoredFilters);
   /*
     選定的捷運站是「定位點」而不是「篩選條件」：它不會拿掉任何一筆哺乳室，
     只是把附近清單與地圖的原點換成那一站。所以它不住在 RoomFilters 裡。
@@ -574,6 +614,8 @@ const BabyOasisPage = () => {
       .then((rooms) => {
         if (seq !== loadSeq.current) return;
         setNursingRooms(rooms);
+        // 上次記下的區域條件現在才對得起資料——資料到了才知道那個行政區還在不在。
+        setFilters((current) => reconcileFilters(current, rooms));
         setLoadState('ready');
       })
       .catch((error) => {
@@ -701,6 +743,21 @@ const BabyOasisPage = () => {
   const closeRoom = useCallback(() => setSelectedRoom(null), []);
   const closeNearby = useCallback(() => setShowNearby(false), []);
 
+  /*
+    篩到哪裡就記在裝置上，下次打開直接回到這裡：重新整理最常發生在出門途中，
+    而那正是最不該重新篩一次的時候。身分和 setFilters 一樣穩定，才不會每次
+    render 都換一個新的 prop 給搜尋列。
+  */
+  const handleFiltersChange = useCallback((next: RoomFilters) => {
+    setFilters(next);
+    savePreferences({
+      oasisCity: next.city,
+      oasisDistrict: next.district,
+      oasisCategory: next.category,
+      oasisExcludeInternal: next.excludeInternal,
+    });
+  }, []);
+
   /* 選了站就開清單，取消就收起來——按下去之後畫面必須有反應。 */
   const handleStation = useCallback((next: MrtStation | null) => {
     setStation(next);
@@ -771,7 +828,7 @@ const BabyOasisPage = () => {
               areaRooms={areaRooms}
               theme={theme}
               filters={filters}
-              onFiltersChange={setFilters}
+              onFiltersChange={handleFiltersChange}
               station={station}
               onStationChange={handleStation}
               onSelect={setSelectedRoom}
