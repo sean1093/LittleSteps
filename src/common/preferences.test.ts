@@ -107,6 +107,16 @@ describe('a blob that cannot be trusted', () => {
     expect(readPreferences()).toEqual(DEFAULTS);
   });
 
+  it('discards a blob that tries to reach the object prototype', () => {
+    // `JSON.parse` puts `__proto__` on the result as an own enumerable
+    // property, so the closed key set catches it for free — but only as long
+    // as the check stays a whitelist. A blacklist would not have.
+    localStorage.setItem(KEY, '{"__proto__":{"polluted":true},"guardCounty":"\u9ad8\u96c4\u5e02"}');
+
+    expect(readPreferences()).toEqual(DEFAULTS);
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+  });
+
   it('recovers from a bad blob as soon as something is saved', () => {
     localStorage.setItem(KEY, 'not json at all');
     savePreferences({ guardCounty: '高雄市' });
