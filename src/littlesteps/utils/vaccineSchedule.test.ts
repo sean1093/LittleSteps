@@ -6,6 +6,7 @@ import {
   DUE_WINDOW_DAYS,
   OVERDUE_LOOKBACK_DAYS,
   actionableVaccineDoses,
+  nextScheduledDose,
   resolveVaccineDoses,
 } from './vaccineSchedule';
 
@@ -174,6 +175,150 @@ describe('actionableVaccineDoses', () => {
     const actionable = actionableVaccineDoses(doses, at('2026-01-18'));
 
     expect(actionable.some((dose) => dose.vaccineId === 'hepb-birth')).toBe(true);
+  });
+});
+
+describe('nextScheduledDose', () => {
+  // 全部用上面的合成 vaccine()，不碰真實資料：這裡要釘的是規則，而不是
+  // 某一版時程表剛好長什麼樣子。
+
+  it('自費劑次不會被當成下一劑，即使它排在公費劑次前面', () => {
+    // 這就是 bug 的形狀：自費劑次落在出生、2、4、6、18 個月，排序上全在前面，
+    // 於是家長把公費打完後被告知「下次接種」是一支要自己付錢的產品。
+    const today = at('2026-03-20');
+    const doses = resolveVaccineDoses(
+      BIRTHDAY,
+      [
+        vaccine({ id: 'paid', ageInMonths: 2, funding: 'self-paid' }),
+        vaccine({ id: 'free', ageInMonths: 4, funding: 'national' }),
+      ],
+      {},
+      today,
+    );
+
+    // 前提要成立：自費那一劑真的排在前面，而且真的已經到期。
+    expect(doses[0].vaccineId).toBe('paid');
+    expect(doses[0].status).toBe('due');
+
+    expect(nextScheduledDose(doses, today)?.vaccineId).toBe('free');
+  });
+
+  it('公費以外的三種付費方式都不是下一劑', () => {
+    const today = at('2026-03-20');
+    const others: Array<VaccineSchedule['funding']> = [
+      'self-paid',
+      'nhi-conditional',
+      'local-varies',
+    ];
+
+    others.forEach((funding) => {
+      const doses = resolveVaccineDoses(BIRTHDAY, [vaccine({ funding })], {}, today);
+
+      expect(doses[0].status).toBe('due');
+      expect(nextScheduledDose(doses, today), funding).toBeUndefined();
+    });
+  });
+
+  it('打完一劑就往同系列的下一劑走', () => {
+    const progress: VaccineProgress = {
+      multi: { doses: { 1: { administered: true, administeredDate: '2026-03-16' } } },
+    };
+    const today = at('2026-03-20');
+    const doses = resolveVaccineDoses(
+      BIRTHDAY,
+      [
+        vaccine({ id: 'multi', currentDose: 1, ageInMonths: 2 }),
+        vaccine({ id: 'multi', currentDose: 2, ageInMonths: 4 }),
+      ],
+      progress,
+      today,
+    );
+
+    expect(nextScheduledDose(doses, today)?.doseNumber).toBe(2);
+  });
+
+  it('還沒到的劑次就是下一劑——那正是「下次接種」要回答的', () => {
+    // 和提醒清單的差別只在這裡：未來的劑次是下一劑，但不是今天的待辦。
+    const today = at('2026-02-01');
+    const doses = resolveVaccineDoses(BIRTHDAY, [vaccine({ id: 'two-month' })], {}, today);
+
+    expect(doses[0].status).toBe('upcoming');
+    expect(nextScheduledDose(doses, today)?.vaccineId).toBe('two-month');
+    expect(actionableVaccineDoses(doses, today)).toEqual([]);
+  });
+
+  it('逾期的劑次仍然是下一劑，不會被跳到還沒到的那一劑', () => {
+    // 只挑「還沒到」的是相反方向的同一種壞掉：落後的家長最需要看到的，
+    // 正是那一劑逾期的，而不是三個月後的下一站。
+    const today = at('2026-05-01');
+    const doses = resolveVaccineDoses(
+      BIRTHDAY,
+      [vaccine({ id: 'behind', ageInMonths: 2 }), vaccine({ id: 'ahead', ageInMonths: 6 })],
+      {},
+      today,
+    );
+
+    expect(doses[0].status).toBe('overdue');
+    expect(doses[1].status).toBe('upcoming');
+    expect(nextScheduledDose(doses, today)?.vaccineId).toBe('behind');
+  });
+
+  it('還沒出生的孩子，下一劑是出生那一劑', () => {
+    // 生日填在未來（預產期先建檔）時，每一劑都還沒到，最早的那一劑才是答案。
+    const today = at('2026-05-01');
+    const doses = resolveVaccineDoses(
+      '2026-06-01',
+      [vaccine({ id: 'birth', ageInMonths: 0 }), vaccine({ id: 'two-month' })],
+      {},
+      today,
+    );
+
+    expect(nextScheduledDose(doses, today)?.vaccineId).toBe('birth');
+  });
+
+  it('逾期到回顧範圍的最後一天還算下一劑，再過一天就不算', () => {
+    // 到期日 2026-01-15，寬容 30 天後開始逾期，回顧 90 天：第 120 天是邊界。
+    // 過了這條線的劑次是要和醫師對帳的病史，不是往前的下一步。
+    const rows = [vaccine({ id: 'birth', ageInMonths: 0 })];
+    const lastDay = at('2026-05-15');
+    const dayAfter = at('2026-05-16');
+
+    expect(OVERDUE_LOOKBACK_DAYS + DUE_WINDOW_DAYS).toBe(120);
+    expect(
+      nextScheduledDose(resolveVaccineDoses(BIRTHDAY, rows, {}, lastDay), lastDay)?.vaccineId,
+    ).toBe('birth');
+    expect(
+      nextScheduledDose(resolveVaccineDoses(BIRTHDAY, rows, {}, dayAfter), dayAfter),
+    ).toBeUndefined();
+  });
+
+  it('已經打完的公費劑次不會又被端出來', () => {
+    const progress: VaccineProgress = {
+      v1: { doses: { 1: { administered: true, administeredDate: '2026-03-16' } } },
+    };
+    const today = at('2026-03-20');
+    const doses = resolveVaccineDoses(BIRTHDAY, [vaccine()], progress, today);
+
+    expect(nextScheduledDose(doses, today)).toBeUndefined();
+  });
+
+  it('有到期劑次時，下一劑就是提醒清單的第一筆', () => {
+    // 兩條路徑各走各的正是這個 bug 的來源，所以把它們一致的地方也釘住。
+    const today = at('2026-05-01');
+    const doses = resolveVaccineDoses(
+      BIRTHDAY,
+      [
+        vaccine({ id: 'paid-birth', ageInMonths: 0, funding: 'self-paid' }),
+        vaccine({ id: 'overdue-free', ageInMonths: 2 }),
+        vaccine({ id: 'later-free', ageInMonths: 6 }),
+      ],
+      {},
+      today,
+    );
+    const actionable = actionableVaccineDoses(doses, today);
+
+    expect(actionable.length).toBeGreaterThan(0);
+    expect(nextScheduledDose(doses, today)).toBe(actionable[0]);
   });
 });
 
