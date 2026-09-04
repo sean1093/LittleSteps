@@ -1,10 +1,40 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { RadarCell, RadarData } from '../../types';
+import type { ChildProfile, RadarCell, RadarData } from '../../types';
 import { DISEASE_PART_OF } from '../data/diseases';
 import { STATUS_COPY } from '../utils/radar';
+import { savePreferences } from '../../common/preferences';
 import RadarPage from './RadarPage';
+
+/*
+  這一頁只從孩子身上讀一件事：生日，用來決定年齡層的預設值。真正的 provider
+  要 Firebase，而未登入的 store 永遠拿不到孩子，所以把 hook 換掉是唯一的接縫。
+*/
+const { childStore } = vi.hoisted(() => ({
+  childStore: { current: null as { currentChild: ChildProfile } | null },
+}));
+
+vi.mock('../../common/contexts/ChildStoreContext', () => ({
+  useOptionalChildStore: () => childStore.current,
+}));
+
+/**
+ * 一份最小的寶寶檔案。姓名與 id 刻意給得認得出來：那樣才驗得出它們沒有被寫進
+ * 裝置。
+ */
+function child(birthday: string): ChildProfile {
+  return {
+    id: 'c-9c1f7a44',
+    name: '小明',
+    birthday,
+    milestoneProgress: {},
+    vaccineProgress: {},
+    createdAt: '2022-03-14T00:00:00.000Z',
+    createdBy: 'u-1',
+    members: { 'u-1': true },
+  };
+}
 
 function cell(overrides: Partial<RadarCell> = {}): RadarCell {
   return {
@@ -111,9 +141,16 @@ async function renderReady(data: RadarData = fixture()) {
   return user();
 }
 
+/** 重新整理：卸載再掛一次，只有記在裝置上的東西活得下來。 */
+async function reload(data: RadarData) {
+  cleanup();
+  return renderReady(data);
+}
+
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.setSystemTime(new Date('2026-09-03T00:00:00Z'));
+  childStore.current = null;
 });
 
 afterEach(() => {
@@ -285,6 +322,130 @@ describe('縣市與年齡層', () => {
     expect(screen.getAllByText('資料不足').length).toBe(4);
     await it.click(screen.getByRole('button', { name: '3-6 歲' }));
     expect(screen.getAllByText('樣本偏小，僅供參考').length).toBe(4);
+  });
+});
+
+/**
+ * 記住上次的選擇。
+ *
+ * 這一頁是每週的習慣：住高雄、孩子四歲的家長，過去每一週打開都得先點兩顆籌碼
+ * 才讀得到自己要的那塊板，一年五十二次。
+ *
+ * 年齡層的優先順序是刻意的：孩子的生日 > 上次點的 > 預設。生日贏過上次點的，
+ * 因為孩子的年齡是更好的答案而且它自己會變；但這一頁完全公開，多數訪客根本沒
+ * 有寶寶檔案，所以「上次點的」那一段必須能單獨成立。
+ */
+describe('記住上次選的縣市與年齡層', () => {
+  /** fixture 沒有高雄市，補一份和花蓮縣一樣的板進去。 */
+  const withKaohsiung = () => {
+    const data = fixture();
+    data.counties['高雄市'] = data.counties['花蓮縣'];
+    return data;
+  };
+
+  it('選了高雄市和 3-6 歲，重新整理之後還是高雄市和 3-6 歲', async () => {
+    const data = withKaohsiung();
+    const it = await renderReady(data);
+    await it.click(screen.getByRole('button', { name: '高雄市' }));
+    await it.click(screen.getByRole('button', { name: '3-6 歲' }));
+
+    await reload(data);
+
+    expect(screen.getByRole('button', { name: '高雄市' })).toHaveClass('chip-on');
+    expect(screen.getByRole('button', { name: '3-6 歲' })).toHaveClass('chip-on');
+  });
+
+  it('清掉裝置上的資料就回到原本的行為', async () => {
+    const data = withKaohsiung();
+    const it = await renderReady(data);
+    await it.click(screen.getByRole('button', { name: '高雄市' }));
+    await it.click(screen.getByRole('button', { name: '7-12 歲' }));
+
+    localStorage.clear();
+    await reload(data);
+
+    expect(screen.getByRole('button', { name: '花蓮縣' })).toHaveClass('chip-on');
+    expect(screen.getByRole('button', { name: '0-2 歲' })).toHaveClass('chip-on');
+  });
+
+  it('記下來的縣市不在資料裡時，退得和預設值一樣，不出錯誤畫面', async () => {
+    // 上游哪天把縣市改個字，或家長換了資料版本：記著的那個縣市可能整個消失。
+    savePreferences({ guardCounty: '不存在市' });
+    await renderReady();
+
+    expect(screen.getByRole('button', { name: '花蓮縣' })).toHaveClass('chip-on');
+    expect(screen.queryByText(/現在抓不到資料/)).not.toBeInTheDocument();
+  });
+
+  it('記下來的年齡層不在資料裡時，退回預設值，不出錯誤畫面', async () => {
+    // 這一段比縣市更要緊：對不上的年齡層會讓 cells 變成 undefined，整頁就成了
+    // 「現在抓不到資料」——被一個上次的點擊弄壞。
+    savePreferences({ guardAgeBand: '13~18' });
+    await renderReady();
+
+    expect(screen.getByRole('button', { name: '0-2 歲' })).toHaveClass('chip-on');
+    expect(screen.queryByText(/現在抓不到資料/)).not.toBeInTheDocument();
+  });
+
+  it('未登入時，上次點的年齡層贏過預設值', async () => {
+    savePreferences({ guardAgeBand: '7~12' });
+    await renderReady();
+
+    expect(screen.getByRole('button', { name: '7-12 歲' })).toHaveClass('chip-on');
+  });
+
+  it('登入且孩子四歲時，不必點就停在 3-6 歲', async () => {
+    childStore.current = { currentChild: child('2022-03-14') };
+    await renderReady();
+
+    expect(screen.getByRole('button', { name: '3-6 歲' })).toHaveClass('chip-on');
+    expect(screen.getByRole('button', { name: '0-2 歲' })).not.toHaveClass('chip-on');
+  });
+
+  it('孩子的生日贏過上次點的年齡層', async () => {
+    // 家長上次點了 0-2 歲，孩子今年四歲。孩子的年齡是更好的答案，而且它自己
+    // 會變——這是刻意的，不是把上次的選擇弄丟了。
+    savePreferences({ guardAgeBand: '0~2' });
+    childStore.current = { currentChild: child('2022-03-14') };
+    await renderReady();
+
+    expect(screen.getByRole('button', { name: '3-6 歲' })).toHaveClass('chip-on');
+  });
+
+  it('這次點的年齡層贏過孩子的生日——那是家長剛剛的動作', async () => {
+    childStore.current = { currentChild: child('2022-03-14') };
+    const it = await renderReady();
+    await it.click(screen.getByRole('button', { name: '0-2 歲' }));
+
+    expect(screen.getByRole('button', { name: '0-2 歲' })).toHaveClass('chip-on');
+    expect(screen.getByRole('button', { name: '3-6 歲' })).not.toHaveClass('chip-on');
+  });
+
+  it('孕期檔案不參與推論，年齡層留給上次點的', async () => {
+    savePreferences({ guardAgeBand: '7~12' });
+    childStore.current = {
+      currentChild: { ...child('2026-12-01'), isPregnancy: true, name: '寶寶' },
+    };
+    await renderReady();
+
+    expect(screen.getByRole('button', { name: '7-12 歲' })).toHaveClass('chip-on');
+  });
+
+  it('裝置上不會留下孩子的姓名、生日或 id', async () => {
+    // 這是這個模組存在的理由所守的那條線：孩子的紀錄在登入之後才拿得到，而
+    // localStorage 既不需要登入，登出也不會清掉。畫面上顯示的 3-6 歲是從生日
+    // 推出來的，所以連它都不寫——能重算的東西存起來只會變成過期的值。
+    const data = withKaohsiung();
+    childStore.current = { currentChild: child('2022-03-14') };
+    const it = await renderReady(data);
+    await it.click(screen.getByRole('button', { name: '高雄市' }));
+
+    const dump = Object.entries(localStorage).map(([key, value]) => `${key}=${value}`).join('\n');
+    expect(dump).toContain('高雄市');
+    for (const secret of ['小明', '2022-03-14', 'c-9c1f7a44', 'u-1']) {
+      expect(dump).not.toContain(secret);
+    }
+    expect(dump).not.toContain('3~6');
   });
 });
 

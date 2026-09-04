@@ -7,15 +7,45 @@ import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger } from '../../common/ui/motion';
 import { useCentreSelectedChip } from '../../common/ui/useCentreSelectedChip';
-import type { RadarData } from '../../types';
+import { useOptionalChildStore } from '../../common/contexts/ChildStoreContext';
+import { readPreferences, savePreferences } from '../../common/preferences';
+import { isPregnancyProfile } from '../../common/pregnancy';
+import { calculateAge } from '../../common/utils/dateHelpers';
+import type { ChildProfile, RadarData } from '../../types';
 import { DISEASE_PART_OF } from '../data/diseases';
 import CountyPicker from '../components/CountyPicker';
 import DiseaseDrawer from '../components/DiseaseDrawer';
 import DiseaseRow from '../components/DiseaseRow';
 import { AGE_LABEL, formatWeekRange, freshnessOf, summariseBoard } from '../utils/radar';
 
-/** 全 repo 沒有偏好持久化機制，總得有個起點；台北市是最多人一眼認得的那個。 */
+/** 沒記到上次選的縣市時的起點；台北市是最多人一眼認得的那個。 */
 const DEFAULT_COUNTY = '台北市';
+
+/** 同理，沒記錄、也推不出孩子年齡時的年齡層起點。 */
+const DEFAULT_AGE = '0~2';
+
+/** 年齡層字串的形狀，例如 `0~2`。掛在模組層，免得每次 render 重建一個。 */
+const AGE_BAND_RANGE = /^(\d+)~(\d+)$/;
+
+/**
+ * 從生日推出年齡層。
+ *
+ * 年齡層怎麼切是上游資料自己講的，所以照它給的字串算，不在這裡寫死名單——上游
+ * 哪天多切一段，家長的孩子照樣對得上。孕期檔案還沒有出生的孩子，不參與推論。
+ *
+ * 推出來的值只活在記憶體裡，不會寫進裝置：那是孩子的資料（見
+ * common/preferences 的邊界說明）。
+ */
+function bandForChild(child: ChildProfile | undefined, bands: readonly string[]): string | null {
+  if (!child || isPregnancyProfile(child)) return null;
+  const years = Math.floor(calculateAge(child.birthday) / 12);
+  return (
+    bands.find((band) => {
+      const range = AGE_BAND_RANGE.exec(band);
+      return range !== null && years >= Number(range[1]) && years <= Number(range[2]);
+    }) ?? null
+  );
+}
 
 const NIDSS = 'https://nidss.cdc.gov.tw/';
 
@@ -46,15 +76,20 @@ const HeaderActions = () => (
  * 是文字不是箭頭、顏色最強只到 butter-dark、資料過期就收起狀態而不是顯示一個
  * 可能已經錯的判斷。
  *
- * 純公開資料：這一頁不讀任何孩子的資料，也不需要登入。
+ * 不需要登入，板上的資料全部公開。唯一用到孩子的地方是年齡層的預設值：已登入
+ * 且有寶寶檔案時照生日推，家長就不必每次自己點。那是記憶體裡的一次計算，不寫
+ * 進裝置，也不影響任何一列的內容。
  */
 export default function RadarPage() {
   const theme = SERVICE_THEME.littleguard;
   const [data, setData] = useState<RadarData | null>(null);
   const [failed, setFailed] = useState(false);
-  const [picked, setPicked] = useState<string | null>(null);
-  const [age, setAge] = useState('0~2');
+  // 上次選的縣市與年齡層。只讀一次：讀完之後，畫面上的選擇才是唯一的真相。
+  const [stored] = useState(readPreferences);
+  const [picked, setPicked] = useState<string | null>(stored.guardCounty);
+  const [pickedAge, setPickedAge] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
+  const currentChild = useOptionalChildStore()?.currentChild;
 
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}data/diseaseRadar.json`)
@@ -68,8 +103,23 @@ export default function RadarPage() {
 
   const counties = useMemo(() => (data ? Object.keys(data.counties) : []), [data]);
   // 上游哪天把「台北市」寫成「臺北市」，家長該看到的是別的縣市的板，不是一片
-  // 「現在抓不到資料」——那個錯誤畫面救不了一個只是名字對不上的預設值。
-  const county = picked ?? (counties.includes(DEFAULT_COUNTY) ? DEFAULT_COUNTY : (counties[0] ?? ''));
+  // 「現在抓不到資料」——那個錯誤畫面救不了一個只是名字對不上的預設值。上次存
+  // 的縣市走同一條路：對不上今天的資料就當沒存過。
+  const chosen = picked !== null && counties.includes(picked) ? picked : null;
+  const county = chosen ?? (counties.includes(DEFAULT_COUNTY) ? DEFAULT_COUNTY : (counties[0] ?? ''));
+
+  /*
+    年齡層的優先順序：這次點的 > 孩子的生日 > 上次點的 > 預設。
+
+    生日贏過上次點的，因為孩子的年齡是更好的答案，而且它自己會變；這次點的又
+    贏過生日，因為那是家長剛剛的動作。上次存的一樣要對得上今天的資料——對不上
+    的話 cells 會是 undefined，整頁會變成「現在抓不到資料」。
+  */
+  const bands = data?.ageBands ?? [];
+  const storedAge =
+    stored.guardAgeBand !== null && bands.includes(stored.guardAgeBand) ? stored.guardAgeBand : null;
+  const age = pickedAge ?? bandForChild(currentChild, bands) ?? storedAge ?? DEFAULT_AGE;
+
   const { scrollerRef, selectedRef } = useCentreSelectedChip(age);
 
   const freshness = data ? freshnessOf(data.weekEnd) : 'fresh';
@@ -93,6 +143,20 @@ export default function RadarPage() {
           .map((part) => ({ disease: part, cell: cells[part] })),
       }));
   }, [data, cells]);
+
+  /*
+    選了就記起來，下次打開直接停在這裡——這一頁是每週的習慣，兩顆籌碼一年要點
+    五十二次。只記家長自己點的：從生日推出來的年齡層是孩子的資料，不進裝置。
+  */
+  const chooseCounty = (next: string) => {
+    setPicked(next);
+    savePreferences({ guardCounty: next });
+  };
+
+  const chooseAge = (next: string) => {
+    setPickedAge(next);
+    savePreferences({ guardAgeBand: next });
+  };
 
   if (failed || (data && !cells)) {
     return (
@@ -152,7 +216,7 @@ export default function RadarPage() {
               </p>
             </section>
 
-            <CountyPicker counties={counties} selected={county} onSelect={setPicked} />
+            <CountyPicker counties={counties} selected={county} onSelect={chooseCounty} />
 
             <section className="space-y-2">
               <h2 className="text-sm font-medium text-ink-muted">孩子的年齡</h2>
@@ -164,7 +228,7 @@ export default function RadarPage() {
                       key={band}
                       ref={isSelected ? selectedRef : undefined}
                       type="button"
-                      onClick={() => setAge(band)}
+                      onClick={() => chooseAge(band)}
                       aria-pressed={isSelected}
                       // 同 CountyPicker：蓋掉 .chip-on 的珊瑚紅，換服務自己的靖藍。
                       className={`chip shrink-0 ${
