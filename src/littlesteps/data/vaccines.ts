@@ -44,7 +44,7 @@ export const vaccineSchedules: VaccineSchedule[] = [
     doses: 1,
     currentDose: 1,
     sideEffects: ["皮疹", "接種部位疼痛"],
-    notes: "疾管署核准的兩種RSV單株抗體之一，不是每一種都要自費——符合條件的高危險群幼兒有健保給付"
+    notes: "疾管署核准的RSV單株抗體有2種，這是每月接種的那一種；另一種為長效、接種1-2劑"
   },
   {
     id: "rsv-birth",

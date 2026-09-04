@@ -75,7 +75,7 @@ describe('vaccineSchedules 時程正確性', () => {
 describe('vaccineSchedules 的出處', () => {
   it('每一劑都有 https 的出處', () => {
     const missing = vaccineSchedules
-      .filter((v) => !/^https:\/\/\S+$/.test(v.sourceUrl ?? ''))
+      .filter((v) => !/^https:\/\/\S+$/.test(v.sourceUrl))
       .map((v) => `${v.id} ${v.name}`);
 
     expect(missing, '新增劑次請一併標出處，不要留空也不要編一個').toEqual([]);

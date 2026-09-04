@@ -47,7 +47,9 @@ group headings answer it rather than leaving six equal rows to be read through.
 ### LittleSteps — baby growth tracking
 - **Growth overview** — one screen summarising milestones, vaccines, sleep, nappies and food
 - **Milestone tracking** — 33 milestones across physical, motor, cognitive and feeding
-- **Vaccine tracking** — 33 doses on Taiwan's MOHW schedule, each carrying how it is funded (21 government-funded, 1 conditionally reimbursed by the NHI, 11 self-paid) and the CDC page it came from, with side-effect and emergency guidance
+- **Vaccine tracking** — 33 doses on Taiwan's MOHW schedule (21 government-funded,
+  1 conditionally reimbursed by the NHI, 11 self-paid), each citing the CDC page it
+  came from, with side-effect and emergency guidance
 - **Quick log** — feeding, sleep and nappies in a couple of taps
 - **Sleep analysis** — patterns, quality scoring and advice from the logs
 - **Sleep guide** — sleep needs from 0 to 3 years, safety rules and training methods
