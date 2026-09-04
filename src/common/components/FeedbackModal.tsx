@@ -46,7 +46,7 @@ const LABEL = 'block text-sm font-medium text-ink mb-1';
  */
 function ReportContext({ target }: { target: VenueReportTarget }) {
   return (
-    <div className="mb-4 p-4 bg-secondary-soft rounded-2xl">
+    <div className={`mb-4 p-4 rounded-2xl ${SERVICE_THEME[target.service].tint}`}>
       <p className="text-sm font-semibold text-ink">{target.name}</p>
       <p className="text-xs text-ink-muted mt-0.5">{target.address}</p>
       <dl className="mt-2 space-y-1">
@@ -86,6 +86,55 @@ function SignInNotice({ onSignIn }: { onSignIn: () => void }) {
   );
 }
 
+/**
+ * 五個原因，單選。
+ *
+ * 選項的顏色跟著這份資料所屬的服務走：`.chip-on` 的珊瑚紅是 LittleSteps 的
+ * 品牌色，而這張表單是從哺乳室地圖或親子好去處的畫面上開出來的。做法比照
+ * RoomSearch 的篩選籤。
+ */
+function ReasonChips({
+  service,
+  value,
+  onPick,
+  disabled,
+}: {
+  service: VenueReportTarget['service'];
+  value: VenueReportReason | null;
+  onPick: (reason: VenueReportReason | null) => void;
+  disabled: boolean;
+}) {
+  const theme = SERVICE_THEME[service];
+
+  return (
+    <fieldset disabled={disabled}>
+      <legend className={LABEL}>
+        哪裡不對？ <span className="text-primary-dark">*</span>
+      </legend>
+      <div className="flex flex-wrap gap-2">
+        {VENUE_REPORT_REASONS.map((id) => {
+          const isOn = value === id;
+          return (
+            <motion.button
+              key={id}
+              type="button"
+              whileTap={tap}
+              // 再按一次同一顆就是取消，和篩選籤一致。
+              onClick={() => onPick(isOn ? null : id)}
+              aria-pressed={isOn}
+              className={`chip ${
+                isOn ? `chip-on ${theme.fill} ${theme.fillText} border-transparent` : ''
+              }`}
+            >
+              {VENUE_REPORT_REASON_LABEL[id]}
+            </motion.button>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
+
 export default function FeedbackModal({
   isOpen,
   onClose,
@@ -94,6 +143,7 @@ export default function FeedbackModal({
   venue,
 }: FeedbackModalProps) {
   const [title, setTitle] = useState('');
+  // 家長打的那段自由文字：一般回報的必填內容，場館回報的選填補充。
   const [content, setContent] = useState('');
   const [reason, setReason] = useState<VenueReportReason | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -162,10 +212,6 @@ export default function FeedbackModal({
   const contentLength = content.trim().length;
   const isContentValid = contentLength >= 10;
 
-  // `.chip-on` 的珊瑚紅是 LittleSteps 的品牌色；回報表單是從某個服務的畫面上
-  // 開出來的，選項就跟著那個服務的顏色，做法比照 RoomSearch 的篩選籤。
-  const theme = venue ? SERVICE_THEME[venue.target.service] : null;
-
   const errorBox = error && (
     <div className="bg-primary-light border border-primary/40 rounded-2xl p-3">
       <p className="text-sm text-primary-dark">{error}</p>
@@ -187,33 +233,15 @@ export default function FeedbackModal({
             <SignInNotice onSignIn={venue.signIn} />
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-              <fieldset disabled={isSubmitting}>
-                <legend className={LABEL}>
-                  哪裡不對？ <span className="text-primary-dark">*</span>
-                </legend>
-                <div className="flex flex-wrap gap-2">
-                  {VENUE_REPORT_REASONS.map((id) => {
-                    const isOn = reason === id;
-                    return (
-                      <motion.button
-                        key={id}
-                        type="button"
-                        whileTap={tap}
-                        onClick={() => {
-                          setReason(isOn ? null : id);
-                          setError(null);
-                        }}
-                        aria-pressed={isOn}
-                        className={`chip ${
-                          isOn && theme ? `chip-on ${theme.fill} ${theme.fillText} border-transparent` : ''
-                        }`}
-                      >
-                        {VENUE_REPORT_REASON_LABEL[id]}
-                      </motion.button>
-                    );
-                  })}
-                </div>
-              </fieldset>
+              <ReasonChips
+                service={venue.target.service}
+                value={reason}
+                onPick={(picked) => {
+                  setReason(picked);
+                  setError(null);
+                }}
+                disabled={isSubmitting}
+              />
 
               <div>
                 <label htmlFor="venueReportNote" className={LABEL}>
