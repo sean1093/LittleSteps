@@ -183,6 +183,14 @@ const useSheetDialog = (onClose: () => void) => {
   return ref;
 };
 
+/**
+ * 交給 useSheetDialog 當「這次 Escape 不關我」用的關閉函式。
+ *
+ * 放在模組層而不是元件裡：useSheetDialog 的監聽器跟著 onClose 的身分重掛，
+ * 每次 render 生一顆新的 arrow 會讓它每次 render 都拆掉再裝一次。
+ */
+const IGNORE_ESCAPE = () => {};
+
 // Bottom sheet for selected room
 interface RoomDetailSheetProps {
   room: NursingRoom;
@@ -196,7 +204,17 @@ interface RoomDetailSheetProps {
  */
 const RoomDetailSheet = ({ room, onClose }: RoomDetailSheetProps) => {
   const theme = SERVICE_THEME.babyoasis;
-  const dialogRef = useSheetDialog(onClose);
+
+  /*
+    回報表單開著的時候，Escape 只該關那張表單。
+
+    這張面板與 ModalFrame 的 Escape 監聽器都掛在 document 上，同一次按鍵兩
+    邊都收得到——不讓路的話按一次 Escape 會把面板也關掉，家長回到地圖時連
+    自己剛剛在看哪一筆都沒了。讓外層退開，而不是讓內層去搶事件：closeDisabled
+    期間該不該關，是 ModalFrame 自己的規則，不該在這裡複製一份。
+  */
+  const [reporting, setReporting] = useState(false);
+  const dialogRef = useSheetDialog(reporting ? IGNORE_ESCAPE : onClose);
 
   // 來源未提供設施細目時 facilities 是 undefined，與「十項設施都沒有」意義不同，
   // 必須分開呈現，否則會把資料闕漏講成場所簡陋。
@@ -296,6 +314,7 @@ const RoomDetailSheet = ({ room, onClose }: RoomDetailSheetProps) => {
             放在這一筆資料旁邊，未登入照樣看得到。 */}
         <VenueReportButton
           className="w-full mt-2"
+          onOpenChange={setReporting}
           target={{
             service: 'babyoasis',
             id: room.id,
