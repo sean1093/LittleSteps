@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import type { GrowthRecord } from '../../types';
 import { useGrowthTracking } from './useGrowthTracking';
 
 /**
@@ -17,7 +18,8 @@ type Next = (snapshot: { val: () => unknown }) => void;
 type Cancel = (error: Error) => void;
 
 const subscriptions = new Map<string, { next: Next; cancel: Cancel }>();
-const writes: { path: string; value: unknown }[] = [];
+/** 這個 hook 只會寫成長紀錄，所以在 mock 這個邊界收斂成該型別一次。 */
+const writes: { path: string; value: Partial<GrowthRecord> }[] = [];
 const removals: string[] = [];
 
 vi.mock('firebase/database', () => ({
@@ -27,7 +29,7 @@ vi.mock('firebase/database', () => ({
     return () => subscriptions.delete(path);
   },
   set: (path: string, value: unknown) => {
-    writes.push({ path, value });
+    writes.push({ path, value: value as Partial<GrowthRecord> });
     return Promise.resolve();
   },
   remove: (path: string) => {
@@ -128,5 +130,116 @@ describe('useGrowthTracking', () => {
     expect(writes[0].path).toMatch(/^childRecords\/A\/growthRecords\/[^/]+$/);
     expect(writes[1].path).toBe('childRecords/A/growthRecords/g1');
     expect(removals).toEqual(['childRecords/A/growthRecords/g1']);
+  });
+
+  /**
+   * 早產矯正的實際效果都在這幾條。
+   *
+   * 百分位原本是寫入當下算好存進資料庫的，所以矯正機制上線之前寫下的每一筆
+   * 都是用實際月齡算的。只改寫入端的話，那些紀錄會永遠停在偏低的百分位——
+   * 而那正是家長最在意、最會拿去問醫師的幾筆。
+   */
+  it('讀取時重算百分位，資料庫裡存錯的那一份不會留在畫面上', () => {
+    const stored = {
+      g1: {
+        id: 'g1',
+        childId: 'c1',
+        date: '2026-08-01',
+        weight: 7.5,
+        // 早產矯正之前寫下的值：用實際月齡算出來的偏低百分位。
+        percentile: { weight: 3 },
+      },
+    };
+    const { result } = renderHook(() =>
+      useGrowthTracking('A', user, {
+        gender: 'male',
+        birthday: '2026-02-01',
+        gestationalAgeWeeks: 32,
+      }),
+    );
+
+    act(() => subscription('A').next({ val: () => stored }));
+
+    expect(result.current.records[0].percentile?.weight).not.toBe(3);
+  });
+
+  it('同樣的體重，早產寶寶的百分位比足月寶寶高', () => {
+    // 一個 32 週出生、實際 6 個月大的寶寶，發育進度只該用 4 個月來看。拿實際
+    // 月齡去查 WHO 標準，一個完全正常的體重會被說成落後。
+    const stored = {
+      g1: { id: 'g1', childId: 'c1', date: '2026-08-01', weight: 6.4, percentile: {} },
+    };
+
+    const term = renderHook(() =>
+      useGrowthTracking('A', user, { gender: 'male', birthday: '2026-02-01' }),
+    );
+    act(() => subscription('A').next({ val: () => stored }));
+    const termPercentile = term.result.current.records[0].percentile?.weight;
+
+    subscriptions.clear();
+    const preterm = renderHook(() =>
+      useGrowthTracking('A', user, {
+        gender: 'male',
+        birthday: '2026-02-01',
+        gestationalAgeWeeks: 32,
+      }),
+    );
+    act(() => subscription('A').next({ val: () => stored }));
+    const pretermPercentile = preterm.result.current.records[0].percentile?.weight;
+
+    expect(termPercentile).toBeDefined();
+    expect(pretermPercentile).toBeDefined();
+    expect(pretermPercentile as number).toBeGreaterThan(termPercentile as number);
+  });
+
+  it('缺性別或生日時保留存著的百分位，不會把畫面上的數字清成空白', () => {
+    const stored = {
+      g1: {
+        id: 'g1',
+        childId: 'c1',
+        date: '2026-08-01',
+        weight: 7.5,
+        percentile: { weight: 45 },
+      },
+    };
+    const { result } = renderHook(() => useGrowthTracking('A', user, { birthday: '2026-02-01' }));
+
+    act(() => subscription('A').next({ val: () => stored }));
+
+    expect(result.current.records[0].percentile?.weight).toBe(45);
+  });
+
+  it('寫入時存的也是矯正後的百分位', async () => {
+    const record = {
+      childId: 'A',
+      date: '2026-08-01',
+      weight: 6.4,
+      percentile: {},
+    };
+
+    const term = renderHook(() =>
+      useGrowthTracking('A', user, { gender: 'male', birthday: '2026-02-01' }),
+    );
+    act(() => subscription('A').next({ val: () => null }));
+    await act(async () => {
+      await term.result.current.addRecord(record);
+    });
+
+    subscriptions.clear();
+    const preterm = renderHook(() =>
+      useGrowthTracking('A', user, {
+        gender: 'male',
+        birthday: '2026-02-01',
+        gestationalAgeWeeks: 32,
+      }),
+    );
+    act(() => subscription('A').next({ val: () => null }));
+    await act(async () => {
+      await preterm.result.current.addRecord(record);
+    });
+
+    const stored = writes.map((write) => write.value.percentile?.weight);
+    expect(stored[0]).toBeDefined();
+    expect(stored[1] as number).toBeGreaterThan(stored[0] as number);
   });
 });

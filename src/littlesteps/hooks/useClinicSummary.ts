@@ -90,8 +90,7 @@ export function useClinicSummary(
   const { records: growthRecords, loading: growthLoading } = useGrowthTracking(
     currentChild?.id || null,
     user,
-    currentChild?.gender,
-    currentChild?.birthday
+    currentChild ?? undefined,
   );
 
   const data = useMemo<ClinicSummaryData | null>(() => {
