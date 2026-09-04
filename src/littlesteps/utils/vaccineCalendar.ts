@@ -78,7 +78,18 @@ export function buildVaccineIcs(
       // and in a calendar it has to survive without the badge that carries it
       // on the page. Then the window in the source's own words, the row's own
       // note, and where it came from.
-      const details = [FUNDING_LABEL[dose.funding], `建議接種時間：${dose.timing}`];
+      //
+      // An announced change qualifies that leading word rather than being left
+      // to the note below it. An .ics outlives the export: an event written
+      // today is read on the day of the appointment, which for a dose whose
+      // funding changes on a known date can be after that date. "Self-paid"
+      // alone would then be the first and most prominent thing a parent reads
+      // about a dose that is no longer self-paid.
+      const funding = vaccine.fundingChangesOn
+        ? `${FUNDING_LABEL[dose.funding]}（${vaccine.fundingChangesOn} 起調整，請以最新公告為準）`
+        : FUNDING_LABEL[dose.funding];
+
+      const details = [funding, `建議接種時間：${dose.timing}`];
       if (vaccine.eligibility) details.push(`給付條件：${vaccine.eligibility}`);
       if (vaccine.notes) details.push(vaccine.notes);
       details.push(`資料來源：${vaccine.sourceUrl}`);
