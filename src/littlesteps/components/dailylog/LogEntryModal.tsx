@@ -33,6 +33,8 @@ export default function LogEntryModal({
   const [feedingType, setFeedingType] = useState<FeedingData['feedingType']>('breast_left');
   const [duration, setDuration] = useState('');
   const [amount, setAmount] = useState('');
+  /** 只有擠奶用得到。空字串是「沒選邊」。 */
+  const [side, setSide] = useState<'' | NonNullable<FeedingData['side']>>('');
 
   // Sleep fields
   const [startTime, setStartTime] = useState(getCurrentDateTimeLocal());
@@ -65,6 +67,7 @@ export default function LogEntryModal({
         setFeedingType(data.feedingType);
         setDuration(data.duration?.toString() || '');
         setAmount(data.amount?.toString() || '');
+        setSide(data.side ?? '');
         setNotes(data.notes || '');
       } else if (logType === 'sleep') {
         const data = editingLog.data as SleepData;
@@ -88,6 +91,7 @@ export default function LogEntryModal({
       setAmount('');
       setNotes('');
       setFeedingType('breast_left');
+      setSide('');
       setDiaperType('pee');
       setConsistency('normal');
     }
@@ -103,6 +107,9 @@ export default function LogEntryModal({
   const endMs = endTime ? new Date(endTime).getTime() : NaN;
   const hasSleepRange = logType === 'sleep' && !Number.isNaN(startMs) && !Number.isNaN(endMs);
   const sleepRangeError = hasSleepRange && endMs <= startMs ? RANGE_ERROR : null;
+
+  /** 擠奶是唯一一個記「產出」而不是「攝取」的類型，表單也要看得出來。 */
+  const isPumping = feedingType === 'pumping';
 
   /** 從留白按下去就是 0：那是家長主動說「沒醒」，跟沒問到不一樣。 */
   const stepNightWakings = (delta: number) => {
@@ -126,6 +133,8 @@ export default function LogEntryModal({
           feedingType,
           duration: duration ? parseInt(duration) : undefined,
           amount: amount ? parseInt(amount) : undefined,
+          // 哪一邊只對擠奶有意義；改成別的類型時不要留下上一次選的值。
+          side: feedingType === 'pumping' && side ? side : undefined,
           notes: notes.trim() || undefined,
         } as FeedingData;
       } else if (logType === 'sleep') {
@@ -237,10 +246,34 @@ export default function LogEntryModal({
                       <option value="breast_left">母乳左側</option>
                       <option value="breast_right">母乳右側</option>
                       <option value="breast_both">母乳雙側</option>
+                      <option value="breast_milk_bottle">母乳瓶餵</option>
                       <option value="formula">配方奶</option>
                       <option value="solid">副食品</option>
+                      <option value="pumping">擠奶</option>
                     </select>
+                    {isPumping && (
+                      <p className="mt-1 text-xs text-ink-faint">
+                        擠出來的量記在這裡，不會算進寶寶今天喝了多少
+                      </p>
+                    )}
                   </div>
+
+                  {isPumping && (
+                    <div>
+                      <label htmlFor="feeding-side" className={LABEL}>哪一邊</label>
+                      <select
+                        id="feeding-side"
+                        value={side}
+                        onChange={(e) => setSide(e.target.value as typeof side)}
+                        className={FIELD}
+                      >
+                        <option value="">不記錄</option>
+                        <option value="left">左側</option>
+                        <option value="right">右側</option>
+                        <option value="both">兩側</option>
+                      </select>
+                    </div>
+                  )}
 
                   <div>
                     <label htmlFor="feeding-duration" className={LABEL}>時長（分鐘）</label>
@@ -256,7 +289,9 @@ export default function LogEntryModal({
                   </div>
 
                   <div>
-                    <label htmlFor="feeding-amount" className={LABEL}>奶量（ml）</label>
+                    <label htmlFor="feeding-amount" className={LABEL}>
+                      {isPumping ? '擠出量（ml）' : '奶量（ml）'}
+                    </label>
                     <input
                       id="feeding-amount"
                       type="number"

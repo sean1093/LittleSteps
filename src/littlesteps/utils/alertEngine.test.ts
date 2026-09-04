@@ -197,6 +197,36 @@ describe('alertEngine', () => {
     it('reports no gap when the baby was fed within the last six hours', () => {
       expect(detectFeedingAlerts([feeding(TODAY, 120, '08')], AGE_MONTHS)).toEqual([]);
     });
+
+    /*
+      A pumping session is the mother's output. Stored as a feeding log it
+      silently reset the "six hours since the last feed" warning, so a mother
+      who pumps at 02:00 stops being told that her BABY has not been fed.
+    */
+    it('does not let a pumping session stand in for a feed', () => {
+      const pumped = makeLog('feeding', `${TODAY}T08:00:00+08:00`, {
+        feedingType: 'pumping',
+        amount: 140,
+        duration: 20,
+      });
+      const alerts = detectFeedingAlerts([feeding(TODAY, 120, '01'), pumped], AGE_MONTHS);
+
+      expect(idsOf(alerts)).toContain('feeding-long-gap');
+    });
+
+    it('keeps pumped millilitres out of the daily intake baseline', () => {
+      const pumpedYesterday = ['02', '06', '10', '14'].map((hour) =>
+        makeLog('feeding', `${YESTERDAY}T${hour}:00:00+08:00`, {
+          feedingType: 'pumping' as const,
+          amount: 200,
+        })
+      );
+      const logs = [...baselineWeek(800), feeding(YESTERDAY, 300), ...pumpedYesterday];
+
+      // 昨天真正餵進去的是 300ml，只有基準的 37.5%。加上擠出來的 800ml
+      // 會變成 1100ml，警示就消失了——而那正是這則警示要說的事。
+      expect(idsOf(detectFeedingAlerts(logs, AGE_MONTHS))).toContain('feeding-low-amount');
+    });
   });
 
   describe('detectPoopAlerts', () => {

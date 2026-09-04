@@ -99,6 +99,23 @@ export function findOpenSleep(logs: DailyLog[]): DailyLog | null {
 }
 
 /**
+ * 擠奶紀錄。
+ *
+ * 它跟其他六個 feedingType 差在一件事：那六個是寶寶喝下去的，擠奶是擠出來的。
+ * 「今天餵了幾次」「今天喝了幾 ml」的每一個加總都必須跳過它——不然一位全擠奶
+ * 的母親每天六次瓶餵加六次擠奶，會被算成十二餐、兩倍奶量，而這份數字會被
+ * 拿去給小兒科醫師看。
+ */
+export function isPumpingLog(log: DailyLog): boolean {
+  return log.type === 'feeding' && (log.data as FeedingData).feedingType === 'pumping';
+}
+
+/** 真的餵進寶寶嘴裡的那些紀錄。 */
+export function isIntakeFeedingLog(log: DailyLog): boolean {
+  return log.type === 'feeding' && (log.data as FeedingData).feedingType !== 'pumping';
+}
+
+/**
  * 計算指定日期的每日摘要統計
  */
 export function calculateDailySummary(
@@ -123,6 +140,8 @@ export function calculateDailySummary(
   dailyLogs.forEach(log => {
     switch (log.type) {
       case 'feeding': {
+        // 擠奶是產出，不是這一天的一餐，也不是喝進去的量。
+        if (isPumpingLog(log)) break;
         summary.feedingCount++;
         const feedingData = log.data as FeedingData;
         summary.totalFeedingAmount += feedingData.amount || 0;
@@ -183,8 +202,10 @@ export function getFeedingTypeLabel(type: FeedingData['feedingType']): string {
     breast_left: '母乳（左）',
     breast_right: '母乳（右）',
     breast_both: '母乳（兩邊）',
+    breast_milk_bottle: '母乳（瓶餵）',
     formula: '配方奶',
     solid: '副食品',
+    pumping: '擠奶',
   };
   return labels[type];
 }

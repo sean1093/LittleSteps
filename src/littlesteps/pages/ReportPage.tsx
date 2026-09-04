@@ -132,12 +132,14 @@ export default function ReportPage({
     );
   }
 
-  // Check if we have any data at all
+  // Check if we have any data at all. 只擠奶、還沒開始瓶餵的那一週也是有記錄的
+  // 一週：把它當成空白，等於告訴一位每天擠六次的母親「你什麼都沒記」。
   const hasData =
     report &&
     (report.feeding.avgDailyCount > 0 ||
       report.sleep.avgDailyHours > 0 ||
-      report.poop.avgDailyCount > 0);
+      report.poop.avgDailyCount > 0 ||
+      report.pumping !== undefined);
 
   // Empty state
   if (!hasData) {
@@ -277,6 +279,43 @@ export default function ReportPage({
                 )}
               </div>
             </motion.div>
+
+            {/*
+              擠奶自己一段，而且只有真的擠過奶才出現：對沒在擠奶的家長多一張
+              永遠是 0 的卡，只是噪音。它刻意不放進上面的餵奶報告裡——擠出來的
+              量不是寶寶喝進去的量。
+            */}
+            {report.pumping && (
+              <motion.div variants={listItem} className="panel mb-4">
+                <h2 className="mb-1">擠奶紀錄</h2>
+                <p className="mb-4 text-sm text-ink-muted">
+                  擠出的量是產出，沒有算進上面的餵奶總量。
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-primary-soft rounded-xl p-3 text-center">
+                    <div className="text-lg font-bold text-primary-dark">
+                      {report.pumping.avgDailySessions}
+                    </div>
+                    <div className="text-sm text-ink-muted">平均每日次數</div>
+                    <LoggedDaysNote
+                      loggedDays={report.pumping.loggedDays}
+                      periodDays={days}
+                    />
+                  </div>
+                  <div className="bg-primary-soft rounded-xl p-3 text-center">
+                    <div className="text-lg font-bold text-primary-dark">
+                      {report.pumping.avgDailyAmount}
+                      <span className="text-sm font-normal ml-0.5">ml</span>
+                    </div>
+                    <div className="text-sm text-ink-muted">平均每日擠出量</div>
+                    <LoggedDaysNote
+                      loggedDays={report.pumping.loggedDays}
+                      periodDays={days}
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
             {/* Section 3: Sleep Report */}
             <motion.div variants={listItem} className="panel mb-4">

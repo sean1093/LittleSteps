@@ -289,9 +289,27 @@ export interface DailyLog {
 }
 
 export interface FeedingData {
-  feedingType: 'breast_left' | 'breast_right' | 'breast_both' | 'formula' | 'solid';
-  amount?: number; // ml
+  /**
+   * `pumping` 是唯一一個「不是餵給寶寶」的值：它記的是擠出來的量，是產出不是
+   * 攝取。每一個把餵奶次數或總奶量加起來的地方都必須把它排除，否則擠奶會被
+   * 當成寶寶喝了，而那個數字會出現在小兒科醫師面前。
+   *
+   * `breast_milk_bottle` 反過來：瓶餵母乳是量得出來的攝取量，跟親餵不同，也
+   * 不是配方奶。
+   */
+  feedingType:
+    | 'breast_left'
+    | 'breast_right'
+    | 'breast_both'
+    | 'breast_milk_bottle'
+    | 'formula'
+    | 'solid'
+    | 'pumping';
+  /** ml。餵食是寶寶喝進去的量；`pumping` 是擠出來的量。 */
+  amount?: number;
   duration?: number; // minutes
+  /** 只有擠奶用得到：追蹤塞奶的家長會想知道是哪一邊。選填。 */
+  side?: 'left' | 'right' | 'both';
   notes?: string;
 }
 
