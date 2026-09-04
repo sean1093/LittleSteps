@@ -77,62 +77,102 @@ function nextDay(isoDate: string): string {
   return toLocalDateKey(date);
 }
 
-function eventTitle(task: ResolvedCareTask, childName: string): string {
-  return `${childName}：${task.template.title}`;
+/**
+ * 一則全天行程。
+ *
+ * 行事曆不認識「幼兒照護任務」或「疫苗劑次」，只認識日期、標題與內文。各服務
+ * 把自己的資料攤成這個形狀，RFC 5545 的折行、跳脫與 VALARM 就只有一份實作——
+ * 這個檔案從 littleexplorer 搬到 common 的理由也在這裡。
+ */
+export interface CalendarEvent {
+  /** 全域唯一且穩定：同一件事重複匯出應該覆蓋，而不是多出一筆。 */
+  uid: string;
+  /** YYYY-MM-DD，全天事件的起始日。 */
+  date: string;
+  title: string;
+  details: string;
 }
 
-function eventDetails(task: ResolvedCareTask): string {
-  // 家長讀的是行事曆內文，不是資料庫欄位：日期照 app 其他地方的寫法。
-  return `${task.template.description}\n可執行區間至 ${formatDate(task.windowEnd)}\n資料來源：${task.template.source}`;
-}
-
-function buildEvent(
-  task: ResolvedCareTask,
-  childName: string,
-  dtstamp: string,
-): string[] {
+function buildEvent(event: CalendarEvent, dtstamp: string): string[] {
   return [
     'BEGIN:VEVENT',
-    `UID:${task.template.id}-${toIcsDate(task.dueDate)}@littleexplorer`,
+    `UID:${event.uid}`,
     // RFC 5545 §3.6.1 要求 VEVENT 必須有 DTSTAMP；少了它，嚴格的匯入端
     // （Outlook、部分 CalDAV 伺服器）會整個檔案拒收。
     `DTSTAMP:${dtstamp}`,
-    `DTSTART;VALUE=DATE:${toIcsDate(task.dueDate)}`,
-    `DTEND;VALUE=DATE:${toIcsDate(nextDay(task.dueDate))}`,
-    `SUMMARY:${escapeText(eventTitle(task, childName))}`,
-    `DESCRIPTION:${escapeText(eventDetails(task))}`,
+    `DTSTART;VALUE=DATE:${toIcsDate(event.date)}`,
+    `DTEND;VALUE=DATE:${toIcsDate(nextDay(event.date))}`,
+    `SUMMARY:${escapeText(event.title)}`,
+    `DESCRIPTION:${escapeText(event.details)}`,
     'BEGIN:VALARM',
     'ACTION:DISPLAY',
+    // 提前 7 天，不是前一天：這些行程都得先跟診所約時間，前一天才知道
+    // 已經來不及了。
     'TRIGGER:-P7D',
-    `DESCRIPTION:${escapeText(eventTitle(task, childName))}`,
+    `DESCRIPTION:${escapeText(event.title)}`,
     'END:VALARM',
     'END:VEVENT',
   ];
 }
 
 /**
- * 將未完成的照護任務序列化為 RFC 5545 行事曆。
- * 全天事件，各附提前 7 天的顯示提醒。
+ * 序列化為 RFC 5545 行事曆。全天事件，各附提前 7 天的顯示提醒。
  *
  * `now` 只為了 DTSTAMP，注入以利測試。
  */
-export function buildIcs(
-  tasks: ResolvedCareTask[],
-  childName: string,
+export function buildCalendar(
+  events: CalendarEvent[],
+  prodId: string,
   now: Date = new Date(),
 ): string {
   const dtstamp = toIcsTimestamp(now);
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//LittleExplorer//幼兒照護時程//ZH-TW',
+    `PRODID:${prodId}`,
     'CALSCALE:GREGORIAN',
-    ...tasks
-      .filter((task) => task.status !== 'done')
-      .flatMap((task) => buildEvent(task, childName, dtstamp)),
+    ...events.flatMap((event) => buildEvent(event, dtstamp)),
     'END:VCALENDAR',
   ];
   return lines.map(foldLine).join(CRLF) + CRLF;
+}
+
+/** 觸發 .ics 下載。純瀏覽器副作用，故不在單元測試涵蓋範圍。 */
+export function downloadCalendar(ics: string, filename: string): void {
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS);
+}
+
+const CARE_PRODID = '-//LittleExplorer//幼兒照護時程//ZH-TW';
+
+/** 一筆照護任務攤成行事曆行程。ICS 與 Google 連結共用，兩邊的文字才會一致。 */
+function careEvent(task: ResolvedCareTask, childName: string): CalendarEvent {
+  return {
+    uid: `${task.template.id}-${toIcsDate(task.dueDate)}@littleexplorer`,
+    date: task.dueDate,
+    title: `${childName}：${task.template.title}`,
+    // 家長讀的是行事曆內文，不是資料庫欄位：日期照 app 其他地方的寫法。
+    details: `${task.template.description}\n可執行區間至 ${formatDate(task.windowEnd)}\n資料來源：${task.template.source}`,
+  };
+}
+
+/** 將未完成的照護任務序列化為 RFC 5545 行事曆。 */
+export function buildIcs(
+  tasks: ResolvedCareTask[],
+  childName: string,
+  now: Date = new Date(),
+): string {
+  return buildCalendar(
+    // 做完的任務不必再塞進行事曆。
+    tasks.filter((task) => task.status !== 'done').map((task) => careEvent(task, childName)),
+    CARE_PRODID,
+    now,
+  );
 }
 
 /** 單筆任務的 Google 日曆快速加入連結。 */
@@ -140,27 +180,20 @@ export function buildGoogleCalendarUrl(
   task: ResolvedCareTask,
   childName: string,
 ): string {
+  const event = careEvent(task, childName);
   const params = new URLSearchParams({
     action: 'TEMPLATE',
-    text: eventTitle(task, childName),
-    details: eventDetails(task),
-    dates: `${toIcsDate(task.dueDate)}/${toIcsDate(nextDay(task.dueDate))}`,
+    text: event.title,
+    details: event.details,
+    dates: `${toIcsDate(event.date)}/${toIcsDate(nextDay(event.date))}`,
   });
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
-/** 觸發 .ics 下載。純瀏覽器副作用，故不在單元測試涵蓋範圍。 */
+/** 觸發照護時程的 .ics 下載。 */
 export function downloadIcs(
   tasks: ResolvedCareTask[],
   childName: string,
 ): void {
-  const blob = new Blob([buildIcs(tasks, childName)], {
-    type: 'text/calendar;charset=utf-8',
-  });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = `${childName}-照護時程.ics`;
-  anchor.click();
-  setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS);
+  downloadCalendar(buildIcs(tasks, childName), `${childName}-照護時程.ics`);
 }

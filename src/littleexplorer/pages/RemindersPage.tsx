@@ -20,7 +20,7 @@ import { collapse, listItem, stagger, tap } from '../../common/ui/motion';
 import { pressable } from '../../common/ui/pressable';
 import { careTaskKindLabels } from '../data/careTasks';
 import { tipCategoryLabels, toddlerCareTips } from '../data/monthlyTips';
-import { buildGoogleCalendarUrl, downloadIcs } from '../utils/icsExport';
+import { buildGoogleCalendarUrl, downloadIcs } from '../../common/utils/icsExport';
 import { TODDLER_MIN_MONTHS, bandForMonths } from '../utils/ageBands';
 import ExplorerShell from '../components/ExplorerShell';
 import NoChildNotice from '../components/NoChildNotice';
