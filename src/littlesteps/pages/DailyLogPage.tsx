@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { User } from 'firebase/auth';
-import { ChildProfile, DailyLog } from '../../types';
+import { ChildProfile, DailyLog, SleepData } from '../../types';
 import { useDailyLogs } from '../hooks/useDailyLogs';
 import { useFirebaseChildren } from '../../common/hooks/useFirebaseChildren';
-import { isSameDay } from '../../common/utils/dateHelpers';
-import QuickLogButtons from '../components/dailylog/QuickLogButtons';
+import { calculateDuration, isSameDay } from '../../common/utils/dateHelpers';
+import { findOpenSleep, isStaleOpenSleep } from '../utils/logHelpers';
+import QuickLogButtons, { type SleepMode } from '../components/dailylog/QuickLogButtons';
 import LogEntryModal from '../components/dailylog/LogEntryModal';
 import LogTimeline from '../components/dailylog/LogTimeline';
 import DaySelector from '../components/dailylog/DaySelector';
+import OpenSleepCard from '../components/dailylog/OpenSleepCard';
+import NightWakingsPrompt from '../components/dailylog/NightWakingsPrompt';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem } from '../../common/ui/motion';
@@ -25,6 +28,11 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
   const [modalType, setModalType] = useState<'feeding' | 'sleep' | 'diaper' | null>(null);
   const [editingLog, setEditingLog] = useState<DailyLog | null>(null);
   const [selectedDate, setSelectedDate] = useState(() => new Date());
+  /**
+   * 剛剛用「醒了」關掉的那一段。只活在這一次操作裡：想回答夜醒次數的人多按
+   * 一下，直接走開的人什麼也沒記——而「沒記」跟「記了 0 次」本來就不一樣。
+   */
+  const [justClosedSleepId, setJustClosedSleepId] = useState<string | null>(null);
 
   // Load data
   const { logs, loading, error } = useDailyLogs(currentChild?.id || null, user);
@@ -33,14 +41,113 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
   const isToday = isSameDay(selectedDate, new Date());
   const todayLogs = logs.filter((log) => isSameDay(log.timestamp, selectedDate));
   const feedingCount = todayLogs.filter((l) => l.type === 'feeding').length;
-  const sleepCount = todayLogs.filter((l) => l.type === 'sleep').length;
+  // 忘了按「醒了」的那一筆不是一段睡眠，是一個待補的欄位；它有自己的卡片。
+  const sleepCount = todayLogs.filter((l) => l.type === 'sleep' && !isStaleOpenSleep(l)).length;
   const diaperCount = todayLogs.filter((l) => l.type === 'diaper').length;
 
+  const openSleep = findOpenSleep(logs);
+  const justClosedSleep = justClosedSleepId
+    ? (logs.find((log) => log.id === justClosedSleepId) ?? null)
+    : null;
+  /*
+    還在睡的那一段跨得過午夜，所以看今天時一定要看得到它，即使是昨晚入睡的。
+    翻到過去的某一天時，只有那天入睡的才顯示。
+  */
+  const showOpenSleep =
+    openSleep !== null && (isToday || isSameDay((openSleep.data as SleepData).startTime, selectedDate));
+  const sleepMode: SleepMode = !isToday ? 'log' : openSleep ? 'sleeping' : 'start';
+
   // Handlers
-  const handleQuickLog = (type: 'feeding' | 'sleep' | 'diaper') => {
+  const openLogForm = (type: 'feeding' | 'sleep' | 'diaper') => {
     setModalType(type);
     setEditingLog(null);
     setShowModal(true);
+  };
+
+  const reportWriteFailure = (error: unknown, fallback: string) => {
+    console.error(fallback, error);
+    toast.show(error instanceof Error ? error.message : fallback);
+  };
+
+  /**
+   * 一鍵開始一段睡眠。同時只能有一段沒關的睡眠：第二次按下去要被擋住並說明
+   * 原因，悄悄蓋掉前一段的話，家長會以為剛剛那覺沒記到。
+   */
+  const handleSleepQuickLog = async () => {
+    if (!currentChild) return;
+
+    if (!isToday) {
+      openLogForm('sleep'); // 補記過去的睡眠沒有「現在開始」可言
+      return;
+    }
+
+    if (openSleep) {
+      toast.show(
+        isStaleOpenSleep(openSleep)
+          ? '上一段睡眠還沒有結束時間，先補上才能開始新的一段。'
+          : '寶寶還在睡。先按「醒了」結束這一段，才能開始新的一段。',
+      );
+      return;
+    }
+
+    const startedAt = new Date().toISOString();
+    const sleepData: SleepData = { startTime: startedAt };
+    try {
+      await firebaseChildren.addDailyLog(currentChild.id, {
+        childId: currentChild.id,
+        type: 'sleep',
+        timestamp: startedAt,
+        data: sleepData,
+        createdAt: startedAt,
+        createdBy: user?.uid,
+        createdByName: user?.displayName ?? undefined,
+      });
+      setJustClosedSleepId(null);
+      setSelectedDate(new Date(startedAt));
+    } catch (error) {
+      reportWriteFailure(error, '開始睡眠記錄失敗，請稍後再試');
+    }
+  };
+
+  const handleQuickLog = (type: 'feeding' | 'sleep' | 'diaper') => {
+    if (type === 'sleep') {
+      void handleSleepQuickLog();
+      return;
+    }
+    openLogForm(type);
+  };
+
+  /** 一鍵結束：結束時間就是現在，時長跟著算出來，不開任何表單。 */
+  const handleWake = async (log: DailyLog) => {
+    if (!currentChild) return;
+
+    const sleepData = log.data as SleepData;
+    const endTime = new Date().toISOString();
+    try {
+      await firebaseChildren.updateDailyLog(currentChild.id, log.id, {
+        data: {
+          ...sleepData,
+          endTime,
+          duration: calculateDuration(sleepData.startTime, endTime),
+        },
+      });
+      setJustClosedSleepId(log.id);
+    } catch (error) {
+      reportWriteFailure(error, '結束睡眠記錄失敗，請稍後再試');
+    }
+  };
+
+  const handleRecordNightWakings = async (log: DailyLog, nightWakings: number) => {
+    if (!currentChild) return;
+
+    try {
+      await firebaseChildren.updateDailyLog(currentChild.id, log.id, {
+        data: { ...(log.data as SleepData), nightWakings },
+      });
+      setJustClosedSleepId(null);
+    } catch (error) {
+      reportWriteFailure(error, '記錄夜醒次數失敗，請稍後再試');
+    }
   };
 
   /*
@@ -137,8 +244,34 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
         animate="visible"
       >
         <motion.div variants={listItem} className="card mb-4">
-          <DaySelector value={selectedDate} onChange={setSelectedDate} />
+          <DaySelector
+            value={selectedDate}
+            onChange={(date) => {
+              setJustClosedSleepId(null);
+              setSelectedDate(date);
+            }}
+          />
         </motion.div>
+
+        {showOpenSleep && openSleep && (
+          <motion.div variants={listItem} className="mb-4">
+            <OpenSleepCard log={openSleep} onWake={handleWake} onFixEndTime={handleEdit} />
+          </motion.div>
+        )}
+
+        {justClosedSleep && (
+          <motion.div variants={listItem} className="mb-4">
+            <NightWakingsPrompt
+              log={justClosedSleep}
+              onRecord={handleRecordNightWakings}
+              onOpenForm={(log) => {
+                setJustClosedSleepId(null);
+                handleEdit(log);
+              }}
+              onDismiss={() => setJustClosedSleepId(null)}
+            />
+          </motion.div>
+        )}
 
         <motion.div variants={listItem} className="card mb-6">
           <h2 className="mb-3">{isToday ? '今日統計' : '這天的統計'}</h2>
@@ -154,7 +287,15 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
 
         <motion.div variants={listItem} className="mb-6">
           <h2 className="mb-3">快速記錄</h2>
-          <QuickLogButtons onLogClick={handleQuickLog} />
+          <QuickLogButtons onLogClick={handleQuickLog} sleepMode={sleepMode} />
+          {/* 今天的睡眠鍵是「現在開始睡」，所以事後補一段完整睡眠需要自己的入口。 */}
+          {isToday && (
+            <div className="mt-2 flex justify-center">
+              <button type="button" onClick={() => openLogForm('sleep')} className="btn-ghost text-sm">
+                手動輸入睡眠時間
+              </button>
+            </div>
+          )}
         </motion.div>
 
         <motion.div variants={listItem}>
