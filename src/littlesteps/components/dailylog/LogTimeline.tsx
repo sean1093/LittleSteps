@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { Milk, Moon, Baby, Edit, Trash2 } from 'lucide-react';
 import { DailyLog, FeedingData, SleepData, DiaperData } from '../../../types';
 import { formatTime, formatDuration, isSameDay, calculateDuration } from '../../../common/utils/dateHelpers';
-import { isStaleOpenSleep } from '../../utils/logHelpers';
+import { isPumpingLog, isStaleOpenSleep } from '../../utils/logHelpers';
 import EmptyState from '../../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../../common/ui/serviceTheme';
 import { listItem, stagger } from '../../../common/ui/motion';
@@ -42,7 +42,7 @@ export default function LogTimeline({
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   const handleDelete = (log: DailyLog) => {
-    if (confirmDelete(`${getLogTitle(log.type)}記錄`)) {
+    if (confirmDelete(`${getLogTitle(log)}記錄`)) {
       onDelete(log.id);
     }
   };
@@ -62,10 +62,12 @@ export default function LogTimeline({
     }
   };
 
-  const getLogTitle = (type: DailyLog['type']) => {
-    switch (type) {
+  const getLogTitle = (log: DailyLog) => {
+    switch (log.type) {
       case 'feeding':
-        return '餵奶';
+        // 一列寫著「餵奶：擠奶」，是把媽媽的產出當成寶寶的一餐顯示出來——
+        // 跟總量把它加進去是同一個錯誤，只是發生在她真的會讀的那個畫面上。
+        return isPumpingLog(log) ? '擠奶' : '餵奶';
       case 'sleep':
         return '睡眠';
       case 'diaper':
@@ -85,7 +87,8 @@ export default function LogTimeline({
         solid: '副食品',
         pumping: '擠奶',
       };
-      const parts = [typeMap[data.feedingType]];
+      // 擠奶的類型字已經是這一列的標題，再印一次會變成「擠奶 · 擠奶」。
+      const parts = data.feedingType === 'pumping' ? [] : [typeMap[data.feedingType]];
       if (data.side) parts.push(SIDE_LABEL[data.side]);
       if (data.duration) parts.push(`${data.duration}分鐘`);
       // 擠奶的 ml 是擠出來的量，不是喝進去的——同一個單位，兩件事。
@@ -150,7 +153,7 @@ export default function LogTimeline({
                 <span className="text-sm font-semibold text-ink-faint">
                   {formatTime(log.timestamp)}
                 </span>
-                <span className="font-bold">{getLogTitle(log.type)}</span>
+                <span className="font-bold">{getLogTitle(log)}</span>
               </div>
 
               <p className="text-sm text-ink-muted">{getLogDetails(log)}</p>
