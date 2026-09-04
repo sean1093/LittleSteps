@@ -1,4 +1,5 @@
 import type { ChildProfile, MonthRange } from '../../types';
+import { correctedAgeMonths } from '../../common/correctedAge';
 import { calculateAge } from '../../common/utils/dateHelpers';
 import { isPregnancyProfile } from '../../common/pregnancy';
 
@@ -20,11 +21,16 @@ const RANGE_UPPER_BOUND: { value: MonthRange; upTo: number }[] = [
   { value: '10-12', upTo: 12 },
 ];
 
-/** 孩子當前月齡落在哪一個里程碑區間；超過 12 個月留在最後一段。 */
+/**
+ * 孩子當前月齡落在哪一個里程碑區間；超過 12 個月留在最後一段。
+ *
+ * 早產兒用矯正年齡。里程碑問的是「會不會坐、會不會扶著走」，那是發育進度，
+ * 而 32 週出生的寶寶在實際 8 個月大時，該對照的是 6 個月那一段。
+ */
 export function monthRangeForChild(child?: ChildProfile | null): MonthRange {
   if (!child || isPregnancyProfile(child)) return '0-2';
 
-  const months = calculateAge(child.birthday);
+  const months = correctedAgeMonths(child);
   return RANGE_UPPER_BOUND.find((range) => months <= range.upTo)?.value ?? '10-12';
 }
 
@@ -33,6 +39,10 @@ export function monthRangeForChild(child?: ChildProfile | null): MonthRange {
  *
  * 挑「不晚於孩子月齡的最後一個分組」而不是最接近的：家長最常做的動作是
  * 補登剛打完的那一劑，而那一劑的分組必然已經到期，不會是未來的。
+ *
+ * 這裡刻意用實際月齡，與上面的 monthRangeForChild 不同。公費疫苗的時程是
+ * 依出生日期排的，早產兒不例外（衛福部疾管署的接種時程沒有矯正年齡這回
+ * 事），所以用矯正年齡挑分組會讓家長晚一個月才看到已經到期的那一劑。
  */
 export function vaccineMonthForChild(
   child: ChildProfile | null | undefined,

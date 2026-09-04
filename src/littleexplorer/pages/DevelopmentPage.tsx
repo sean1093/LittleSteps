@@ -10,8 +10,13 @@ import type {
   ToothProgress,
   Gender,
 } from '../../types';
+import {
+  correctedAgeMonths,
+  gestationalAgeLabel,
+  isCorrecting,
+  type GestationalAge,
+} from '../../common/correctedAge';
 import { isPregnancyProfile } from '../../common/pregnancy';
-import { calculateAge } from '../../common/utils/dateHelpers';
 import { calculateAgeDisplay } from '../../common/utils/summaryCalculator';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
@@ -51,7 +56,12 @@ interface DevelopmentPageProps {
    * 新增／加入寶寶。LittleExplorer 自己開新增視窗，不把家長送去 LittleSteps
    * ——共用的是帳號與孩子資料，不是彼此的畫面。
    */
-  onAddChild: (name: string, birthday: string, gender?: Gender) => Promise<void>;
+  onAddChild: (
+    name: string,
+    birthday: string,
+    gender?: Gender,
+    gestationalAge?: GestationalAge,
+  ) => Promise<void>;
   onJoinChild?: (uuid: string) => Promise<void>;
 }
 
@@ -72,7 +82,11 @@ export default function DevelopmentPage({
   onAddChild,
   onJoinChild,
 }: DevelopmentPageProps) {
-  const ageMonths = currentChild ? calculateAge(currentChild.birthday) : 0;
+  // 發展檢核問的是「會不會疊積木、會不會說兩個字的句子」，那是發育進度，所以
+  // 早產兒用矯正年齡挑年齡段。標題那行年齡仍是實際年齡——不會有人希望自己
+  // 孩子的年齡被系統偷偷改掉，所以矯正只出現在真的拿去比較的地方，並標明。
+  const ageMonths = currentChild ? correctedAgeMonths(currentChild) : 0;
+  const correcting = currentChild ? isCorrecting(currentChild) : false;
   const [band, setBand] = useState<ToddlerAgeBand>(() => bandForMonths(ageMonths));
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [warningsOpen, setWarningsOpen] = useState(false);
@@ -171,8 +185,14 @@ export default function DevelopmentPage({
             </motion.div>
           )}
 
-          <motion.div variants={listItem}>
+          <motion.div variants={listItem} className="space-y-2">
             <AgeBandPicker selected={band} onSelect={setBand} />
+            {correcting && currentChild && (
+              <p className="text-xs text-explorer-bark/70">
+                已依早產矯正：預設看的是矯正年齡 {ageMonths} 個月（
+                {gestationalAgeLabel(currentChild)}）。
+              </p>
+            )}
           </motion.div>
 
           {/* 這個分頁叫「成長」卻沒有身高體重。WHO 標準到 36 個月都適用，

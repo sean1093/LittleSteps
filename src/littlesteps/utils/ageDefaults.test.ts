@@ -60,6 +60,15 @@ describe('monthRangeForChild', () => {
     });
     expect(monthRangeForChild(pregnancy)).toBe('0-2');
   });
+
+  it('早產寶寶用矯正年齡挑區間', () => {
+    // 32 週出生、實際 8 個月大：發育進度該對照 6 個月那一段。
+    expect(monthRangeForChild(childAged(8, { gestationalAgeWeeks: 32 }))).toBe('5-6');
+  });
+
+  it('足月寶寶填了週數也不會被矯正', () => {
+    expect(monthRangeForChild(childAged(8, { gestationalAgeWeeks: 39 }))).toBe('7-9');
+  });
 });
 
 describe('vaccineMonthForChild', () => {
@@ -97,5 +106,14 @@ describe('vaccineMonthForChild', () => {
 
   it('沒有任何分組時顯示全部，而不是回傳 undefined', () => {
     expect(vaccineMonthForChild(childAged(8), [])).toBe('all');
+  });
+
+  // 這一條與 monthRangeForChild 的早產測試是一對：同一份檔案裡兩個函式刻意
+  // 用不同的年齡。公費疫苗時程依出生日期排定，早產兒不例外。
+  it('早產寶寶的疫苗分組不矯正，照實際月齡走', () => {
+    expect(vaccineMonthForChild(childAged(8, { gestationalAgeWeeks: 32 }), VACCINE_MONTHS)).toBe(6);
+    expect(vaccineMonthForChild(childAged(13, { gestationalAgeWeeks: 30 }), VACCINE_MONTHS)).toBe(
+      12,
+    );
   });
 });

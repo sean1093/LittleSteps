@@ -116,6 +116,22 @@ describe('DevelopmentPage', () => {
     expect(screen.getByRole('button', { name: '1 歲-1 歲 3 個月', pressed: false })).toBeInTheDocument();
   });
 
+  // 早產兒的預設年齡段跟著矯正年齡走，並且說出來——一個 30 週出生、實際
+  // 24 個月大的孩子，該對照的是 1 歲 6 個月那一段。
+  it('早產寶寶預設落在矯正年齡的年齡段，並標明已矯正', () => {
+    renderPage({ gestationalAgeWeeks: 30 });
+
+    expect(
+      screen.getByRole('button', { name: '1 歲 6 個月-2 歲', pressed: true }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/已依早產矯正/)).toBeInTheDocument();
+  });
+
+  it('足月寶寶看不到矯正說明', () => {
+    renderPage();
+    expect(screen.queryByText(/已依早產矯正/)).not.toBeInTheDocument();
+  });
+
   it('顯示該年齡段的 6 個項目與已完成計數', () => {
     render(
       <DevelopmentPage onAddChild={noopAddChild}
