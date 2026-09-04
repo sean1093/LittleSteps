@@ -207,6 +207,72 @@ describe('沿用上一筆', () => {
     expect(screen.queryByRole('heading', { name: '新增餵奶記錄' })).toBeNull();
   });
 
+  /*
+    一鍵重複是唯一不開表單就寫進去的路徑：家長看不到存了什麼，所以寫錯孩子
+    不會有任何跡象。孩子綁定在這裡比在表單裡更要緊。
+  */
+  it('一鍵重複寫的是目前這個孩子', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <DailyLogPage currentChild={childB} user={null} />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: /再記一次|餵奶（/ }));
+
+    expect(addDailyLog).toHaveBeenCalledTimes(1);
+    const [childId, written] = addDailyLog.mock.calls[0];
+    expect(childId).toBe('c2');
+    expect(written.childId).toBe('c2');
+    expect(written.data).toMatchObject({ feedingType: 'breast_both', duration: 15 });
+  });
+
+  it('一鍵重複不把上一次的備註抄過來', async () => {
+    readState.logs = [
+      {
+        ...feedingLog('with-note', 'c1', { feedingType: 'formula', amount: 120 }),
+        data: { feedingType: 'formula', amount: 120, notes: '喝得很急' } as FeedingData,
+      },
+    ];
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <DailyLogPage currentChild={child} user={null} />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: /再記一次|餵奶（/ }));
+
+    const [, written] = addDailyLog.mock.calls[0];
+    expect((written.data as FeedingData).notes).toBeUndefined();
+  });
+
+  it('尿布表單也帶出這個孩子上次的類型與性狀', async () => {
+    const at = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    readState.logs = [
+      {
+        id: 'd1',
+        childId: 'c1',
+        type: 'diaper',
+        timestamp: at,
+        data: { type: 'both', consistency: 'soft' },
+        createdAt: at,
+      },
+    ];
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <DailyLogPage currentChild={child} user={null} />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: '尿布' }));
+
+    expect(await screen.findByLabelText('類型 *')).toHaveValue('both');
+    expect(screen.getByLabelText('性狀')).toHaveValue('soft');
+  });
+
   it('還沒有任何紀錄的孩子沒有重複鍵，表單也回到原本的預設值', async () => {
     readState.logs = [];
     const user = userEvent.setup();
