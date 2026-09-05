@@ -558,6 +558,47 @@ and undeletable. That the sequential order fails is a case in
    `npx vitest run` yourself anyway — and look at the change on a 390px
    viewport — before opening the PR.
 
+## Versioning
+
+Every merge to `master` is tagged `vX.Y.Z` and published as a GitHub release,
+so there is always an answer to *which version is live*. `package.json`'s
+`version` is not that answer and never has been — this is a private package that
+is never published, and nothing reads the field.
+
+The tag is cut by `.github/workflows/release.yml` when **CI succeeds**, not when
+the merge lands. A tag therefore means the commit was verified; a red `master`
+is left untagged, and the next green merge bumps once for everything since the
+last tag.
+
+The size of the bump comes from the squash commit's conventional-commit subject
+— which is the PR title, since this repo squash-merges:
+
+| Subject | Bump |
+|---|---|
+| `feat:` | minor |
+| anything else (`fix:`, `docs:`, `chore:`, …) | patch |
+| `type!:` or `BREAKING CHANGE:` at the start of a line | major\* |
+
+\* while the major version is still `0`, a breaking change bumps the **minor**
+instead. Moving to `1.0.0` declares stability, which is a product decision
+rather than something a commit message should make on someone's behalf.
+
+The other deliberate choice: every merge gets a version, including a docs-only
+one, because every merge to `master` is a deploy and a deploy should have a
+name.
+
+`BREAKING CHANGE:` is matched at the **start of a line**, anywhere in the
+message. Restricting it to the last paragraph looks more correct and is not:
+every commit here ends with a `Co-Authored-By:` trailer block and every squash
+body ends with an attribution footer, so a real declaration above them would be
+unreachable. The residual risk is a body that *begins a line* with the phrase
+while only discussing it — that earns a bump it did not ask for. A spurious bump
+is visible in the tag list; a missed one is silent.
+
+The bump logic lives in `scripts/nextVersion.cjs` and is unit-tested, because a
+wrong version number is still a valid tag: nothing fails, the number is just
+wrong from then on.
+
 ## Roadmap
 
 - **Now** — all six services live, multi-device sync, feedback reporting
