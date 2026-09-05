@@ -163,7 +163,7 @@ This plan already builds and serves `dist/`, so the check is nearly free.
 |---|---|---|---|
 | PWA-01 | P1 | Manifest is served and parses | `manifest.webmanifest` returns 200 with a name, icons and a start URL |
 | PWA-02 | P1 | Service worker registers on the built app | Registration resolves; no console error |
-| PWA-03 | P2 | No uncaught console errors on any public route | Collected per route and asserted empty, with a declared allowlist naming **every** host the harness route-blocks: map tiles, `firebase.googleapis.com` and `*.google-analytics.com` (plan §5). An aborted route produces a console error, so a blocklist that outgrows this allowlist turns PWA-03 red for no product reason |
+| PWA-03 | P2 | No uncaught console errors on any public route | Collected per route and asserted empty, with a declared allowlist naming **every** host the harness route-blocks: map tiles, `firebase.googleapis.com`, `*.google-analytics.com` and `apis.google.com` (plan §5). An aborted route produces a console error, so a blocklist that outgrows this allowlist turns PWA-03 red for no product reason — which is why the spec imports `BLOCKED_HOSTS` rather than restating it, and why this row is the copy to distrust if the two ever disagree |
 
 ---
 

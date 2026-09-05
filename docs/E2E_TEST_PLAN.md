@@ -101,18 +101,30 @@ We adopt a **two-phase** strategy.
 `routePolicy.ts` makes nine pages public: the hub, the three wikis, the care
 guide, the sleep guide, LittleOuting, BabyOasis and LittleGuard. None of them
 reads a child's record, so dummy `VITE_FIREBASE_*` values are enough to get the
-app to boot and **no authenticated call reaches Google**: both
-`useUserChildren` and `useFirebaseCollection` early-return on a null user, so no
-database listener ever attaches.
+app to boot and **no child's record is ever requested**: both `useUserChildren`
+and `useFirebaseCollection` early-return on a null user, so no database listener
+ever attaches.
 
-Analytics is the exception, and it must be handled explicitly. `App.tsx` calls
-`logPageView()` on every in-app navigation, which dynamically imports
-`firebase/analytics` and fetches a web config from `firebase.googleapis.com`.
-With dummy credentials that request fails and retries with backoff, producing
-console errors — which is precisely what PWA-03 asserts against. The harness
-therefore route-blocks `firebase.googleapis.com` and `*.google-analytics.com`
-the same way, and for the same reason, that it blocks map tiles (§8): declare
-the boundary rather than discover it as a timeout.
+Two calls do still leave for Google, and both must be handled explicitly rather
+than discovered as a console error.
+
+**Analytics.** `App.tsx` calls `logPageView()` on every in-app navigation, which
+dynamically imports `firebase/analytics` and fetches a web config from
+`firebase.googleapis.com`. With dummy credentials that request fails and retries
+with backoff, producing console errors — which is precisely what PWA-03 asserts
+against.
+
+**The sign-in iframe.** `getAuth()` runs at module load on every route, and
+`AuthImpl._initializeWithPersistence` then initialises the popup/redirect
+resolver up front whenever `_shouldInitProactively` — `_isMobileBrowser() ||
+_isSafari() || _isIOS()` — is true, which it is for the `Pixel 5` UA the suite
+runs. That loads `apis.google.com/js/api.js`. It is not `getRedirectResult()`:
+with no redirect pending that resolves `null` without touching the network.
+
+The harness therefore route-blocks `firebase.googleapis.com`,
+`*.google-analytics.com` and `apis.google.com` the same way, and for the same
+reason, that it blocks map tiles (§8): declare the boundary rather than
+discover it as a timeout.
 
 Two things whoever supplies the dummy values needs to know: the SDK rejects an
 `apiKey` containing `:`, and `VITE_FIREBASE_DATABASE_URL` must be set or

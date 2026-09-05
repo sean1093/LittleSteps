@@ -16,10 +16,12 @@ const BASE_URL = `http://127.0.0.1:${PREVIEW_PORT}`;
  * `src/lib/firebase.ts` calls `initializeApp()` at module load, so with these
  * unset the SDK throws `auth/invalid-api-key` and the page renders blank —
  * there is no such thing as running this app with no Firebase configuration.
- * Nothing here reaches Google: Phase 1 only visits public routes, both
- * `useUserChildren` and `useFirebaseCollection` early-return on a null user, so
- * no database listener ever attaches, and the analytics host is route-blocked
- * (see `e2e/fixtures/blockedHosts.ts`).
+ * No child's record is ever requested: Phase 1 only visits public routes, and
+ * both `useUserChildren` and `useFirebaseCollection` early-return on a null
+ * user, so no database listener ever attaches. The two calls that do leave for
+ * Google — the analytics web config, and the sign-in iframe Firebase Auth
+ * loads proactively on a mobile user agent — are route-blocked instead, with
+ * the reasoning in `e2e/fixtures/blockedHosts.ts`.
  *
  * Two traps, both of which cost an afternoon once:
  * - The SDK rejects an `apiKey` containing `:`, so the key below has none.
