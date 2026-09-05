@@ -86,7 +86,13 @@ export default defineConfig({
     // exercises neither the lazy-chunk split, nor the service worker, nor the
     // prerendered HTML, and three of the six gaps the suite exists for live
     // exactly there.
-    command: `npm run build && npm run preview -- --port ${PREVIEW_PORT} --strictPort`,
+    //
+    // `--host 127.0.0.1` is load-bearing. Without it `vite preview` binds the
+    // name `localhost`, and in the CI container `/etc/hosts` maps that to `::1`
+    // as well as to `127.0.0.1`, so the listener ends up on IPv6 only while
+    // Playwright polls the IPv4 literal below until it times out. Binding the
+    // literal keeps both ends off the resolver's ordering.
+    command: `npm run build && npm run preview -- --host 127.0.0.1 --port ${PREVIEW_PORT} --strictPort`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     // A cold `vite build` is the whole of this budget; the preview server is up
