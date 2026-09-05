@@ -5,6 +5,13 @@ on: pull_request
 permissions:
   contents: read
 
+# A second push to the same pull request supersedes the first. Without this
+# both runs finish, and each pays for a container pull and a production build
+# to report on a commit nobody is looking at any more.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # Nothing ran lint or the unit suite on a pull request before this job: the
   # workflows directory held two Firebase deploys and the manual radar refresh,
@@ -25,10 +32,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        env:
-          # `@playwright/test` pulls `playwright`, whose postinstall downloads
-          # browsers. This job never opens one.
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 
       - name: Lint
         run: npm run lint
@@ -53,10 +56,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No node-version: the image's Node is the one the browsers were
+      # installed against. This is here only for the npm cache, without which
+      # `npm ci` costs the best part of a minute on every run.
+      - name: Cache npm downloads
+        uses: actions/setup-node@v4
+        with:
+          cache: 'npm'
+
       - name: Install dependencies
         run: npm ci
         env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+          # The `prepare` script runs `husky install`, which fails in the
+          # container with `fatal: not in a git directory`. Nothing here commits.
+          HUSKY: '0'
 
       # The dummy Firebase configuration and the production build live in
       # playwright.config.ts, so there is nothing to set up here and no secret
