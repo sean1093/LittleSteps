@@ -27,8 +27,13 @@ concurrency:
 jobs:
   tag:
     # `workflow_run` fires for a failed run too, and the whole point is not to
-    # tag one.
-    if: github.event.workflow_run.conclusion == 'success'
+    # tag one. The `event == 'push'` half matters as much: CI also runs on pull
+    # requests, a fork's default branch is called `master` too, and
+    # `branches: [master]` matches the *head* branch — so without this a fork's
+    # pull request would tag unmerged code.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
 
     steps:
@@ -46,7 +51,11 @@ jobs:
           set -euo pipefail
 
           # Highest existing version tag, or empty on the very first release.
-          latest="$(git tag --list 'v*' --sort=-v:refname | head -n 1)"
+          # `for-each-ref` rather than `tag --list | head`: no pipe to trip
+          # `pipefail` on SIGPIPE, and a numeric glob so a hand-made `vNEXT` or
+          # `v1.0.0-rc.1` cannot sort to the top and reject every later release.
+          latest="$(git for-each-ref --count=1 --sort=-v:refname \
+            --format='%(refname:short)' 'refs/tags/v[0-9]*.[0-9]*.[0-9]*')"
 
           if [ -n "$latest" ]; then
             range="${latest}..HEAD"
@@ -54,23 +63,29 @@ jobs:
             range="HEAD"
           fi
 
-          # NUL-separated: a commit message has newlines in it, so a
-          # line-oriented feed would split one commit into several.
-          version="$(git log --format=%B%x00 "$range" | node scripts/nextVersion.cjs "$latest")"
+          # `-z`, not `--format=%B%x00`. Both separate entries with NUL, but the
+          # latter also terminates each one with a newline of its own, so every
+          # message after the first arrives with a blank first line and its
+          # subject reads as empty. That silently scored the whole batch as a
+          # patch. The script tolerates both shapes now; this is the correct one.
+          version="$(git log -z --format=%B "$range" | node scripts/nextVersion.cjs "$latest")"
 
-          echo "latest=$latest" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "Previous: ${latest:-(none)} -> v$version"
 
-      - name: Stop if that tag already exists
+      - name: Stop if this commit is already released
         id: exists
         run: |
           set -euo pipefail
-          # A re-run of a CI run that already released must not fail the job,
-          # and must not move a tag people may already have fetched.
-          if git rev-parse -q --verify "refs/tags/v${{ steps.version.outputs.version }}" >/dev/null; then
+          # The question is whether THIS COMMIT is tagged, not whether the
+          # computed version string happens to be free. Re-running a CI run that
+          # already released leaves an empty range, an empty range is a patch,
+          # and a patch of the current tag is a version nobody has used yet — so
+          # a free-version check would happily cut a second, empty release for a
+          # commit that already has one.
+          if [ -n "$(git tag --points-at HEAD --list 'v[0-9]*.[0-9]*.[0-9]*')" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "v${{ steps.version.outputs.version }} already exists; nothing to do."
+            echo "Already released as $(git tag --points-at HEAD --list 'v[0-9]*.[0-9]*.[0-9]*' | tr '\n' ' ')"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
@@ -82,18 +97,30 @@ jobs:
           git tag "v${{ steps.version.outputs.version }}" "${{ github.event.workflow_run.head_sha }}"
           git push origin "v${{ steps.version.outputs.version }}"
 
+      # Deliberately not gated on `skip`. If the tag push succeeded and this
+      # step then failed on a transient API error, a re-run would take the
+      # skip branch — the tag now exists — and the release would never be
+      # created by any run, because later runs compute a different version.
+      # Idempotent instead: whatever tag now points at this commit gets a
+      # release if it does not have one.
       - name: Publish the release
-        if: steps.exists.outputs.skip == 'false'
+        if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          tag="$(git tag --points-at HEAD --list 'v[0-9]*.[0-9]*.[0-9]*' | head -n 1 || true)"
+          if [ -z "$tag" ]; then
+            echo "No version tag on this commit; nothing to publish."
+            exit 0
+          fi
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "$tag already has a release."
+            exit 0
+          fi
+
           # --generate-notes writes the changelog from the pull requests merged
           # since the previous tag, which is what a squash-merge history is good
           # for. --verify-tag refuses to invent a tag if the push above failed.
-          # GitHub picks the previous tag as the starting point on its own, so
-          # there is nothing to pass here and one less expression to get wrong.
-          gh release create "v${{ steps.version.outputs.version }}" \
-            --title "v${{ steps.version.outputs.version }}" \
-            --generate-notes \
-            --verify-tag
+          gh release create "$tag" --title "$tag" --generate-notes --verify-tag

@@ -577,13 +577,20 @@ The size of the bump comes from the squash commit's conventional-commit subject
 |---|---|
 | `feat:` | minor |
 | anything else (`fix:`, `docs:`, `chore:`, …) | patch |
-| `type!:` or `BREAKING CHANGE:` in the body | major |
+| `type!:` or `BREAKING CHANGE:` in the footer | major\* |
 
-Two deliberate choices. Every merge gets a version, including a docs-only one,
-because every merge to `master` is a deploy and a deploy should have a name. And
-while the major version is `0`, a breaking change bumps the **minor** — moving
-to `1.0.0` declares stability, which is a product decision rather than something
-a commit message should make on someone's behalf.
+\* while the major version is still `0`, a breaking change bumps the **minor**
+instead. Moving to `1.0.0` declares stability, which is a product decision
+rather than something a commit message should make on someone's behalf.
+
+The other deliberate choice: every merge gets a version, including a docs-only
+one, because every merge to `master` is a deploy and a deploy should have a
+name.
+
+`BREAKING CHANGE:` is read from the **footer** — the last paragraph — not from
+anywhere in the message. A squash body is the pull request description, and the
+descriptions in this repo discuss breaking changes in prose; matching anywhere
+would read a sentence about the rule as a use of it.
 
 The bump logic lives in `scripts/nextVersion.cjs` and is unit-tested, because a
 wrong version number is still a valid tag: nothing fails, the number is just

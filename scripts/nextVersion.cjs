@@ -1,63 +1,85 @@
 'use strict';
 
 /**
- * 算出下一個版本號。每次 merge 進 master 都會打一個 tag，而 tag 是「線上跑的是
- * 哪一版」唯一的答案——`package.json` 的 version 從來沒有被用到（private 套件，
- * 不會發佈），所以真正的事實來源是 tag，不是那個欄位。
+ * Works out the next version number. Every merge to master is tagged, and the
+ * tag is the only answer to "which version is live" — package.json's version is
+ * never published and nothing reads it, so the tag is the source of truth.
  *
- * 判斷錯了有兩種代價，而且都不會噴錯：版號跳太快，日後看不出哪一版真的有新功能；
- * 或是把一個破壞相容性的改動印成 patch，讓人以為升上去是安全的。
+ * Getting this wrong costs one of two things, and neither of them throws: a
+ * version that climbs too fast, so nobody can tell later which release actually
+ * added something; or a breaking change printed as a patch, so upgrading looks
+ * safe when it is not.
  *
- * 級距由 squash commit 的標題決定，因為這個 repo 一律 squash merge，而標題就是
- * PR 標題、照 conventional commits 寫（見 .claude/skills/english-writing）。
+ * The size of the bump comes from the squash commit's subject, because this
+ * repo squash-merges and the subject is therefore the pull request title,
+ * written as a conventional commit (see .claude/skills/english-writing).
  *
- * 這是一支 CommonJS 檔，跟 diffDiseaseRadar.cjs 同一個模式：`scripts/` 不進 tsc
- * 的 include，也在 eslint 的 ignorePatterns 裡。
+ * CommonJS, alongside diffDiseaseRadar.cjs and for the same reason: scripts/ is
+ * outside tsc's include and inside eslint's ignorePatterns.
  */
 
-/** `type(scope)!: description` 的標題。`!` 只認冒號前的那一個。 */
-const SUBJECT = /^(?<type>[a-z]+)(?:\((?<scope>[^)]*)\))?(?<breaking>!)?:/;
-
-/** commit body 裡宣告破壞相容性的兩種寫法，規格書兩種都允許。 */
-const BREAKING_BODY = /^BREAKING[ -]CHANGE:/m;
+/** A `type(scope)!: description` subject. Only the `!` before the colon counts. */
+const SUBJECT = /^(?<type>[A-Za-z]+)(?:\((?<scope>[^)]*)\))?(?<breaking>!)?:/;
 
 /**
- * 一則 commit 要求的級距。
+ * The footer form that declares a breaking change.
  *
- * `feat` 是 minor，其餘一律 patch——包含 docs 與 chore。使用者要的是「每次 merge
- * 都有一個新 tag」，所以沒有「這次不發版」這個選項：一次 merge 就是一次部署
- * （firebase-hosting-merge.yml 吃的是 push to master），部署了就該有名字。
+ * Deliberately matched against the last paragraph only, not the whole message.
+ * A GitHub squash body is the pull request description, and the descriptions in
+ * this repo run long and discuss breaking changes in prose — "BREAKING CHANGE:
+ * in the body means major" is a sentence about the rule, not a use of it.
+ * Matching anywhere would read that as a declaration and burn a major version.
+ * The spec puts it in the footer; so does this.
+ */
+const BREAKING_FOOTER = /^BREAKING[ -]CHANGE:/m;
+
+/** The last blank-line-separated block, which is where a footer lives. */
+function footerOf(message) {
+  const paragraphs = message.trim().split(/\n\s*\n/);
+  return paragraphs[paragraphs.length - 1] ?? '';
+}
+
+/**
+ * The bump one commit asks for.
+ *
+ * `feat` is a minor and everything else is a patch, docs and chore included.
+ * There is no "no release this time": one merge is one deploy — the Firebase
+ * hosting workflow fires on push to master — and a deploy should have a name.
  */
 function bumpOfCommit(message) {
-  const subject = message.split('\n', 1)[0];
+  // `git log -z` hands over a message with surrounding whitespace; the subject
+  // is the first line of what is left, not of the raw string.
+  const trimmed = message.trim();
+  const subject = trimmed.split('\n', 1)[0];
   const match = SUBJECT.exec(subject);
 
-  if (match?.groups?.breaking || BREAKING_BODY.test(message)) return 'major';
-  if (match?.groups?.type === 'feat') return 'minor';
+  if (match?.groups?.breaking || BREAKING_FOOTER.test(footerOf(trimmed))) return 'major';
+  if (match?.groups?.type?.toLowerCase() === 'feat') return 'minor';
   return 'patch';
 }
 
 const RANK = { patch: 0, minor: 1, major: 2 };
 
-/** 一批 commit 裡最大的那個級距。空陣列當成 patch：有 merge 就有版本。 */
+/** The largest bump in a batch. An empty batch is a patch: a merge is a version. */
 function bumpOf(messages) {
-  return messages.reduce(
-    (highest, message) => (RANK[bumpOfCommit(message)] > RANK[highest] ? bumpOfCommit(message) : highest),
-    'patch',
-  );
+  return messages.reduce((highest, message) => {
+    const bump = bumpOfCommit(message);
+    return RANK[bump] > RANK[highest] ? bump : highest;
+  }, 'patch');
 }
 
-/** 沒有任何 tag 時的第一個版本。0.x 表示「還沒有承諾穩定」，那是現況。 */
+/** The first version, when no tag exists yet. 0.x says no stability is promised. */
 const FIRST_VERSION = '0.1.0';
 
 const TAG = /^v(?<major>0|[1-9]\d*)\.(?<minor>0|[1-9]\d*)\.(?<patch>0|[1-9]\d*)$/;
 
 /**
- * 把級距套到上一個 tag 上。
+ * Applies the bump to the previous tag.
  *
- * 主版號還是 0 的時候，破壞相容性只升 minor 而不是升到 1.0.0——semver 對 0.x 的
- * 規定就是「隨時可能變」，而跳上 1.0.0 是在宣告穩定，那是產品決定，不該由一則
- * commit 訊息代替人做。
+ * While the major is still 0, a breaking change bumps the minor rather than
+ * reaching 1.0.0. Semver says 0.x may change at any time, and moving to 1.0.0
+ * declares stability — a product decision, not one a commit message should make
+ * on someone's behalf.
  */
 function nextVersion(latestTag, messages) {
   if (!latestTag) return FIRST_VERSION;
@@ -77,11 +99,15 @@ function nextVersion(latestTag, messages) {
   return `${major}.${minor}.${patch + 1}`;
 }
 
-module.exports = { bumpOfCommit, bumpOf, nextVersion, FIRST_VERSION };
+module.exports = { bumpOfCommit, bumpOf, nextVersion, footerOf, FIRST_VERSION };
 
 /*
-  CLI：`node scripts/nextVersion.cjs <latestTag|""> < messages`
-  commit 訊息從 stdin 進來，用 NUL 分隔，因為訊息本身有換行。
+  CLI: `git log -z --format=%B <range> | node scripts/nextVersion.cjs <latestTag|"">`
+
+  Messages arrive NUL-separated because a commit message contains newlines.
+  `git log -z` is required rather than `--format=%B%x00`: the latter terminates
+  every entry with a newline of its own, so each message after the first would
+  arrive with a leading blank line and its subject would read as empty.
 */
 if (require.main === module) {
   const latestTag = process.argv[2] || '';

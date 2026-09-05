@@ -523,12 +523,17 @@ squash merge，那個標題就是 PR 標題：
 |---|---|
 | `feat:` | minor |
 | 其他（`fix:`、`docs:`、`chore:` …） | patch |
-| `type!:` 或 body 裡的 `BREAKING CHANGE:` | major |
+| `type!:` 或 footer 裡的 `BREAKING CHANGE:` | major\* |
 
-有兩個刻意的選擇。每一次 merge 都會有版本，連只改文件的也是，因為每一次 merge
-進 `master` 就是一次部署，而部署就該有名字。以及主版號還是 `0` 的時候，破壞
-相容性的改動只升 **minor** — 升上 `1.0.0` 是在宣告穩定，那是產品決定，不該由
-一則 commit 訊息代替人做。
+\* 主版號還是 `0` 的時候，破壞相容性的改動只升 **minor**。升上 `1.0.0` 是在
+宣告穩定，那是產品決定，不該由一則 commit 訊息代替人做。
+
+另一個刻意的選擇：每一次 merge 都會有版本，連只改文件的也是，因為每一次 merge
+進 `master` 就是一次部署，而部署就該有名字。
+
+`BREAKING CHANGE:` 只讀 **footer**（最後一段），不是整則訊息。squash 的 body
+就是 PR 內文，而這個 repo 的 PR 內文會用散文討論破壞相容性的改動；整則比對會把
+「說明這條規則的句子」讀成「使用這條規則」。
 
 級距的邏輯放在 `scripts/nextVersion.cjs` 並且有單元測試，因為版號印錯了照樣是
 一個合法的 tag：不會有任何東西壞掉，只是從此對不上。

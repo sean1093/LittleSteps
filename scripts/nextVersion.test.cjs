@@ -1,24 +1,38 @@
 'use strict';
 
 /**
- * `nextVersion.cjs` 決定每次 merge 打出去的 tag 叫什麼。錯了不會有人發現：版號
- * 印錯照樣是一個合法的 tag，release 照樣建得起來，只是從此對不上實際內容。
+ * `nextVersion.cjs` decides what every merge's tag is called. Getting it wrong
+ * is invisible: a wrong number is still a valid tag, the release still
+ * publishes, and nothing anywhere goes red — it just stops matching what
+ * shipped.
  *
- * 所以逐條釘死三件事：標題怎麼對到級距、0.x 的破壞相容性怎麼處理、以及 CLI 的
- * 輸出契約——workflow 直接把 stdout 當成 tag 名字用。
+ * The first version of these tests passed while the workflow was broken,
+ * because the CLI case fed `messages.join('\0')` — a shape `git log` never
+ * emits. So the CLI cases here drive the script from **real `git log` output**
+ * over a fixture repository, and the multi-commit case deliberately puts the
+ * `feat:` somewhere other than the newest position, which is the one place the
+ * old bug could not hide.
  *
- * CommonJS，跟被測的 `.cjs` 放一起；`describe` / `it` / `expect` 來自
- * `vitest.config.ts` 的 `test.globals: true`。
+ * CommonJS, next to the file under test; `describe` / `it` / `expect` come from
+ * `test.globals: true` in vitest.config.ts.
  */
 
 const { execFileSync } = require('node:child_process');
+const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 
-const { bumpOfCommit, bumpOf, nextVersion, FIRST_VERSION } = require('./nextVersion.cjs');
+const {
+  bumpOfCommit,
+  bumpOf,
+  nextVersion,
+  footerOf,
+  FIRST_VERSION,
+} = require('./nextVersion.cjs');
 
 const SCRIPT = path.join(__dirname, 'nextVersion.cjs');
 
-/** 照這個 repo 真的 merge 過的 squash 標題取樣。 */
+/** Sampled from squash subjects this repo has actually merged. */
 const REAL_SUBJECTS = {
   feat: 'feat: add a share code a family member can join with',
   fix: 'fix: let the repeat buttons size to their labels instead of spilling',
@@ -44,30 +58,65 @@ describe('bumpOfCommit', () => {
   });
 
   it('does not read a ! that is only in the description', () => {
-    // 「終於！」這種標題不是破壞相容性的宣告，而把它當成宣告會讓主版號白跳一版。
+    // An exclamation in prose is not a declaration, and reading it as one burns
+    // a major version.
     expect(bumpOfCommit('fix: stop the timeline wrapping at 320px!')).toBe('patch');
   });
 
-  it('reads BREAKING CHANGE out of the body, in both spellings', () => {
+  it('survives leading whitespace, which is how git log -z hands messages over', () => {
+    // The bug this file exists to prevent: a message whose first line is blank
+    // scored patch, so every commit but the newest was misread.
+    expect(bumpOfCommit('\nfeat: add a share code')).toBe('minor');
+    expect(bumpOfCommit('\n\nfeat!: drop guest mode')).toBe('major');
+  });
+
+  it('is not fooled by a capitalised type', () => {
+    expect(bumpOfCommit('Feat: add a share code')).toBe('minor');
+  });
+
+  it('reads BREAKING CHANGE from the footer, in both spellings', () => {
     expect(bumpOfCommit('feat: move the logs\n\nBREAKING CHANGE: childRecords moved')).toBe('major');
     expect(bumpOfCommit('feat: move the logs\n\nBREAKING-CHANGE: childRecords moved')).toBe('major');
   });
 
   it('does not read a BREAKING CHANGE that is only quoted mid-line', () => {
-    // 規格書要求它自成一行，而 commit 常常在解釋「這不是破壞相容性的改動」。
     expect(bumpOfCommit('docs: explain what BREAKING CHANGE: means here')).toBe('patch');
   });
 
+  it('does not read a BREAKING CHANGE discussed in the body above the footer', () => {
+    // A squash body is the pull request description, and this repo writes long
+    // ones that talk about the rule without invoking it.
+    const message = [
+      'docs: document the versioning rules',
+      '',
+      'BREAKING CHANGE: at the start of a line in the body is what marks a',
+      'major bump. That sentence explains the rule rather than using it.',
+      '',
+      'Verified: 37 script tests pass.',
+    ].join('\n');
+
+    expect(bumpOfCommit(message)).toBe('patch');
+  });
+
   it('falls back to patch for a subject that is not conventional at all', () => {
-    // 版號寧可少跳一級，也不要因為看不懂就整批停住。
+    // Better to under-bump than to stall the whole batch on an unreadable line.
     expect(bumpOfCommit('Merge master into e2e/wiki-rwd-pwa')).toBe('patch');
     expect(bumpOfCommit('')).toBe('patch');
   });
 });
 
+describe('footerOf', () => {
+  it('is the last blank-line-separated block', () => {
+    expect(footerOf('subject\n\nbody text\n\nBREAKING CHANGE: x')).toBe('BREAKING CHANGE: x');
+  });
+
+  it('is the whole message when there is only a subject', () => {
+    expect(footerOf('feat: x')).toBe('feat: x');
+  });
+});
+
 describe('bumpOf', () => {
   it('takes the highest bump in the batch, not the last', () => {
-    // 一次 merge 通常只有一則，但 tag 漏掉一輪之後就會有好幾則要一起算。
     expect(bumpOf([REAL_SUBJECTS.docs, REAL_SUBJECTS.feat, REAL_SUBJECTS.fix])).toBe('minor');
     expect(bumpOf([REAL_SUBJECTS.feat, 'fix!: rename the share code field'])).toBe('major');
   });
@@ -95,33 +144,121 @@ describe('nextVersion', () => {
   });
 
   it('keeps a breaking change inside 0.x instead of declaring 1.0.0', () => {
-    // 升上 1.0.0 是在宣告穩定。那是產品決定，不是一則 commit 訊息可以代替人做的。
+    // Reaching 1.0.0 declares stability, which is a product decision.
     expect(nextVersion('v0.4.2', ['feat!: drop guest mode'])).toBe('0.5.0');
   });
 
   it('rejects a tag it cannot parse rather than guessing', () => {
-    // 猜的話會從錯誤的地方繼續數下去，而那個錯誤會一直帶著走。
+    // Guessing would carry the mistake forward from then on.
     expect(() => nextVersion('0.4.2', [])).toThrow(/not a version tag/);
     expect(() => nextVersion('v1.2', [])).toThrow(/not a version tag/);
     expect(() => nextVersion('v01.2.3', [])).toThrow(/not a version tag/);
   });
 });
 
-describe('the CLI contract the workflow depends on', () => {
-  const run = (latestTag, messages) =>
-    execFileSync('node', [SCRIPT, latestTag], { input: messages.join('\0'), encoding: 'utf8' });
+/**
+ * The CLI is what the workflow actually runs, so these cases build a real
+ * repository and pipe real `git log` output through the script. Anything less
+ * tests a shape git does not produce — which is exactly how the first version
+ * of this file passed while the pipeline was broken.
+ */
+describe('the CLI contract, against real git log output', () => {
+  let repo;
+
+  const git = (...args) =>
+    execFileSync('git', args, { cwd: repo, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+
+  const commit = (message) => {
+    fs.appendFileSync(path.join(repo, 'log.txt'), `${message}\n`);
+    git('add', '-A');
+    git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-m', message);
+  };
+
+  /** The exact pipeline in .github/workflows/release.yml. */
+  const release = (latestTag) => {
+    const range = latestTag ? `${latestTag}..HEAD` : 'HEAD';
+    const log = execFileSync('git', ['log', '-z', '--format=%B', range], { cwd: repo });
+    return execFileSync('node', [SCRIPT, latestTag], { input: log, encoding: 'utf8' });
+  };
+
+  beforeEach(() => {
+    repo = fs.mkdtempSync(path.join(os.tmpdir(), 'nextversion-'));
+    git('init', '-q', '-b', 'master');
+  });
+
+  afterEach(() => {
+    fs.rmSync(repo, { recursive: true, force: true });
+  });
 
   it('prints the bare version, with no v and no trailing newline', () => {
-    // workflow 直接把它接成 `v$VERSION`，多一個換行就會做出一個帶換行的 tag 名字。
-    expect(run('v0.4.2', [REAL_SUBJECTS.feat])).toBe('0.5.0');
+    // The workflow interpolates this straight into `v$VERSION`, so a newline
+    // would produce a tag name with a newline in it.
+    commit(REAL_SUBJECTS.feat);
+    git('tag', 'v0.4.2');
+    commit(REAL_SUBJECTS.fix);
+
+    expect(release('v0.4.2')).toBe('0.4.3');
   });
 
-  it('splits messages on NUL, so a multi-line body stays one commit', () => {
-    const breaking = 'feat: move the logs\n\nBREAKING CHANGE: childRecords moved';
-    expect(run('v1.0.0', [REAL_SUBJECTS.docs, breaking])).toBe('2.0.0');
+  it('finds a feat that is not the newest commit in the range', () => {
+    // The regression case. `git log --format=%B%x00` gave every entry after the
+    // first a leading newline, so this returned 0.4.3 while claiming to read
+    // the whole range.
+    commit(REAL_SUBJECTS.chore);
+    git('tag', 'v0.4.2');
+    commit(REAL_SUBJECTS.feat);
+    commit(REAL_SUBJECTS.docs);
+    commit(REAL_SUBJECTS.fix);
+
+    expect(release('v0.4.2')).toBe('0.5.0');
   });
 
-  it('handles an empty stdin as the no-commits case', () => {
-    expect(run('v0.4.2', [])).toBe('0.4.3');
+  it('finds a breaking change that is not the newest commit either', () => {
+    commit(REAL_SUBJECTS.chore);
+    git('tag', 'v1.4.2');
+    commit('feat!: drop the LocalStorage guest mode');
+    commit(REAL_SUBJECTS.docs);
+
+    expect(release('v1.4.2')).toBe('2.0.0');
+  });
+
+  it('keeps a multi-line body attached to its own subject', () => {
+    commit(REAL_SUBJECTS.chore);
+    git('tag', 'v1.0.0');
+    commit('feat: move the logs\n\nBREAKING CHANGE: childRecords moved out');
+    commit(REAL_SUBJECTS.docs);
+
+    expect(release('v1.0.0')).toBe('2.0.0');
+  });
+
+  it('reads the older --format=%B%x00 shape identically', () => {
+    // The release workflow uses `git log -z`, and these cases mirror it — so a
+    // workflow edited back to `--format=%B%x00` would not fail them. That shape
+    // terminates every entry with its own newline, which is what broke this
+    // script the first time. Pin the tolerance here rather than trusting the
+    // workflow to keep saying `-z`.
+    commit(REAL_SUBJECTS.chore);
+    git('tag', 'v0.4.2');
+    commit(REAL_SUBJECTS.feat);
+    commit(REAL_SUBJECTS.docs);
+
+    const log = execFileSync('git', ['log', '--format=%B%x00', 'v0.4.2..HEAD'], { cwd: repo });
+    const version = execFileSync('node', [SCRIPT, 'v0.4.2'], { input: log, encoding: 'utf8' });
+
+    expect(version).toBe('0.5.0');
+  });
+
+  it('returns the first version when the repository has no tags', () => {
+    commit(REAL_SUBJECTS.fix);
+
+    expect(release('')).toBe(FIRST_VERSION);
+  });
+
+  it('is a patch when the range is empty, which is a re-run', () => {
+    // The workflow must not act on this: see the already-tagged guard there.
+    commit(REAL_SUBJECTS.feat);
+    git('tag', 'v0.4.2');
+
+    expect(release('v0.4.2')).toBe('0.4.3');
   });
 });
