@@ -77,6 +77,15 @@ workflow exists yet**, so until one is added P2 runs on `master` only.
   PWA service worker or minification, and three of the six gaps in §1 live
   precisely there. `webServer` in the Playwright config owns start-up and
   teardown.
+- **One way `vite preview` is not production.** The build prerenders one
+  `index.html` per public page, but `preview` serves the *root* `index.html`
+  for any extensionless path, so `/littleouting` returns the home page's
+  prerendered `<title>` while `/littleouting/` returns the right one. In
+  production `firebase.json` sets `cleanUrls: true` and the correct file is
+  served either way. Only SEO-03 can see the difference — every other case
+  asserts what the browser shows after hydration — but it must request the
+  directory-index form and say why, or it fails at exactly the canonical URLs
+  `renderSitemap` emits.
 
 ## 5. Environment and the auth decision
 

@@ -29,7 +29,7 @@ address bar and the real chunk loader.
 
 | ID | Pri | Case | Expected |
 |---|---|---|---|
-| NAV-01 | P1 | Deep-link directly to each of the nine public paths | Page boots on that route and the URL is unchanged after load. Oracle is the prerendered `<title>` from `src/common/seo/pageMeta.ts`, which is derived per-`Page`. Do **not** assert `SERVICE_THEME[id].name`: only LittleOuting, BabyOasis and LittleGuard pass it to their `AppBar`; the hub has no `AppBar`, the LittleSteps wikis get theirs from `App.tsx`'s `getPageTitle()`, and the two other wikis use their own shells |
+| NAV-01 | P1 | Deep-link directly to each of the nine public paths | Page boots on that route and the URL is unchanged after load. Oracle is `document.title`, set per-route at runtime by `useDocumentMeta` from `pageMeta.ts` — this is hydration, not the prerendered file, which is SEO-03's separate concern. Do **not** assert `SERVICE_THEME[id].name`: only LittleOuting, BabyOasis and LittleGuard pass it to their `AppBar`; the hub has no `AppBar`, the LittleSteps wikis get theirs from `App.tsx`'s `getPageTitle()`, and the two other wikis use their own shells |
 | NAV-02 | P1 | Deep-link to a gated path (`/littlesteps/daily-log`) while signed out | See AUTH-01; asserted here only for "the URL does not change" |
 | NAV-03 | P1 | Navigate to an unknown path (`/nope`, `/littlesteps/nope`) | The hub landing renders; no blank page, no thrown error in the console |
 | NAV-04 | P1 | Legacy hash link (`/#/littleexplorer/wiki`) | `redirectLegacyHash()` lands on the path route, and the hash is gone from the URL |
@@ -71,8 +71,8 @@ Fully public, no Firebase, real data loaded at runtime. Covers plan §1 row 3.
 |---|---|---|---|
 | GUARD-01 | P0 | Board renders for the default county (台北市) and default age band, clock pinned inside the fresh window | Disease rows present with counts and trend indicators; no empty state |
 | GUARD-02 | P0 | Fresh data | The week range matches the fixture; **no** freshness banner renders — the banner exists only for stale and expired |
-| GUARD-03 | P0 | Stale data (clock ≥14 days past `weekEnd`) | The stale banner renders; rows still show status |
-| GUARD-04 | P0 | Expired data (clock ≥35 days past `weekEnd`) | The expired banner renders, row status is suppressed (`showStatus={false}`) and the board summary is hidden. This is the state real users hit most often given how the data is refreshed, and it is untested at any level today |
+| GUARD-03 | P0 | Stale data (clock >14 days past `weekEnd` — `freshnessOf` is strictly greater-than, so +14 exactly is still fresh) | The stale banner renders; rows still show status |
+| GUARD-04 | P0 | Expired data (clock >35 days past `weekEnd`; +35 exactly is still stale) | The expired banner renders, row status is suppressed (`showStatus={false}`) and the board summary is hidden. This is the state real users hit most often given how the data is refreshed, and it is untested at any level today |
 | GUARD-05 | P1 | Switch county via `CountyPicker` | Board reloads for the new county; `aria-pressed` moves to the chosen chip; the selection survives a reload |
 | GUARD-06 | P1 | Switch age band | Rows change; the age label reflects the chosen band |
 | GUARD-07 | P1 | Open a disease drawer from a row | Drawer opens with that disease's detail and closes back to the board |
@@ -92,7 +92,7 @@ about.
 | OASIS-04 | P1 | Category chips and 排除內部場所 filter | Start from a district filter so a list already exists — pressing 排除內部場所 from nothing is what *creates* the list, so there is no prior count to compare against. Then the count changes, `aria-pressed` reflects state, and pressing again clears it |
 | OASIS-05 | P1 | Open a room's detail sheet and the report form | Sheet opens with address and facilities; the report button opens the form while signed out |
 | OASIS-06 | P1 | Map container renders with tiles route-blocked | Leaflet mounts and markers/clusters are present; the blocked tiles are declared, not discovered as a timeout |
-| OASIS-07 | P0 | `nursingRooms.json` fails to load (route-blocked) | The page states that the data is unavailable rather than rendering an empty map that reads as "no nursing rooms near you". This is the only one of the three runtime datasets whose delivery depends on runtime caching — 1.1 MB, deliberately excluded from the PWA precache and fetched on first map visit — and it has no distinct failure state today. **If none exists, that is a product bug to file, not a test to force** |
+| OASIS-07 | P0 | `nursingRooms.json` fails to load (route-blocked) | `LoadState` goes to `failed` and the 哺乳室資料載入失敗 empty state renders with its 重新載入 action, while the AppBar subtitle switches to 資料載入失敗 — never an empty map that reads as "no nursing rooms near you". 1.1 MB, deliberately excluded from the PWA precache and fetched on first map visit, so this is the one dataset whose delivery depends on runtime caching |
 | OASIS-08 | P2 | Long venue name beside a tag at 320px | Name truncates, tag keeps full width, tag's left edge is at or after the name's right edge |
 
 ## OUTING — LittleOuting venues
@@ -103,7 +103,7 @@ about.
 | OUTING-02 | P1 | Search and clear | Results filter; the clear button restores the full list |
 | OUTING-03 | P0 | Selecting a city chip on 親子館 renders that city's access panel | A city with verified 使用規則 shows them; a city without shows `CENTRE_ACCESS_UNVERIFIED` instead. Never verified-looking copy for a city nobody checked — this is public-service information a parent plans a trip around |
 | OUTING-04 | P0 | `familyCentres.json` fails to load (route-blocked) | The 親子館資料載入失敗 empty state renders rather than an empty list that reads as "no venues near you" |
-| OUTING-05 | P2 | Outing checklist renders | Every checklist item for the active venue kind renders with its question and its rationale. **There are no toggles** — `ChecklistItem` is `{ id, question, why, appliesTo }` and the page renders static cards; do not assert interactive state |
+| OUTING-05 | P2 | Outing checklist renders | The 出發前 tab renders **every** item in `outingChecklist` with its question and its rationale. Two things not to assert: there are no toggles (`ChecklistItem` carries no state and the page renders static cards), and there is no per-venue filtering — the tab maps the list unfiltered and `appliesTo` is unused outside its own module |
 
 ## WIKI — the three knowledge bases
 
@@ -142,9 +142,9 @@ This plan already builds and serves `dist/`, so the check is nearly free.
 
 | ID | Pri | Case | Expected |
 |---|---|---|---|
-| SEO-01 | P0 | `GET /robots.txt` on the built app | Returns 200 and disallows every path where `requiresAuth` is true. Derived from `requiresAuth`, like AUTH-04 — not a hard-coded list |
+| SEO-01 | P0 | `GET /robots.txt` on the built app | Returns 200 and disallows every path where `requiresAuth` is true. Derived from `requiresAuth`, like AUTH-04 — not a hard-coded list. Note that `renderRobotsTxt` anchors the three service roots (`Disallow: /littlesteps$`), so assert containment per route rather than line-exact equality |
 | SEO-02 | P0 | `GET /sitemap.xml` on the built app | Returns 200 and lists exactly `INDEXABLE_PAGES` — no gated route present, no public route missing |
-| SEO-03 | P1 | Prerendered `<title>` and meta per route | Each public route's served HTML carries the `pageMeta` title NAV-01 asserts against, so the two cases cannot drift apart |
+| SEO-03 | P1 | Prerendered `<title>` and meta per route | The prerender hook emits one `index.html` per public page, but **`vite preview` serves the root `index.html` for every extensionless path**, so requesting `/littleouting` returns the *home* title. Request the directory-index form (`/littleouting/`) and say why: production serves the prerendered file because `firebase.json` sets `cleanUrls: true`. Asserts the served HTML before any JavaScript runs — a different mechanism from NAV-01 |
 
 ## PWA — shell and service worker
 
@@ -152,7 +152,7 @@ This plan already builds and serves `dist/`, so the check is nearly free.
 |---|---|---|---|
 | PWA-01 | P1 | Manifest is served and parses | `manifest.webmanifest` returns 200 with a name, icons and a start URL |
 | PWA-02 | P1 | Service worker registers on the built app | Registration resolves; no console error |
-| PWA-03 | P2 | No uncaught console errors on any public route | Collected per route and asserted empty, with a declared allowlist for the blocked tile requests |
+| PWA-03 | P2 | No uncaught console errors on any public route | Collected per route and asserted empty, with a declared allowlist naming **every** host the harness route-blocks: map tiles, `firebase.googleapis.com` and `*.google-analytics.com` (plan §5). An aborted route produces a console error, so a blocklist that outgrows this allowlist turns PWA-03 red for no product reason |
 
 ---
 
@@ -162,18 +162,18 @@ Listed so the IDs are reserved and the shape is agreed. These need the Firebase
 Auth and Database emulators (plan §5) and must not be started before Phase 1 is
 green on `master`.
 
-| ID | Pri | Case |
-|---|---|---|
-| A-LOG-01 | P0 | Create a feeding log and see it in the timeline with the canonical labels |
-| A-LOG-02 | P0 | Repeat-last-log writes a new record without opening the form |
-| A-LOG-03 | P0 | Two members editing the same log — the concurrent-write behaviour issue #42 is about |
-| A-CHILD-01 | P0 | Create a child, switch children, and confirm per-child data isolation |
-| A-CHILD-02 | P0 | Share code join and revoke, end to end against the emulator |
-| A-CHILD-03 | P0 | Delete a child and confirm the single root fan-out leaves nothing behind |
-| A-GROWTH-01 | P1 | Record a growth measurement and see it plotted |
-| A-VAX-01 | P1 | Toggle a vaccine dose and see the next-dose card update |
-| A-REPORT-01 | P1 | The report reflects logs written in the same session |
-| A-ISO-01 | P0 | Signed in as user B, deep-link to a `childId` belonging to user A | The gate renders, not the record. This is the sentence the risk model leads with — "a parent is shown another family's data" — and nothing in the catalogue attempts it until here |
+| ID | Pri | Case | Note |
+|---|---|---|---|
+| A-LOG-01 | P0 | Create a feeding log and see it in the timeline with the canonical labels | |
+| A-LOG-02 | P0 | Repeat-last-log writes a new record without opening the form | |
+| A-LOG-03 | P0 | Two members editing the same log | The concurrent-write behaviour issue #42 is about |
+| A-CHILD-01 | P0 | Create a child, switch children, and confirm per-child data isolation | |
+| A-CHILD-02 | P0 | Share code join and revoke, end to end against the emulator | |
+| A-CHILD-03 | P0 | Delete a child and confirm the single root fan-out leaves nothing behind | |
+| A-GROWTH-01 | P1 | Record a growth measurement and see it plotted | |
+| A-VAX-01 | P1 | Toggle a vaccine dose and see the next-dose card update | |
+| A-REPORT-01 | P1 | The report reflects logs written in the same session | |
+| A-ISO-01 | P0 | Signed in as user B, deep-link to a `childId` belonging to user A | The gate renders, not the record. This is the sentence the risk model leads with — "a parent is shown another family's data" — and nothing else in the catalogue attempts it |
 | A-ISO-02 | P0 | After revocation, a previously-shared child is gone from B's list on the next load | The revocable half of the share code, end to end |
 | A-OFFLINE-01 | P1 | `context.setOffline(true)` on an authenticated route | The 連不上伺服器 empty state renders — after 10s, or immediately when `navigator.onLine` is false. The one failure mode a PWA has that a website does not: RTDB's `onValue` never calls back and the page would otherwise spin forever |
 
