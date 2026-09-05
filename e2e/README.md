@@ -64,8 +64,10 @@ the `pinClock` fixture.
 5. **Pin the clock** with the `pinClock` fixture for anything date-dependent,
    before the navigation that renders it.
 6. **Use the layout helpers** in `fixtures/layout.ts` rather than measuring by
-   hand: page overflow, tap targets, name/tag overlap, and whether a control is
-   inside the viewport.
+   hand: page overflow, a scrolling row containing its own overflow, tap
+   targets, name/tag overlap, and whether a control is inside the viewport.
+   They poll, so they survive a sheet that is still animating in — which is the
+   only reason a spec never needs `waitForTimeout` around one.
 
 ## Selector policy, short form
 
