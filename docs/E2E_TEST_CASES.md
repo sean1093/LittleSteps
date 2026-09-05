@@ -22,6 +22,17 @@ Unless a case says otherwise, every case runs at **390px** and **320px**, and
 
 ---
 
+## HARNESS — the suite's own configuration
+
+One case, and it stays one case. It covers the risk that the harness is
+misconfigured rather than any risk to a parent, which is why it is not in the
+table of the plan's six gaps: everything below it reports a false failure if
+this one is red, so it is worth being able to see that in a single line.
+
+| ID | Pri | Case | Expected |
+|---|---|---|---|
+| HARNESS-01 | P0 | `/babyoasis` loads on the production build at both viewports | The search input is present — it renders only after the 1.1 MB dataset arrives — and at least one map cluster is drawn with tiles route-blocked. Fails if the build, the dummy Firebase values, the preview server, the route blocking, a viewport project or the `data-testid` set is wrong |
+
 ## NAV — routing, deep links, lazy chunks
 
 Covers plan §1 rows 1 and 4. Nothing here can be a unit test: they all need the
@@ -192,5 +203,5 @@ green on `master`.
 
 ## Case count
 
-Phase 1: **47** cases — NAV 7, AUTH 4, GUARD 9, OASIS 8, OUTING 5, WIKI 5,
-RWD 3, SEO 3, PWA 3. Phase 2: **12** reserved IDs.
+Phase 1: **48** cases — HARNESS 1, NAV 7, AUTH 4, GUARD 9, OASIS 8, OUTING 5,
+WIKI 5, RWD 3, SEO 3, PWA 3. Phase 2: **12** reserved IDs.
