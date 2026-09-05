@@ -124,8 +124,8 @@ Per plan §7. These assert measurements, never images. Each runs at 390px and
 
 | ID | Pri | Case | Expected |
 |---|---|---|---|
-| RWD-01 | P1 | No horizontal page scroll on every public route | `body.scrollWidth <= body.clientWidth`; deliberate scrollers exempted by asserting on their own container, selected by `data-testid` |
-| RWD-02 | P1 | Tap targets on every public route | Every enabled control **the design system owns** — `button`, `input`, `[role=button]`, links styled as buttons — is ≥44px in its smaller dimension. Inline links in prose and Leaflet's attribution chrome are excluded by the plan's §7; including them yields only false positives |
+| RWD-01 | P1 | No horizontal page scroll on every public route | `body.scrollWidth <= body.clientWidth`; deliberate scrollers exempted by asserting on their own container, selected by `data-testid` — that it is a scroll container and fits the viewport, never that it overflows |
+| RWD-02 | P1 | Tap targets on every public route | Every enabled control **the design system owns** — `button`, `input`, `[role=button]`, links styled as buttons — is ≥44px in its smaller dimension. Inline links in prose are excluded, and so is everything inside `.leaflet-container`: Leaflet marks its markers `role="button"`, so a 3,852-room map is otherwise the whole result. See the plan's §7, including the residual risk of an app-owned control inside a Leaflet popup |
 | RWD-03 | P1 | An open modal's submit control is inside the viewport | Guards `max-h-[85vh] overflow-y-auto`, which exists so the submit button is reachable with the keyboard open |
 
 ## SEO — the crawl boundary over gated routes
