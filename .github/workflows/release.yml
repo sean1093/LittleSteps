@@ -1,0 +1,99 @@
+name: Release
+
+# Every merge to master gets a version tag, and the tag is the only answer to
+# "which version is live" -- package.json's version is never published and never
+# read by anything.
+#
+# The trigger is CI finishing, not the push itself. A tag says this commit was
+# verified, so it must not exist for a commit whose lint, unit or E2E job went
+# red. That does mean a red master is left untagged; the next green merge picks
+# up every commit since the last tag and bumps once for the highest of them.
+on:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+    branches: [master]
+
+permissions:
+  contents: write
+
+# Two merges in quick succession would otherwise race for the same next version.
+# No cancel-in-progress: a superseded run here means a merge that never gets a
+# tag at all.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    # `workflow_run` fires for a failed run too, and the whole point is not to
+    # tag one.
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The commit CI actually verified, not whatever master points at by
+          # the time this runs.
+          ref: ${{ github.event.workflow_run.head_sha }}
+          # Tags, and enough history to list the commits since the last one.
+          fetch-depth: 0
+
+      - name: Work out the next version
+        id: version
+        run: |
+          set -euo pipefail
+
+          # Highest existing version tag, or empty on the very first release.
+          latest="$(git tag --list 'v*' --sort=-v:refname | head -n 1)"
+
+          if [ -n "$latest" ]; then
+            range="${latest}..HEAD"
+          else
+            range="HEAD"
+          fi
+
+          # NUL-separated: a commit message has newlines in it, so a
+          # line-oriented feed would split one commit into several.
+          version="$(git log --format=%B%x00 "$range" | node scripts/nextVersion.cjs "$latest")"
+
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Previous: ${latest:-(none)} -> v$version"
+
+      - name: Stop if that tag already exists
+        id: exists
+        run: |
+          set -euo pipefail
+          # A re-run of a CI run that already released must not fail the job,
+          # and must not move a tag people may already have fetched.
+          if git rev-parse -q --verify "refs/tags/v${{ steps.version.outputs.version }}" >/dev/null; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "v${{ steps.version.outputs.version }} already exists; nothing to do."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Tag the verified commit
+        if: steps.exists.outputs.skip == 'false'
+        run: |
+          set -euo pipefail
+          git tag "v${{ steps.version.outputs.version }}" "${{ github.event.workflow_run.head_sha }}"
+          git push origin "v${{ steps.version.outputs.version }}"
+
+      - name: Publish the release
+        if: steps.exists.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # --generate-notes writes the changelog from the pull requests merged
+          # since the previous tag, which is what a squash-merge history is good
+          # for. --verify-tag refuses to invent a tag if the push above failed.
+          # GitHub picks the previous tag as the starting point on its own, so
+          # there is nothing to pass here and one less expression to get wrong.
+          gh release create "v${{ steps.version.outputs.version }}" \
+            --title "v${{ steps.version.outputs.version }}" \
+            --generate-notes \
+            --verify-tag

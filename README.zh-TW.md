@@ -506,6 +506,33 @@ app 既讀不到孩子、也加不了孩子。第 2 步必須在第 3 步之前�
    開 PR 之前，`npm run build`、`npm run lint` 和 `npx vitest run` 仍然要自己
    跑過 — 而且要在 390px 的視窗寬度下看過改動。
 
+## 版本
+
+每一次 merge 進 `master` 都會打上 `vX.Y.Z` 的 tag 並發佈成 GitHub release，
+所以「線上跑的是哪一版」永遠有答案。`package.json` 的 `version` 不是那個答案，
+從來也不是 — 這是一個 private 套件，不會發佈，沒有任何東西讀那個欄位。
+
+tag 由 `.github/workflows/release.yml` 在 **CI 通過時**打上，而不是在 merge
+落地時。所以有 tag 就代表那個 commit 驗證過了；`master` 紅燈時不會有 tag，
+下一次綠燈的 merge 會把上一個 tag 之後的所有 commit 一起算，只跳一次。
+
+跳幾級由 squash commit 的 conventional commit 標題決定 — 因為這個 repo 一律
+squash merge，那個標題就是 PR 標題：
+
+| 標題 | 級距 |
+|---|---|
+| `feat:` | minor |
+| 其他（`fix:`、`docs:`、`chore:` …） | patch |
+| `type!:` 或 body 裡的 `BREAKING CHANGE:` | major |
+
+有兩個刻意的選擇。每一次 merge 都會有版本，連只改文件的也是，因為每一次 merge
+進 `master` 就是一次部署，而部署就該有名字。以及主版號還是 `0` 的時候，破壞
+相容性的改動只升 **minor** — 升上 `1.0.0` 是在宣告穩定，那是產品決定，不該由
+一則 commit 訊息代替人做。
+
+級距的邏輯放在 `scripts/nextVersion.cjs` 並且有單元測試，因為版號印錯了照樣是
+一個合法的 tag：不會有任何東西壞掉，只是從此對不上。
+
 ## 發展藍圖
 
 - **現在** — 六個服務全部上線、多裝置同步、意見回報
