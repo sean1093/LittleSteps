@@ -99,18 +99,41 @@ test('OUTING-03 @p0 a county shows its verified rules, or says they are unverifi
   await expect(page.getByText(access.fee.value)).toHaveCount(0);
 });
 
-test('OUTING-04 @p0 a failed familyCentres.json says so instead of listing nothing', async ({
-  page,
-}) => {
-  const outing = new OutingPage(page);
+/**
+ * OUTING-04 runs with no service worker, and that is the case rather than a
+ * convenience.
+ *
+ * `familyCentres.json` is inside the PWA precache — `vite.config.ts` precaches
+ * every built JSON file and `globIgnores` excludes only `nursingRooms.json`, so
+ * the built worker carries this roster and OASIS-07's dataset is the one that
+ * is fetched cold. Once the worker controls the page, the page's `fetch` is
+ * answered from that precache and never reaches the network, and Playwright
+ * cannot block a request a service worker answers. Whether the worker has
+ * claimed the client before `OutingPage`'s effect runs is a race with the lazy
+ * chunk, so the same spec passes on one machine and fails on another while the
+ * app behaves identically on both.
+ *
+ * Blocking the worker pins the case to the visit it is about: a parent arriving
+ * with nothing cached, which is the only visit on which this failure path is
+ * reachable at all. A parent with a warm precache is shown the cached roster
+ * instead, which is a different case and not a broken one.
+ */
+test.describe('a first visit, with nothing in the PWA precache', () => {
+  test.use({ serviceWorkers: 'block' });
 
-  await page.route('**/data/familyCentres.json', (route) => route.abort('failed'));
+  test('OUTING-04 @p0 a failed familyCentres.json says so instead of listing nothing', async ({
+    page,
+  }) => {
+    const outing = new OutingPage(page);
 
-  await outing.goto();
+    await page.route('**/data/familyCentres.json', (route) => route.abort('failed'));
 
-  await expect(outing.loadFailedTitle).toBeVisible();
-  // An empty list here would read as "there are no venues near you".
-  await expect(page.getByRole('heading', { name: '找不到符合的場地' })).toHaveCount(0);
+    await outing.goto();
+
+    await expect(outing.loadFailedTitle).toBeVisible();
+    // An empty list here would read as "there are no venues near you".
+    await expect(page.getByRole('heading', { name: '找不到符合的場地' })).toHaveCount(0);
+  });
 });
 
 test('OUTING-05 @p2 the checklist tab renders every item with its reason', async ({ page }) => {
