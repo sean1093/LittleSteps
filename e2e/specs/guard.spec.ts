@@ -245,23 +245,46 @@ test('GUARD-07 @p1 a disease drawer opens from its row and closes back to the bo
   await expect(guard.rowVisits(DRAWER_DISEASE, cell.visits)).toBeVisible();
 });
 
-test('GUARD-08 @p0 the empty state renders when the radar data cannot be loaded', async ({
-  page,
-}) => {
-  const guard = new LittleGuardPage(page);
+/**
+ * GUARD-08 runs with no service worker, and that is the case, not a workaround.
+ *
+ * `diseaseRadar.json` is inside the PWA precache: `vite.config.ts` precaches
+ * every built JSON file and excludes only `nursingRooms.json`. So once the
+ * worker controls the page, the board's `fetch` is answered out of the precache
+ * and never reaches the network — and Playwright cannot see, let alone block, a
+ * request a service worker answers. Whether the worker has claimed the client
+ * by the time `RadarPage`'s effect runs is a race between the worker's install
+ * and the page's lazy chunk: this machine loses that race and CI wins it, so
+ * with the worker left on, the same spec passes locally and fails in CI while
+ * the app behaves identically in both.
+ *
+ * Blocking the worker pins the case to the visit it is actually about — a
+ * parent arriving with nothing cached, which is the only state in which the
+ * board's failure path is reachable at all. A parent with a warm precache is
+ * shown the cached board instead, and the freshness banner then tells them how
+ * old it is; that is GUARD-02…04's subject, not this one's.
+ */
+test.describe('a first visit, with nothing in the PWA precache', () => {
+  test.use({ serviceWorkers: 'block' });
 
-  await page.route('**/data/diseaseRadar.json', (route) => route.abort('failed'));
+  test('GUARD-08 @p0 the empty state renders when the radar data cannot be loaded', async ({
+    page,
+  }) => {
+    const guard = new LittleGuardPage(page);
 
-  await guard.goto();
+    await page.route('**/data/diseaseRadar.json', (route) => route.abort('failed'));
 
-  await expect(guard.emptyState).toBeVisible();
-  // The failure has to be legible as a failure. A board that renders empty
-  // reads as "nothing is going around", which is the one thing this page must
-  // never say when it does not know.
-  for (const { disease } of boardOf(DEFAULT_COUNTY, DEFAULT_BAND)) {
-    await expect(guard.row(disease)).toHaveCount(0);
-  }
-  await expect(guard.boardSummary).toHaveCount(0);
+    await guard.goto();
+
+    await expect(guard.emptyState).toBeVisible();
+    // The failure has to be legible as a failure. A board that renders empty
+    // reads as "nothing is going around", which is the one thing this page must
+    // never say when it does not know.
+    for (const { disease } of boardOf(DEFAULT_COUNTY, DEFAULT_BAND)) {
+      await expect(guard.row(disease)).toHaveCount(0);
+    }
+    await expect(guard.boardSummary).toHaveCount(0);
+  });
 });
 
 test('GUARD-09 @p2 the county chip row scrolls inside itself, not the page', async ({ page }) => {
