@@ -44,8 +44,8 @@ e2e/
 Import `test` and `expect` from `../fixtures/test`, never from
 `@playwright/test`. That object blocks the third-party hosts in
 `fixtures/blockedHosts.ts` — map tiles, `firebase.googleapis.com`,
-`*.google-analytics.com` — before a spec can navigate anywhere, and supplies
-the `pinClock` fixture.
+`*.google-analytics.com` and `apis.google.com` — before a spec can navigate
+anywhere, and supplies the `pinClock` fixture.
 
 ## Adding a case
 

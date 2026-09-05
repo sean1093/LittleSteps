@@ -13,6 +13,11 @@ import type { Page } from '@playwright/test';
  *   and dynamically imports `firebase/analytics`, which fetches a web config.
  *   On the dummy credentials that request fails and retries with backoff.
  * - `*.google-analytics.com`: where the events themselves would go.
+ * - `apis.google.com`: `AuthContext` calls `getRedirectResult()` on mount, on
+ *   every route including the public ones, and Firebase Auth answers that by
+ *   loading Google's `api.js` to build its sign-in iframe. It is the one call
+ *   that does reach Google while signed out, so blocking it is what makes the
+ *   plan's "no authenticated call reaches Google" true rather than assumed.
  *
  * Exported because PWA-03 asserts "no uncaught console errors" and an aborted
  * request logs one. That case allowlists exactly this list rather than
@@ -22,6 +27,7 @@ export const BLOCKED_HOSTS = [
   'tile.openstreetmap.org',
   'firebase.googleapis.com',
   'google-analytics.com',
+  'apis.google.com',
 ] as const;
 
 /** True for a blocked host itself or any subdomain of it. */
