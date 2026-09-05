@@ -122,7 +122,9 @@ export default function ToddlerWikiPage({ currentChild, reminderBadge }: Toddler
       <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="space-y-4">
         <div>
           <h2 className="text-sm font-semibold text-explorer-bark/70 mb-2">依年齡看</h2>
-          <div className="row-bleed flex gap-2 py-1">
+          {/* data-testid：這一列刻意橫向捲動，E2E 要單獨量它，而不是算成整頁的水平
+              溢出；捲動容器沒有角色也沒有可及名稱可選（docs/E2E_TEST_PLAN.md §6）。 */}
+          <div data-testid="scroll-row-explorer-wiki-stages" className="row-bleed flex gap-2 py-1">
             {[{ id: 'all', label: '全部' }, ...WIKI_STAGES].map(({ id, label }) => {
               const isActive = stage === id;
               return (

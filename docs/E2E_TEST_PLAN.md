@@ -192,15 +192,28 @@ encodes that as two viewport projects and asserts *invariants*, not images:
 
 - **No horizontal overflow of the page body:** `scrollWidth <= clientWidth` on
   `body` at both widths. Intentionally scrolling rows are asserted on their own
-  container instead, selected by the `data-testid` §5 enumerates.
+  container instead, selected by the `data-testid` §5 enumerates: that the row
+  is a scroll container and is no wider than the viewport. Not that it
+  overflows — whether three chips fit at 320px is a property of the content on
+  the day, and asserting it fails a row that is behaving.
 - **Tap targets:** every enabled control **the design system owns** —
   `button`, `input`, `[role=button]`, and links styled as buttons — is at least
   44px in its smaller dimension. Inline links inside prose (the 疾管署 citation,
-  a `tel:` link) and third-party map chrome (Leaflet's attribution) are excluded
-  and would otherwise make this a false-positive generator: `.chip`,
-  `.btn-primary`, `.btn-secondary`, `.btn-ghost` all carry `min-h-tap` and
-  `.btn-icon` is `w-tap h-tap`, so the design system is already compliant by
-  construction.
+  a `tel:` link) are excluded, and so is **everything Leaflet draws**, not only
+  its attribution: Leaflet marks its interactive markers `role="button"`, so on
+  BabyOasis the 32px and 40px icons of a 3,852-room map are otherwise the
+  entire output of this assertion. The exclusion is `.leaflet-container`, and
+  its residual risk is that an app-owned control placed inside a Leaflet popup
+  would escape the size check silently; nothing does that today. What is left
+  is compliant by construction: `.chip`, `.btn-primary`, `.btn-secondary` and
+  `.btn-ghost` all carry `min-h-tap`, and `.btn-icon` is `w-tap h-tap`.
+
+  This assertion is also the **one carve-out from §6's ban on class
+  selectors**: `a.btn-primary` and its siblings are how the scope "links styled
+  as buttons" is expressed, because nothing else distinguishes such a link from
+  one inside a paragraph. Know the failure mode — renaming the token makes the
+  check quietly stop covering those links rather than fail — so a rename
+  updates the helper in the same commit.
 - **No visual overlap** between a truncating name and the tag beside it: the
   tag's left edge is at or after the name's right edge.
 - **Modal reachability:** the submit control of an open modal is inside the

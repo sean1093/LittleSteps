@@ -114,8 +114,10 @@ export default function WikiBrowser<
         )}
       </div>
 
+      {/* data-testid：下面那一列刻意橫向捲動，E2E 要單獨量它，而不是算成整頁的
+          水平溢出；捲動容器沒有角色也沒有可及名稱可選（docs/E2E_TEST_PLAN.md §6）。 */}
       {categories.length > 1 && (
-        <div className="row-bleed flex gap-2 pb-1">
+        <div data-testid="scroll-row-wiki-categories" className="row-bleed flex gap-2 pb-1">
           {(['all', ...categories] as const).map((value) => {
             const isActive = category === value;
             const iconName = value === 'all' ? 'LayoutGrid' : categoryIcons?.[value as Category];

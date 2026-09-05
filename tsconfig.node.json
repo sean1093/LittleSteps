@@ -1,6 +1,10 @@
 {
   "compilerOptions": {
-    "composite": true,
+    // noEmit, and therefore not `composite`: a composite project may not
+    // disable emit, and running `tsc -p tsconfig.node.json` used to scatter
+    // .js, .d.ts and .tsbuildinfo files through src/ — none of them ignored,
+    // all of them one `git add -A` from being committed.
+    "noEmit": true,
     "skipLibCheck": true,
     "module": "ESNext",
     "moduleResolution": "bundler",

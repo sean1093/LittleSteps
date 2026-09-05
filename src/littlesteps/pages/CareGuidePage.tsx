@@ -65,7 +65,14 @@ export default function CareGuidePage() {
         </motion.div>
 
         {/* Category Filter */}
-        <div className="row-bleed flex gap-2 pb-2 mb-4">
+        {/* data-testid: this row scrolls horizontally on purpose, so the E2E
+            layout checks measure it on its own rather than counting it as page
+            overflow. A scroll container has no role and no accessible name to
+            select by (docs/E2E_TEST_PLAN.md §6). */}
+        <div
+          data-testid="scroll-row-care-guide-categories"
+          className="row-bleed flex gap-2 pb-2 mb-4"
+        >
           {careCategories.map((category) => {
             const IconComponent = getLucideIcon(category.icon);
 

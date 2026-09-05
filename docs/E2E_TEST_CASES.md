@@ -22,6 +22,17 @@ Unless a case says otherwise, every case runs at **390px** and **320px**, and
 
 ---
 
+## HARNESS — the suite's own configuration
+
+One case, and it stays one case. It covers the risk that the harness is
+misconfigured rather than any risk to a parent, which is why it is not in the
+table of the plan's six gaps: everything below it reports a false failure if
+this one is red, so it is worth being able to see that in a single line.
+
+| ID | Pri | Case | Expected |
+|---|---|---|---|
+| HARNESS-01 | P0 | `/babyoasis` loads on the production build at both viewports | The search input is present — it renders only after the 1.1 MB dataset arrives — and at least one map cluster is drawn with tiles route-blocked. Fails if the build, the dummy Firebase values, the preview server, the route blocking, a viewport project or the `data-testid` set is wrong |
+
 ## NAV — routing, deep links, lazy chunks
 
 Covers plan §1 rows 1 and 4. Nothing here can be a unit test: they all need the
@@ -124,8 +135,8 @@ Per plan §7. These assert measurements, never images. Each runs at 390px and
 
 | ID | Pri | Case | Expected |
 |---|---|---|---|
-| RWD-01 | P1 | No horizontal page scroll on every public route | `body.scrollWidth <= body.clientWidth`; deliberate scrollers exempted by asserting on their own container, selected by `data-testid` |
-| RWD-02 | P1 | Tap targets on every public route | Every enabled control **the design system owns** — `button`, `input`, `[role=button]`, links styled as buttons — is ≥44px in its smaller dimension. Inline links in prose and Leaflet's attribution chrome are excluded by the plan's §7; including them yields only false positives |
+| RWD-01 | P1 | No horizontal page scroll on every public route | `body.scrollWidth <= body.clientWidth`; deliberate scrollers exempted by asserting on their own container, selected by `data-testid` — that it is a scroll container and fits the viewport, never that it overflows |
+| RWD-02 | P1 | Tap targets on every public route | Every enabled control **the design system owns** — `button`, `input`, `[role=button]`, links styled as buttons — is ≥44px in its smaller dimension. Inline links in prose are excluded, and so is everything inside `.leaflet-container`: Leaflet marks its markers `role="button"`, so a 3,852-room map is otherwise the whole result. See the plan's §7, including the residual risk of an app-owned control inside a Leaflet popup |
 | RWD-03 | P1 | An open modal's submit control is inside the viewport | Guards `max-h-[85vh] overflow-y-auto`, which exists so the submit button is reachable with the keyboard open |
 
 ## SEO — the crawl boundary over gated routes
@@ -192,5 +203,5 @@ green on `master`.
 
 ## Case count
 
-Phase 1: **47** cases — NAV 7, AUTH 4, GUARD 9, OASIS 8, OUTING 5, WIKI 5,
-RWD 3, SEO 3, PWA 3. Phase 2: **12** reserved IDs.
+Phase 1: **48** cases — HARNESS 1, NAV 7, AUTH 4, GUARD 9, OASIS 8, OUTING 5,
+WIKI 5, RWD 3, SEO 3, PWA 3. Phase 2: **12** reserved IDs.

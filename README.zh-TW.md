@@ -292,7 +292,7 @@ Motion、Lucide icons、React Hooks + Context、Leaflet 加上分群。
 
 **後端** — Firebase Authentication、Realtime Database 與 Analytics。
 
-**工具** — Vitest + Testing Library、ESLint、Husky pre-commit、
+**工具** — Vitest + Testing Library、Playwright、ESLint、Husky pre-commit、
 `vite-plugin-pwa`、GitHub Actions。
 
 ---
@@ -328,6 +328,7 @@ npm run lint
 npm run test           # watch 模式
 npm run test:coverage
 npm run test:rules     # 用 Database 模擬器驗 database.rules.json
+npm run test:e2e       # Playwright，390px 與 320px 各跑一次
 ```
 
 `npm run test:rules` 會透過 `firebase emulators:exec`，把 `scripts/testRules.cjs`
@@ -335,6 +336,11 @@ npm run test:rules     # 用 Database 模擬器驗 database.rules.json
 formula 是 keg-only，`/opt/homebrew/opt/openjdk/bin` 必須在 `PATH` 上，不然
 模擬器會找不到 `java`。每次改完 `database.rules.json` 都要跑一次 — 這是唯一能
 讓你發現自己剛剛把一家人擋在孩子的健康紀錄外面、或是把紀錄開放給陌生人的方法。
+
+`npm run test:e2e` 會先 build 再把 `dist/` 服務起來才開 Chromium，所以啟動時
+要等一次 build 的時間，驗的也是正式建置的輸出，而不是 dev server。怎麼只跑一
+部分、怎麼加一個案例寫在 `e2e/README.md`；哪些東西才該進這個測試套件則寫在
+`docs/E2E_TEST_PLAN.md`。
 
 哺乳室資料集在 `public/data/nursingRooms.json`，由
 `scripts/buildNursingRooms.cjs` 重新產生；親子館名單是
@@ -496,9 +502,9 @@ app 既讀不到孩子、也加不了孩子。第 2 步必須在第 3 步之前�
 2. 遵守上面的設計系統。最該避免的，就是多出第二種畫卡片的方法。
 3. Conventional commits：`feat:` `fix:` `refactor:` `style:` `docs:` `test:`
    `chore:`。
-4. CI 只會 build PR 並部署一個預覽，所以開 PR 之前，`npm run build`、
-   `npm run lint` 和 `npx vitest run` 要自己跑過 — 而且要在 390px 的視窗寬度
-   下看過改動。
+4. 每個 PR，CI 都會跑 lint、單元測試與 P0/P1 的端對端案例，並部署一個預覽。
+   開 PR 之前，`npm run build`、`npm run lint` 和 `npx vitest run` 仍然要自己
+   跑過 — 而且要在 390px 的視窗寬度下看過改動。
 
 ## 發展藍圖
 

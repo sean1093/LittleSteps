@@ -79,6 +79,27 @@ const STATION_ICON = L.divIcon({
   iconAnchor: [13, 13],
 });
 
+/**
+ * 群集標記的圖示：內容與 leaflet.markercluster 的預設值完全相同，只多一個
+ * data-testid。
+ *
+ * 群集是外掛在執行時動態產生的 DivIcon，既不是按鈕也沒有可及名稱，E2E 要
+ * 確認「地圖上真的有畫出群集」時沒有別的選法（見 docs/E2E_TEST_PLAN.md §6）。
+ * 分級的門檻（10、100）與 40px 的尺寸都照抄預設，換掉的只有 html 這一行。
+ *
+ * 這段 HTML 是字串，在 Tailwind 的掃描範圍外，樣式仍由外掛自己的 CSS 負責。
+ */
+const CLUSTER_ICON = (cluster: { getChildCount: () => number }) => {
+  const count = cluster.getChildCount();
+  const size = count < 10 ? 'small' : count < 100 ? 'medium' : 'large';
+
+  return L.divIcon({
+    html: `<div data-testid="oasis-map-cluster"><span>${count}</span></div>`,
+    className: `marker-cluster marker-cluster-${size}`,
+    iconSize: L.point(40, 40),
+  });
+};
+
 // Component to handle user location
 interface LocationMarkerProps {
   position: [number, number] | null;
@@ -854,61 +875,68 @@ const BabyOasisPage = () => {
       </div>
 
       {/* Map */}
-      <MapContainer
-        center={userLocation || TAIWAN_CENTER}
-        zoom={userLocation ? 15 : TAIWAN_ZOOM}
-        className="h-full w-full"
-        zoomControl={false}
-      >
-        <TileLayer
-          attribution='地圖 &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ｜ 哺乳室資料：<a href="https://data.gov.tw/dataset/23750">衛生福利部國民健康署</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-
-        {/* User location marker */}
-        <LocationMarker position={userLocation} />
-
-        {/* 選定的那一站。空心環標的是「你要去的地方」，不是一筆哺乳室。 */}
-        {station && (
-          <Marker
-            position={[station.latitude, station.longitude]}
-            icon={STATION_ICON}
-            title={`捷運${station.name}站`}
-          />
-        )}
-
-        {/* 選了哪一筆、或哪一站，地圖就跟過去 */}
-        <PointFocus point={selectedRoom} />
-        <PointFocus point={station} />
-
-        {/* 篩了條件就把視角帶到剩下的那些點上；選定某一筆、或選定某一站時，
-            讓給上面那兩個——那時家長看的是那個點，不是整個篩選範圍。 */}
-        <FilteredAreaFocus
-          rooms={filteredRooms}
-          active={
-            isFiltered &&
-            selectedRoom === null &&
-            station === null &&
-            filteredRooms.length > 0 &&
-            filteredRooms.length < nursingRooms.length
-          }
-        />
-
-        {/*
-          全台近四千個點必須分群，否則低倍率下會糊成一片而且互相遮蔽。
-          maxClusterRadius 由 50 放大到 80（Leaflet 預設值）：先前的值是為
-          僅臺北 306 筆調的，在全國尺度下會分出過多小群。放到第 16 級後
-          改顯示個別標記，此時同一條街的點已經分得開。
-        */}
-        <MarkerClusterGroup
-          chunkedLoading
-          maxClusterRadius={80}
-          disableClusteringAtZoom={MARKER_ZOOM}
-          showCoverageOnHover={false}
+      {/* data-testid 掛在外層而不是 MapContainer：Leaflet 是用 JS 直接把地圖畫進
+          這個 div，畫出來的東西沒有角色也沒有可及名稱可以選；而 MapContainer 只
+          轉傳 className/id/style，其餘的 prop 都當成 Leaflet 的設定值。
+          E2E 的選取規則見 docs/E2E_TEST_PLAN.md §6。 */}
+      <div data-testid="oasis-map" className="h-full w-full">
+        <MapContainer
+          center={userLocation || TAIWAN_CENTER}
+          zoom={userLocation ? 15 : TAIWAN_ZOOM}
+          className="h-full w-full"
+          zoomControl={false}
         >
-          {markers}
-        </MarkerClusterGroup>
-      </MapContainer>
+          <TileLayer
+            attribution='地圖 &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ｜ 哺乳室資料：<a href="https://data.gov.tw/dataset/23750">衛生福利部國民健康署</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+
+          {/* User location marker */}
+          <LocationMarker position={userLocation} />
+
+          {/* 選定的那一站。空心環標的是「你要去的地方」，不是一筆哺乳室。 */}
+          {station && (
+            <Marker
+              position={[station.latitude, station.longitude]}
+              icon={STATION_ICON}
+              title={`捷運${station.name}站`}
+            />
+          )}
+
+          {/* 選了哪一筆、或哪一站，地圖就跟過去 */}
+          <PointFocus point={selectedRoom} />
+          <PointFocus point={station} />
+
+          {/* 篩了條件就把視角帶到剩下的那些點上；選定某一筆、或選定某一站時，
+              讓給上面那兩個——那時家長看的是那個點，不是整個篩選範圍。 */}
+          <FilteredAreaFocus
+            rooms={filteredRooms}
+            active={
+              isFiltered &&
+              selectedRoom === null &&
+              station === null &&
+              filteredRooms.length > 0 &&
+              filteredRooms.length < nursingRooms.length
+            }
+          />
+
+          {/*
+            全台近四千個點必須分群，否則低倍率下會糊成一片而且互相遮蔽。
+            maxClusterRadius 由 50 放大到 80（Leaflet 預設值）：先前的值是為
+            僅臺北 306 筆調的，在全國尺度下會分出過多小群。放到第 16 級後
+            改顯示個別標記，此時同一條街的點已經分得開。
+          */}
+          <MarkerClusterGroup
+            chunkedLoading
+            maxClusterRadius={80}
+            disableClusteringAtZoom={MARKER_ZOOM}
+            showCoverageOnHover={false}
+            iconCreateFunction={CLUSTER_ICON}
+          >
+            {markers}
+          </MarkerClusterGroup>
+        </MapContainer>
+      </div>
 
       {/* Locate me button */}
       <LocateButton onLocate={handleLocate} isLocating={isLocating} />

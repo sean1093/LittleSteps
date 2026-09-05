@@ -1,0 +1,105 @@
+import { defineConfig, devices } from '@playwright/test';
+
+/**
+ * Playwright configuration for the end-to-end suite.
+ *
+ * See `docs/E2E_TEST_PLAN.md` for the reasoning behind every choice here and
+ * `e2e/README.md` for how to run the suite.
+ */
+
+const PREVIEW_PORT = 4173;
+const BASE_URL = `http://127.0.0.1:${PREVIEW_PORT}`;
+
+/**
+ * Dummy Firebase credentials for the built app.
+ *
+ * `src/lib/firebase.ts` calls `initializeApp()` at module load, so with these
+ * unset the SDK throws `auth/invalid-api-key` and the page renders blank —
+ * there is no such thing as running this app with no Firebase configuration.
+ * Nothing here reaches Google: Phase 1 only visits public routes, both
+ * `useUserChildren` and `useFirebaseCollection` early-return on a null user, so
+ * no database listener ever attaches, and the analytics host is route-blocked
+ * (see `e2e/fixtures/blockedHosts.ts`).
+ *
+ * Two traps, both of which cost an afternoon once:
+ * - The SDK rejects an `apiKey` containing `:`, so the key below has none.
+ * - `getDatabase()` throws without `VITE_FIREBASE_DATABASE_URL`. It is absent
+ *   from `firebase-hosting-pull-request.yml`, so an env block copied from that
+ *   workflow renders a blank page.
+ *
+ * These are build-time values: Vite inlines `import.meta.env` when `webServer`
+ * runs `vite build`, so they belong on `webServer.env`, not on `use`.
+ */
+const FIREBASE_E2E_ENV = {
+  VITE_FIREBASE_API_KEY: 'AIzaSyE2eDummyKeyNoColonAllowedHere0000',
+  VITE_FIREBASE_AUTH_DOMAIN: 'littlesteps-e2e.firebaseapp.com',
+  VITE_FIREBASE_DATABASE_URL: 'https://littlesteps-e2e-default-rtdb.firebaseio.com',
+  VITE_FIREBASE_PROJECT_ID: 'littlesteps-e2e',
+  VITE_FIREBASE_STORAGE_BUCKET: 'littlesteps-e2e.firebasestorage.app',
+  VITE_FIREBASE_MESSAGING_SENDER_ID: '000000000000',
+  VITE_FIREBASE_APP_ID: '1:000000000000:web:0000000000000000000000',
+  VITE_FIREBASE_MEASUREMENT_ID: 'G-E2E0000000',
+};
+
+/**
+ * Mobile Chromium. Cross-browser is deferred until the suite is stable (plan
+ * §4); the viewport is overridden per project because the two widths
+ * `.claude/CLAUDE.md` mandates are the point of running the suite at all.
+ */
+const MOBILE_CHROMIUM = devices['Pixel 5'];
+
+export default defineConfig({
+  testDir: './e2e/specs',
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+
+  // No retries, in CI too (plan §8). A retry that turns a job green is
+  // retrying into passing, and a suite that does it stops being a signal.
+  retries: 0,
+
+  workers: process.env.CI ? 1 : undefined,
+  reporter: [['list'], ['html', { open: 'never' }]],
+
+  use: {
+    baseURL: BASE_URL,
+    // Evidence for humans on a failure, never an oracle (plan §2).
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+    video: 'off',
+  },
+
+  projects: [
+    {
+      name: 'mobile-390',
+      use: { ...MOBILE_CHROMIUM, viewport: { width: 390, height: 844 } },
+    },
+    {
+      // 320px is the narrowest width CLAUDE.md asks for, and the width where a
+      // grid or a chip row breaks first.
+      name: 'mobile-320',
+      use: { ...MOBILE_CHROMIUM, viewport: { width: 320, height: 844 } },
+    },
+  ],
+
+  webServer: {
+    // The production build, not the dev server (plan §4): the dev server
+    // exercises neither the lazy-chunk split, nor the service worker, nor the
+    // prerendered HTML, and three of the six gaps the suite exists for live
+    // exactly there.
+    //
+    // `--host 127.0.0.1` is load-bearing. Without it `vite preview` binds the
+    // name `localhost`, and in the CI container `/etc/hosts` maps that to `::1`
+    // as well as to `127.0.0.1`, so the listener ends up on IPv6 only while
+    // Playwright polls the IPv4 literal below until it times out. Binding the
+    // literal keeps both ends off the resolver's ordering.
+    command: `npm run build && npm run preview -- --host 127.0.0.1 --port ${PREVIEW_PORT} --strictPort`,
+    url: BASE_URL,
+    reuseExistingServer: !process.env.CI,
+    // A cold `vite build` is the whole of this budget; the preview server is up
+    // in under a second afterwards.
+    timeout: 180_000,
+    stdout: 'pipe',
+    stderr: 'pipe',
+    env: FIREBASE_E2E_ENV,
+  },
+});

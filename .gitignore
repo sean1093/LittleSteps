@@ -43,5 +43,11 @@ backups/
 # Playwright MCP 的逐次輸出，屬於工具產物，不進版控
 .playwright-mcp/
 
+# Playwright 的報告、trace 與失敗截圖：每次執行都會重生，且 trace 內含整頁
+# 快照，不進版控
+/playwright-report/
+/test-results/
+/blob-report/
+
 # SDD isolated worktrees
 .worktrees/
