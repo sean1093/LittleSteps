@@ -4,10 +4,11 @@ import type { NursingRoom } from '../../types';
 import type { ServiceTheme } from '../../common/ui/serviceTheme';
 import EmptyState from '../../common/ui/EmptyState';
 import {
+  ACCESS_LABEL,
+  accessOf,
   CATEGORY_CHIPS,
   CATEGORY_LABEL,
-  isInternalVenue,
-  needsStaffHelp,
+  type RoomAccess,
   type RoomCategory,
 } from '../utils/roomCategory';
 import AreaPicker from './AreaPicker';
@@ -20,6 +21,16 @@ import type { MrtStation } from '../data/mrtStations';
  * 和親子好去處的 MAX_RENDERED 同一個數字，兩邊的清單長度感覺才一致。
  */
 const MAX_RESULTS = 30;
+
+/**
+ * 進不去的用琥珀色，要問人的用中性灰：前者是「別白跑一趟」，後者只是多走一趟
+ * 服務台。`open` 沒有樣式，因為它不會被畫出來——一列什麼標籤都沒有，本來就讀作
+ * 直接走進去。
+ */
+const ACCESS_TAG_CLASS: Record<Exclude<RoomAccess, 'open'>, string> = {
+  internal: 'bg-butter-light text-butter-dark',
+  staff_help: 'bg-ink/5 text-ink-muted',
+};
 
 /**
  * 篩選條件由頁面持有：標記、附近清單與這份結果清單必須是同一批哺乳室，
@@ -217,45 +228,46 @@ export default function RoomSearch({
               {matches.length > MAX_RESULTS && `，先顯示 ${MAX_RESULTS} 處`}
             </p>
             <ul className="px-2 pb-2">
-              {matches.slice(0, MAX_RESULTS).map((room) => (
-                <li key={room.id}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      // 選定後清掉關鍵字，結果清單才會收起來。留著的話家長關掉
-                      // 詳情面板，看到的是清單依舊蓋住地圖與剛飛過去的那個點。
-                      setQuery('');
-                      onSelect(room);
-                    }}
-                    className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-ink/5 active:bg-ink/10 transition-colors text-left"
-                  >
-                    <MapPin className={`w-4 h-4 shrink-0 ${theme.ink}`} />
-                    <div className="min-w-0 flex-1">
-                      {/* 名稱自己截斷，標籤留在旁邊不被截掉：整行 truncate 的
-                          話，「大葉高島屋百貨股份有限公司」這種長名字會把後面
-                          的標籤一起吃掉——而需要標籤的正是這些長名字。 */}
-                      <p className="flex items-center gap-2">
-                        <span className="font-medium text-ink truncate">{room.name}</span>
-                        {/* 最多一個標籤。兩個一起掛的時候「進不去」比「要問人」
-                            重要得多，後者只是多走一趟服務台。 */}
-                        {isInternalVenue(room) ? (
-                          <span className="tag shrink-0 bg-butter-light text-butter-dark">
-                            內部場所
-                          </span>
-                        ) : needsStaffHelp(room) ? (
-                          <span className="tag shrink-0 bg-ink/5 text-ink-muted">需洽服務台</span>
-                        ) : null}
-                      </p>
-                      {/* 地址本身就以縣市區起頭，比再拼一次縣市有用；同名的分館
-                          （例如天母兩館）只有樓層分得開，有就一起寫上。 */}
-                      <p className="text-sm text-ink-muted truncate">
-                        {room.address}
-                        {room.floor ? `｜${room.floor}` : ''}
-                      </p>
-                    </div>
-                  </button>
-                </li>
-              ))}
+              {matches.slice(0, MAX_RESULTS).map((room) => {
+                const access = accessOf(room);
+                return (
+                  <li key={room.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // 選定後清掉關鍵字，結果清單才會收起來。留著的話家長關掉
+                        // 詳情面板，看到的是清單依舊蓋住地圖與剛飛過去的那個點。
+                        setQuery('');
+                        onSelect(room);
+                      }}
+                      className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-ink/5 active:bg-ink/10 transition-colors text-left"
+                    >
+                      <MapPin className={`w-4 h-4 shrink-0 ${theme.ink}`} />
+                      <div className="min-w-0 flex-1">
+                        {/* 名稱自己截斷，標籤留在旁邊不被截掉：整行 truncate 的
+                            話，「大葉高島屋百貨股份有限公司」這種長名字會把後面
+                            的標籤一起吃掉——而需要標籤的正是這些長名字。 */}
+                        <p className="flex items-center gap-2">
+                          <span className="font-medium text-ink truncate">{room.name}</span>
+                          {/* 最多一個標籤，哪一個由 accessOf 決定：兩個一起成立
+                              時的取捨寫在它那裡，不在這裡重推一次。 */}
+                          {access !== 'open' && (
+                            <span className={`tag shrink-0 ${ACCESS_TAG_CLASS[access]}`}>
+                              {ACCESS_LABEL[access]}
+                            </span>
+                          )}
+                        </p>
+                        {/* 地址本身就以縣市區起頭，比再拼一次縣市有用；同名的分館
+                            （例如天母兩館）只有樓層分得開，有就一起寫上。 */}
+                        <p className="text-sm text-ink-muted truncate">
+                          {room.address}
+                          {room.floor ? `｜${room.floor}` : ''}
+                        </p>
+                      </div>
+                    </button>
+                  </li>
+                );
+              })}
               {matches.length > MAX_RESULTS && (
                 <li className="px-3 py-2 text-sm text-ink-muted text-center">
                   還有 {matches.length - MAX_RESULTS} 處，再加上關鍵字或縮小區域。

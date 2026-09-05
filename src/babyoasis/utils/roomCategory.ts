@@ -143,3 +143,34 @@ export function isInternalVenue(room: NursingRoom): boolean {
   const category = categoryOf(room);
   return (category === 'workplace' || category === 'school') && !room.statutory;
 }
+
+/**
+ * How hard it is to walk in, as one value.
+ *
+ * The precedence is the reason this lives here rather than at each call site:
+ * `internal` wins when both predicates fire, because "you cannot get in" is a
+ * different kind of answer from "you will need to ask at the desk", which costs
+ * one detour to a counter. 474 rooms carry the first and 973 the second, so a
+ * list and a report disagreeing about which one applies is a silent failure —
+ * nothing throws, the report just describes a claim the app never made.
+ */
+export type RoomAccess = 'internal' | 'staff_help' | 'open';
+
+export function accessOf(room: NursingRoom): RoomAccess {
+  if (isInternalVenue(room)) return 'internal';
+  if (needsStaffHelp(room)) return 'staff_help';
+  return 'open';
+}
+
+/**
+ * `open` is spelled out rather than left blank, and the two callers differ in what
+ * they do with it: the search list renders no tag at all, because a row with nothing
+ * on it already reads as "just walk in", while a report field left blank reads
+ * as "we have no data" instead. One wording, two renderings — which is why the
+ * string lives here and the decision to hide it lives in the list.
+ */
+export const ACCESS_LABEL: Record<RoomAccess, string> = {
+  internal: '內部場所',
+  staff_help: '需洽服務台',
+  open: '沒有特別標註',
+};
