@@ -1,13 +1,14 @@
 import { expect, test } from '../fixtures/test';
 import {
-  expectInViewport,
+  expectModalFitsViewport,
   expectNoPageOverflow,
+  expectReachableByScrolling,
   expectRowContainsItsOverflow,
   expectTapTargets,
 } from '../fixtures/layout';
 import { PUBLIC_ROUTES } from '../fixtures/routes';
 import { SCROLL_ROW_SELECTOR } from '../fixtures/testIds';
-import { OutingPage } from '../pages/outingPage';
+import { BabyOasisPage } from '../pages/babyOasisPage';
 import { PublicRoutePage } from '../pages/publicRoutePage';
 
 /**
@@ -16,8 +17,8 @@ import { PublicRoutePage } from '../pages/publicRoutePage';
  * Measurements, never golden images (plan §2 and §7). A pixel baseline on a
  * Tailwind app churns on every token change and teaches a reviewer to accept
  * the diff; these three assert what a parent actually hits — a page that
- * scrolls sideways, a control too small to tap, an action under the fold —
- * and they survive a restyle that broke nothing.
+ * scrolls sideways, a control too small to tap, a modal whose controls are off
+ * the screen — and they survive a restyle that broke nothing.
  *
  * One test per route rather than one loop over all nine: the route is then in
  * the failure's title, and a broken page fails once instead of hiding the
@@ -59,17 +60,48 @@ for (const route of PUBLIC_ROUTES) {
   });
 }
 
-test('RWD-03 @p1 the venue report form keeps its action inside the viewport', async ({ page }) => {
-  const outing = new OutingPage(page);
-  await outing.goto();
+/**
+ * The county with the most districts in `nursingRooms.json`, so the area
+ * picker is unarguably taller than the screen at both widths.
+ *
+ * The invariant RWD-03 is about only binds on a modal that overflows: a form
+ * shorter than 85vh is inside the viewport whether or not `ModalFrame` caps
+ * itself. This is the one `ModalFrame` a signed-out visitor can fill past the
+ * fold — 22 county chips and then 36 districts. The report form, the other
+ * modal Phase 1 can open, renders a sign-in notice at roughly 500px and is
+ * therefore no test of the cap at all; that it opens signed out is OASIS-05's
+ * subject, and asserting it again here would only be a second copy.
+ */
+const CROWDED_COUNTY = '高雄市';
 
-  await outing.reportButtons.first().click();
+test('RWD-03 @p1 an open modal fits the viewport and scrolls its own content', async ({ page }) => {
+  const oasis = new BabyOasisPage(page);
+  await oasis.goto();
+  await expect(oasis.search).toBeVisible();
 
-  await expect(outing.reportForm).toBeVisible();
-  // `ModalFrame` caps itself at `max-h-[85vh]` and scrolls inside so that the
-  // action is never pushed under the on-screen keyboard. Signed out the form
-  // offers sign-in rather than submit — writing a report needs an account —
-  // and that button is what a parent has to be able to reach here. The
-  // submit-button form of this case belongs to Phase 2, which can sign in.
-  await expectInViewport(outing.reportSignIn);
+  await oasis.areaChip.click();
+  await expect(oasis.areaPicker).toBeVisible();
+  await oasis.cityChip(CROWDED_COUNTY).click();
+  // Counties first, then the chosen county's districts, so the last control in
+  // the dialog is the last district.
+  const lastDistrict = oasis.areaPickerControls.last();
+  await expect(lastDistrict).toBeVisible();
+
+  await expectModalFitsViewport(oasis.areaPicker);
+  // The case is vacuous on a modal that fits: a short form is inside the
+  // viewport whether or not anything caps it. This says the one under test is
+  // not short — and it is also what goes first if the cap is deleted, because
+  // an uncapped sheet grows to its content instead of scrolling.
+  await expect
+    .poll(
+      () => oasis.areaPicker.evaluate((element) => element.scrollHeight - element.clientHeight),
+      { message: 'the modal does not overflow, so nothing here exercises the cap, in px' },
+    )
+    .toBeGreaterThan(0);
+  // Both ends of a modal taller than the screen stay reachable. The close
+  // button is the half that goes first: `ModalFrame` is anchored to the bottom
+  // edge, so an uncapped sheet grows past the top of the viewport and nothing
+  // outside a fixed element can scroll it back down.
+  await expectReachableByScrolling(lastDistrict);
+  await expectReachableByScrolling(oasis.closeAreaPicker);
 });

@@ -36,18 +36,6 @@ export class OutingPage {
    */
   readonly reportButtons: Locator;
 
-  /** The report form, portalled to `body` by `VenueReportButton`. */
-  readonly reportForm: Locator;
-
-  /**
-   * The form's action while signed out.
-   *
-   * Writing a report needs `auth != null`, so the signed-out form explains why
-   * and offers sign-in instead of a submit button — that button is the control
-   * a parent has to be able to reach, and the only one Phase 1 can open.
-   */
-  readonly reportSignIn: Locator;
-
   constructor(private readonly page: Page) {
     this.centreTab = page.getByRole('button', { name: '親子館', exact: true });
     this.restaurantTab = page.getByRole('button', { name: '親子餐廳', exact: true });
@@ -65,8 +53,6 @@ export class OutingPage {
     // this counts the items rendered without binding to `.card`.
     this.checklistQuestions = page.getByRole('heading', { level: 3 });
     this.reportButtons = page.getByRole('button', { name: /^這裡的資訊不對？/ });
-    this.reportForm = page.getByRole('dialog', { name: '這裡的資訊不對？' });
-    this.reportSignIn = this.reportForm.getByRole('button', { name: '用 Google 登入' });
   }
 
   async goto(): Promise<void> {

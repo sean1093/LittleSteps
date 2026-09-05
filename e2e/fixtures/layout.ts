@@ -183,14 +183,67 @@ export async function expectNoOverlap(name: Locator, tag: Locator): Promise<void
 }
 
 /**
- * An open modal's submit control is inside the viewport.
+ * A control is inside the viewport.
  *
- * This is what `max-h-[85vh] overflow-y-auto` exists for: without it the submit
- * button sits under the on-screen keyboard and the form cannot be sent.
- * `toBeInViewport` retries, which matters because the sheet animates in.
+ * `toBeInViewport` retries, which matters because a sheet animates in: a
+ * one-shot measurement taken straight after opening one reports a control
+ * below the fold and fails a modal that is perfectly correct.
  */
 export async function expectInViewport(control: Locator): Promise<void> {
   await expect(control, 'the control is not fully inside the viewport').toBeInViewport({
     ratio: 1,
   });
+}
+
+/** `max-h-[85vh]` on `ModalFrame`, as a fraction. */
+const MODAL_MAX_VIEWPORT_FRACTION = 0.85;
+
+/**
+ * An open modal keeps itself inside the viewport and scrolls its own content.
+ *
+ * This is the whole of what `max-h-[85vh] overflow-y-auto` buys. `ModalFrame`
+ * is `fixed inset-x-0 bottom-0`, so without the cap a form taller than the
+ * screen grows *upwards* past the top edge: nothing can scroll a fixed element
+ * from outside, so its header, its close button and its first fields become
+ * unreachable — which is the same defect, in the other direction, as the three
+ * centred modals it replaced, where the submit button ended up under the
+ * on-screen keyboard.
+ *
+ * Both halves have to be asserted together. The cap alone clips the overflow
+ * away; the scrolling alone never engages.
+ *
+ * Know the failure mode before changing the token: this reads 85vh from here,
+ * not from the class, so a modal re-capped at some other height silently keeps
+ * passing until someone updates this constant in the same commit.
+ */
+export async function expectModalFitsViewport(dialog: Locator): Promise<void> {
+  await expect
+    .poll(() => dialog.evaluate((element) => getComputedStyle(element).overflowY), {
+      message: 'the modal is not a vertical scroll container',
+    })
+    .toMatch(/auto|scroll/);
+
+  const viewport = dialog.page().viewportSize();
+  expect(viewport, 'no viewport size to compare the modal against').not.toBeNull();
+  const cap = viewport!.height * MODAL_MAX_VIEWPORT_FRACTION;
+
+  await expect
+    .poll(() => dialog.evaluate((element) => element.getBoundingClientRect().height), {
+      message: `the modal is taller than ${MODAL_MAX_VIEWPORT_FRACTION} of the viewport, in px`,
+    })
+    .toBeLessThanOrEqual(cap + EPSILON);
+}
+
+/**
+ * A control inside a scrolling modal can be brought into view by scrolling the
+ * modal itself.
+ *
+ * `scrollIntoViewIfNeeded` scrolls the nearest scrollable ancestor, which for
+ * a capped `ModalFrame` is the dialog. Without the cap the dialog does not
+ * scroll and nothing else can move it, so a control that started off-screen
+ * stays there.
+ */
+export async function expectReachableByScrolling(control: Locator): Promise<void> {
+  await control.scrollIntoViewIfNeeded();
+  await expectInViewport(control);
 }
