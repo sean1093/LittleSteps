@@ -7,7 +7,21 @@ import { defineConfig, devices } from '@playwright/test';
  * `e2e/README.md` for how to run the suite.
  */
 
-const PREVIEW_PORT = 4173;
+/**
+ * The port the built app is previewed on.
+ *
+ * Overridable because `--strictPort` plus `reuseExistingServer` makes two
+ * concurrent suites on one machine fight over a single server, and the symptoms
+ * — `ERR_CONNECTION_REFUSED` part-way through a run, a lazy chunk failing to
+ * load, the app rendering its error boundary — look exactly like product bugs.
+ * CI gives every job its own container and needs no override.
+ */
+const PREVIEW_PORT = Number(process.env.E2E_PORT ?? 4173);
+
+// The IPv4 literal, deliberately. `vite preview` without `--host` binds the
+// hostname `localhost`, and in the CI container that resolves to `::1` first,
+// so the server listened on IPv6 while this poller waited on IPv4 until it
+// timed out. Both ends are pinned rather than left to the resolver.
 const BASE_URL = `http://127.0.0.1:${PREVIEW_PORT}`;
 
 /**

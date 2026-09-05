@@ -1,6 +1,12 @@
 name: CI
 
-on: pull_request
+on:
+  pull_request:
+  # `master` runs the whole suite, including @p2. On a pull request the P0 and
+  # P1 subset is what blocks the merge; the plan puts the cosmetic cases here so
+  # they are still run somewhere rather than only ever locally.
+  push:
+    branches: [master]
 
 permissions:
   contents: read
@@ -74,8 +80,15 @@ jobs:
       # The dummy Firebase configuration and the production build live in
       # playwright.config.ts, so there is nothing to set up here and no secret
       # to leak into a fork's pull request.
-      - name: Run the P0 and P1 cases
-        run: npm run test:e2e -- --grep "@p0|@p1"
+      # On a pull request, the merge-blocking subset. On master, everything —
+      # a @p2 case that runs nowhere is a case nobody maintains.
+      - name: Run the E2E suite
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            npm run test:e2e
+          else
+            npm run test:e2e -- --grep "@p0|@p1"
+          fi
 
       - name: Upload the report, traces and screenshots
         if: failure()

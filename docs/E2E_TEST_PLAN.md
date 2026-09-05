@@ -55,8 +55,8 @@ much code a test touches.
 | **P2** | Cosmetic or convenience degradation with an obvious workaround. | A chip row scrolls where it used to fit; a tag wraps to a second line. |
 
 P0 cases run on every pull request and block merge. P1 runs on every pull
-request. P2 is intended to run on `master` and nightly; note that **no nightly
-workflow exists yet**, so until one is added P2 runs on `master` only.
+request. P2 runs on every push to `master` (§10). There is no nightly workflow,
+and none is needed while the whole suite finishes in minutes.
 
 ## 4. Tooling and constraints
 
@@ -285,18 +285,20 @@ Priority is encoded as a **`@p0` / `@p1` / `@p2` tag in the test title** and
 selected with `--grep`. Name the mechanism here so that specs do not each invent
 one.
 
-**Sequencing note, and it matters.** `.github/workflows/` currently holds two
-Firebase Hosting deploys and the manual radar refresh. **Nothing runs
-`npm run lint` or the unit suite on a pull request** — the gates in
-`.claude/skills/pr-self-merge` are run by hand. Adding a Playwright job first
-would make the browser suite the first CI signal this repo has ever had, which
-inverts this plan's own rationale that a browser failure must never be mistaken
-for a logic failure. **A lint + unit-test job lands before, or in the same PR
-as, the E2E job.**
+`.github/workflows/ci.yml` runs two jobs. **`lint-and-unit` runs
+`npm run lint` and the unit suite**; the E2E job `needs:` it, so a browser
+failure is never mistaken for a logic failure. That ordering was the reason the
+lint and unit job had to exist at all — before it, nothing ran either on a
+pull request, and a Playwright job alone would have made the browser suite this
+repo's first CI signal.
 
-CI then runs the P0+P1 subset on every pull request as a separate job from that
-one. On failure the job uploads the Playwright HTML report, traces and
-screenshots as artifacts. The job does not download browsers (§4).
+On a pull request the E2E job runs the merge-blocking `@p0|@p1` subset. **On a
+push to `master` it runs everything, `@p2` included** — a case that runs
+nowhere is a case nobody maintains, and this is where the plan's "P2 runs on
+`master`" actually happens.
+
+On failure the job uploads the Playwright HTML report, traces and screenshots
+as artifacts. It does not download browsers (§4).
 
 ## 11. Exit criteria for Phase 1
 
