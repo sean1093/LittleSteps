@@ -7,6 +7,7 @@ import { useReport, ReportPeriod } from '../hooks/useReport';
 import ScoreCircle from '../components/shared/ScoreCircle';
 import ReportChart from '../components/report/ReportChart';
 import { TrendDirection } from '../utils/trendCalculator';
+import { CONSISTENCIES, getConsistencyLabel } from '../utils/logHelpers';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem } from '../../common/ui/motion';
@@ -79,14 +80,14 @@ function trendLabel(direction: TrendDirection): string {
 
 /**
  * Helper: translate poop consistency
+ *
+ * `consistencyDistribution` 的 key 是資料裡有什麼就是什麼，所以舊資料帶進一個
+ * 不認識的值時原樣印出來，而不是印成空白或吞掉那一列。認得的那三個一律走共用
+ * 的標籤：這裡若自己寫一份，同一筆紀錄在時間軸和報告裡就會有兩種說法。
  */
 function consistencyLabel(key: string): string {
-  const map: Record<string, string> = {
-    normal: '正常',
-    soft: '軟便',
-    hard: '硬便',
-  };
-  return map[key] || key;
+  const known = CONSISTENCIES.find((value) => value === key);
+  return known ? getConsistencyLabel(known) : key;
 }
 
 export default function ReportPage({

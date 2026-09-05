@@ -2,6 +2,11 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import type { DailyLog } from '../../../types';
 import LogTimeline from './LogTimeline';
+import {
+  getConsistencyLabel,
+  getDiaperTypeLabel,
+  getFeedingTypeLabel,
+} from '../../utils/logHelpers';
 
 /**
  * 餵奶、睡眠、換尿布本來就是兩個人輪流做的事，孩子也可以用 joinChild 共享，
@@ -50,7 +55,43 @@ describe('擠奶那一列', () => {
     render(<LogTimeline logs={[bottle]} onEdit={() => {}} onDelete={() => {}} />);
 
     expect(screen.getByText('餵奶')).toBeInTheDocument();
-    expect(screen.getByText('母乳瓶餵 · 120ml')).toBeInTheDocument();
+    expect(screen.getByText(`${getFeedingTypeLabel('breast_milk_bottle')} · 120ml`)).toBeInTheDocument();
+  });
+});
+
+/*
+  時間軸曾經自己帶一份標籤（母乳雙側、大小便都有、軟便），於是同一筆紀錄在
+  重複卡與時間軸上寫著兩種字。這幾個測試比對的是共用的那一份，所以任何人再
+  在這個元件裡寫一份私有的對照表，就會在這裡壞掉。
+*/
+describe('時間軸的用字', () => {
+  const diaper: DailyLog = {
+    id: 'd1',
+    childId: 'c1',
+    type: 'diaper',
+    timestamp: new Date().toISOString(),
+    data: { type: 'both', consistency: 'soft' },
+    createdAt: new Date().toISOString(),
+  };
+
+  it('尿布那一列用的是共用的標籤', () => {
+    render(<LogTimeline logs={[diaper]} onEdit={noop} onDelete={noop} />);
+
+    expect(
+      screen.getByText(`${getDiaperTypeLabel('both')} · ${getConsistencyLabel('soft')}`),
+    ).toBeInTheDocument();
+  });
+
+  it('只有小便時不印性狀——那一欄只對大便有意義', () => {
+    render(
+      <LogTimeline
+        logs={[{ ...diaper, data: { type: 'pee', consistency: 'soft' } }]}
+        onEdit={noop}
+        onDelete={noop}
+      />,
+    );
+
+    expect(screen.getByText(getDiaperTypeLabel('pee'))).toBeInTheDocument();
   });
 });
 

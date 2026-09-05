@@ -4,6 +4,16 @@ import { Minus, Plus, X } from 'lucide-react';
 import { backdrop, sheet } from '../../../common/ui/motion';
 import { DailyLog, FeedingData, SleepData, DiaperData } from '../../../types';
 import { getCurrentDateTimeLocal, dateTimeLocalToISO, calculateDuration } from '../../../common/utils/dateHelpers';
+import {
+  CONSISTENCIES,
+  DIAPER_TYPES,
+  FEEDING_SIDES,
+  FEEDING_TYPES,
+  getConsistencyLabel,
+  getDiaperTypeLabel,
+  getFeedingSideLabel,
+  getFeedingTypeLabel,
+} from '../../utils/logHelpers';
 
 interface LogEntryModalProps {
   isOpen: boolean;
@@ -267,13 +277,11 @@ export default function LogEntryModal({
                       className={FIELD}
                       required
                     >
-                      <option value="breast_left">母乳左側</option>
-                      <option value="breast_right">母乳右側</option>
-                      <option value="breast_both">母乳雙側</option>
-                      <option value="breast_milk_bottle">母乳瓶餵</option>
-                      <option value="formula">配方奶</option>
-                      <option value="solid">副食品</option>
-                      <option value="pumping">擠奶</option>
+                      {FEEDING_TYPES.map((type) => (
+                        <option key={type} value={type}>
+                          {getFeedingTypeLabel(type)}
+                        </option>
+                      ))}
                     </select>
                     {isPumping && (
                       <p className="mt-1 text-xs text-ink-faint">
@@ -292,9 +300,11 @@ export default function LogEntryModal({
                         className={FIELD}
                       >
                         <option value="">不記錄</option>
-                        <option value="left">左側</option>
-                        <option value="right">右側</option>
-                        <option value="both">兩側</option>
+                        {FEEDING_SIDES.map((value) => (
+                          <option key={value} value={value}>
+                            {getFeedingSideLabel(value)}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   )}
@@ -432,9 +442,11 @@ export default function LogEntryModal({
                       className={FIELD}
                       required
                     >
-                      <option value="pee">小便</option>
-                      <option value="poop">大便</option>
-                      <option value="both">大小便都有</option>
+                      {DIAPER_TYPES.map((type) => (
+                        <option key={type} value={type}>
+                          {getDiaperTypeLabel(type)}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -447,9 +459,11 @@ export default function LogEntryModal({
                         onChange={(e) => setConsistency(e.target.value as DiaperData['consistency'])}
                         className={FIELD}
                       >
-                        <option value="normal">正常</option>
-                        <option value="soft">軟便</option>
-                        <option value="hard">硬便</option>
+                        {CONSISTENCIES.map((value) => (
+                          <option key={value} value={value}>
+                            {getConsistencyLabel(value)}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   )}
