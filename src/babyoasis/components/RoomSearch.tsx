@@ -160,7 +160,9 @@ export default function RoomSearch({
       </div>
 
       {/* 橫向捲動而不是換行：chip 列換行會把地圖推掉半個畫面。 */}
-      <div className="row-bleed flex gap-2 py-1">
+      {/* data-testid：這一列刻意橫向捲動，E2E 要單獨量它，而不是算成整頁的水平
+          溢出；捲動容器沒有角色也沒有可及名稱可選（docs/E2E_TEST_PLAN.md §6）。 */}
+      <div data-testid="scroll-row-oasis-filters" className="row-bleed flex gap-2 py-1">
         <button
           type="button"
           onClick={() => setAreaOpen(true)}

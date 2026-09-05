@@ -229,7 +229,13 @@ export default function OutingPage() {
                 )}
               </div>
 
-              <div ref={scrollerRef} className="row-bleed flex gap-2 pb-1">
+              {/* data-testid：這一列刻意橫向捲動，E2E 要單獨量它，而不是算成整頁的水平
+                  溢出；捲動容器沒有角色也沒有可及名稱可選（docs/E2E_TEST_PLAN.md §6）。 */}
+              <div
+                ref={scrollerRef}
+                data-testid="scroll-row-outing-cities"
+                className="row-bleed flex gap-2 pb-1"
+              >
                 {([ALL_CITIES, ...cities]).map((value) => (
                   <button
                     key={value}

@@ -220,7 +220,13 @@ export default function RadarPage() {
 
             <section className="space-y-2">
               <h2 className="text-sm font-medium text-ink-muted">孩子的年齡</h2>
-              <div ref={scrollerRef} className="row-bleed flex gap-2 py-1">
+              {/* data-testid：這一列刻意橫向捲動，E2E 要單獨量它，而不是算成整頁的水平
+                  溢出；捲動容器沒有角色也沒有可及名稱可選（docs/E2E_TEST_PLAN.md §6）。 */}
+              <div
+                ref={scrollerRef}
+                data-testid="scroll-row-guard-age-bands"
+                className="row-bleed flex gap-2 py-1"
+              >
                 {data.ageBands.map((band) => {
                   const isSelected = band === age;
                   return (
