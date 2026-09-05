@@ -44,10 +44,15 @@ backups/
 .playwright-mcp/
 
 # Playwright 的報告、trace 與失敗截圖：每次執行都會重生，且 trace 內含整頁
-# 快照，不進版控
-/playwright-report/
-/test-results/
-/blob-report/
+# 快照，不進版控。不綁根目錄：agent 的 worktree 是這個 repo 的第二份複本，
+# 在裡面跑測試同樣會產出這三個目錄。
+playwright-report/
+test-results/
+blob-report/
+
+# Agent worktree（`.claude/worktrees/`）是完整的 repo 複本。沒有忽略的話，
+# 主目錄的 git status 會把整份複本列成未追蹤檔案。
+.claude/worktrees/
 
 # SDD isolated worktrees
 .worktrees/

@@ -190,6 +190,50 @@ green on `master`.
 
 ---
 
+## Selector traps, found the expensive way
+
+Each of these cost real debugging while Phase 1 was written. They are recorded
+here because none of them is visible from the code you are testing — you find
+them by watching a locator match the wrong thing.
+
+- **The hub's sign-in label is a strict prefix of both intro CTAs.**
+  `使用 Google 登入` on the hub versus `使用 Google 登入開始記錄` /
+  `…開始使用` on the intro pages. Playwright matches accessible names as
+  substrings by default, so a locator for the short form matches the intro
+  pages too — and classifies the public entry point as gated. Match through
+  `開始`, or use `exact: true`.
+- **`/littleexplorer/wiki` renders the same wordmark string as the
+  LittleExplorer intro page's `h1`.** The header cannot distinguish the real
+  page from the intro page on that route, so an identity marker has to come
+  from the page body.
+- **The growth chart cannot be selected as an `svg`.** Every Lucide icon in the
+  app is one, so an element selector matches on every page and asserts nothing.
+  Use the chart panel's heading.
+- **124 of the 234 family centres carry 親子館 in their own name**, which is
+  also the name of the tab that lists them. A loose match on the tab matches
+  every report button in the list. Every chip in `OutingPage` is `exact: true`
+  for this reason.
+- **`nursingRooms.json` is precache-exempt but runtime-cached.** `globIgnores`
+  keeps it out of the precache, and a `CacheFirst` `runtimeCaching` entry puts
+  it back under the worker's control. Precache-exempt is not fetch-exempt —
+  see the note below.
+
+### Route-blocking a dataset needs the service worker blocked
+
+`page.route` does not intercept a request the service worker answers. Every
+load-failure case (`GUARD-08`, `OUTING-04`, `OASIS-07`) therefore runs under
+`test.use({ serviceWorkers: 'block' })`.
+
+That is not a workaround. The precache means a *returning* parent is shown
+cached data — with the freshness banner declaring its age, which is
+GUARD-02…04's subject — so the load-failure path is only reachable on a first
+visit with nothing cached. Blocking the worker pins the case to exactly that
+visit.
+
+Whether an unguarded case passes is a race: a CI container wins it
+consistently and a laptop usually loses it, which is how one of these shipped
+green while asserting nothing.
+
 ## Coverage of the plan's six gaps
 
 | Plan §1 gap | Covered by |
