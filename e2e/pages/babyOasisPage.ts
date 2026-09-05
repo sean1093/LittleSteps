@@ -18,6 +18,14 @@ export class BabyOasisPage {
   readonly excludeInternalChip: Locator;
   readonly areaChip: Locator;
   readonly areaPicker: Locator;
+  /**
+   * Every control inside the area picker, in DOM order: `ModalFrame`'s close
+   * button, then the county chips, then the districts of the county chosen.
+   * The last one is therefore the last district, which is what RWD-03 needs
+   * without having to name a district the upstream data may rename.
+   */
+  readonly areaPickerControls: Locator;
+  readonly closeAreaPicker: Locator;
   readonly loadFailedTitle: Locator;
   readonly reloadRooms: Locator;
   readonly appBarSubtitle: Locator;
@@ -39,6 +47,8 @@ export class BabyOasisPage {
     // county is picked, then the county, then the county and the district.
     this.areaChip = page.getByRole('button', { name: '全部縣市', exact: true });
     this.areaPicker = page.getByRole('dialog', { name: '選擇區域' });
+    this.areaPickerControls = this.areaPicker.getByRole('button');
+    this.closeAreaPicker = this.areaPicker.getByRole('button', { name: '關閉' });
     this.loadFailedTitle = page.getByRole('heading', { name: '哺乳室資料載入失敗' });
     this.reloadRooms = page.getByRole('button', { name: '重新載入' });
     // The AppBar subtitle, which is a `<p>` with no role of its own. It cannot

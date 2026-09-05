@@ -103,7 +103,7 @@ about.
 | OASIS-04 | P1 | Category chips and 排除內部場所 filter | Start from a district filter so a list already exists — pressing 排除內部場所 from nothing is what *creates* the list, so there is no prior count to compare against. Then the count changes, `aria-pressed` reflects state, and pressing again clears it |
 | OASIS-05 | P1 | Open a room's detail sheet and the report form | Sheet opens with address and facilities; the report button opens the form while signed out |
 | OASIS-06 | P1 | Map container renders with tiles route-blocked | Leaflet mounts and markers/clusters are present; the blocked tiles are declared, not discovered as a timeout |
-| OASIS-07 | P0 | `nursingRooms.json` fails to load (route-blocked) | `LoadState` goes to `failed` and the 哺乳室資料載入失敗 empty state renders with its 重新載入 action, while the AppBar subtitle switches to 資料載入失敗 — never an empty map that reads as "no nursing rooms near you". 1.1 MB, deliberately excluded from the PWA precache and fetched on first map visit, so this is the one dataset whose delivery depends on runtime caching |
+| OASIS-07 | P0 | `nursingRooms.json` fails to load (route-blocked) | `LoadState` goes to `failed` and the 哺乳室資料載入失敗 empty state renders with its 重新載入 action, while the AppBar subtitle switches to 資料載入失敗 — never an empty map that reads as "no nursing rooms near you". 1.1 MB, excluded from the PWA precache and fetched on first map visit, so this is the one dataset whose delivery depends on runtime caching. Precache-exempt is **not** fetch-exempt: `vite.config.ts` gives the same URL a `CacheFirst` `runtimeCaching` entry and `registerType: 'autoUpdate'` claims open clients, so an active worker answers the request and `page.route` never sees it. This case blocks the service worker, as GUARD-08 and OUTING-04 do |
 | OASIS-08 | P2 | Long venue name beside a tag at 320px | Name truncates, tag keeps full width, tag's left edge is at or after the name's right edge |
 
 ## OUTING — LittleOuting venues
@@ -163,7 +163,7 @@ This plan already builds and serves `dist/`, so the check is nearly free.
 |---|---|---|---|
 | PWA-01 | P1 | Manifest is served and parses | `manifest.webmanifest` returns 200 with a name, icons and a start URL |
 | PWA-02 | P1 | Service worker registers on the built app | Registration resolves; no console error |
-| PWA-03 | P2 | No uncaught console errors on any public route | Collected per route and asserted empty, with a declared allowlist naming **every** host the harness route-blocks: map tiles, `firebase.googleapis.com` and `*.google-analytics.com` (plan §5). An aborted route produces a console error, so a blocklist that outgrows this allowlist turns PWA-03 red for no product reason |
+| PWA-03 | P2 | No uncaught console errors on any public route | Collected per route and asserted empty, with a declared allowlist naming **every** host the harness route-blocks: map tiles, `firebase.googleapis.com`, `*.google-analytics.com` and `apis.google.com` (plan §5). An aborted route produces a console error, so a blocklist that outgrows this allowlist turns PWA-03 red for no product reason — which is why the spec imports `BLOCKED_HOSTS` rather than restating it, and why this row is the copy to distrust if the two ever disagree |
 
 ---
 

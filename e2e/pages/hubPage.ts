@@ -13,8 +13,11 @@ import { SERVICE_THEME, type ServiceId } from '../../src/common/ui/serviceTheme'
  * components, which are never rendered here.
  */
 export class HubPage {
-  /** Footer sign-in. The hub is public, so this is an offer, not a gate. */
-  readonly signIn: Locator;
+  /**
+   * The hub's own headline, and the only `h1` on the page: the hub is the one
+   * route that renders no `AppBar`.
+   */
+  readonly title: Locator;
 
   /**
    * The control that returns to the hub, on every service's own chrome.
@@ -27,7 +30,7 @@ export class HubPage {
   readonly returnToHub: Locator;
 
   constructor(private readonly page: BrowserPage) {
-    this.signIn = page.getByRole('button', { name: '使用 Google 登入' });
+    this.title = page.getByRole('heading', { level: 1 });
     this.returnToHub = page.getByRole('button', { name: '所有服務' });
   }
 

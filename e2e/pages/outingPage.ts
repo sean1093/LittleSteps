@@ -5,6 +5,8 @@ import { SCROLL_ROW } from '../fixtures/testIds';
 /**
  * LittleOuting — family centres, child-friendly restaurants and the checklist.
  *
+ * Two branches built this independently; it carries both sets of selectors.
+ *
  * Selectors and navigation only; the assertions live in the specs (plan §9).
  *
  * Every chip here is matched exactly. Substring matching is the default, and
@@ -24,6 +26,16 @@ export class OutingPage {
   readonly loadFailedTitle: Locator;
   readonly checklistQuestions: Locator;
 
+  /**
+   * The report action on a family-centre card. Its accessible name carries the
+   * venue name after the label, because thirty cards in one list otherwise
+   * announce the same three words; the prefix is what identifies the control.
+   *
+   * It renders only once `familyCentres.json` has arrived, so it doubles as
+   * the signal that the register is on screen.
+   */
+  readonly reportButtons: Locator;
+
   constructor(private readonly page: Page) {
     this.centreTab = page.getByRole('button', { name: '親子館', exact: true });
     this.restaurantTab = page.getByRole('button', { name: '親子餐廳', exact: true });
@@ -40,6 +52,7 @@ export class OutingPage {
     // On the 出發前 tab the checklist cards are the only level-3 headings, so
     // this counts the items rendered without binding to `.card`.
     this.checklistQuestions = page.getByRole('heading', { level: 3 });
+    this.reportButtons = page.getByRole('button', { name: /^這裡的資訊不對？/ });
   }
 
   async goto(): Promise<void> {

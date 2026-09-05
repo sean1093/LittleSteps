@@ -21,6 +21,13 @@ export class LittleGuardPage {
   readonly countyRow: Locator;
   /** The three age-band chips, same reason. */
   readonly ageBandRow: Locator;
+  /**
+   * The heading above that row. Like the row itself it lives inside the
+   * `data && cells` branch, so either one on screen means the board rendered
+   * rather than the empty state — which is what makes it this route's marker
+   * in `publicRoutePage`.
+   */
+  readonly ageBandHeading: Locator;
   /** `8/23–8/29 · 疾管署健保門診就診統計` — the week the board is showing. */
   readonly weekLine: Locator;
   /** Rendered only when the data is stale, never when it is fresh or expired. */
@@ -45,6 +52,7 @@ export class LittleGuardPage {
   constructor(private readonly page: Page) {
     this.countyRow = page.getByTestId(SCROLL_ROW.guardCounties);
     this.ageBandRow = page.getByTestId(SCROLL_ROW.guardAgeBands);
+    this.ageBandHeading = page.getByRole('heading', { name: '孩子的年齡' });
     this.weekLine = page.getByText(/疾管署健保門診就診統計$/);
     this.staleBanner = page.getByText(/^這份資料有點舊了/);
     this.expiredBanner = page.getByText(/^這份資料超過一個月沒更新/);

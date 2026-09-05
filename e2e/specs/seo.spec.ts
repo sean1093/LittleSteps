@@ -40,7 +40,7 @@ test('SEO-01 @p0 robots.txt disallows every route that requires signing in', asy
 
   for (const route of PUBLIC_ROUTES) {
     const path = pathOf(route);
-    expect(disallows(disallowed, path), `the public route ${path} is disallowed`).toBe(false);
+    expect(blockedBy(disallowed, path), `the public route ${path} is disallowed`).toEqual([]);
   }
 });
 
@@ -124,6 +124,35 @@ test('SEO-03 @p1 each public route is served its own prerendered head', async ({
 function disallows(lines: string[], path: string): boolean {
   const line = new RegExp(`^Disallow: ${escapeForRegExp(path)}\\$?$`);
   return lines.some((candidate) => line.test(candidate));
+}
+
+/**
+ * The `Disallow` lines that keep a crawler off this path, by robots.txt's own
+ * matching rules rather than by line equality.
+ *
+ * `disallows` answers "is there a line for exactly this route", which is the
+ * question the gated half asks. It is the wrong question for the public half:
+ * an unanchored `Disallow: /littlesteps` blocks `/littlesteps/baby-wiki` by
+ * prefix, and a whole-line comparison says nothing about it — the public half
+ * would pass while 85 wiki articles fell out of every index. So a public path
+ * is checked against every line: an unanchored one blocks it when the path is
+ * that value or sits under it, and an anchored one only when the two are
+ * equal. Returning the offending lines rather than a boolean puts the line
+ * that did it in the failure.
+ *
+ * This is deliberately not derived from `renderRobotsTxt`: the sibling case
+ * below re-derives which roots need the anchor, which verifies the artifact
+ * matches the generator. This one has to be able to fail when the generator
+ * itself is wrong.
+ */
+function blockedBy(lines: string[], path: string): string[] {
+  return lines.filter((line) => {
+    const value = line.slice('Disallow:'.length).trim();
+    // `Disallow:` with nothing after it is robots.txt for "allow everything".
+    if (value === '') return false;
+    if (value.endsWith('$')) return value.slice(0, -1) === path;
+    return path === value || path.startsWith(`${value}/`);
+  });
 }
 
 /** Escapes a path for use inside a `RegExp`; every route path contains `/`. */
