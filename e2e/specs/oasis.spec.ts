@@ -212,21 +212,40 @@ test('OASIS-06 @p1 Leaflet mounts and draws clusters with the tiles blocked', as
   await expect.poll(() => blockedTiles.length).toBeGreaterThan(0);
 });
 
-test('OASIS-07 @p0 a failed nursingRooms.json says so and offers a retry', async ({ page }) => {
-  const oasis = new BabyOasisPage(page);
+/**
+ * `page.route` intercepts what the page asks for, not what the service worker
+ * answers.
+ *
+ * The 1.1 MB roster is outside the precache — `globIgnores` in
+ * `vite.config.ts` keeps it out, so that installing the PWA does not download
+ * it for a parent who never opens the map. But the same config gives it a
+ * `runtimeCaching` `CacheFirst` entry, and `registerType: 'autoUpdate'` turns
+ * on `clientsClaim`, so once a worker is active it serves that URL from its
+ * own cache and this abort never happens. Precache-exempt is not
+ * fetch-exempt, and that is the distinction the next load-failure case will
+ * get wrong.
+ *
+ * Blocking the worker pins the case to the visit it is about: a parent
+ * arriving with nothing cached, which is the only visit on which this failure
+ * path is reachable at all.
+ */
+test.describe('a first visit, with nothing in the PWA precache', () => {
+  test.use({ serviceWorkers: 'block' });
 
-  // 1.1 MB, deliberately outside the PWA precache and fetched on the first map
-  // visit, so failing to arrive is a normal path rather than an exotic one.
-  await page.route('**/data/nursingRooms.json', (route) => route.abort('failed'));
+  test('OASIS-07 @p0 a failed nursingRooms.json says so and offers a retry', async ({ page }) => {
+    const oasis = new BabyOasisPage(page);
 
-  await oasis.goto();
+    await page.route('**/data/nursingRooms.json', (route) => route.abort('failed'));
 
-  await expect(oasis.loadFailedTitle).toBeVisible();
-  await expect(oasis.reloadRooms).toBeVisible();
-  await expect(oasis.appBarSubtitle).toBeVisible();
-  // No search box: searching an empty dataset answers "there are no nursing
-  // rooms here", which is the sentence this state exists to avoid.
-  await expect(oasis.search).toHaveCount(0);
+    await oasis.goto();
+
+    await expect(oasis.loadFailedTitle).toBeVisible();
+    await expect(oasis.reloadRooms).toBeVisible();
+    await expect(oasis.appBarSubtitle).toBeVisible();
+    // No search box: searching an empty dataset answers "there are no nursing
+    // rooms here", which is the sentence this state exists to avoid.
+    await expect(oasis.search).toHaveCount(0);
+  });
 });
 
 test('OASIS-08 @p2 a long venue name truncates beside its tag', async ({ page }) => {
