@@ -1,0 +1,299 @@
+# End-to-end test plan
+
+Owner: QA · Status: adopted · Applies to: `master` and every pull request
+
+This plan covers browser-level end-to-end (E2E) testing with Playwright. It
+says what E2E is *for* in this repository, what it must not duplicate, how the
+environment is stood up, and how a test earns its place in the suite.
+
+`docs/E2E_TEST_CASES.md` holds the case catalogue. This document holds the
+reasoning; that one holds the work.
+
+---
+
+## 1. Why E2E, given 1,684 unit tests already pass
+
+The existing Vitest suite is good and it is not the thing that is missing. It
+renders components in happy-dom with fabricated props and asserts behaviour.
+What it structurally cannot see:
+
+| Gap | Why only a browser catches it |
+|---|---|
+| **Routing and deep links** | `ROUTE_PATH` is typed, but nothing proves that typing `/littlesteps/daily-log` into the address bar boots the app on that page. Component tests mount a page directly; they never exercise the path parser, the lazy chunk, or the history API. |
+| **The auth gate** | `routePolicy.ts` is a public allowlist, and this app stores children's health data. A unit test asserts the predicate. Only a browser proves that a signed-out visitor at a gated URL sees the intro page **and no child data**, at the same URL, with no redirect. |
+| **Real data files** | The wikis, the venue registers, the nursing-room dataset and the disease radar load real JSON/TS data at runtime — 3,852 nursing rooms, 85 wiki articles. A malformed or missing data file passes typecheck and breaks the page. |
+| **Lazy chunks and the PWA** | `App.tsx` lazy-loads every page. A broken dynamic import, a stale service worker precache or a bad manifest is invisible until a real navigation happens. |
+| **Layout at 390px and 320px** | `.claude/CLAUDE.md` requires every change to be checked at 390px, and at 320px for anything in a grid. happy-dom has no layout engine: it cannot tell you that a chip row overflows or that a tag wraps. |
+| **Third-party rendering** | Leaflet draws the BabyOasis map imperatively into a real DOM with real sizing. There is no meaningful jsdom assertion about it. |
+
+E2E exists for exactly those six. **A behaviour that a unit test can assert
+belongs in a unit test** — E2E is an order of magnitude slower and flakier per
+assertion, so every case in the catalogue must justify itself against this
+table.
+
+## 2. What E2E must not become
+
+- **Not a second unit suite.** No E2E case may assert a pure function's output,
+  a label string in isolation, or a component's internal state. If a case can
+  be written against `logHelpers` or a single component, write it there.
+- **Not a screenshot-diff wall.** Pixel baselines on a Tailwind app churn on
+  every token change and train people to accept diffs. Layout is asserted with
+  *measurements and invariants* (see §7), not with golden images. Screenshots
+  are captured as **evidence for humans**, never as an oracle.
+- **Not a coverage target.** There is no E2E coverage percentage. The suite is
+  sized by risk (§3), and a case is deleted when the risk it covers is gone.
+
+## 3. Risk model — what decides priority
+
+Priority is assigned by *how badly a silent failure hurts a parent*, not by how
+much code a test touches.
+
+| Priority | Meaning | Examples |
+|---|---|---|
+| **P0** | A parent is shown another family's data, no data where there is data, or wrong medical information — and nothing throws. | Auth gate leaking a gated page; the disease radar showing stale or wrong counts; a wiki article failing to load. |
+| **P1** | A core journey is unreachable or unusable on a phone. | Deep link 404s; BabyOasis search returns nothing; a control is unreachable at 320px; a modal's submit button sits under the keyboard. |
+| **P2** | Cosmetic or convenience degradation with an obvious workaround. | A chip row scrolls where it used to fit; a tag wraps to a second line. |
+
+P0 cases run on every pull request and block merge. P1 runs on every pull
+request. P2 is intended to run on `master` and nightly; note that **no nightly
+workflow exists yet**, so until one is added P2 runs on `master` only.
+
+## 4. Tooling and constraints
+
+- **Playwright** (`@playwright/test`), pinned to an exact version. It is the
+  only browser-automation dependency; no Cypress, no Selenium, no second
+  runner.
+- **Chromium only, to begin with.** Cross-browser is deferred until the suite
+  is stable and green; adding WebKit/Firefox before then multiplies flake
+  investigation for a mobile-first PWA whose audience is overwhelmingly mobile
+  Chrome and Safari. WebKit is the first addition when we do expand, because
+  iOS Safari is the single most-used engine we do not currently test.
+- **Browsers are not downloaded in CI or in agent sandboxes.** Chromium is
+  pre-installed at `/opt/pw-browsers`. Respect `PLAYWRIGHT_BROWSERS_PATH` and
+  `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`; never run `playwright install` in a
+  script or a workflow.
+- **Test against the production build**, not the dev server: `vite build` then
+  `vite preview`. The dev server does not exercise the lazy-chunk split, the
+  PWA service worker or minification, and three of the six gaps in §1 live
+  precisely there. `webServer` in the Playwright config owns start-up and
+  teardown.
+- **One way `vite preview` is not production.** The build prerenders one
+  `index.html` per public page, but `preview` serves the *root* `index.html`
+  for any extensionless path, so `/littleouting` returns the home page's
+  prerendered `<title>` while `/littleouting/` returns the right one. In
+  production `firebase.json` sets `cleanUrls: true` and the correct file is
+  served either way. Only SEO-03 can see the difference — every other case
+  asserts what the browser shows after hydration — but it must request the
+  directory-index form and say why, or it fails at exactly the canonical URLs
+  `renderSitemap` emits.
+
+## 5. Environment and the auth decision
+
+The app calls `initializeApp()` at module load with `VITE_FIREBASE_*` values.
+With those unset it throws `auth/invalid-api-key` and renders a blank page — so
+**there is no such thing as running this app with no Firebase configuration at
+all.** Every E2E environment must supply values.
+
+We adopt a **two-phase** strategy.
+
+### Phase 1 — public routes, dummy credentials (no production code changes)
+
+`routePolicy.ts` makes nine pages public: the hub, the three wikis, the care
+guide, the sleep guide, LittleOuting, BabyOasis and LittleGuard. None of them
+reads a child's record, so dummy `VITE_FIREBASE_*` values are enough to get the
+app to boot and **no authenticated call reaches Google**: both
+`useUserChildren` and `useFirebaseCollection` early-return on a null user, so no
+database listener ever attaches.
+
+Analytics is the exception, and it must be handled explicitly. `App.tsx` calls
+`logPageView()` on every in-app navigation, which dynamically imports
+`firebase/analytics` and fetches a web config from `firebase.googleapis.com`.
+With dummy credentials that request fails and retries with backoff, producing
+console errors — which is precisely what PWA-03 asserts against. The harness
+therefore route-blocks `firebase.googleapis.com` and `*.google-analytics.com`
+the same way, and for the same reason, that it blocks map tiles (§8): declare
+the boundary rather than discover it as a timeout.
+
+Two things whoever supplies the dummy values needs to know: the SDK rejects an
+`apiKey` containing `:`, and `VITE_FIREBASE_DATABASE_URL` must be set or
+`getDatabase()` throws. Note that `firebase-hosting-pull-request.yml` omits that
+variable — an E2E job copy-pasted from it renders a blank page.
+
+This buys the whole of §1 except the authenticated half of the auth gate, and
+it needs **no change to production initialisation** — an important property for
+the first Playwright PRs, which should be judged on the harness, not on a change
+to how the app boots.
+
+It does need a small, enumerated set of `data-testid` attributes, under the §6
+rule-3 exception: the Leaflet map container and its cluster layer (built
+imperatively by `react-leaflet-cluster`, with no accessible name to select by)
+and the deliberately-scrolling `.row-bleed` chip rows. That list is fixed in the
+harness PR and does not grow without a reason written in the diff.
+
+Phase 1 still covers the *signed-out* half of the gate, which is the P0 half:
+a gated URL must show the intro page and no child data.
+
+### Phase 2 — Firebase emulators (authenticated journeys)
+
+The authenticated core — daily log, growth charts, vaccine tracking, milestones,
+the report — is where this product's value and its risk both live, and Phase 1
+cannot reach it. Phase 2 connects the app to the **Auth and Database
+emulators**. Only the Database emulator exists today: `firebase.json` declares a
+`database` emulator on port 9000 and nothing else, and `npm run test:rules` runs
+`emulators:exec --only database`. Phase 2 must therefore *add* an `auth`
+emulator block to `firebase.json` and a second `--only` target — this is setup
+work, not reuse.
+
+This requires one env-gated hook in `src/lib/firebase.ts`
+(`VITE_USE_FIREBASE_EMULATOR`) that calls `connectAuthEmulator` and
+`connectDatabaseEmulator`. That is a production-code change and must be
+reviewed as one: it has to be impossible to enable in a deployed build, and the
+gate belongs in a single place with a comment saying why.
+
+Phase 2 is **not** in the initial issue breakdown. It is opened once Phase 1 is
+green on `master`, so that an emulator problem is never confused with a harness
+problem.
+
+### Never
+
+- No real Firebase project, ever, from a test.
+- No real Google sign-in. Phase 2 mints tokens against the Auth emulator.
+- No test writes to `database.rules.json` behaviour — that is `test:rules`'
+  job, and it already does it better, against the real rules engine.
+
+## 6. Selector policy
+
+In priority order:
+
+1. **Role + accessible name** — `getByRole('button', { name: '排除內部場所' })`.
+   This is the default and should cover most cases. It asserts accessibility
+   and behaviour at once.
+2. **Label, placeholder or text** for content assertions.
+3. **`data-testid`** only where no accessible name can exist (a Leaflet layer,
+   a decorative container). Adding one is a change to `src/` and needs a
+   comment saying why a role was not usable.
+
+Forbidden: CSS class selectors, Tailwind utilities, `nth-child`, and XPath.
+`.card`, `.chip` and `.tag` are design-system tokens that get restyled; a test
+bound to them fails on a refactor that changed nothing a parent can see. That
+includes `.row-bleed`: where §7 needs to assert on a deliberately-scrolling row,
+it selects the enumerated `data-testid` from §5, not the class.
+
+**Product copy is Traditional Chinese and tests assert it directly.** Where a
+string has a canonical source (`ACCESS_LABEL`, `getDiaperTypeLabel`,
+`CATEGORY_LABEL`), import it rather than retyping it — a test that hard-codes a
+label it does not own becomes a second vocabulary, which is the exact defect
+issues #48 and #38 were opened about.
+
+## 7. Layout assertions without pixel baselines
+
+`.claude/CLAUDE.md` mandates 390px, and 320px for anything in a grid. The suite
+encodes that as two viewport projects and asserts *invariants*, not images:
+
+- **No horizontal overflow of the page body:** `scrollWidth <= clientWidth` on
+  `body` at both widths. Intentionally scrolling rows are asserted on their own
+  container instead, selected by the `data-testid` §5 enumerates.
+- **Tap targets:** every enabled control **the design system owns** —
+  `button`, `input`, `[role=button]`, and links styled as buttons — is at least
+  44px in its smaller dimension. Inline links inside prose (the 疾管署 citation,
+  a `tel:` link) and third-party map chrome (Leaflet's attribution) are excluded
+  and would otherwise make this a false-positive generator: `.chip`,
+  `.btn-primary`, `.btn-secondary`, `.btn-ghost` all carry `min-h-tap` and
+  `.btn-icon` is `w-tap h-tap`, so the design system is already compliant by
+  construction.
+- **No visual overlap** between a truncating name and the tag beside it: the
+  tag's left edge is at or after the name's right edge.
+- **Modal reachability:** the submit control of an open modal is inside the
+  viewport.
+
+These hold across restyling and fail loudly on the things that actually break.
+
+**On CLAUDE.md's "do not test styling".** That rule exists to stop tests
+asserting class names and colour tokens, which is exactly what §6 forbids. The
+RWD and PWA groups assert *measured consequences* a parent experiences — a page
+that scrolls sideways, a button under the fold, a control too small to hit —
+which no restyle changes unless it genuinely broke something. A future reviewer
+will raise the tension; this paragraph is the answer.
+
+## 8. Determinism
+
+- **No `waitForTimeout`.** Wait on a role, a URL, or a response. A sleep in a
+  test is a bug report about a missing signal.
+- **Fix time** for anything date-dependent (the radar's week ranges, "today" in
+  the daily log, age calculations) with `page.clock` or an injected date.
+  A suite that fails on the first of the month is not a suite.
+- **Third-party network is blocked, deliberately.** OpenStreetMap tiles do not
+  load in CI or in agent sandboxes. Tests route-block tile requests explicitly
+  so the failure mode is *declared* rather than discovered as a timeout; the
+  map's own markers and overlays are still asserted.
+- **Flake policy — this plan's own rule.** A failing test is never skipped,
+  disabled, quarantined, or retried into passing. `retries: 0` everywhere,
+  including CI: a retry that turns a job green *is* retrying into passing, and
+  a suite that does it stops being a signal. Flake detection, if we want it,
+  belongs in a separate non-blocking job using `--repeat-each`. (CLAUDE.md's
+  test rules say not to narrow a test to make it pass; the skip/quarantine/retry
+  prohibition is ours, stated here rather than borrowed.)
+
+## 9. Layout of the suite
+
+```
+e2e/
+├── fixtures/       shared test fixtures, viewport projects, clock helpers
+├── pages/          page objects — one per route under test
+├── specs/          the cases, named after the catalogue IDs they cover
+└── README.md       how to run it, and how to add a case
+playwright.config.ts
+```
+
+Page objects hold *selectors and navigation only*. Assertions live in specs, so
+a reader can see what is being claimed without following a second file.
+
+## 10. Scripts and CI
+
+```bash
+npm run test:e2e              # headless, both viewports
+npm run test:e2e -- --ui      # local debugging
+npm run test:e2e:p0           # the merge-blocking subset
+```
+
+Priority is encoded as a **`@p0` / `@p1` / `@p2` tag in the test title** and
+selected with `--grep`. Name the mechanism here so that specs do not each invent
+one.
+
+**Sequencing note, and it matters.** `.github/workflows/` currently holds two
+Firebase Hosting deploys and the manual radar refresh. **Nothing runs
+`npm run lint` or the unit suite on a pull request** — the gates in
+`.claude/skills/pr-self-merge` are run by hand. Adding a Playwright job first
+would make the browser suite the first CI signal this repo has ever had, which
+inverts this plan's own rationale that a browser failure must never be mistaken
+for a logic failure. **A lint + unit-test job lands before, or in the same PR
+as, the E2E job.**
+
+CI then runs the P0+P1 subset on every pull request as a separate job from that
+one. On failure the job uploads the Playwright HTML report, traces and
+screenshots as artifacts. The job does not download browsers (§4).
+
+## 11. Exit criteria for Phase 1
+
+1. Every P0 case in the catalogue is implemented and green on three consecutive
+   `master` runs.
+2. The suite completes in under five minutes on CI.
+3. Zero skipped, `fixme`, or conditionally-disabled tests.
+4. `e2e/README.md` tells a new contributor how to run it and how to add a case.
+
+## 12. Maintenance
+
+- A test that fails for a real product change is **updated in the same PR** as
+  that change, never after it.
+- A case whose risk no longer exists is **deleted**, not left passing. Deleting
+  a test that asserts deleted behaviour is correct; narrowing a test to make it
+  pass is not.
+- The catalogue and the specs share IDs. A spec without a catalogue entry, or
+  an entry with no spec, is a defect in the suite.
+
+## 13. Out of scope
+
+Performance budgets and Lighthouse; visual regression baselines; accessibility
+auditing beyond the role-based selectors the suite already forces;
+cross-browser beyond Chromium (§4); load testing; anything touching a real
+Firebase project or the real CDC endpoint.
