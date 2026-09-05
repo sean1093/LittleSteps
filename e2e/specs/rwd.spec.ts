@@ -5,9 +5,10 @@ import {
   expectRowContainsItsOverflow,
   expectTapTargets,
 } from '../fixtures/layout';
+import { PUBLIC_ROUTES } from '../fixtures/routes';
 import { SCROLL_ROW_SELECTOR } from '../fixtures/testIds';
 import { OutingPage } from '../pages/outingPage';
-import { PUBLIC_ROUTES } from '../pages/publicRoutes';
+import { PublicRoutePage } from '../pages/publicRoutePage';
 
 /**
  * RWD-01…03 — the layout invariants, at 390px and 320px.
@@ -24,11 +25,11 @@ import { PUBLIC_ROUTES } from '../pages/publicRoutes';
  */
 
 for (const route of PUBLIC_ROUTES) {
-  test(`RWD-01 @p1 ${route.page} keeps its horizontal overflow off the page body`, async ({
-    page,
-  }) => {
-    await page.goto(route.path);
-    await expect(route.ready(page)).toBeVisible();
+  test(`RWD-01 @p1 ${route} keeps its horizontal overflow off the page body`, async ({ page }) => {
+    const routes = new PublicRoutePage(page);
+
+    await routes.goto(route);
+    await expect(routes.ready(route)).toBeVisible();
 
     await expectNoPageOverflow(page);
 
@@ -44,9 +45,11 @@ for (const route of PUBLIC_ROUTES) {
 }
 
 for (const route of PUBLIC_ROUTES) {
-  test(`RWD-02 @p1 ${route.page} has no control under 44px`, async ({ page }) => {
-    await page.goto(route.path);
-    await expect(route.ready(page)).toBeVisible();
+  test(`RWD-02 @p1 ${route} has no control under 44px`, async ({ page }) => {
+    const routes = new PublicRoutePage(page);
+
+    await routes.goto(route);
+    await expect(routes.ready(route)).toBeVisible();
 
     // Scoped to the controls the design system owns, and with everything
     // Leaflet draws excluded — see the helper. `.chip` and the `.btn-*` family

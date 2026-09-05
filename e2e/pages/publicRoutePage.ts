@@ -1,16 +1,33 @@
 import type { Locator, Page as BrowserPage } from '@playwright/test';
 import { ROUTE_PATH, type Page } from '../../src/types/routes';
+import { PUBLIC_ROUTES } from '../fixtures/routes';
+import { BabyOasisPage } from './babyOasisPage';
+import { CareGuidePage } from './careGuidePage';
+import { HubPage } from './hubPage';
+import { LittleGuardPage } from './littleGuardPage';
+import { OutingPage } from './outingPage';
+import { SleepGuidePage } from './sleepGuidePage';
+import { WikiBrowserPage } from './wikiBrowserPage';
 
 /**
  * The nine routes a visitor reaches without an account.
  *
  * Selectors and navigation only; the assertions live in the specs (plan §9).
  *
- * One locator per route, naming content that belongs to *that* page. The
- * wordmark in the header is deliberately not used: `/littleexplorer/wiki`
- * renders `LittleExplorer` in its `AppBar`, and so does the LittleExplorer
- * intro page a blocked visitor would see instead — a marker that cannot tell
- * the real page from the intro page is not a marker for AUTH-03.
+ * Two markers per route, because the suite asks two different questions of the
+ * same page and one locator cannot answer both:
+ *
+ * - `content` — "this is the real page, not the intro page a blocked visitor
+ *   would see". AUTH-03's oracle. The wordmark in the header is deliberately
+ *   not used: `/littleexplorer/wiki` renders `LittleExplorer` in its `AppBar`,
+ *   and so does the LittleExplorer intro page.
+ * - `ready` — "the runtime data has arrived and the page is finished". What
+ *   the layout invariants and the console sweep wait on before measuring:
+ *   three of the nine fetch a data file after mount, and measuring the painted
+ *   shell measures the wrong page.
+ *
+ * They coincide on some routes and diverge on others, so both are stated per
+ * route rather than one being derived from the other.
  */
 export class PublicRoutePage {
   constructor(private readonly page: BrowserPage) {}
@@ -25,13 +42,21 @@ export class PublicRoutePage {
     if (!marker) throw new Error(`${route} is not a public route, so it has no content marker`);
     return marker(this.page);
   }
+
+  /** Content that exists only once `route` has its runtime data on screen. */
+  ready(route: Page): Locator {
+    const marker = READY[route];
+    if (!marker) throw new Error(`${route} is not a public route, so it has no ready marker`);
+    return marker(this.page);
+  }
 }
 
 /**
  * Traditional Chinese appears here because these strings are the literal UI
  * copy a selector matches — the one thing `e2e/README.md` keeps in Chinese.
  * None has a canonical constant in `src/` to import instead; each is written
- * inline in the page that renders it.
+ * inline in the page that renders it. Where a service already has a page
+ * object naming the same control, that page object is the one home for it.
  */
 const CONTENT: Partial<Record<Page, (page: BrowserPage) => Locator>> = {
   // The hub's first group heading. It answers the question the page exists to
@@ -47,10 +72,52 @@ const CONTENT: Partial<Record<Page, (page: BrowserPage) => Locator>> = {
   // `BloomShell` puts the page's own title in the `AppBar`, not the wordmark.
   'littlebloom/wiki': (page) => page.getByRole('heading', { name: '孕期知識庫' }),
   'littleexplorer/wiki': (page) => page.getByRole('heading', { name: '依年齡看' }),
-  littleouting: (page) => page.getByRole('searchbox', { name: '搜尋親子館' }),
-  babyoasis: (page) => page.getByRole('searchbox', { name: '搜尋哺乳室' }),
-  // The age-band picker, which renders only once the radar's own data file has
-  // arrived — so this also says the page reached its content, not just its
-  // shell.
-  littleguard: (page) => page.getByRole('heading', { name: '孩子的年齡' }),
+  littleouting: (page) => new OutingPage(page).centreSearch,
+  babyoasis: (page) => new BabyOasisPage(page).search,
+  // The age-band picker's heading, which renders only once the radar's own
+  // data file has arrived — so this also says the page reached its content,
+  // not just its shell.
+  littleguard: (page) => new LittleGuardPage(page).ageBandHeading,
 };
+
+/**
+ * The first row of the real content, never the `AppBar`: the header renders
+ * while the lazy chunk is still loading, so a marker taken from it says
+ * nothing about whether the page is finished.
+ */
+const READY: Partial<Record<Page, (page: BrowserPage) => Locator>> = {
+  // The hub has no `AppBar`, so its `h1` is the only one on the page.
+  home: (page) => new HubPage(page).title,
+  'littlesteps/care-guide': (page) => new CareGuidePage(page).cardTitles.first(),
+  'littlesteps/sleep-training': (page) => new SleepGuidePage(page).ritualSteps.first(),
+  'littlesteps/baby-wiki': (page) =>
+    new WikiBrowserPage(page, 'littlesteps/baby-wiki').articles.first(),
+  'littlebloom/wiki': (page) => new WikiBrowserPage(page, 'littlebloom/wiki').articles.first(),
+  'littleexplorer/wiki': (page) =>
+    new WikiBrowserPage(page, 'littleexplorer/wiki').articles.first(),
+  // Renders on a family-centre card, so it waits for `familyCentres.json`.
+  littleouting: (page) => new OutingPage(page).reportButtons.first(),
+  // The search input renders once the 1.1 MB nursing-room dataset has arrived.
+  babyoasis: (page) => new BabyOasisPage(page).search,
+  // The chip row lives inside the `data && cells` branch, so it exists only
+  // with a board on screen.
+  littleguard: (page) => new LittleGuardPage(page).ageBandRow,
+};
+
+/**
+ * Both tables cover every public route, checked when this module is imported
+ * rather than when a marker is first asked for.
+ *
+ * A missing entry is a route someone made public without saying how to tell it
+ * rendered, and the cases that iterate `PUBLIC_ROUTES` would otherwise fail
+ * one at a time, deep inside a run, in a message about a locator. Failing at
+ * collection names the real problem once.
+ */
+for (const route of PUBLIC_ROUTES) {
+  if (!CONTENT[route]) {
+    throw new Error(`${route} is public but has no content marker: add one to publicRoutePage.ts`);
+  }
+  if (!READY[route]) {
+    throw new Error(`${route} is public but has no ready marker: add one to publicRoutePage.ts`);
+  }
+}

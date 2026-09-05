@@ -1,7 +1,8 @@
 import type { ConsoleMessage, Page } from '@playwright/test';
 import { expect, test } from '../fixtures/test';
 import { BLOCKED_HOSTS, isBlockedUrl } from '../fixtures/blockedHosts';
-import { PUBLIC_ROUTES } from '../pages/publicRoutes';
+import { PUBLIC_ROUTES } from '../fixtures/routes';
+import { PublicRoutePage } from '../pages/publicRoutePage';
 
 /**
  * PWA-01…03 — the installable shell.
@@ -51,11 +52,12 @@ test('PWA-02 @p1 the service worker registers on the built app', async ({ page, 
 });
 
 for (const route of PUBLIC_ROUTES) {
-  test(`PWA-03 @p2 ${route.page} logs no uncaught errors`, async ({ page }) => {
+  test(`PWA-03 @p2 ${route} logs no uncaught errors`, async ({ page }) => {
+    const routes = new PublicRoutePage(page);
     const errors = collectPageErrors(page);
 
-    await page.goto(route.path);
-    await expect(route.ready(page)).toBeVisible();
+    await routes.goto(route);
+    await expect(routes.ready(route)).toBeVisible();
 
     expect(errors).toEqual([]);
   });
