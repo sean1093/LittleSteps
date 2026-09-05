@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import type { NursingRoom } from '../../types';
 import {
+  ACCESS_LABEL,
+  accessOf,
   CATEGORY_CHIPS,
   categoryOf,
   isInternalVenue,
@@ -97,5 +99,35 @@ describe('isInternalVenue', () => {
 
   it('says nothing about a public venue, whatever its statutory status', () => {
     expect(isInternalVenue(room({ name: '新光三越百貨股份有限公司台北天母分公司' }))).toBe(false);
+  });
+});
+
+describe('accessOf', () => {
+  /*
+    The search list shows one tag and the report sends one string. Both used to
+    walk the two predicates themselves, so a change to the precedence in one
+    would have left the other describing a claim the app never made.
+  */
+  it('prefers 內部場所 when a room is both internal and staffed', () => {
+    // 「你進不去」和「你要問人」同時成立時，前者才是家長要先知道的那一件。
+    const both = room({ name: '鴻海精密工業股份有限公司(虎躍廠)', remarks: '請洽櫃台借用鑰匙' });
+
+    expect(needsStaffHelp(both)).toBe(true);
+    expect(accessOf(both)).toBe('internal');
+  });
+
+  it('falls back to 需洽服務台 for a public venue behind a desk', () => {
+    expect(accessOf(room({ name: '新光三越百貨股份有限公司台北天母分公司', remarks: '請洽服務台' }))).toBe(
+      'staff_help',
+    );
+  });
+
+  it('says a walk-in is open rather than leaving it unnamed', () => {
+    // 清單不畫這個標籤，但回報信裡的空白欄位會被讀成「沒有資料」而不是
+    // 「直接走進去」，所以它必須有字。
+    const walkIn = room({ name: '臺北市中正區某某公園', remarks: '請自行前往哺乳室並登記' });
+
+    expect(accessOf(walkIn)).toBe('open');
+    expect(ACCESS_LABEL[accessOf(walkIn)]).toBe('沒有特別標註');
   });
 });

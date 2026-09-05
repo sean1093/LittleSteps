@@ -11,8 +11,13 @@ import {
   formatDate,
   formatDuration,
   getFeedingTypeLabel,
+  getFeedingSideLabel,
   getDiaperTypeLabel,
   getConsistencyLabel,
+  FEEDING_TYPES,
+  FEEDING_SIDES,
+  DIAPER_TYPES,
+  CONSISTENCIES,
   findLastLog,
   STALE_OPEN_SLEEP_MINUTES,
   findOpenSleep,
@@ -555,6 +560,14 @@ describe('logHelpers', () => {
     });
   });
 
+  describe('getFeedingSideLabel', () => {
+    it('maps every side to its Chinese label', () => {
+      expect(getFeedingSideLabel('left')).toBe('左側');
+      expect(getFeedingSideLabel('right')).toBe('右側');
+      expect(getFeedingSideLabel('both')).toBe('兩側');
+    });
+  });
+
   describe('getConsistencyLabel', () => {
     it('maps every consistency to its Chinese label', () => {
       expect(getConsistencyLabel('normal')).toBe('正常');
@@ -565,6 +578,34 @@ describe('logHelpers', () => {
     it('returns an empty string when consistency is absent', () => {
       expect(getConsistencyLabel(undefined)).toBe('');
       expect(getConsistencyLabel()).toBe('');
+    });
+  });
+
+  /*
+    每一份清單就是表單上的一個選單，而且是從標籤表的 key 推出來的，所以「漏一
+    個值」編不過。編得過的是另一件事：兩個選項寫成一樣的字，家長選完看不出自己
+    選了哪一個。
+  */
+  describe('表單選單的清單', () => {
+    const distinctLabels = (labels: readonly string[]) => {
+      expect(labels.filter((text) => !text)).toEqual([]);
+      expect(new Set(labels).size).toBe(labels.length);
+    };
+
+    it('餵奶類型', () => {
+      distinctLabels(FEEDING_TYPES.map(getFeedingTypeLabel));
+    });
+
+    it('擠奶側別', () => {
+      distinctLabels(FEEDING_SIDES.map(getFeedingSideLabel));
+    });
+
+    it('尿布類型', () => {
+      distinctLabels(DIAPER_TYPES.map(getDiaperTypeLabel));
+    });
+
+    it('大便性狀', () => {
+      distinctLabels(CONSISTENCIES.map(getConsistencyLabel));
     });
   });
 });

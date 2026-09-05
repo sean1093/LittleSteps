@@ -216,31 +216,71 @@ export function formatTime(isoString: string): string {
 export { formatDate, formatDuration } from '../../common/utils/dateHelpers';
 
 /**
+ * 記錄表單上的四個 enum：一張表寫死顯示順序，清單從表的 key 推出來。
+ *
+ * 清單不另外手寫，是因為手寫的那一份只保證「裡面的值都合法」，不保證「一個都
+ * 沒漏」——型別檢查不會告訴你新增的餵奶類型沒出現在選單裡，而家長會在表單上
+ * 找不到它，編輯舊紀錄時還會被改成第一個選項。`Record` 反過來是漏一個就編不
+ * 過，物件字面值的 key 順序又剛好就是選單要的順序。
+ */
+const FEEDING_TYPE_LABEL: Record<FeedingData['feedingType'], string> = {
+  breast_left: '母乳（左）',
+  breast_right: '母乳（右）',
+  breast_both: '母乳（兩邊）',
+  breast_milk_bottle: '母乳（瓶餵）',
+  formula: '配方奶',
+  solid: '副食品',
+  pumping: '擠奶',
+};
+
+/**
+ * 擠奶記在哪一邊。跟 feedingType 是兩個欄位：一個說這是什麼奶，一個說擠的是
+ * 哪一側，所以「母乳（左）」和「左側」不是同一份標籤。
+ */
+const FEEDING_SIDE_LABEL: Record<NonNullable<FeedingData['side']>, string> = {
+  left: '左側',
+  right: '右側',
+  both: '兩側',
+};
+
+const DIAPER_TYPE_LABEL: Record<DiaperData['type'], string> = {
+  pee: '小便',
+  poop: '大便',
+  both: '大小便',
+};
+
+const CONSISTENCY_LABEL: Record<NonNullable<DiaperData['consistency']>, string> = {
+  normal: '正常',
+  soft: '稀',
+  hard: '硬',
+};
+
+export const FEEDING_TYPES = Object.keys(FEEDING_TYPE_LABEL) as FeedingData['feedingType'][];
+export const FEEDING_SIDES = Object.keys(FEEDING_SIDE_LABEL) as NonNullable<
+  FeedingData['side']
+>[];
+export const DIAPER_TYPES = Object.keys(DIAPER_TYPE_LABEL) as DiaperData['type'][];
+export const CONSISTENCIES = Object.keys(CONSISTENCY_LABEL) as NonNullable<
+  DiaperData['consistency']
+>[];
+
+/**
  * 獲取餵奶類型的中文顯示名稱
  */
 export function getFeedingTypeLabel(type: FeedingData['feedingType']): string {
-  const labels: Record<FeedingData['feedingType'], string> = {
-    breast_left: '母乳（左）',
-    breast_right: '母乳（右）',
-    breast_both: '母乳（兩邊）',
-    breast_milk_bottle: '母乳（瓶餵）',
-    formula: '配方奶',
-    solid: '副食品',
-    pumping: '擠奶',
-  };
-  return labels[type];
+  return FEEDING_TYPE_LABEL[type];
+}
+
+/** 獲取擠奶側別的中文顯示名稱 */
+export function getFeedingSideLabel(side: NonNullable<FeedingData['side']>): string {
+  return FEEDING_SIDE_LABEL[side];
 }
 
 /**
  * 獲取尿布類型的中文顯示名稱
  */
 export function getDiaperTypeLabel(type: DiaperData['type']): string {
-  const labels: Record<DiaperData['type'], string> = {
-    pee: '小便',
-    poop: '大便',
-    both: '大小便',
-  };
-  return labels[type];
+  return DIAPER_TYPE_LABEL[type];
 }
 
 /**
@@ -248,10 +288,5 @@ export function getDiaperTypeLabel(type: DiaperData['type']): string {
  */
 export function getConsistencyLabel(consistency?: DiaperData['consistency']): string {
   if (!consistency) return '';
-  const labels: Record<NonNullable<DiaperData['consistency']>, string> = {
-    normal: '正常',
-    soft: '稀',
-    hard: '硬',
-  };
-  return labels[consistency];
+  return CONSISTENCY_LABEL[consistency];
 }

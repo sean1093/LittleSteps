@@ -29,7 +29,13 @@ import { sheet, tap } from '../../common/ui/motion';
 import { readPreferences, savePreferences } from '../../common/preferences';
 import { createSpatialIndex, distanceBetween, type Located } from '../utils/spatialIndex';
 import RoomSearch, { NO_FILTERS, type RoomFilters } from '../components/RoomSearch';
-import { CATEGORY_CHIPS, categoryOf, isInternalVenue, needsStaffHelp } from '../utils/roomCategory';
+import {
+  ACCESS_LABEL,
+  accessOf,
+  CATEGORY_CHIPS,
+  categoryOf,
+  isInternalVenue,
+} from '../utils/roomCategory';
 import type { MrtStation } from '../data/mrtStations';
 
 // Import leaflet CSS
@@ -326,14 +332,7 @@ const RoomDetailSheet = ({ room, onClose }: RoomDetailSheetProps) => {
               // 使用條件是我們從場所名稱與注意事項推出來的，不是來源寫的。
               // 回報要把推論本身送出去，否則收件匣讀到「進不去」卻不知道我們
               // 原本猜的是哪一種。
-              {
-                label: '使用條件',
-                value: isInternalVenue(room)
-                  ? '內部場所'
-                  : needsStaffHelp(room)
-                    ? '需洽服務台'
-                    : '沒有特別標註',
-              },
+              { label: '使用條件', value: ACCESS_LABEL[accessOf(room)] },
             ],
           }}
         />
