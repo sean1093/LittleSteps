@@ -1,6 +1,6 @@
 # End-to-end test plan
 
-Owner: QA · Status: adopted · Applies to: `main` and every pull request
+Owner: QA · Status: adopted · Applies to: `master` and every pull request
 
 This plan covers browser-level end-to-end (E2E) testing with Playwright. It
 says what E2E is *for* in this repository, what it must not duplicate, how the
@@ -55,7 +55,8 @@ much code a test touches.
 | **P2** | Cosmetic or convenience degradation with an obvious workaround. | A chip row scrolls where it used to fit; a tag wraps to a second line. |
 
 P0 cases run on every pull request and block merge. P1 runs on every pull
-request. P2 runs on `main` and nightly.
+request. P2 is intended to run on `master` and nightly; note that **no nightly
+workflow exists yet**, so until one is added P2 runs on `master` only.
 
 ## 4. Tooling and constraints
 
@@ -88,15 +89,37 @@ We adopt a **two-phase** strategy.
 
 ### Phase 1 — public routes, dummy credentials (no production code changes)
 
-`routePolicy.ts` makes eight pages public: the hub, the three wikis, the care
+`routePolicy.ts` makes nine pages public: the hub, the three wikis, the care
 guide, the sleep guide, LittleOuting, BabyOasis and LittleGuard. None of them
 reads a child's record, so dummy `VITE_FIREBASE_*` values are enough to get the
-app to boot; nothing ever authenticates and no network call reaches Google.
+app to boot and **no authenticated call reaches Google**: both
+`useUserChildren` and `useFirebaseCollection` early-return on a null user, so no
+database listener ever attaches.
+
+Analytics is the exception, and it must be handled explicitly. `App.tsx` calls
+`logPageView()` on every in-app navigation, which dynamically imports
+`firebase/analytics` and fetches a web config from `firebase.googleapis.com`.
+With dummy credentials that request fails and retries with backoff, producing
+console errors — which is precisely what PWA-03 asserts against. The harness
+therefore route-blocks `firebase.googleapis.com` and `*.google-analytics.com`
+the same way, and for the same reason, that it blocks map tiles (§8): declare
+the boundary rather than discover it as a timeout.
+
+Two things whoever supplies the dummy values needs to know: the SDK rejects an
+`apiKey` containing `:`, and `VITE_FIREBASE_DATABASE_URL` must be set or
+`getDatabase()` throws. Note that `firebase-hosting-pull-request.yml` omits that
+variable — an E2E job copy-pasted from it renders a blank page.
 
 This buys the whole of §1 except the authenticated half of the auth gate, and
-it costs **zero changes to `src/`** — an important property for the first
-Playwright PRs, which should be judged on the harness, not on a change to
-production initialisation.
+it needs **no change to production initialisation** — an important property for
+the first Playwright PRs, which should be judged on the harness, not on a change
+to how the app boots.
+
+It does need a small, enumerated set of `data-testid` attributes, under the §6
+rule-3 exception: the Leaflet map container and its cluster layer (built
+imperatively by `react-leaflet-cluster`, with no accessible name to select by)
+and the deliberately-scrolling `.row-bleed` chip rows. That list is fixed in the
+harness PR and does not grow without a reason written in the diff.
 
 Phase 1 still covers the *signed-out* half of the gate, which is the P0 half:
 a gated URL must show the intro page and no child data.
@@ -106,8 +129,11 @@ a gated URL must show the intro page and no child data.
 The authenticated core — daily log, growth charts, vaccine tracking, milestones,
 the report — is where this product's value and its risk both live, and Phase 1
 cannot reach it. Phase 2 connects the app to the **Auth and Database
-emulators**, which this repository already depends on: `npm run test:rules`
-runs `firebase emulators:exec --only database` against the real rules today.
+emulators**. Only the Database emulator exists today: `firebase.json` declares a
+`database` emulator on port 9000 and nothing else, and `npm run test:rules` runs
+`emulators:exec --only database`. Phase 2 must therefore *add* an `auth`
+emulator block to `firebase.json` and a second `--only` target — this is setup
+work, not reuse.
 
 This requires one env-gated hook in `src/lib/firebase.ts`
 (`VITE_USE_FIREBASE_EMULATOR`) that calls `connectAuthEmulator` and
@@ -116,7 +142,7 @@ reviewed as one: it has to be impossible to enable in a deployed build, and the
 gate belongs in a single place with a comment saying why.
 
 Phase 2 is **not** in the initial issue breakdown. It is opened once Phase 1 is
-green on `main`, so that an emulator problem is never confused with a harness
+green on `master`, so that an emulator problem is never confused with a harness
 problem.
 
 ### Never
@@ -140,7 +166,9 @@ In priority order:
 
 Forbidden: CSS class selectors, Tailwind utilities, `nth-child`, and XPath.
 `.card`, `.chip` and `.tag` are design-system tokens that get restyled; a test
-bound to them fails on a refactor that changed nothing a parent can see.
+bound to them fails on a refactor that changed nothing a parent can see. That
+includes `.row-bleed`: where §7 needs to assert on a deliberately-scrolling row,
+it selects the enumerated `data-testid` from §5, not the class.
 
 **Product copy is Traditional Chinese and tests assert it directly.** Where a
 string has a canonical source (`ACCESS_LABEL`, `getDiaperTypeLabel`,
@@ -154,16 +182,29 @@ issues #48 and #38 were opened about.
 encodes that as two viewport projects and asserts *invariants*, not images:
 
 - **No horizontal overflow of the page body:** `scrollWidth <= clientWidth` on
-  `body` at both widths. Intentionally scrolling rows (`.row-bleed`) are
-  asserted on their own container instead.
-- **Tap targets:** every enabled control matched by the case is at least 44px
-  in its smaller dimension.
+  `body` at both widths. Intentionally scrolling rows are asserted on their own
+  container instead, selected by the `data-testid` §5 enumerates.
+- **Tap targets:** every enabled control **the design system owns** —
+  `button`, `input`, `[role=button]`, and links styled as buttons — is at least
+  44px in its smaller dimension. Inline links inside prose (the 疾管署 citation,
+  a `tel:` link) and third-party map chrome (Leaflet's attribution) are excluded
+  and would otherwise make this a false-positive generator: `.chip`,
+  `.btn-primary`, `.btn-secondary`, `.btn-ghost` all carry `min-h-tap` and
+  `.btn-icon` is `w-tap h-tap`, so the design system is already compliant by
+  construction.
 - **No visual overlap** between a truncating name and the tag beside it: the
   tag's left edge is at or after the name's right edge.
 - **Modal reachability:** the submit control of an open modal is inside the
   viewport.
 
 These hold across restyling and fail loudly on the things that actually break.
+
+**On CLAUDE.md's "do not test styling".** That rule exists to stop tests
+asserting class names and colour tokens, which is exactly what §6 forbids. The
+RWD and PWA groups assert *measured consequences* a parent experiences — a page
+that scrolls sideways, a button under the fold, a control too small to hit —
+which no restyle changes unless it genuinely broke something. A future reviewer
+will raise the tension; this paragraph is the answer.
 
 ## 8. Determinism
 
@@ -176,10 +217,13 @@ These hold across restyling and fail loudly on the things that actually break.
   load in CI or in agent sandboxes. Tests route-block tile requests explicitly
   so the failure mode is *declared* rather than discovered as a timeout; the
   map's own markers and overlays are still asserted.
-- **Flake policy is CLAUDE.md's policy**: a failing test is never skipped,
-  disabled, quarantined, or retried into passing. `retries: 0` locally.
-  CI allows one retry solely to *label* a flake in the report; a test that
-  needs it is fixed or deleted in the same week, not left annotated.
+- **Flake policy — this plan's own rule.** A failing test is never skipped,
+  disabled, quarantined, or retried into passing. `retries: 0` everywhere,
+  including CI: a retry that turns a job green *is* retrying into passing, and
+  a suite that does it stops being a signal. Flake detection, if we want it,
+  belongs in a separate non-blocking job using `--repeat-each`. (CLAUDE.md's
+  test rules say not to narrow a test to make it pass; the skip/quarantine/retry
+  prohibition is ours, stated here rather than borrowed.)
 
 ## 9. Layout of the suite
 
@@ -203,15 +247,27 @@ npm run test:e2e -- --ui      # local debugging
 npm run test:e2e:p0           # the merge-blocking subset
 ```
 
-CI runs the P0+P1 subset on every pull request as a separate job from the unit
-suite, so a browser failure is never mistaken for a logic failure. On failure
-the job uploads the Playwright HTML report, traces and screenshots as
-artifacts. The job does not download browsers (§4).
+Priority is encoded as a **`@p0` / `@p1` / `@p2` tag in the test title** and
+selected with `--grep`. Name the mechanism here so that specs do not each invent
+one.
+
+**Sequencing note, and it matters.** `.github/workflows/` currently holds two
+Firebase Hosting deploys and the manual radar refresh. **Nothing runs
+`npm run lint` or the unit suite on a pull request** — the gates in
+`.claude/skills/pr-self-merge` are run by hand. Adding a Playwright job first
+would make the browser suite the first CI signal this repo has ever had, which
+inverts this plan's own rationale that a browser failure must never be mistaken
+for a logic failure. **A lint + unit-test job lands before, or in the same PR
+as, the E2E job.**
+
+CI then runs the P0+P1 subset on every pull request as a separate job from that
+one. On failure the job uploads the Playwright HTML report, traces and
+screenshots as artifacts. The job does not download browsers (§4).
 
 ## 11. Exit criteria for Phase 1
 
 1. Every P0 case in the catalogue is implemented and green on three consecutive
-   `main` runs.
+   `master` runs.
 2. The suite completes in under five minutes on CI.
 3. Zero skipped, `fixme`, or conditionally-disabled tests.
 4. `e2e/README.md` tells a new contributor how to run it and how to add a case.
