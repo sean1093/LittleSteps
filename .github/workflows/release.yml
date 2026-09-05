@@ -18,8 +18,10 @@ permissions:
   contents: write
 
 # Two merges in quick succession would otherwise race for the same next version.
-# No cancel-in-progress: a superseded run here means a merge that never gets a
-# tag at all.
+# `cancel-in-progress: false` keeps a queued run alive rather than replacing it,
+# though it is not an absolute guarantee: a third arrival still displaces the
+# pending one. That is survivable because the next run's range covers whatever
+# was skipped — which is the path nextVersion.cjs is tested over.
 concurrency:
   group: release
   cancel-in-progress: false
@@ -51,11 +53,18 @@ jobs:
           set -euo pipefail
 
           # Highest existing version tag, or empty on the very first release.
-          # `for-each-ref` rather than `tag --list | head`: no pipe to trip
-          # `pipefail` on SIGPIPE, and a numeric glob so a hand-made `vNEXT` or
-          # `v1.0.0-rc.1` cannot sort to the top and reject every later release.
-          latest="$(git for-each-ref --count=1 --sort=-v:refname \
-            --format='%(refname:short)' 'refs/tags/v[0-9]*.[0-9]*.[0-9]*')"
+          #
+          # The glob alone is not enough: `v[0-9]*.[0-9]*.[0-9]*` is fnmatch, so
+          # its last segment also matches `0-rc.1`, and `v1.0.0-rc.1` then sorts
+          # above `v1.0.0` and makes nextVersion.cjs reject every later release.
+          # The full-anchor filter admits only what the script can parse.
+          #
+          # Fed by a here-string rather than a pipe: `grep -m1` closes the pipe
+          # early, and with `pipefail` in force that is a SIGPIPE failure.
+          all_tags="$(git for-each-ref --sort=-v:refname \
+            --format='%(refname:short)' 'refs/tags/v*')"
+          latest="$(grep -m1 -E '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' \
+            <<<"$all_tags" || true)"
 
           if [ -n "$latest" ]; then
             range="${latest}..HEAD"
@@ -109,7 +118,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          tag="$(git tag --points-at HEAD --list 'v[0-9]*.[0-9]*.[0-9]*' | head -n 1 || true)"
+          # `--sort` matters: `git tag` output is lexical, so a commit carrying
+          # both v0.1.0 and v1.0.0 would otherwise publish the older one. No
+          # `|| true` — a git failure here should turn the job red rather than
+          # read as "nothing to publish" and exit green.
+          tag="$(git tag --points-at HEAD --sort=-v:refname \
+            --list 'v[0-9]*.[0-9]*.[0-9]*' | head -n 1)"
           if [ -z "$tag" ]; then
             echo "No version tag on this commit; nothing to publish."
             exit 0

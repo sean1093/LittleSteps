@@ -22,13 +22,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const {
-  bumpOfCommit,
-  bumpOf,
-  nextVersion,
-  footerOf,
-  FIRST_VERSION,
-} = require('./nextVersion.cjs');
+const { bumpOfCommit, bumpOf, nextVersion, FIRST_VERSION } = require('./nextVersion.cjs');
 
 const SCRIPT = path.join(__dirname, 'nextVersion.cjs');
 
@@ -83,35 +77,45 @@ describe('bumpOfCommit', () => {
     expect(bumpOfCommit('docs: explain what BREAKING CHANGE: means here')).toBe('patch');
   });
 
-  it('does not read a BREAKING CHANGE discussed in the body above the footer', () => {
-    // A squash body is the pull request description, and this repo writes long
-    // ones that talk about the rule without invoking it.
+  it('reads a breaking footer sitting above this repo\'s commit trailers', () => {
+    // Every commit here ends with these two lines. An earlier version matched
+    // only the last paragraph, so the declaration above them was unreachable
+    // and every real breaking change scored a level too low.
     const message = [
-      'docs: document the versioning rules',
+      'feat: move the logs out of the child node',
       '',
-      'BREAKING CHANGE: at the start of a line in the body is what marks a',
-      'major bump. That sentence explains the rule rather than using it.',
+      'BREAKING CHANGE: childRecords moved out of children/$childId',
       '',
-      'Verified: 37 script tests pass.',
+      'Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>',
+      'Claude-Session: https://claude.ai/code/session_01',
     ].join('\n');
 
-    expect(bumpOfCommit(message)).toBe('patch');
+    expect(bumpOfCommit(message)).toBe('major');
+  });
+
+  it('reads a breaking footer above a squash body\'s attribution footer', () => {
+    // What the workflow actually sees on master: the body is the pull request
+    // description, which ends with the Claude Code footer and a session URL.
+    const message = [
+      'feat: move the logs out of the child node (#42)',
+      '',
+      'The profile listener downloads the whole node, so every diaper entry',
+      're-sent the child\'s entire history to every family member.',
+      '',
+      'BREAKING CHANGE: childRecords moved out of children/$childId',
+      '',
+      '🤖 Generated with [Claude Code](https://claude.com/claude-code)',
+      '',
+      'https://claude.ai/code/session_01',
+    ].join('\n');
+
+    expect(bumpOfCommit(message)).toBe('major');
   });
 
   it('falls back to patch for a subject that is not conventional at all', () => {
     // Better to under-bump than to stall the whole batch on an unreadable line.
     expect(bumpOfCommit('Merge master into e2e/wiki-rwd-pwa')).toBe('patch');
     expect(bumpOfCommit('')).toBe('patch');
-  });
-});
-
-describe('footerOf', () => {
-  it('is the last blank-line-separated block', () => {
-    expect(footerOf('subject\n\nbody text\n\nBREAKING CHANGE: x')).toBe('BREAKING CHANGE: x');
-  });
-
-  it('is the whole message when there is only a subject', () => {
-    expect(footerOf('feat: x')).toBe('feat: x');
   });
 });
 
@@ -223,12 +227,14 @@ describe('the CLI contract, against real git log output', () => {
   });
 
   it('keeps a multi-line body attached to its own subject', () => {
+    // A body line that would parse as its own subject if the messages were
+    // split on newlines instead of NUL. Detached, `feat:` would score minor;
+    // attached, this whole commit is a docs patch.
     commit(REAL_SUBJECTS.chore);
     git('tag', 'v1.0.0');
-    commit('feat: move the logs\n\nBREAKING CHANGE: childRecords moved out');
-    commit(REAL_SUBJECTS.docs);
+    commit('docs: note the release plan\n\nfeat: this line is body, not a subject');
 
-    expect(release('v1.0.0')).toBe('2.0.0');
+    expect(release('v1.0.0')).toBe('1.0.1');
   });
 
   it('reads the older --format=%B%x00 shape identically', () => {

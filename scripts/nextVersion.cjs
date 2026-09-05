@@ -22,22 +22,28 @@
 const SUBJECT = /^(?<type>[A-Za-z]+)(?:\((?<scope>[^)]*)\))?(?<breaking>!)?:/;
 
 /**
- * The footer form that declares a breaking change.
+ * The footer form that declares a breaking change: at the start of a line,
+ * anywhere in the message.
  *
- * Deliberately matched against the last paragraph only, not the whole message.
- * A GitHub squash body is the pull request description, and the descriptions in
- * this repo run long and discuss breaking changes in prose — "BREAKING CHANGE:
- * in the body means major" is a sentence about the rule, not a use of it.
- * Matching anywhere would read that as a declaration and burn a major version.
- * The spec puts it in the footer; so does this.
+ * An earlier version restricted this to the last paragraph, on the theory that
+ * the spec puts it in the footer and that a squash body — which is the pull
+ * request description — might discuss the rule in prose. That was wrong here,
+ * and provably so: every commit in this repo ends with a `Co-Authored-By:` /
+ * `Claude-Session:` trailer block, and every pull request body ends with the
+ * Claude Code attribution footer. The last paragraph is therefore *always* one
+ * of those, so a real declaration above it became unreachable.
+ *
+ * Stripping trailing trailer-looking paragraphs was the obvious repair and is
+ * worse: `Verified: 46 script tests pass.` is indistinguishable from a trailer,
+ * and so is most of the last line of a commit here.
+ *
+ * So: the line-start anchor, which is what the spec's rule actually is. The
+ * residual risk is a body that begins a line with `BREAKING CHANGE:` while only
+ * talking about it — that scores a major it did not ask for. The alternative
+ * missed every real one, which is the worse of the two by a distance: a
+ * spurious bump is visible in the tag list, a missed one is silent.
  */
 const BREAKING_FOOTER = /^BREAKING[ -]CHANGE:/m;
-
-/** The last blank-line-separated block, which is where a footer lives. */
-function footerOf(message) {
-  const paragraphs = message.trim().split(/\n\s*\n/);
-  return paragraphs[paragraphs.length - 1] ?? '';
-}
 
 /**
  * The bump one commit asks for.
@@ -53,7 +59,7 @@ function bumpOfCommit(message) {
   const subject = trimmed.split('\n', 1)[0];
   const match = SUBJECT.exec(subject);
 
-  if (match?.groups?.breaking || BREAKING_FOOTER.test(footerOf(trimmed))) return 'major';
+  if (match?.groups?.breaking || BREAKING_FOOTER.test(trimmed)) return 'major';
   if (match?.groups?.type?.toLowerCase() === 'feat') return 'minor';
   return 'patch';
 }
@@ -99,7 +105,7 @@ function nextVersion(latestTag, messages) {
   return `${major}.${minor}.${patch + 1}`;
 }
 
-module.exports = { bumpOfCommit, bumpOf, nextVersion, footerOf, FIRST_VERSION };
+module.exports = { bumpOfCommit, bumpOf, nextVersion, FIRST_VERSION };
 
 /*
   CLI: `git log -z --format=%B <range> | node scripts/nextVersion.cjs <latestTag|"">`
