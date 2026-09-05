@@ -1,0 +1,75 @@
+name: CI
+
+on: pull_request
+
+permissions:
+  contents: read
+
+jobs:
+  # Nothing ran lint or the unit suite on a pull request before this job: the
+  # workflows directory held two Firebase deploys and the manual radar refresh,
+  # and the gates were run by hand. It has to exist before the browser suite
+  # does, or a Playwright failure becomes this repo's first CI signal and every
+  # logic error arrives dressed as a browser error.
+  lint-and-unit:
+    name: Lint and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          # `@playwright/test` pulls `playwright`, whose postinstall downloads
+          # browsers. This job never opens one.
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npx vitest run
+
+  e2e:
+    name: E2E (Chromium, 390px and 320px)
+    # Sequenced, not parallel: a red unit suite explains a red browser suite,
+    # and running both only makes the second failure harder to read.
+    needs: lint-and-unit
+    runs-on: ubuntu-latest
+    # The browsers ship inside this image, at the `PLAYWRIGHT_BROWSERS_PATH` it
+    # sets. Nothing here runs `playwright install`, and the tag must stay in
+    # step with the `@playwright/test` version pinned in package.json.
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.0-noble
+      # Chromium's default 64 MB /dev/shm in a container is not enough and
+      # shows up as a browser that dies mid-test.
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+      # The dummy Firebase configuration and the production build live in
+      # playwright.config.ts, so there is nothing to set up here and no secret
+      # to leak into a fork's pull request.
+      - name: Run the P0 and P1 cases
+        run: npm run test:e2e -- --grep "@p0|@p1"
+
+      - name: Upload the report, traces and screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
