@@ -3,7 +3,8 @@ import { CareGuidePage } from '../pages/careGuidePage';
 import { SleepGuidePage } from '../pages/sleepGuidePage';
 import { WikiBrowserPage, type WikiRoute } from '../pages/wikiBrowserPage';
 import { ROUTE_PATH } from '../../src/types/routes';
-import { babyWikiArticles } from '../../src/littlesteps/data/babyWiki';
+import { babyWikiArticles, wikiCategoryLabels } from '../../src/littlesteps/data/babyWiki';
+import type { WikiCategory } from '../../src/types';
 import { pregnancyWikiArticles } from '../../src/littlebloom/data/wiki';
 import { toddlerWikiArticles } from '../../src/littleexplorer/data/toddlerWiki';
 import { generalSafetyItems, monthlyCareGuides } from '../../src/littlesteps/data/careGuides';
@@ -95,6 +96,33 @@ test('WIKI-03 @p1 searching narrows the list and clearing restores it', async ({
   expect(narrowed, 'searching a keyword the corpus contains emptied the list').toBeGreaterThan(0);
 
   await wiki.clearSearch.click();
+
+  await expect(wiki.articles).toHaveCount(babyWikiArticles.length);
+});
+
+test('WIKI-03 @p1 a category chip narrows the list and 全部 restores it', async ({ page }) => {
+  const wiki = new WikiBrowserPage(page, 'littlesteps/baby-wiki');
+  // The chip's label comes from the data file that defines the category, not
+  // from a copy of it here.
+  const category: WikiCategory = 'fever';
+  const inCategory = babyWikiArticles.filter((article) => article.category === category).length;
+
+  await wiki.goto();
+  await expect(wiki.articles).toHaveCount(babyWikiArticles.length);
+
+  await wiki.categoryChip(wikiCategoryLabels[category]).click();
+
+  // Unlike the search, this filter is a plain equality on a field the data
+  // file states, so the expected count is data rather than a second copy of
+  // the app's matching rule.
+  expect(inCategory, 'the chosen category has no articles to filter down to').toBeGreaterThan(0);
+  await expect(wiki.articles).toHaveCount(inCategory);
+  await expect(wiki.categoryChip(wikiCategoryLabels[category])).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+
+  await wiki.categoryChip('全部').click();
 
   await expect(wiki.articles).toHaveCount(babyWikiArticles.length);
 });

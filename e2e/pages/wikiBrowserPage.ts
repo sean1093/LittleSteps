@@ -67,6 +67,15 @@ export class WikiBrowserPage {
     return ROUTE_PATH[this.route];
   }
 
+  /**
+   * One category chip, by the label the owning service passes in — 全部 for
+   * the one that clears the filter. Scoped to the row so a category whose
+   * label also appears in an article title cannot match the article instead.
+   */
+  categoryChip(label: string): Locator {
+    return this.categoryRow.getByRole('button', { name: label, exact: true });
+  }
+
   async goto(): Promise<void> {
     await this.page.goto(this.path);
   }

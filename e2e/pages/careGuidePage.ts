@@ -1,6 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
 import { ROUTE_PATH } from '../../src/types/routes';
-import { SCROLL_ROW } from '../fixtures/testIds';
 
 /**
  * The care guide — one of the two LittleSteps guides that are public, and the
@@ -21,12 +20,9 @@ export class CareGuidePage {
    */
   readonly cardTitles: Locator;
 
-  readonly categoryRow: Locator;
-
   constructor(private readonly page: Page) {
     this.main = page.getByRole('main');
     this.cardTitles = this.main.getByRole('heading', { level: 3 });
-    this.categoryRow = page.getByTestId(SCROLL_ROW.careGuideCategories);
   }
 
   async goto(): Promise<void> {
