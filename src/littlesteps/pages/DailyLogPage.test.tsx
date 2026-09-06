@@ -355,6 +355,88 @@ describe('沿用上一筆', () => {
   點開、拉日期時間選擇器、存檔——所以真正被使用的只有事後補記，而那正是
   「不填結束時間」這個設計要避免的。
 */
+/*
+  改一筆既有的紀錄。整份檔案原本沒有任何一個案例打開過編輯表單——20 個案例都
+  是新增、沿用上一筆或睡眠流程——所以 handleSave 那條路（editingLog →
+  dailyLogChanges → 補丁）完全沒有被走過。review 用一次 mutation 證明了代價：
+  把 dailyLogChanges 裡比對 timestamp 的那一行整個刪掉，1667 個測試照樣全過，
+  而那等於「改時間沒有作用」——畫面還會跳到新的那一天，家長於是站在一個空白
+  的日子上，紀錄留在舊的那天。
+*/
+describe('編輯既有的紀錄', () => {
+  const HOUR_AGO = new Date('2026-06-15T21:00:00+08:00');
+  const existing: DailyLog = {
+    id: 'feed-1',
+    childId: 'c1',
+    type: 'feeding',
+    timestamp: HOUR_AGO.toISOString(),
+    data: { feedingType: 'formula', amount: 120, notes: '喝得很順' } as FeedingData,
+    createdAt: HOUR_AGO.toISOString(),
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date('2026-06-15T22:00:00+08:00'));
+    readState.logs = [existing];
+    updateDailyLog.mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('只送這次真的改到的欄位，改到的時間也要送', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(
+      <ToastProvider>
+        <DailyLogPage currentChild={child} user={null} />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: '編輯' }));
+    await screen.findByRole('heading', { name: '編輯餵奶記錄' });
+
+    const amount = screen.getByLabelText('奶量（ml）');
+    await user.clear(amount);
+    await user.type(amount, '150');
+
+    const time = screen.getByLabelText('時間 *');
+    await user.clear(time);
+    await user.type(time, '2026-06-15T20:30');
+
+    await user.click(screen.getByRole('button', { name: '更新' }));
+
+    await waitFor(() => expect(updateDailyLog).toHaveBeenCalledTimes(1));
+    const [, logId, patch] = updateDailyLog.mock.calls[0] as [string, string, DailyLogPatch];
+    expect(logId).toBe('feed-1');
+
+    // 改到的兩個欄位都在，而且只有它們。備註沒有動就不該出現在補丁裡——它一
+    // 出現，另一位照顧者在這段時間內改的備註就會被我開表單那一刻讀到的舊值
+    // 蓋掉，這正是 #42。
+    expect(patch.timestamp).toBeDefined();
+    expect(patch.data).toEqual({ amount: 150 });
+    expect(Object.keys(patch)).toEqual(expect.arrayContaining(['timestamp', 'data']));
+    expect(Object.keys(patch)).toHaveLength(2);
+  });
+
+  it('什麼都沒改就按儲存，一個字都不寫', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(
+      <ToastProvider>
+        <DailyLogPage currentChild={child} user={null} />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: '編輯' }));
+    await screen.findByRole('heading', { name: '編輯餵奶記錄' });
+    await user.click(screen.getByRole('button', { name: '更新' }));
+
+    await waitFor(() => expect(updateDailyLog).toHaveBeenCalledTimes(1));
+    const [, , patch] = updateDailyLog.mock.calls[0] as [string, string, DailyLogPatch];
+    expect(patch).toEqual({});
+  });
+});
+
 describe('進行中的睡眠', () => {
   /** 本地時間晚上 11 點：早上 8 點開始的睡眠已經超過門檻，而且還在同一個日曆日。 */
   const LATE_EVENING = new Date('2026-06-15T23:00:00+08:00');
@@ -386,6 +468,11 @@ describe('進行中的睡眠', () => {
     vi.setSystemTime(LATE_EVENING);
     // 寫入成功後把結果放回 logs，模擬 Firebase 監聽器把新值送回畫面。補丁是
     // 欄位級的，所以 data 這裡要用合併的，跟資料庫端一樣只動送上去的欄位。
+    //
+    // 這個仿製品比 useFirebaseChildren.test.ts 裡那個鬆：它不處理 null 代表
+    // 刪除，所以 `{ data: { notes: null } }` 在這裡會留下 notes === null 而不
+    // 是拿掉它。目前沒有任何案例從畫面走到那條路；真要加「清空備註」的頁面測
+    // 試，得先把這裡補齊，否則它會因為錯的理由通過。
     updateDailyLog.mockImplementation(async (_childId: string, logId: string, patch: DailyLogPatch) => {
       readState.logs = readState.logs.map((log) =>
         log.id === logId
@@ -432,6 +519,14 @@ describe('進行中的睡眠', () => {
     const closed = patch.data as SleepData;
     expect(Date.now() - Date.parse(closed.endTime!)).toBeLessThan(1000);
     expect(closed.duration).toBe(80);
+
+    // 送上去的就只有這兩個欄位。這一行不是重複上面那兩句：把整個 data 寫回去
+    // 也會讓它們成立，而「醒了」是日檢視上一鍵就會按到的動作，多半由當下抱著
+    // 孩子的那一位按——另一位很可能正開著同一筆在補備註。整筆重放就把他剛打
+    // 的字連同他改過的任何欄位一起蓋掉，兩邊都不會看到任何提示。
+    expect(patch).toEqual({
+      data: { endTime: expect.any(String), duration: 80 },
+    });
   });
 
   it('已經在睡的時候再按一次，說清楚原因而不是默默蓋掉', async () => {

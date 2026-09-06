@@ -55,6 +55,14 @@ export function toUpdatePaths(patch: object, prefix = ''): Record<string, unknow
  * a concurrent caregiver's change to it survives. A field that is gone in
  * `next` becomes `null`, which is what clears it — omitting it would leave the
  * old value in the database and quietly undo the parent who deleted it.
+ *
+ * **Arrays are compared by identity and replaced whole.** Two structurally
+ * equal arrays report as a change, and `toUpdatePaths` then writes the array to
+ * one leaf rather than per index. No caller today has an array field — every
+ * daily-log data shape is scalars — but these live under generic names in
+ * `common/`, and `FoodTrialRecord.trialDates` is exactly what someone would
+ * hand them next. For that field the last-write-wins clobbering this function
+ * exists to prevent would come straight back.
  */
 export function changedFields(before: object, next: object): Record<string, unknown> {
   const changes: Record<string, unknown> = {};

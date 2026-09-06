@@ -153,8 +153,10 @@ export function dailyLogChanges(before: DailyLog, next: Omit<DailyLog, 'id'>): D
   if (next.type !== before.type) patch.type = next.type;
   if (next.timestamp !== before.timestamp) patch.timestamp = next.timestamp;
 
+  // cast：changedFields 是結構性比對，回傳的是三種 data 形狀裡的哪一種，只有
+  // 呼叫端知道。型別在 DailyLogPatch 那邊守住，這裡是唯一一個逃生口。
   const data = changedFields(before.data, next.data);
-  if (Object.keys(data).length > 0) patch.data = data;
+  if (Object.keys(data).length > 0) patch.data = data as DailyLogPatch['data'];
 
   return patch;
 }

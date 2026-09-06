@@ -3,7 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Minus, Plus, X } from 'lucide-react';
 import { backdrop, sheet } from '../../../common/ui/motion';
 import { DailyLog, FeedingData, SleepData, DiaperData } from '../../../types';
-import { getCurrentDateTimeLocal, dateTimeLocalToISO, calculateDuration } from '../../../common/utils/dateHelpers';
+import {
+  getCurrentDateTimeLocal,
+  dateTimeLocalToISO,
+  isoToDateTimeLocal,
+  calculateDuration,
+} from '../../../common/utils/dateHelpers';
 import {
   CONSISTENCIES,
   DIAPER_TYPES,
@@ -79,7 +84,8 @@ export default function LogEntryModal({
     setIsSubmitting(false);
 
     if (editingLog) {
-      setTimestamp(editingLog.timestamp.slice(0, 16)); // Convert ISO to datetime-local format
+      // 不是 slice(0, 16)：存的是 UTC，input 讀的是本地時間。見 isoToDateTimeLocal。
+      setTimestamp(isoToDateTimeLocal(editingLog.timestamp));
 
       if (logType === 'feeding') {
         const data = editingLog.data as FeedingData;
@@ -90,8 +96,8 @@ export default function LogEntryModal({
         setNotes(data.notes || '');
       } else if (logType === 'sleep') {
         const data = editingLog.data as SleepData;
-        setStartTime(data.startTime.slice(0, 16));
-        setEndTime(data.endTime?.slice(0, 16) || '');
+        setStartTime(isoToDateTimeLocal(data.startTime));
+        setEndTime(data.endTime ? isoToDateTimeLocal(data.endTime) : '');
         setNightWakings(data.nightWakings?.toString() ?? '');
         setNotes(data.notes || '');
       } else if (logType === 'diaper') {
