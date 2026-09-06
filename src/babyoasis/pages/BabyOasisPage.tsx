@@ -269,7 +269,11 @@ const RoomDetailSheet = ({ room, onClose }: RoomDetailSheetProps) => {
       </button>
 
       <div className="p-5 pb-8">
-        <h2 id={ROOM_SHEET_TITLE_ID} className="text-xl font-bold text-ink mb-4 pr-12">
+        {/* 沒有 text-* 覆寫：h2 的級距由 index.css 的 @layer base 給（text-lg）。
+            這裡原本寫 text-xl（20px），比它上面那顆 AppBar 的 h1（text-lg，18px）
+            還大——巢狀在底下的標題不能比外層的大。附近清單那張 sheet 的標題本來
+            就是預設級距，兩張面板現在也一致了。 */}
+        <h2 id={ROOM_SHEET_TITLE_ID} className="text-ink mb-4 pr-12">
           {room.name}
         </h2>
 

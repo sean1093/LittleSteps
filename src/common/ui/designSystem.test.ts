@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import defaultTheme from 'tailwindcss/defaultTheme';
 
 /**
  * 設計系統的護欄：掃 source，守那些「看起來沒壞、但會慢慢長回來」的約定。
@@ -253,6 +254,121 @@ describe('版面高度', () => {
     // 連原始的 `100vh` 一起掃：`.screen` 若繞過 utility 直接寫 CSS 也要紅。
     const files = CSS.map((file) => ({ ...file, code: withoutDscreenFallback(file.code) }));
     expect(offenders(files, /(?<![\w-])(?:min-h|h)-screen(?![\w-])|\b100vh\b/g)).toEqual([]);
+  });
+});
+
+/**
+ * 標題不能比巢狀在它底下的標題小。
+ *
+ * h1–h4 的級距寫在 src/index.css 的 @layer base，而且由大到小單調遞減，所以
+ * 唯一能把這個順序弄反的辦法就是在某顆標題上補一個 text-* 覆寫。真的發生過：
+ * AppBar 的 h1 被壓成 text-lg（18px），BabyOasis 的哺乳室面板卻把 h2 放大到
+ * text-xl（20px），於是面板標題比它背後那一頁的頁名還大。
+ *
+ * 守的是順序，不是像素：級距與門檻都從 index.css 和 Tailwind 自己的 fontSize
+ * 讀出來，改字級不會誤報。兩條規則各守一個方向，合起來才是完整的不變式：
+ *
+ *   下界：AppBar 的 h1 ≥ base 的 h2（頁名不能再往下縮）
+ *   上界：任何 h2–h4 ≤ 自己那一級的 base（內容標題不能往上長）
+ *   ⇒ AppBar 的 h1 ≥ 它底下畫出來的每一顆標題
+ *
+ * h1 不在上界那條規則裡：它是一頁最外層的標題，放大不會反轉任何東西——
+ * StepsLanding 與 ServiceLanding 的 `sm:text-3xl` 就是這種刻意的放大。
+ * 反過來把 h2 縮小（CountyPicker、RadarPage 的 text-sm 眉標）也一樣安全。
+ */
+describe('字級層級', () => {
+  /** Tailwind 預設 fontSize 的 rem 值；tailwind.config.js 沒有覆寫這一組。 */
+  const remOf = (token: string): number | null => {
+    const entry = (defaultTheme.fontSize as Record<string, unknown>)[token];
+    const value = Array.isArray(entry) ? entry[0] : entry;
+    const rem = typeof value === 'string' ? /^([\d.]+)rem$/.exec(value) : null;
+    return rem ? Number(rem[1]) : null;
+  };
+
+  /**
+   * index.css 的 @layer base 給 h1–h4 的級距。
+   *
+   * 讀出來而不是抄一份：抄的那份會跟著級距一起被改，於是規則永遠通過。
+   */
+  const BASE_REM = new Map<number, number>();
+  const indexCss = CSS.find((file) => file.name === 'src/index.css')?.code ?? '';
+  for (const block of indexCss.matchAll(/\bh([1-4])\s*\{\s*@apply\s+([^;]*);/g)) {
+    const size = /(?<![\w-])text-([\w.]+)(?![\w-])/.exec(block[2]);
+    const rem = size ? remOf(size[1]) : null;
+    if (rem !== null) BASE_REM.set(Number(block[1]), rem);
+  }
+
+  /** 標籤上所有真的是字級的 text-*（text-ink 這種顏色 token 會回 null 被濾掉）。 */
+  const sizesOn = (attrs: string): { token: string; rem: number }[] =>
+    [...attrs.matchAll(/(?<![\w-])text-([\w.]+)(?![\w-])/g)]
+      .map(({ 1: token }) => ({ token, rem: remOf(token) }))
+      .filter((size): size is { token: string; rem: number } => size.rem !== null);
+
+  interface Heading {
+    file: string;
+    line: number;
+    level: number;
+    /** 開頭標籤自己的屬性段，跨行也吃得到（同 endOfOpeningTag 的用法）。 */
+    attrs: string;
+  }
+
+  const HEADINGS: Heading[] = TSX.flatMap((file) =>
+    [...file.code.matchAll(/<(?:motion\.)?h([1-4])(?=[\s/>])/g)].map((match) => {
+      const afterName = match.index + match[0].length;
+      return {
+        file: file.name,
+        line: lineOf(file.code, match.index),
+        level: Number(match[1]),
+        attrs: file.code.slice(afterName, endOfOpeningTag(file.code, afterName)),
+      };
+    }),
+  );
+
+  const APP_BAR = 'src/common/ui/AppBar.tsx';
+
+  it('級距與標題都真的讀得到', () => {
+    // 任何一項落空，下面兩條規則都會安靜地永遠通過。
+    expect([...BASE_REM.keys()].sort(), 'index.css 的 h1–h4 級距沒解析出來').toEqual([1, 2, 3, 4]);
+    expect(BASE_REM.get(1)).toBeGreaterThan(BASE_REM.get(2) as number);
+    expect(HEADINGS.length, '一顆標題都沒掃到，標籤解析壞了').toBeGreaterThan(50);
+    expect(
+      HEADINGS.some((heading) => heading.file === APP_BAR && heading.level === 1),
+      `找不到 ${APP_BAR} 的 h1`,
+    ).toBe(true);
+    // 眉標那種刻意縮小的 h2/h3 要留在掃描範圍內，規則才有東西可以放行。
+    expect(
+      HEADINGS.filter((heading) => heading.level >= 2 && sizesOn(heading.attrs).length > 0).length,
+      '帶 text-* 的 h2–h4 一個都沒抓到，覆寫解析壞了',
+    ).toBeGreaterThan(3);
+  });
+
+  it('AppBar 的 h1 不小於 base 的 h2', () => {
+    // 頁名是整頁最外層的標題。它縮到比預設的 h2 還小，底下任何一顆按預設級距
+    // 畫出來的 h2 就會反過來壓過它——這是 BabyOasis 面板那個 bug 的另一半。
+    const bar = HEADINGS.find((heading) => heading.file === APP_BAR && heading.level === 1);
+    const declared = sizesOn(bar?.attrs ?? '');
+    // 沒寫覆寫就是 base h1；有的話取最小的那個（窄螢幕看到的就是它）。
+    const effective = declared.length
+      ? Math.min(...declared.map((size) => size.rem))
+      : (BASE_REM.get(1) as number);
+    expect(
+      effective,
+      `AppBar 的 h1 是 ${effective}rem，比 base 的 h2（${BASE_REM.get(2)}rem）小`,
+    ).toBeGreaterThanOrEqual(BASE_REM.get(2) as number);
+  });
+
+  it('h2–h4 沒有被放大到超過自己那一級的 base', () => {
+    const found = HEADINGS.filter((heading) => heading.level >= 2).flatMap((heading) => {
+      const base = BASE_REM.get(heading.level) as number;
+      return sizesOn(heading.attrs)
+        .filter((size) => size.rem > base)
+        .map(
+          (size) =>
+            `${heading.file}:${heading.line}: h${heading.level} 用 text-${size.token}（${size.rem}rem），` +
+            `比 base 的 ${base}rem 大`,
+        );
+    });
+    expect(found).toEqual([]);
   });
 });
 
