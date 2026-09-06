@@ -128,11 +128,20 @@ export default function VaccineTrackingPage({
   onSetVaccineDose,
 }: VaccineTrackingPageProps) {
   const [fundingFilter, setFundingFilter] = useState<FundingFilter>('all');
-  // 從孩子已經到期的最後一個月齡起跑。停在「全部」的話，8 個月大寶寶的家長
-  // 每次都得先滑過出生 24 小時內那一劑才會看到現在該打的。
-  const [monthFilter, setMonthFilter] = useState<MonthFilter>(() =>
-    vaccineMonthForChild(currentChild, AVAILABLE_MONTHS),
-  );
+  /*
+    月齡篩選的優先順序：這次點的 > 孩子已經到期的最後一個月齡。跟里程碑
+    （MilestonesPage.tsx）與 LittleGuard 的年齡層（RadarPage.tsx）同一種寫法，
+    `null` 就是「家長還沒挑過」。
+
+    預設不停在「全部」：那樣 8 個月大寶寶的家長每次都得先滑過出生 24 小時內
+    那一劑才看得到現在該打的。但也不能用 useState 的初始值算，因為換寶寶時這
+    一頁不會卸載（App.tsx 的錯誤邊界綁的是路由，不是孩子），篩選器會一直停在
+    上一個寶寶的月齡——從新生兒切到兩歲，畫面照樣拿出生那幾劑對新寶寶打勾。
+    每次 render 重推就不會過期，連改生日也跟著更新；家長挑過的則永遠贏過推
+    導出來的值。
+  */
+  const [pickedMonth, setPickedMonth] = useState<MonthFilter | null>(null);
+  const monthFilter = pickedMonth ?? vaccineMonthForChild(currentChild, AVAILABLE_MONTHS);
   const [showReferences, setShowReferences] = useState(false);
   const [showEmergencies, setShowEmergencies] = useState(false);
   const [showContraindications, setShowContraindications] = useState(false);
@@ -297,7 +306,7 @@ export default function VaccineTrackingPage({
         <div ref={scrollerRef} className="row-bleed flex gap-2 pb-2 mb-4">
           <button
             ref={monthFilter === 'all' ? selectedRef : undefined}
-            onClick={() => setMonthFilter('all')}
+            onClick={() => setPickedMonth('all')}
             aria-pressed={monthFilter === 'all'}
             className={`chip flex-shrink-0 ${monthFilter === 'all' ? 'chip-on' : ''}`}
           >
@@ -307,7 +316,7 @@ export default function VaccineTrackingPage({
             <button
               key={month}
               ref={monthFilter === month ? selectedRef : undefined}
-              onClick={() => setMonthFilter(month)}
+              onClick={() => setPickedMonth(month)}
               aria-pressed={monthFilter === month}
               className={`chip flex-shrink-0 ${monthFilter === month ? 'chip-on' : ''}`}
             >

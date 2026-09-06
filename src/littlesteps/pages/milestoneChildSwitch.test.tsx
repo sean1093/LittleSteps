@@ -8,6 +8,7 @@ import {
   useChildStoreContext,
 } from '../../common/contexts/ChildStoreContext';
 import MilestonesPage from './MilestonesPage';
+import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
 /**
  * The month range this page opens on is derived from the child's age, and the
@@ -60,15 +61,30 @@ vi.mock('../../contexts/AuthContext', () => {
   return { useAuth: () => value, useOptionalAuth: () => value };
 });
 
-/** A child exactly `months` old today, so the test cannot age out. */
+/**
+ * A child exactly `months` old today, so the test cannot age out.
+ *
+ * `setMonth(getMonth() - months)` is wrong nine days a year -- on the 29th to
+ * the 31st the target month may be shorter and the overflow rolls forward
+ * rather than clamping, landing a month young. This file's month ranges are
+ * wide enough to absorb that, so it was never red here; the vaccine page's
+ * finer groups are not, and both should mean the same thing by "exactly N
+ * months old". Fixed in both rather than left as a trap for the next file
+ * copied from one of them.
+ *
+ * `toLocalDateKey`, not `toISOString().slice(0, 10)`: the latter converts a
+ * local midnight to UTC, which is the previous day everywhere west of UTC.
+ */
 const childAged = (
   months: number,
   over: Pick<ChildProfile, 'id' | 'name'> & Partial<ChildProfile>,
 ): ChildProfile => {
-  const birth = new Date();
-  birth.setMonth(birth.getMonth() - months);
+  const today = new Date();
+  const birth = new Date(today.getFullYear(), today.getMonth() - months, 1);
+  const lastDayOfBirthMonth = new Date(birth.getFullYear(), birth.getMonth() + 1, 0).getDate();
+  birth.setDate(Math.min(today.getDate(), lastDayOfBirthMonth));
   return {
-    birthday: birth.toISOString().slice(0, 10),
+    birthday: toLocalDateKey(birth),
     milestoneProgress: {},
     vaccineProgress: {},
     createdAt: new Date().toISOString(),
