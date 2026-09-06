@@ -67,6 +67,16 @@ vi.mock('firebase/auth', () => ({
   getAuth: vi.fn(() => ({ currentUser: null })),
 }));
 
+// App Check：lib/firebase 在 vitest 底下也會被載入（見 lib/firebase.test.ts），
+// 而真的 initializeAppCheck() 會往 document.body 塞 div、去 Google 載
+// reCAPTCHA 腳本。這裡只留測試需要驗的兩個介面。
+vi.mock('firebase/app-check', () => ({
+  initializeAppCheck: vi.fn(() => ({})),
+  ReCaptchaV3Provider: class {
+    constructor(public siteKey: string) {}
+  },
+}));
+
 // Mock Firebase database functions
 vi.mock('firebase/database', () => ({
   ref: mockRef,

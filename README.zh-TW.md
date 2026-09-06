@@ -183,6 +183,14 @@ OpenStreetMap 的資料。它的每一句宣稱都是 `src/common/about/dataSour
 - **分享**：孩子的檔案透過一組專屬代碼分享給家人，而且分享可以收回 — 見下
 - **限制**：免費方案每個帳號 2 個孩子
 
+bundle 裡的 Firebase 設定本來就是公開的。Auth 和規則管的是**誰**能讀寫；
+上面沒有任何東西管**從哪裡**，所以一支只拿著這份設定的腳本就能直接對資料庫
+講話。用 reCAPTCHA v3 的 Firebase App Check 補上這一半：設了
+`VITE_FIREBASE_APPCHECK_SITE_KEY` 之後，每個請求都會帶著一個 token，證明它
+是從這個 web app、在允許的網域上發出的；沒有 token 的請求會被算成未驗證 —
+而在主控台打開強制執行之後，就會被拒絕。這是來源檢查，不是授權：
+`database.rules.json` 仍然是唯一決定登入的使用者能碰什麼的邊界。
+
 ### 分享，以及把它收回
 
 成員名單放在 `children/$childId/members`，是在孩子節點裡面，而不是在各個帳號
@@ -337,7 +345,20 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 VITE_FIREBASE_MEASUREMENT_ID=
 VITE_FIREBASE_DATABASE_URL=
+VITE_FIREBASE_APPCHECK_SITE_KEY=
+VITE_FIREBASE_APPCHECK_DEBUG=
 ```
+
+`VITE_FIREBASE_APPCHECK_SITE_KEY` 是 Firebase 主控台 → App Check 裡的
+reCAPTCHA v3 site key。留空的話 app 就在沒有 App Check 的狀態下跑，在 key
+註冊好之前這是預期的狀態。設了 key 之後，`localhost` 拿不到真的 reCAPTCHA
+token，所以要在本機對著 App Check 開發：
+
+1. 在 `.env` 裡設 `VITE_FIREBASE_APPCHECK_DEBUG=true` — 只有 `npm run dev`
+   會讀它；正式建置會把這段丟掉，
+2. 打開 app，從瀏覽器 console 印出的 `App Check debug token: …` 那一行把
+   token 複製下來，
+3. 到 App Check → Apps → 你的 web app → Manage debug tokens 把它登記進去。
 
 ```bash
 npm run dev            # http://localhost:5173

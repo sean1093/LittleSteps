@@ -55,6 +55,10 @@ const FIREBASE_E2E_ENV = {
   VITE_FIREBASE_MESSAGING_SENDER_ID: '000000000000',
   VITE_FIREBASE_APP_ID: '1:000000000000:web:0000000000000000000000',
   VITE_FIREBASE_MEASUREMENT_ID: 'G-E2E0000000',
+  // The suite runs without App Check. Pinned empty rather than left out: Vite
+  // merges the repo's `.env` under `process.env`, so a real site key in a
+  // developer's `.env` would otherwise reach the E2E build.
+  VITE_FIREBASE_APPCHECK_SITE_KEY: '',
 };
 
 /**

@@ -218,6 +218,16 @@ were going.
   sharing is revocable — see below
 - **Limit**: 2 children per account on the free tier
 
+The Firebase config in the bundle is public by design. Auth and the rules
+bound *who* may read or write; nothing above bounds *from where*, so a script
+that only holds the config can talk to the database directly. Firebase App
+Check with reCAPTCHA v3 covers that half: when `VITE_FIREBASE_APPCHECK_SITE_KEY`
+is set, every request carries a token attesting that it came from this web app
+on an allowed origin, and a request without one is counted as unverified —
+and, once enforcement is switched on in the console, refused. It is an origin
+check, not authorisation: `database.rules.json` remains the only boundary that
+decides what a signed-in user can touch.
+
 ### Sharing, and taking it back
 
 Membership lives in `children/$childId/members`, inside the child rather than
@@ -378,7 +388,20 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 VITE_FIREBASE_MEASUREMENT_ID=
 VITE_FIREBASE_DATABASE_URL=
+VITE_FIREBASE_APPCHECK_SITE_KEY=
+VITE_FIREBASE_APPCHECK_DEBUG=
 ```
+
+`VITE_FIREBASE_APPCHECK_SITE_KEY` is the reCAPTCHA v3 site key from Firebase
+console → App Check. Leave it empty and the app runs without App Check, which
+is the expected state until the key is registered. With a key set, `localhost`
+cannot get a real reCAPTCHA token, so to develop against App Check:
+
+1. set `VITE_FIREBASE_APPCHECK_DEBUG=true` in `.env` — only `npm run dev` reads
+   it; a production build drops the branch,
+2. open the app and copy the token from the `App Check debug token: …` line
+   the browser console prints,
+3. register it under App Check → Apps → your web app → Manage debug tokens.
 
 ```bash
 npm run dev            # http://localhost:5173
