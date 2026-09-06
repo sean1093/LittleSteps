@@ -783,11 +783,46 @@ async function main() {
     alice.put('children/c1/foodTrackingProgress/f1', foodTrial()),
   );
   await expectAllowed(
-    '副食品：多記一次嘗試是部分更新（handleAddTrialDate 的寫法）',
+    '副食品：舊形狀的嘗試日期陣列整個重送照樣可以',
     alice.patch('children/c1/foodTrackingProgress/f1', {
       trialDates: [DATE, '2026-09-02', '2026-09-03'],
       updatedAt: ISO,
     }),
+  );
+  // #89：嘗試日期改成以日期為 key 的集合（trialDates/2026-09-04: true），兩位
+  // 照顧者同一天各記一次才會逐條合併，而不是後到的整個陣列蓋掉先到的。舊紀錄
+  // 是 0、1、… 為 key 的陣列，多記一天之後兩種 key 會並存在同一個節點上，所以
+  // 規則按 key 分：日期 key 只收 true，數字 key 只收字串（舊形狀），其他都擋。
+  await expectAllowed(
+    '副食品：在舊的陣列節點上多記一天是一條 leaf（handleAddTrialDate 的寫法）',
+    alice.patch('children/c1/foodTrackingProgress/f1', { 'trialDates/2026-09-04': true, updatedAt: ISO }),
+  );
+  await expectAllowed(
+    '副食品：拿掉一天是寫 null，舊的索引 key 也一樣（編輯表單的寫法）',
+    alice.patch('children/c1/foodTrackingProgress/f1', {
+      'trialDates/0': null,
+      'trialDates/2026-09-04': null,
+      updatedAt: ISO,
+    }),
+  );
+  await expectAllowed(
+    '副食品：新紀錄的嘗試日期是日期集合（addFoodTrial 的寫法）',
+    alice.put(
+      'children/c1/foodTrackingProgress/f2',
+      foodTrial({ id: 'f2', trialDates: { [DATE]: true, '2026-09-02': true } }),
+    ),
+  );
+  await expectDenied(
+    '副食品：日期 key 的值不是 true 就不給寫',
+    alice.patch('children/c1/foodTrackingProgress/f1', { 'trialDates/2026-09-05': '2026-09-05' }),
+  );
+  await expectDenied(
+    '副食品：既不是日期也不是索引的 key 不給寫',
+    alice.patch('children/c1/foodTrackingProgress/f1', { 'trialDates/foo': true }),
+  );
+  await expectDenied(
+    '副食品：索引 key 的值是 true 就不給寫',
+    alice.patch('children/c1/foodTrackingProgress/f1', { 'trialDates/5': true }),
   );
   await expectDenied(
     '副食品：過敏反應裡塞不認識的欄位會被擋',

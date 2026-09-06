@@ -122,7 +122,7 @@
             "category": { ".validate": "newData.isString() && newData.val().length <= 40" },
             "firstTriedDate": { ".validate": "newData.isString() && newData.val().length <= 10" },
             "trialDates": {
-              "$i": { ".validate": "newData.isString() && newData.val().length <= 10" }
+              "$key": { ".validate": "($key.matches(/^\\d{4}-\\d{2}-\\d{2}$/) && newData.val() === true) || ($key.matches(/^\\d+$/) && newData.isString() && newData.val().length <= 10)" }
             },
             "hasAllergy": { ".validate": "newData.isBoolean()" },
             "allergyReactions": {

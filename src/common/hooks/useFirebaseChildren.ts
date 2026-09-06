@@ -1,6 +1,6 @@
 import { ref, set, update, remove, get, push, serverTimestamp, type DatabaseReference } from 'firebase/database';
 import { database } from '../../lib/firebase';
-import { CareTaskRecord, ChildProfile, DailyLog, DailyLogPatch, DiaryEntry, FoodTrialRecord, Gender } from '../../types';
+import { CareTaskRecord, ChildProfile, DailyLog, DailyLogPatch, DiaryEntry, FoodTrialInput, FoodTrialPatch, FoodTrialRecord, Gender } from '../../types';
 import { removeUndefined, toUpdatePaths } from '../utils/firebaseData';
 import type { GestationalAge } from '../correctedAge';
 import { lmpFromDueDate, toLocalDateKey } from '../utils/dateHelpers';
@@ -473,7 +473,8 @@ export function useFirebaseChildren(userId: string | null) {
   };
 
   // Food Tracking methods
-  const addFoodTrial = async (childId: string, foodTrial: Omit<FoodTrialRecord, 'id' | 'createdAt'>) => {
+  /** 新紀錄的嘗試日期是日期集合（FoodTrialInput 型別保證），不再是陣列。 */
+  const addFoodTrial = async (childId: string, foodTrial: FoodTrialInput) => {
     if (!userId) throw new Error('User not authenticated');
 
     const { recordRef, id } = newRecordRef(`children/${childId}/foodTrackingProgress`);
@@ -487,14 +488,22 @@ export function useFirebaseChildren(userId: string | null) {
     return id;
   };
 
-  const updateFoodTrial = async (childId: string, foodId: string, updates: Partial<FoodTrialRecord>) => {
+  /**
+   * 改一筆食物紀錄。嘗試日期只收補丁（要加的日期 true、要拿掉的 key null），
+   * 攤平成 trialDates/<key> 一條一條寫：update() 只在它收到的那一層合併，
+   * 整個 trialDates 物件送進去等於把節點換掉，兩位照顧者同一天各記一次，
+   * 後到的那筆會連著自己手上的舊清單把對方那一天蓋掉（#89）。
+   *
+   * 其他欄位維持原樣：過敏反應是陣列，仍然整個寫成一個節點（#91）。
+   */
+  const updateFoodTrial = async (childId: string, foodId: string, updates: FoodTrialPatch) => {
     if (!userId) throw new Error('User not authenticated');
 
     const foodRef = ref(database, `children/${childId}/foodTrackingProgress/${foodId}`);
-    await update(foodRef, removeUndefined({
-      ...updates,
+    await update(foodRef, {
+      ...toUpdatePaths(removeUndefined(updates)),
       updatedAt: new Date().toISOString(),
-    }));
+    });
   };
 
   const deleteFoodTrial = async (childId: string, foodId: string) => {

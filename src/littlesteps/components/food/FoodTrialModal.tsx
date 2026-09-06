@@ -2,14 +2,15 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X } from 'lucide-react';
 import { backdrop, sheet } from '../../../common/ui/motion';
-import { FoodTrialRecord, AllergyReaction, AllergyReactionType, AllergySeverity, FoodPreference } from '../../../types';
+import { FoodTrialInput, FoodTrialRecord, AllergyReaction, AllergyReactionType, AllergySeverity, FoodPreference } from '../../../types';
 import { formatDate, toLocalDateKey } from '../../../common/utils/dateHelpers';
+import { trialDateSet, trialDatesOf } from '../../utils/foodTrialDates';
 import { ALLERGY_DESCRIPTION_LIMIT, FOOD_NAME_LIMIT, FOOD_NOTES_LIMIT } from '../../../common/recordLimits';
 
 interface FoodTrialModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (foodData: Omit<FoodTrialRecord, 'id' | 'createdAt'>) => Promise<void>;
+  onSave: (foodData: FoodTrialInput) => Promise<void>;
   editingFood?: FoodTrialRecord | null;
 }
 
@@ -66,7 +67,7 @@ export default function FoodTrialModal({
       setAllergyReactions(editingFood.allergyReactions || []);
       setPreference(editingFood.preference);
       setNotes(editingFood.notes || '');
-      setTrialDates(editingFood.trialDates || []);
+      setTrialDates(trialDatesOf(editingFood));
     } else {
       // Reset form for new entry
       setFoodName('');
@@ -91,11 +92,12 @@ export default function FoodTrialModal({
       return;
     }
 
-    const foodData: Omit<FoodTrialRecord, 'id' | 'createdAt'> = {
+    const foodData: FoodTrialInput = {
       foodName: foodName.trim(),
       category: category.trim() || undefined,
       firstTriedDate,
-      trialDates: trialDates.length > 0 ? trialDates : [firstTriedDate],
+      // 送出去的是日期集合；編輯時由上層對照存著的那一份算出要加減的 leaf。
+      trialDates: trialDateSet(trialDates.length > 0 ? trialDates : [firstTriedDate]),
       hasAllergy,
       allergyReactions: hasAllergy ? allergyReactions : undefined,
       preference,

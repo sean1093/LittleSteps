@@ -73,7 +73,29 @@ describe('嘗試日期', () => {
     await user.click(screen.getByRole('button', { name: '更新' }));
 
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
-    expect(onSave.mock.calls[0][0].trialDates).toEqual(['2026-08-28']);
+    expect(onSave.mock.calls[0][0].trialDates).toEqual({ '2026-08-28': true });
+  });
+
+  it('舊紀錄多記過一天之後兩種形狀並存，表單兩種都讀得到', async () => {
+    // 資料庫存陣列是 0、1、… 為 key 的物件；在上面多記一天就是這個樣子。
+    const mixed: FoodTrialRecord = {
+      ...existing,
+      trialDates: { 0: '2026-08-28', 1: '2026-08-29', '2026-08-31': true },
+    };
+    const { user, onSave } = renderModal(mixed);
+
+    expect(screen.getByText('已記錄 3 次嘗試')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '移除嘗試日期 2026年8月28日' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '移除嘗試日期 2026年8月31日' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '更新' }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onSave.mock.calls[0][0].trialDates).toEqual({
+      '2026-08-28': true,
+      '2026-08-29': true,
+      '2026-08-31': true,
+    });
   });
 });
 
