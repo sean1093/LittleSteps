@@ -3,7 +3,13 @@
     "users": {
       "$userId": {
         ".read": "$userId === auth.uid",
-        ".write": "$userId === auth.uid"
+        ".write": "$userId === auth.uid",
+
+        "childrenIds": {
+          "$childId": { ".validate": "newData.val() === true" }
+        },
+        "currentChildId": { ".validate": "newData.isString() && newData.val().length <= 64" },
+        "$other": { ".validate": false }
       }
     },
 
@@ -13,8 +19,14 @@
         ".write": "data.child('members').child(auth.uid).val() === true || (!data.exists() && newData.child('members').child(auth.uid).val() === true)",
         ".validate": "newData.hasChildren(['name', 'createdBy', 'members'])",
 
+        "id": { ".validate": "newData.isString() && newData.val().length <= 64" },
         "name": { ".validate": "newData.isString() && newData.val().length <= 40" },
         "birthday": { ".validate": "newData.isString() && newData.val().length <= 10" },
+        "gender": { ".validate": "newData.val() === 'male' || newData.val() === 'female'" },
+        "gestationalAgeWeeks": { ".validate": "newData.isNumber() && newData.val() >= 20 && newData.val() <= 42" },
+        "gestationalAgeDays": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 6" },
+        "isPregnancy": { ".validate": "newData.isBoolean()" },
+        "createdAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
         "createdBy": { ".validate": "newData.isString() && newData.val().length <= 128" },
         "joinOpen": { ".validate": "newData.isBoolean()" },
 
@@ -23,7 +35,107 @@
             ".write": "auth != null && ($memberUid === auth.uid || data.parent().child(auth.uid).val() === true) && (newData.exists() || $memberUid !== root.child('children').child($childId).child('createdBy').val()) && (!newData.exists() || data.exists() || data.parent().child(auth.uid).val() === true || root.child('children').child($childId).child('joinOpen').val() === true)",
             ".validate": "newData.val() === true"
           }
-        }
+        },
+
+        "pregnancyData": {
+          "childId": { ".validate": "newData.isString() && newData.val().length <= 64" },
+          "dueDate": { ".validate": "newData.isString() && newData.val().length <= 10" },
+          "lastPeriodDate": { ".validate": "newData.isString() && newData.val().length <= 10" },
+          "status": { ".validate": "newData.val() === 'active' || newData.val() === 'archived'" },
+          "$other": { ".validate": false }
+        },
+
+        "milestoneProgress": {
+          "$milestoneId": {
+            ".validate": "newData.hasChildren(['achieved'])",
+            "achieved": { ".validate": "newData.isBoolean()" },
+            "achievedDate": { ".validate": "newData.isString() && newData.val().length <= 10" },
+            "$other": { ".validate": false }
+          }
+        },
+
+        "vaccineProgress": {
+          "$vaccineId": {
+            "doses": {
+              "$doseNumber": {
+                ".validate": "newData.hasChildren(['administered'])",
+                "administered": { ".validate": "newData.isBoolean()" },
+                "administeredDate": { ".validate": "newData.isString() && newData.val().length <= 10" },
+                "$other": { ".validate": false }
+              }
+            },
+            "$other": { ".validate": false }
+          }
+        },
+
+        "developmentProgress": {
+          "$checkItemId": {
+            ".validate": "newData.hasChildren(['achieved'])",
+            "achieved": { ".validate": "newData.isBoolean()" },
+            "achievedDate": { ".validate": "newData.isString() && newData.val().length <= 10" },
+            "$other": { ".validate": false }
+          }
+        },
+
+        "toothProgress": {
+          "$toothId": {
+            ".validate": "newData.hasChildren(['erupted'])",
+            "erupted": { ".validate": "newData.isBoolean()" },
+            "eruptedDate": { ".validate": "newData.isString() && newData.val().length <= 10" },
+            "$other": { ".validate": false }
+          }
+        },
+
+        "prenatalProgress": {
+          "$templateId": {
+            ".validate": "newData.hasChildren(['completedDate'])",
+            "completedDate": { ".validate": "newData.isString() && newData.val().length <= 10" },
+            "clinicName": { ".validate": "newData.isString() && newData.val().length <= 100" },
+            "notes": { ".validate": "newData.isString() && newData.val().length <= 2000" },
+            "$other": { ".validate": false }
+          }
+        },
+
+        "careTaskProgress": {
+          "$taskId": {
+            ".validate": "newData.hasChildren(['completedDate'])",
+            "taskId": { ".validate": "newData.isString() && newData.val().length <= 64" },
+            "completedDate": { ".validate": "newData.isString() && newData.val().length <= 10" },
+            "location": { ".validate": "newData.isString() && newData.val().length <= 100" },
+            "notes": { ".validate": "newData.isString() && newData.val().length <= 2000" },
+            "$other": { ".validate": false }
+          }
+        },
+
+        "foodTrackingProgress": {
+          "$foodId": {
+            ".validate": "newData.hasChildren(['foodName'])",
+            "id": { ".validate": "newData.isString() && newData.val().length <= 64" },
+            "foodName": { ".validate": "newData.isString() && newData.val().length <= 100" },
+            "category": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "firstTriedDate": { ".validate": "newData.isString() && newData.val().length <= 10" },
+            "trialDates": {
+              "$i": { ".validate": "newData.isString() && newData.val().length <= 10" }
+            },
+            "hasAllergy": { ".validate": "newData.isBoolean()" },
+            "allergyReactions": {
+              "$i": {
+                "type": { ".validate": "newData.val() === 'rash' || newData.val() === 'diarrhea' || newData.val() === 'vomiting' || newData.val() === 'constipation' || newData.val() === 'runny_nose' || newData.val() === 'cough' || newData.val() === 'eczema' || newData.val() === 'other'" },
+                "severity": { ".validate": "newData.val() === 'mild' || newData.val() === 'moderate' || newData.val() === 'severe'" },
+                "description": { ".validate": "newData.isString() && newData.val().length <= 500" },
+                "date": { ".validate": "newData.isString() && newData.val().length <= 10" },
+                "$other": { ".validate": false }
+              }
+            },
+            "preference": { ".validate": "newData.val() === 'love' || newData.val() === 'like' || newData.val() === 'neutral' || newData.val() === 'dislike' || newData.val() === 'refuse'" },
+            "notes": { ".validate": "newData.isString() && newData.val().length <= 2000" },
+            "createdAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "updatedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "$other": { ".validate": false }
+          }
+        },
+
+        "$other": { ".validate": false }
       }
     },
 
