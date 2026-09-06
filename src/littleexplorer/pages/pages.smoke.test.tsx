@@ -9,6 +9,7 @@ import DevelopmentPage from './DevelopmentPage';
 import RemindersPage from './RemindersPage';
 import DiaryPage from './DiaryPage';
 import ToddlerWikiPage from './ToddlerWikiPage';
+import { CARE_TASK_LOCATION_LIMIT, CARE_TASK_NOTES_LIMIT, DIARY_CONTENT_LIMIT } from '../../common/recordLimits';
 
 /**
  * Mount smoke tests for the four LittleExplorer tabs.
@@ -734,5 +735,47 @@ describe('ToddlerWikiPage', () => {
     await user.click(within(stageRow).getByRole('button', { name: '全部' }));
 
     expect(screen.getByRole('button', { name: '如廁訓練' })).toBeInTheDocument();
+  });
+});
+
+describe('欄位上限', () => {
+  // 規則對日記內容、照護記錄的院所與備註各有長度上限；超過時回來的是
+  // PERMISSION_DENIED，而這兩頁把它講成「請確認網路」。欄位本身不能超過規則，
+  // 那句話才是真的。
+  it('日記內容的上限就是規則的上限', async () => {
+    const user = userEvent.setup();
+    render(
+      <DiaryPage onAddChild={noopAddChild}
+        currentChild={child()}
+        entries={[]}
+        onAdd={async () => 'd2'}
+        onUpdate={noop}
+        onDelete={noop}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: '今天發生了什麼？' }));
+    expect(screen.getByPlaceholderText('今天發生了什麼？')).toHaveAttribute(
+      'maxlength',
+      String(DIARY_CONTENT_LIMIT),
+    );
+  });
+
+  it('照護記錄的院所與備註的上限就是規則的上限', async () => {
+    const user = userEvent.setup();
+    const tasks = resolveCareTasks(TWO_YEAR_OLD, careTaskTemplates, {}, {}, NOW);
+    render(
+      <RemindersPage onAddChild={noopAddChild} currentChild={child()} tasks={tasks} onCompleteTask={noop} />,
+    );
+
+    await user.click(screen.getAllByRole('button', { name: '標記完成' })[0]);
+    expect(screen.getByPlaceholderText('院所（選填）')).toHaveAttribute(
+      'maxlength',
+      String(CARE_TASK_LOCATION_LIMIT),
+    );
+    expect(screen.getByPlaceholderText('備註（選填）')).toHaveAttribute(
+      'maxlength',
+      String(CARE_TASK_NOTES_LIMIT),
+    );
   });
 });

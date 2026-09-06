@@ -4,6 +4,7 @@ import { Plus, X } from 'lucide-react';
 import { backdrop, sheet } from '../../../common/ui/motion';
 import { FoodTrialRecord, AllergyReaction, AllergyReactionType, AllergySeverity, FoodPreference } from '../../../types';
 import { formatDate, toLocalDateKey } from '../../../common/utils/dateHelpers';
+import { ALLERGY_DESCRIPTION_LIMIT, FOOD_NAME_LIMIT, FOOD_NOTES_LIMIT } from '../../../common/recordLimits';
 
 interface FoodTrialModalProps {
   isOpen: boolean;
@@ -185,6 +186,9 @@ export default function FoodTrialModal({
                   value={foodName}
                   onChange={(e) => setFoodName(e.target.value)}
                   placeholder="例如：高麗菜、香蕉、地瓜"
+                  // 上限就是規則的上限。超過它回來的是 PERMISSION_DENIED，表單只會照印
+                  // SDK 的原文，家長看不出該改什麼。備註與過敏反應說明同理。
+                  maxLength={FOOD_NAME_LIMIT}
                   className={FIELD}
                 />
               </div>
@@ -367,6 +371,7 @@ export default function FoodTrialModal({
                           onChange={(e) => setNewReactionDescription(e.target.value)}
                           placeholder="選填"
                           rows={2}
+                          maxLength={ALLERGY_DESCRIPTION_LIMIT}
                           className={`${FIELD} resize-none`}
                         />
                       </div>
@@ -430,6 +435,7 @@ export default function FoodTrialModal({
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="記錄任何額外資訊..."
                   rows={3}
+                  maxLength={FOOD_NOTES_LIMIT}
                   className={`${FIELD} resize-none`}
                 />
               </div>

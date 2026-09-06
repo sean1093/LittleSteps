@@ -13,6 +13,7 @@ import ExplorerShell from '../components/ExplorerShell';
 import NoChildNotice from '../components/NoChildNotice';
 import { formatDate, toLocalDateKey } from '../../common/utils/dateHelpers';
 import { confirmDelete } from '../../common/ui/confirmDelete';
+import { DIARY_CONTENT_LIMIT } from '../../common/recordLimits';
 
 const THEME = SERVICE_THEME.littleexplorer;
 
@@ -155,6 +156,9 @@ export default function DiaryPage({
         rows={4}
         autoFocus
         placeholder="今天發生了什麼？"
+        // 上限就是規則的上限。超過它回來的是 PERMISSION_DENIED，表單只會說「請確認
+        // 網路」，家長會一直重送一則永遠寫不進去的日記。
+        maxLength={DIARY_CONTENT_LIMIT}
         className="w-full px-3 py-2 rounded-xl border border-explorer-sand text-sm text-explorer-bark leading-relaxed resize-none"
       />
       <div className="flex flex-wrap gap-2">

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ChildProfile, Gender } from '../../types';
 import { GESTATIONAL_AGE_RANGE, type GestationalAge } from '../correctedAge';
+import { CHILD_NAME_LIMIT } from '../recordLimits';
 import ModalFrame from './ModalFrame';
 
 export type ChildModalMode = 'create' | 'join' | 'pregnancy';
@@ -213,6 +214,9 @@ export default function AddChildModal({
                 onChange={(e) => setName(e.target.value)}
                 className={FIELD}
                 placeholder="例如: 小寶"
+                // 上限就是規則的上限。超過它回來的是 PERMISSION_DENIED，表單只會說
+                // 「請確認網路」。孕期表單的小名寫的是同一個欄位，所以用同一個數。
+                maxLength={CHILD_NAME_LIMIT}
                 required
               />
             </div>
@@ -301,6 +305,7 @@ export default function AddChildModal({
                 onChange={(e) => setName(e.target.value)}
                 className={FIELD}
                 placeholder="例如: 小花苞"
+                maxLength={CHILD_NAME_LIMIT}
               />
             </div>
             <div>

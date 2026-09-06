@@ -5,6 +5,7 @@ import { backdrop, sheet, tap } from '../../../common/ui/motion';
 import { GrowthRecord } from '../../../types';
 import { toLocalDateKey } from '../../../common/utils/dateHelpers';
 import { useToast } from '../../../common/ui/toast';
+import { GROWTH_NOTES_LIMIT } from '../../../common/recordLimits';
 
 interface AddGrowthRecordModalProps {
   isOpen: boolean;
@@ -163,6 +164,9 @@ export default function AddGrowthRecordModal({
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="例如: 在家量測"
                   rows={3}
+                  // 上限就是規則的上限。超過它回來的是 PERMISSION_DENIED，家長只會看到
+                  // 一則儲存失敗，卻不知道該改什麼。
+                  maxLength={GROWTH_NOTES_LIMIT}
                   className={`${FIELD} resize-none`}
                 />
               </div>

@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { DailyLog, FeedingData, SleepData } from '../../../types';
 import LogEntryModal from './LogEntryModal';
+import { DAILY_LOG_NOTES_LIMIT } from '../../../common/recordLimits';
 
 /**
  * 這張表以前有兩個會靜靜吃掉資料的洞。
@@ -308,5 +309,14 @@ describe('夜醒次數', () => {
     await user.click(screen.getByRole('button', { name: '減少夜醒次數' }));
     await user.click(screen.getByRole('button', { name: '減少夜醒次數' }));
     expect(field).toHaveValue(0);
+  });
+});
+
+describe('欄位上限', () => {
+  // 規則對 dailyLogs/$id/data/notes 有長度上限，超過時回來的是 PERMISSION_DENIED，
+  // 表單只會把 SDK 的原文印出來。欄位本身不能超過規則，那個錯誤才不會出現。
+  it('備註的上限就是規則的上限', () => {
+    renderModal();
+    expect(screen.getByLabelText('備註')).toHaveAttribute('maxlength', String(DAILY_LOG_NOTES_LIMIT));
   });
 });

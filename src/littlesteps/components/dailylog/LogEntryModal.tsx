@@ -9,6 +9,7 @@ import {
   isoToDateTimeLocal,
   calculateDuration,
 } from '../../../common/utils/dateHelpers';
+import { DAILY_LOG_NOTES_LIMIT } from '../../../common/recordLimits';
 import {
   CONSISTENCIES,
   DIAPER_TYPES,
@@ -485,6 +486,9 @@ export default function LogEntryModal({
                   className={`${FIELD} resize-none`}
                   rows={3}
                   placeholder="選填"
+                  // 上限就是規則的上限。超過它回來的是 PERMISSION_DENIED，表單只會照印
+                  // SDK 的原文，家長看不出該改什麼。
+                  maxLength={DAILY_LOG_NOTES_LIMIT}
                   disabled={isSubmitting}
                 />
               </div>
