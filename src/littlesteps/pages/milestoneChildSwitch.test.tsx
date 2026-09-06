@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useState } from 'react';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ChildProfile } from '../../types';
 import {
@@ -27,6 +27,7 @@ import MilestonesPage from './MilestonesPage';
 const mocks = vi.hoisted(() => ({
   profiles: [] as ChildProfile[],
   startChildId: 'c1',
+  rerender: () => {},
 }));
 
 /**
@@ -36,6 +37,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../../common/hooks/useChildStore', () => ({
   useChildStore: () => {
     const [currentChildId, setCurrentChildId] = useState(mocks.startChildId);
+    // `version` exists only so a test can edit a profile in place and re-render,
+    // which is how the birthday case below reaches the page.
+    const [, bump] = useState(0);
+    mocks.rerender = () => bump((n) => n + 1);
     return {
       childProfiles: mocks.profiles,
       currentChildId,
@@ -135,6 +140,20 @@ describe('switching child on the milestones page', () => {
     expect(await screen.findByRole('button', { name: '寶寶 小樹' })).toBeInTheDocument();
     expect(rangeChip('0-2 個月')).toHaveAttribute('aria-pressed', 'true');
     expect(rangeChip('10-12 個月')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('follows a birthday correction on the child already selected', async () => {
+    // The derived default is recomputed from the child every render rather than
+    // remembered against an id, so correcting a birthday that was entered wrong
+    // moves the filter without needing a switch away and back.
+    renderScreen();
+    expect(rangeChip('5-6 個月')).toHaveAttribute('aria-pressed', 'true');
+
+    mocks.profiles = [childAged(12, { id: 'c1', name: '小豆' }), tree, leaf];
+    await act(async () => mocks.rerender());
+
+    expect(rangeChip('10-12 個月')).toHaveAttribute('aria-pressed', 'true');
+    expect(rangeChip('5-6 個月')).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('derives the range from corrected age for a premature child', async () => {
