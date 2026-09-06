@@ -56,6 +56,24 @@ passed on every developer machine.
 
 Corollary: **local green and CI green are different facts.** Ask for both.
 
+Second corollary, learned the expensive way: **a green PR is evidence about the
+world as that branch last saw it, not about master.** A guard that derives its
+subjects from the product — every public route, every schedule row, every
+exported token — silently widens the moment someone else adds one. Two merges
+here turned master red for exactly that reason: a new route landed between the
+branch's last merge from master and the merge button, joined a derived route
+list, and failed a check the branch had never run against it.
+
+So when a change adds a test whose inputs come from the product rather than from
+a literal list, **re-run it against current master immediately before merging**.
+Not against the merge base. The parallelism that makes the loop fast is the same
+thing that makes the branch's snapshot stale.
+
+Worth noticing: the check that caught it was the non-vacuity assertion added in
+the same PR at a reviewer's insistence. It found a real new route within hours
+of landing. That is the second time in this project a "prove the test can fail"
+requirement paid for itself immediately.
+
 ## 4. A passing test can be passing for the wrong reason
 
 Green is not proof. Two examples from one afternoon:
