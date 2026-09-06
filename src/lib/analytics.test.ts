@@ -30,7 +30,7 @@ vi.mock('firebase/analytics', () => ({
 
 type Analytics = typeof import('./firebase');
 
-async function loadAnalytics(): Promise<Analytics> {
+async function loadRealFirebase(): Promise<Analytics> {
   vi.resetModules();
   return (await vi.importActual('./firebase')) as Analytics;
 }
@@ -72,7 +72,7 @@ describe('analytics payloads', () => {
   });
 
   it('every helper sends only the keys on its allowlist', async () => {
-    const fb = await loadAnalytics();
+    const fb = await loadRealFirebase();
 
     fb.logPageView('littlesteps/dashboard');
     fb.logMilestoneToggle(true);
@@ -89,7 +89,7 @@ describe('analytics payloads', () => {
   });
 
   it('carries no key that could name something about a child', async () => {
-    const fb = await loadAnalytics();
+    const fb = await loadRealFirebase();
 
     fb.logPageView('littlesteps/vaccine-tracking');
     fb.logMilestoneToggle(false);
@@ -107,7 +107,7 @@ describe('analytics payloads', () => {
   it('the toggle events say what happened, never to which item', async () => {
     // The mutation this exists for: putting the id back. A test on the
     // allowlist alone would also catch it, but this one names the reason.
-    const fb = await loadAnalytics();
+    const fb = await loadRealFirebase();
 
     fb.logMilestoneToggle(true);
     fb.logVaccineToggle(true);
@@ -124,7 +124,7 @@ describe('analytics payloads', () => {
     // page_view sends document.title. It is safe today only because
     // useDocumentMeta sets a title from the static meta table; a title that
     // named the current child would ride out in every page view.
-    const fb = await loadAnalytics();
+    const fb = await loadRealFirebase();
     const { metaFor } = await import('../common/seo/pageMeta');
     const pages = Object.keys(ROUTE_PATH) as Page[];
 
