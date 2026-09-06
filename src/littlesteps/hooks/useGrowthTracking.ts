@@ -134,6 +134,12 @@ export function useGrowthTracking(
    * 是 undefined，什麼都不寫——跟 DailyLogPage 拿 editingLog 給 dailyLogChanges
    * 是同一件事。
    *
+   * 「這一筆還在不在」則要看 listener 最新的那一版，不是 opened：對方在表單開
+   * 著的時候把它刪了，PATCH 打在已經不存在的節點上會被規則收下（合併後有
+   * date 就夠，id 與 childId 都不是必填），寫回來的那一筆沒有 id——列表以
+   * undefined 當 key，刪除鍵指向 growthRecords/undefined，一筆誰都刪不掉的
+   * 健康紀錄。所以存在與否查 store，比對的基準才是 opened。
+   *
    * percentile 兩邊都先拿掉再比：寫入端不存它，但舊紀錄存著的那一份也不能因
    * 為表單送了 {} 就被寫成 null。送進來卻是 undefined 的欄位是「清掉」，寫
    * null；沒送的欄位不動。沒有任何欄位改到就不寫。
@@ -145,6 +151,9 @@ export function useGrowthTracking(
   ): Promise<void> => {
     if (!childId) {
       throw new Error('No child selected');
+    }
+    if (!storedRecords.some((record) => record.id === recordId)) {
+      throw new Error('Record not found');
     }
     validateRecord({ ...opened, ...updates });
 
