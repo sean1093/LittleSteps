@@ -376,15 +376,33 @@ describe('nextScheduledDose', () => {
 });
 
 describe('真實時程', () => {
-  it('0-12 個月確實是重心：26 劑落在這個服務自己的範圍', () => {
+  it('0-12 個月確實是重心：27 劑落在這個服務自己的範圍', () => {
     // 這個數字就是這個引擎存在的理由。變了要重新想清楚它該放哪個服務。
-    // 35 而不是 31：RSV 單株抗體是兩種產品各一列，輪狀病毒是 2 劑型與 3 劑
-    // 型各自成列；同時少掉一列不存在的 24 個月肺炎鏈球菌第 4 劑。
+    // 36 而不是 31：RSV 單株抗體是兩種產品各一列，輪狀病毒是 2 劑型與 3 劑
+    // 型各自成列，13 價肺炎鏈球菌的高危險群加打是另外一列；同時少掉一列不
+    // 存在的 24 個月肺炎鏈球菌第 4 劑。
     const withAge = vaccineSchedules.filter((v) => v.ageInMonths !== undefined);
     const early = withAge.filter((v) => v.ageInMonths! <= 12);
 
-    expect(withAge).toHaveLength(35);
-    expect(early).toHaveLength(26);
+    expect(withAge).toHaveLength(36);
+    expect(early).toHaveLength(27);
+  });
+
+  it('高危險群那一劑在時程上，但不是任何一個孩子的待辦', () => {
+    // 這一列就是 #33 的理由：公費、算得出日期、看得到條件，卻不該對每一個
+    // 健康寶寶的家長說「你漏打了」。真實資料上再驗一次合成測試釘的規則。
+    const today = at('2026-08-01');
+    const doses = resolveVaccineDoses(BIRTHDAY, vaccineSchedules, {}, today);
+    const highRisk = doses.find((d) => d.vaccineId === 'pneumococcal-highrisk-6m');
+
+    expect(highRisk?.funding).toBe('national');
+    expect(highRisk?.dueDate).toBe('2026-07-15');
+    expect(highRisk?.status).toBe('due');
+
+    expect(actionableVaccineDoses(doses, today).map((d) => d.vaccineId)).not.toContain(
+      'pneumococcal-highrisk-6m',
+    );
+    expect(nextScheduledDose(doses, today)?.vaccineId).not.toBe('pneumococcal-highrisk-6m');
   });
 
   it('一歲生日當天，出生那一劑早就逾期，一歲那幾劑剛到期', () => {

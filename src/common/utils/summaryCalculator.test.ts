@@ -359,6 +359,25 @@ describe('summaryCalculator', () => {
       ).toBe(0);
     });
 
+    it('does not count a dose reserved for a named group as one the family owes', () => {
+      // 公費、算得出日期，卻只給名單上的孩子。算進「還有幾劑公費疫苗沒記錄」
+      // 等於對每一個健康寶寶的家長多報一劑；端成「下一劑」它還會永遠卡在那
+      // 裡，因為不會去打的劑次永遠不會被記錄。
+      const gated = vaccineSchedules.filter(
+        vaccine => vaccine.funding === 'national' && vaccine.eligibility
+      );
+      // 資料集真的有這種劑次，否則這個測試不具鑑別力。
+      expect(gated.length).toBeGreaterThan(0);
+      expect(gated.every(vaccine => !NATIONAL.includes(vaccine))).toBe(true);
+
+      // 六個月大：限定對象那一劑正好到期，而且沒有被記錄。
+      const summary = calculateVaccineSummary(administered(NATIONAL), BIRTHDAY, at('2026-07-20'));
+
+      expect(summary.administeredCount).toBe(NATIONAL.length);
+      expect(summary.remainingNationalDoses).toBe(0);
+      expect(summary.nextVaccine).toBeUndefined();
+    });
+
     it('advances past an optional dose once the first recorded dose is logged', () => {
       // 這是實際的壞法，比「排序上自費在前面」嚴重得多：家長一記下出生第一劑，
       // 卡片就永遠停在那一列健保有條件給付的產品，之後每一劑公費都跳不過去——
