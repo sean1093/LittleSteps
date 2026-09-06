@@ -241,7 +241,7 @@ What that adds up to, asserted by `npm run test:rules` against the emulator:
 ### Database shape
 
 ```
-users/$uid                 email, displayName, childrenIds, currentChildId
+users/$uid                 childrenIds, currentChildId
                            childrenIds is only this account's list of children
                            to subscribe to — authorisation is members, below
 children/$childId          id, name, birthday, gender, createdAt, createdBy,

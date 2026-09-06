@@ -147,6 +147,23 @@ const growthRecord = (overrides = {}) => ({
   ...overrides,
 });
 
+const DATE = '2026-09-01';
+
+/** 一筆合法的副食品紀錄，欄位形狀照 src/types 的 FoodTrialRecord。 */
+const foodTrial = (overrides = {}) => ({
+  id: 'f1',
+  foodName: '蘋果泥',
+  category: '水果',
+  firstTriedDate: DATE,
+  trialDates: [DATE, '2026-09-02'],
+  hasAllergy: true,
+  allergyReactions: [{ type: 'rash', severity: 'mild', description: '嘴邊有點紅', date: DATE }],
+  preference: 'like',
+  notes: '第一次吃',
+  createdAt: ISO,
+  ...overrides,
+});
+
 async function main() {
   // emulators:exec 每次都起一台乾淨的模擬器，所以不需要（也沒有辦法）先清空：
   // 模擬器上不帶憑證的請求同樣受規則管，沒有 admin 後門。
@@ -434,6 +451,259 @@ async function main() {
   await expectDenied(
     'childRecords 底下只有三個集合，別的名字不給寫',
     alice.put('childRecords/c1/notes/n1', { text: 'x'.repeat(50) }),
+  );
+
+  console.log('\n帳號節點');
+  // users/$uid 只有本人寫得動，但本人也只該寫得進 app 會寫的兩個欄位：
+  // childrenIds/$childId 一律是 true，currentChildId 是一個孩子的 id。
+  await expectAllowed(
+    '把孩子加進自己的名單（joinChild 的寫法）',
+    alice.put('users/alice/childrenIds/c1', true),
+  );
+  await expectAllowed(
+    '切換目前選取的孩子（setCurrentChild 的寫法）',
+    alice.patch('users/alice', { currentChildId: 'c1' }),
+  );
+  await expectAllowed(
+    '清掉目前選取的孩子是寫 null，不會被 validate 擋（useUserChildren 的自癒）',
+    alice.del('users/alice/currentChildId'),
+  );
+  await expectDenied('名單裡的值只能是 true', alice.put('users/alice/childrenIds/c9', false));
+  await expectDenied(
+    'currentChildId 不是字串就不給寫',
+    alice.put('users/alice/currentChildId', 123),
+  );
+  await expectDenied(
+    'currentChildId 超過 64 字就不給寫',
+    alice.put('users/alice/currentChildId', 'x'.repeat(65)),
+  );
+  await expectDenied(
+    '帳號節點塞不認識的欄位會被擋（沒有任何地方寫 email）',
+    alice.put('users/alice/email', 'a@example.com'),
+  );
+
+  console.log('\n孩子節點：建立與編輯');
+  // 孩子本體是一個 listener 訂閱整份的節點，README 說它有上限是因為進度都對著
+  // 固定清單；這裡驗的是每個欄位與每個子樹都長得像 src/types 的 ChildProfile，
+  // 而且沒有不認識的鍵。寫法照 useFirebaseChildren 裡每一個寫入點。
+  const pregnancy = childProfile({
+    id: 'c4',
+    name: '小芽',
+    birthday: '2027-03-15',
+    isPregnancy: true,
+    pregnancyData: { childId: 'c4', dueDate: '2027-03-15', lastPeriodDate: '2026-06-08', status: 'active' },
+  });
+  await expectAllowed(
+    'addChild 的整筆 fan-out：孩子本體（含空的進度物件）、名單、選取狀態一起寫',
+    alice.patch('', {
+      'children/c4': pregnancy,
+      'users/alice/childrenIds/c4': true,
+      'users/alice/currentChildId': 'c4',
+    }),
+  );
+  await expectAllowed(
+    'updateChild 的寫法：改預產期時一併改 pregnancyData 的兩個日期',
+    alice.patch('children/c4', {
+      name: '小芽',
+      birthday: '2027-03-20',
+      gestationalAgeWeeks: null,
+      gestationalAgeDays: null,
+      'pregnancyData/dueDate': '2027-03-20',
+      'pregnancyData/lastPeriodDate': '2026-06-13',
+    }),
+  );
+  await expectAllowed(
+    'recordBirth 的寫法：出生日、性別、isPregnancy=false、pregnancyData/status 一起改',
+    alice.patch('children/c4', {
+      birthday: '2027-03-18',
+      gender: 'female',
+      isPregnancy: false,
+      'pregnancyData/status': 'archived',
+    }),
+  );
+  await expectAllowed(
+    '早產週數與天數寫得進去',
+    alice.patch('children/c1', { gestationalAgeWeeks: 32, gestationalAgeDays: 3 }),
+  );
+  await expectAllowed(
+    '清掉早產週數是寫 null，不會被 validate 擋（updateChild 的寫法）',
+    alice.patch('children/c1', {
+      name: '小豆',
+      birthday: '2026-02-01',
+      gestationalAgeWeeks: null,
+      gestationalAgeDays: null,
+    }),
+  );
+  await expectDenied('gender 不是 male／female 就不給寫', alice.put('children/c1/gender', 'other'));
+  await expectDenied('isPregnancy 不是布林值就不給寫', alice.put('children/c1/isPregnancy', 'yes'));
+  await expectDenied(
+    '出生週數低於 20 就不給寫（與 correctedAge 的範圍一致）',
+    alice.put('children/c1/gestationalAgeWeeks', 19),
+  );
+  await expectDenied('出生週數高於 42 就不給寫', alice.put('children/c1/gestationalAgeWeeks', 43));
+  await expectDenied('出生週數是字串就不給寫', alice.put('children/c1/gestationalAgeWeeks', '32'));
+  await expectDenied('出生天數超過 6 就不給寫', alice.put('children/c1/gestationalAgeDays', 7));
+  await expectDenied(
+    'pregnancyData.status 不是 active／archived 就不給寫',
+    alice.put('children/c4/pregnancyData/status', 'done'),
+  );
+  await expectDenied(
+    'pregnancyData 裡塞不認識的欄位會被擋',
+    alice.put('children/c4/pregnancyData/hospital', 'x'.repeat(50)),
+  );
+  await expectDenied('createdAt 超過 40 字就不給寫', alice.put('children/c1/createdAt', 'x'.repeat(41)));
+  await expectDenied('id 超過 64 字就不給寫', alice.put('children/c1/id', 'x'.repeat(65)));
+  await expectDenied(
+    '孩子節點塞不認識的欄位會被擋',
+    alice.put('children/c1/payload', 'x'.repeat(50)),
+  );
+  await expectDenied(
+    '紀錄搬到 childRecords 之後，舊路徑 children/$childId/dailyLogs 不再收寫入',
+    alice.put('children/c1/dailyLogs/log1', dailyLog()),
+  );
+
+  console.log('\n孩子節點：每個子樹的形狀');
+  await expectAllowed(
+    '里程碑：達成時連日期一起寫（updateMilestoneProgress 的寫法）',
+    alice.put('children/c1/milestoneProgress/m2', { achieved: true, achievedDate: DATE }),
+  );
+  await expectAllowed(
+    '里程碑：取消達成時只剩 achieved=false',
+    alice.put('children/c1/milestoneProgress/m2', { achieved: false }),
+  );
+  await expectDenied(
+    '里程碑：achieved 不是布林值就不給寫',
+    alice.put('children/c1/milestoneProgress/m-bad', { achieved: 'yes' }),
+  );
+  await expectDenied(
+    '里程碑：日期不是 YYYY-MM-DD 的長度就不給寫',
+    alice.put('children/c1/milestoneProgress/m-bad', { achieved: true, achievedDate: ISO }),
+  );
+  await expectDenied(
+    '里程碑：少了 achieved 就不給寫',
+    alice.put('children/c1/milestoneProgress/m-bad', { achievedDate: DATE }),
+  );
+  await expectDenied(
+    '里程碑：塞不認識的欄位會被擋',
+    alice.put('children/c1/milestoneProgress/m-bad', { achieved: true, payload: 'x'.repeat(50) }),
+  );
+
+  await expectAllowed(
+    '疫苗：一劑一筆（updateVaccineProgress 的寫法）',
+    alice.put('children/c1/vaccineProgress/v1/doses/1', { administered: true, administeredDate: DATE }),
+  );
+  await expectDenied(
+    '疫苗：administered 不是布林值就不給寫',
+    alice.put('children/c1/vaccineProgress/v1/doses/2', { administered: 1 }),
+  );
+  await expectDenied(
+    '疫苗：劑次裡塞不認識的欄位會被擋',
+    alice.put('children/c1/vaccineProgress/v1/doses/2', { administered: true, lot: 'x'.repeat(50) }),
+  );
+  await expectDenied(
+    '疫苗：疫苗底下只有 doses',
+    alice.put('children/c1/vaccineProgress/v1/notes', 'x'.repeat(50)),
+  );
+
+  await expectAllowed(
+    '發展檢核：達成時連日期一起寫（updateDevelopmentProgress 的寫法）',
+    alice.put('children/c1/developmentProgress/d1', { achieved: true, achievedDate: DATE }),
+  );
+  await expectDenied(
+    '發展檢核：塞不認識的欄位會被擋',
+    alice.put('children/c1/developmentProgress/d-bad', { achieved: true, payload: 'x'.repeat(50) }),
+  );
+
+  await expectAllowed(
+    '乳牙：萌出時連日期一起寫（updateToothProgress 的寫法）',
+    alice.put('children/c1/toothProgress/t1', { erupted: true, eruptedDate: DATE }),
+  );
+  await expectDenied(
+    '乳牙：erupted 不是布林值就不給寫',
+    alice.put('children/c1/toothProgress/t-bad', { erupted: 'yes' }),
+  );
+
+  await expectAllowed(
+    '產檢：完成日期、院所、備註（upsertPrenatalRecord 的寫法）',
+    alice.put('children/c4/prenatalProgress/p1', { completedDate: DATE, clinicName: '某婦產科', notes: '一切正常' }),
+  );
+  await expectDenied(
+    '產檢：少了 completedDate 就不給寫',
+    alice.put('children/c4/prenatalProgress/p-bad', { clinicName: '某婦產科' }),
+  );
+  await expectDenied(
+    '產檢：備註超過 2000 字就不給寫',
+    alice.put('children/c4/prenatalProgress/p-bad', { completedDate: DATE, notes: 'x'.repeat(2001) }),
+  );
+  await expectDenied(
+    '產檢：塞不認識的欄位會被擋',
+    alice.put('children/c4/prenatalProgress/p-bad', { completedDate: DATE, payload: 'x'.repeat(50) }),
+  );
+
+  await expectAllowed(
+    '照護任務：整筆寫入（upsertCareTaskRecord 的寫法）',
+    alice.put('children/c1/careTaskProgress/task1', {
+      taskId: 'task1',
+      completedDate: DATE,
+      location: '某小兒科',
+      notes: '順利',
+    }),
+  );
+  await expectDenied(
+    '照護任務：taskId 超過 64 字就不給寫',
+    alice.put('children/c1/careTaskProgress/t-bad', { taskId: 'x'.repeat(65), completedDate: DATE }),
+  );
+  await expectDenied(
+    '照護任務：塞不認識的欄位會被擋',
+    alice.put('children/c1/careTaskProgress/t-bad', { taskId: 't-bad', completedDate: DATE, payload: 'x'.repeat(50) }),
+  );
+
+  // 陣列會被 SDK 寫成 0、1、… 為鍵的物件，所以 trialDates 與 allergyReactions
+  // 各是一層萬用字元。
+  await expectAllowed(
+    '副食品：完整一筆，含嘗試日期清單與過敏反應清單（addFoodTrial 的寫法）',
+    alice.put('children/c1/foodTrackingProgress/f1', foodTrial()),
+  );
+  await expectAllowed(
+    '副食品：多記一次嘗試是部分更新（handleAddTrialDate 的寫法）',
+    alice.patch('children/c1/foodTrackingProgress/f1', {
+      trialDates: [DATE, '2026-09-02', '2026-09-03'],
+      updatedAt: ISO,
+    }),
+  );
+  await expectDenied(
+    '副食品：過敏反應裡塞不認識的欄位會被擋',
+    alice.put(
+      'children/c1/foodTrackingProgress/f-bad',
+      foodTrial({ id: 'f-bad', allergyReactions: [{ type: 'rash', severity: 'mild', date: DATE, photo: 'x'.repeat(50) }] }),
+    ),
+  );
+  await expectDenied(
+    '副食品：過敏嚴重度不在清單裡就不給寫',
+    alice.put(
+      'children/c1/foodTrackingProgress/f-bad',
+      foodTrial({ id: 'f-bad', allergyReactions: [{ type: 'rash', severity: 'fatal', date: DATE }] }),
+    ),
+  );
+  await expectDenied(
+    '副食品：喜好度不在五個值裡就不給寫',
+    alice.put('children/c1/foodTrackingProgress/f-bad', foodTrial({ id: 'f-bad', preference: 'meh' })),
+  );
+  await expectDenied(
+    '副食品：hasAllergy 不是布林值就不給寫',
+    alice.put('children/c1/foodTrackingProgress/f-bad', foodTrial({ id: 'f-bad', hasAllergy: 'no' })),
+  );
+  await expectDenied(
+    '副食品：嘗試日期不是字串就不給寫',
+    alice.put('children/c1/foodTrackingProgress/f-bad', foodTrial({ id: 'f-bad', trialDates: [20260901] })),
+  );
+  await expectDenied(
+    '副食品：食物名稱超過 100 字就不給寫',
+    alice.put('children/c1/foodTrackingProgress/f-bad', foodTrial({ id: 'f-bad', foodName: 'x'.repeat(101) })),
+  );
+  await expectDenied(
+    '副食品：塞不認識的欄位會被擋',
+    alice.put('children/c1/foodTrackingProgress/f-bad', foodTrial({ id: 'f-bad', payload: 'x'.repeat(50) })),
   );
 
   console.log('\n刪除：一次原子寫入');

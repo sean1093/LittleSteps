@@ -204,7 +204,7 @@ OpenStreetMap 的資料。它的每一句宣稱都是 `src/common/about/dataSour
 ### 資料庫結構
 
 ```
-users/$uid                 email, displayName, childrenIds, currentChildId
+users/$uid                 childrenIds, currentChildId
                            childrenIds 只是這個帳號要訂閱的孩子清單，
                            授權看的是下面的 members
 children/$childId          id, name, birthday, gender, createdAt, createdBy,
