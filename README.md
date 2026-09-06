@@ -63,7 +63,10 @@ group headings answer it rather than leaving six equal rows to be read through.
 - **Next dose** — the dashboard card and the clinic summary name only publicly funded
   doses, resolved by one shared implementation that also drops doses the child has
   aged past, so a dose the family would have to buy is never presented as the next
-  scheduled one
+  scheduled one. With no next dose the card still gives a number rather than going
+  quiet: how many publicly funded doses are unrecorded, or, once none are, how many
+  doses sit outside the routine public schedule and remain available — a count and
+  their availability, never a product to buy
 - **Quick log** — feeding, sleep and nappies in a couple of taps, or one tap to repeat
   the last one. The form reopens with the values this child was logged with, scoped to
   the child rather than the account, so a parent of a formula-fed and a breastfed baby
