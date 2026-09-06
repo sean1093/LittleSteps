@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Milk, Moon, Baby, Edit, Trash2 } from 'lucide-react';
+import { Milk, Droplets, Moon, Baby, Edit, Trash2 } from 'lucide-react';
 import { DailyLog, FeedingData, SleepData, DiaperData } from '../../../types';
 import { formatTime, formatDuration, isSameDay, calculateDuration } from '../../../common/utils/dateHelpers';
 import {
@@ -51,11 +51,19 @@ export default function LogTimeline({
   /*
     The one place a per-row icon earns its keep: three log types interleave in a
     long scroll, and the glyph is what lets you find "the feeds" at a glance.
+
+    擠奶因此不能掛餵奶的奶瓶：那一列的字已經寫著「擠奶」，圖示卻還說它是一餐，
+    掃過去找餵奶的家長會停在自己的擠奶紀錄上——跟總量把它加進去是同一個錯誤。
+    水滴是擠出來的量，不是喝進去的。
   */
-  const getLogIcon = (type: DailyLog['type']) => {
-    switch (type) {
+  const getLogIcon = (log: DailyLog) => {
+    switch (log.type) {
       case 'feeding':
-        return <Milk className="w-5 h-5 text-butter-dark" />;
+        return isPumpingLog(log) ? (
+          <Droplets className="w-5 h-5 text-primary-dark" />
+        ) : (
+          <Milk className="w-5 h-5 text-butter-dark" />
+        );
       case 'sleep':
         return <Moon className="w-5 h-5 text-secondary-dark" />;
       case 'diaper':
@@ -132,7 +140,7 @@ export default function LogTimeline({
       {todayLogs.map((log) => (
         <motion.div key={log.id} variants={listItem} className="card">
           <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 mt-1">{getLogIcon(log.type)}</div>
+            <div className="flex-shrink-0 mt-1">{getLogIcon(log)}</div>
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
