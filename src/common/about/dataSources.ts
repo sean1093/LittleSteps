@@ -1,4 +1,5 @@
 import type { ViewPreferences } from '../preferences';
+import nursingRoomsMeta from '../../babyoasis/data/nursingRoomsMeta.json';
 
 /**
  * What the about page claims, as data rather than prose.
@@ -61,9 +62,9 @@ export const DATA_SOURCES: DataSource[] = [
     dataset: '哺集乳室地圖與依法應設置場所名單',
     what: '哺乳室地圖上的每一個地點、座標、設施與開放時間',
     sourceUrl: 'https://mammy.hpa.gov.tw/',
-    // The build script stamps no date; this is the day the dataset was last
-    // regenerated and committed.
-    verifiedOn: '2026-09-04',
+    // Stamped by scripts/buildNursingRooms.cjs into the sidecar the map's
+    // attribution reads too, so the two can never show different dates.
+    verifiedOn: nursingRoomsMeta.verifiedOn,
   },
   {
     agency: '衛生福利部社會及家庭署',

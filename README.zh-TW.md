@@ -368,7 +368,11 @@ formula 是 keg-only，`/opt/homebrew/opt/openjdk/bin` 必須在 `PATH` 上，�
 `scripts/buildNursingRooms.cjs` 重新產生；親子館名單是
 `public/data/familyCentres.json`，來自 `scripts/buildFamilyCentres.cjs`。它被
 排除在 PWA 預快取之外，改成第一次進地圖時才抓 — 1.1 MB 不該讓一個從來不開
-BabyOasis 的人下載。
+BabyOasis 的人下載。同一支腳本也會寫出
+`src/babyoasis/data/nursingRoomsMeta.json`：這次執行的日期、來源、授權與筆數。
+陣列本身沒有日期，地圖的資料來源標註與關於頁的查證日期都從這個 sidecar 讀，
+所以兩邊不可能不一致；有測試拿它的筆數對著陣列比，資料重新產生了而 sidecar
+沒跟上就會轉紅。
 
 捷運站清單在 `src/babyoasis/data/mrtStations.json`，由
 `scripts/buildMrtStations.cjs` 從 OpenStreetMap 的 Overpass API 重新產生。它

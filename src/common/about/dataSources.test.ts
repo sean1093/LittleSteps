@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import type { NursingRoom, RadarData, Venue } from '../../types';
+import nursingRoomsMeta from '../../babyoasis/data/nursingRoomsMeta.json';
 import { vaccineSchedules } from '../../littlesteps/data/vaccines';
 import { babyWikiArticles } from '../../littlesteps/data/babyWiki';
 import { pregnancyWikiArticles } from '../../littlebloom/data/wiki';
@@ -105,6 +106,28 @@ describe('the source cards', () => {
       (source) => !isRealDate(source.verifiedOn) || source.verifiedOn > today,
     );
     expect(bad.map((source) => `${source.dataset} ${source.verifiedOn}`)).toEqual([]);
+  });
+
+  it('take the nursing-room date from the sidecar the build script writes', () => {
+    // The dataset is a bare array with no date of its own, so the date lives in
+    // a sidecar next to it. The sidecar is only trustworthy while it describes
+    // the array that is actually shipped: a regenerated nursingRooms.json with a
+    // stale sidecar would put last month's date under this month's rooms, and
+    // the counts are what catch that.
+    expect(nursingRoomsMeta.count).toBe(rooms.length);
+    expect(nursingRoomsMeta.statutoryCount).toBe(rooms.filter((room) => room.statutory).length);
+    expect(isRealDate(nursingRoomsMeta.verifiedOn)).toBe(true);
+    expect(Number.isNaN(Date.parse(nursingRoomsMeta.generatedAt))).toBe(false);
+    // generatedAt is UTC and verifiedOn is the local calendar day of the same
+    // run, so they may differ by one day across midnight — never by more.
+    const generatedDay = nursingRoomsMeta.generatedAt.slice(0, 10);
+    const dayApart =
+      Math.abs(Date.parse(generatedDay) - Date.parse(nursingRoomsMeta.verifiedOn)) /
+      86_400_000;
+    expect(dayApart).toBeLessThanOrEqual(1);
+
+    const card = DATA_SOURCES.find((source) => source.what.includes('哺乳室地圖上'));
+    expect(card?.verifiedOn).toBe(nursingRoomsMeta.verifiedOn);
   });
 
   it('each say what in the app is built from them', () => {

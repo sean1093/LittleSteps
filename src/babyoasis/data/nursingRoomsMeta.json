@@ -1,0 +1,13 @@
+{
+  "generatedAt": "2026-09-04T15:17:00.000Z",
+  "verifiedOn": "2026-09-04",
+  "source": "衛生福利部國民健康署 哺集乳室地圖、依法應設置哺集乳室公共場所名單",
+  "sourceUrls": [
+    "https://mammy.hpa.gov.tw/Map/AjaxBreastfeedingRoom",
+    "https://www.hpa.gov.tw/Pages/ashx/GetFile.ashx?lang=c&type=1&sid=61bc18faca974bd78e36ed1c04d16dc8",
+    "https://data.gov.tw/dataset/23750"
+  ],
+  "license": "政府資料開放授權條款第 1 版；地圖資料依 https://mammy.hpa.gov.tw/Home/CopyRight 標示來源",
+  "count": 3852,
+  "statutoryCount": 2792
+}
