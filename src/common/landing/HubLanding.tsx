@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import type { User } from 'firebase/auth';
 import { fadeInUp, hoverLift, listItem, stagger, tap } from '../ui/motion';
 import { pressable } from '../ui/pressable';
+import { goTo } from '../navigate';
 import { SERVICE_ORDER, SERVICE_THEME } from '../ui/serviceTheme';
 import type { ServiceId } from '../ui/serviceTheme';
 
@@ -208,12 +209,16 @@ export default function HubLanding({
         </section>
       ))}
 
-      {/* 這一頁最有說服力的一段，而它原本只寫在各服務自己的頁面裡。 */}
+      {/* 這一頁最有說服力的一段，而它原本只寫在各服務自己的頁面裡。整塊就是
+          進關於頁的入口——那一頁把「誰看得到孩子的紀錄」和「每個數字從哪來」
+          講完整；這裡不另加一顆按鈕，也不再開第二個區塊。 */}
       <motion.section
         initial="hidden"
         animate="visible"
         variants={fadeInUp}
-        className="panel space-y-2"
+        {...pressable(() => goTo('about'))}
+        aria-label="資料從哪裡來，以及孩子的紀錄怎麼保護"
+        className="panel-tap space-y-2"
       >
         <h2 className="text-ink">資料從哪裡來</h2>
         <p className="text-sm text-ink-muted leading-relaxed">
@@ -221,6 +226,9 @@ export default function HubLanding({
           WHO 的標準。
         </p>
         <p className="text-sm text-ink-faint">每一頁都寫得出自己的來源與查證日期。</p>
+        <p className={`text-sm font-medium ${SERVICE_THEME.littlesteps.ink}`}>
+          看完整說明：孩子的紀錄存在哪裡、誰看得到
+        </p>
       </motion.section>
 
       {/* 登入放在頁尾而不是標題底下：先看得到值，再決定要不要交出帳號。

@@ -43,6 +43,7 @@ const DevelopmentPage = lazy(() => import('./littleexplorer/pages/DevelopmentPag
 const RemindersPage = lazy(() => import('./littleexplorer/pages/RemindersPage'));
 const DiaryPage = lazy(() => import('./littleexplorer/pages/DiaryPage'));
 const ToddlerWikiPage = lazy(() => import('./littleexplorer/pages/ToddlerWikiPage'));
+const AboutPage = lazy(() => import('./common/about/AboutPage'));
 import FeedbackButton from './common/components/FeedbackButton';
 import { toLocalDateKey } from './common/utils/dateHelpers';
 
@@ -181,8 +182,12 @@ function AppContent() {
 
   // LittleBloom (hub + wiki), BabyOasis and LittleGuard are standalone sub-apps
   // that render their own chrome, so the LittleSteps header/sidebar stays hidden
-  // for them.
+  // for them. The about page is not a LittleSteps page either: it describes all
+  // six services and renders its own AppBar. Leaving it out of this list would
+  // mount the LittleSteps sidebar on it with a `currentPage` that is not a
+  // LittleStepsPage — the cast below would be a lie.
   const isStandaloneSubApp =
+    currentPage === 'about' ||
     currentPage.startsWith('littlebloom') ||
     currentPage.startsWith('littleexplorer') ||
     currentPage === 'littleouting' ||
@@ -489,6 +494,7 @@ function AppContent() {
         )}
 
         {/* Standalone sub-app routes */}
+        {currentPage === 'about' && <AboutPage />}
         {currentPage === 'littleouting' && <OutingPage />}
         {currentPage === 'babyoasis' && <BabyOasisPage />}
         {currentPage === 'littleguard' && <RadarPage />}

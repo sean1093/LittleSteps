@@ -24,6 +24,8 @@ import type { ServiceId } from './ui/serviceTheme';
 // 會編譯失敗，而不是安靜地把一頁公開頁變成需登入（或反過來）。
 const PUBLIC_PAGES: Partial<Record<Page, true>> = {
   home: true,
+  // 這一頁就是寫給還沒決定要不要交出帳號的人看的，擋起來等於自相矛盾。
+  about: true,
   'littlesteps/baby-wiki': true,
   'littlesteps/care-guide': true,
   'littlesteps/sleep-training': true,
@@ -40,9 +42,15 @@ export function requiresAuth(page: Page): boolean {
   return PUBLIC_PAGES[page] !== true;
 }
 
-/** 頁面所屬的服務；`home` 不屬於任何服務，回傳 null。 */
+/**
+ * 頁面所屬的服務；`home` 與 `about` 不屬於任何服務，回傳 null。
+ *
+ * 最後一行是 fallthrough 到 babyoasis。一個不屬於任何服務的頁面要是沒有在
+ * 這裡明講，不會壞，只會被當成 BabyOasis 的頁面——landingKindFor 與主題查表
+ * 都會跟著錯。
+ */
 export function serviceOf(page: Page): ServiceId | null {
-  if (page === 'home') return null;
+  if (page === 'home' || page === 'about') return null;
   if (page.startsWith('littlesteps')) return 'littlesteps';
   if (page.startsWith('littlebloom')) return 'littlebloom';
   if (page.startsWith('littleexplorer')) return 'littleexplorer';

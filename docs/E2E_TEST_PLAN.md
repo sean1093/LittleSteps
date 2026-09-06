@@ -98,8 +98,8 @@ We adopt a **two-phase** strategy.
 
 ### Phase 1 — public routes, dummy credentials (no production code changes)
 
-`routePolicy.ts` makes nine pages public: the hub, the three wikis, the care
-guide, the sleep guide, LittleOuting, BabyOasis and LittleGuard. None of them
+`routePolicy.ts` makes ten pages public: the hub, the about page, the three
+wikis, the care guide, the sleep guide, LittleOuting, BabyOasis and LittleGuard. None of them
 reads a child's record, so dummy `VITE_FIREBASE_*` values are enough to get the
 app to boot and **no child's record is ever requested**: both `useUserChildren`
 and `useFirebaseCollection` early-return on a null user, so no database listener

@@ -10,7 +10,7 @@ import { SleepGuidePage } from './sleepGuidePage';
 import { WikiBrowserPage } from './wikiBrowserPage';
 
 /**
- * The nine routes a visitor reaches without an account.
+ * The ten routes a visitor reaches without an account.
  *
  * Selectors and navigation only; the assertions live in the specs (plan §9).
  *
@@ -23,7 +23,7 @@ import { WikiBrowserPage } from './wikiBrowserPage';
  *   and so does the LittleExplorer intro page.
  * - `ready` — "the runtime data has arrived and the page is finished". What
  *   the layout invariants and the console sweep wait on before measuring:
- *   three of the nine fetch a data file after mount, and measuring the painted
+ *   three of the ten fetch a data file after mount, and measuring the painted
  *   shell measures the wrong page.
  *
  * They coincide on some routes and diverge on others, so both are stated per
@@ -63,6 +63,9 @@ const CONTENT: Partial<Record<Page, (page: BrowserPage) => Locator>> = {
   // answer — which of the six services is mine — so it is the last thing that
   // would survive the page being replaced by something else.
   home: (page) => page.getByRole('heading', { name: '依孩子的階段' }),
+  // The medical disclaimer's heading: the one section of the about page that
+  // must never be cut, so the last thing to survive the page being replaced.
+  about: (page) => page.getByRole('heading', { name: '這不是醫療建議' }),
 
   'littlesteps/care-guide': (page) => page.getByRole('heading', { name: '按月齡照顧重點' }),
   'littlesteps/sleep-training': (page) => page.getByRole('heading', { name: '睡眠時間參考表' }),
@@ -88,6 +91,8 @@ const CONTENT: Partial<Record<Page, (page: BrowserPage) => Locator>> = {
 const READY: Partial<Record<Page, (page: BrowserPage) => Locator>> = {
   // The hub has no `AppBar`, so its `h1` is the only one on the page.
   home: (page) => new HubPage(page).title,
+  // Static page: the first source card's link is real content, not AppBar.
+  about: (page) => page.getByRole('link', { name: '開啟原始資料' }).first(),
   'littlesteps/care-guide': (page) => new CareGuidePage(page).cardTitles.first(),
   'littlesteps/sleep-training': (page) => new SleepGuidePage(page).ritualSteps.first(),
   'littlesteps/baby-wiki': (page) =>

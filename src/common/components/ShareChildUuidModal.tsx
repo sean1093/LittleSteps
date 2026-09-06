@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChildProfile } from '../../types';
 import ModalFrame from './ModalFrame';
 import { confirmDelete } from '../ui/confirmDelete';
+import { goTo } from '../navigate';
 
 interface ShareChildUuidModalProps {
   isOpen: boolean;
@@ -174,6 +175,18 @@ export default function ShareChildUuidModal({
       <p className="text-sm text-ink-muted">
         代碼就是這份寶寶資料的編號，換不了新的一組。要收回分享，只能移除其他帳號的存取權——移除時會一併關掉「開放用代碼加入」，流出去的舊代碼就再也加不進來。
       </p>
+
+      {/* 把代碼交出去的這一刻，是家長最想知道「這份資料到底怎麼被保護」的時候。 */}
+      <button
+        type="button"
+        onClick={() => {
+          onClose();
+          goTo('about');
+        }}
+        className="btn-ghost w-full mt-2 text-secondary-dark"
+      >
+        看看孩子的紀錄怎麼被保護
+      </button>
 
       {memberCount > 1 && (
         <button

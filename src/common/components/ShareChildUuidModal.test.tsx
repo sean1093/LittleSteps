@@ -157,3 +157,15 @@ describe('複製代碼', () => {
     expect(writeText).not.toHaveBeenCalled();
   });
 });
+
+describe('資料怎麼被保護', () => {
+  it('把代碼交出去的這扇窗，連得到關於頁，並且先把自己關掉', async () => {
+    window.history.replaceState(null, '', '/');
+    const { onClose, user } = renderModal(makeChild());
+
+    await user.click(screen.getByRole('button', { name: '看看孩子的紀錄怎麼被保護' }));
+
+    expect(onClose).toHaveBeenCalled();
+    expect(window.location.pathname).toBe('/about');
+  });
+});
