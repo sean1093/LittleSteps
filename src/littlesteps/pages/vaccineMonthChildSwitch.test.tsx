@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useState } from 'react';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ChildProfile } from '../../types';
 import ChildSwitcher from '../../common/components/ChildSwitcher';
+import { toLocalDateKey } from '../../common/utils/dateHelpers';
 import {
   ChildStoreProvider,
   useChildStoreContext,
@@ -67,15 +68,31 @@ vi.mock('../../contexts/AuthContext', () => {
   return { useAuth: () => value, useOptionalAuth: () => value };
 });
 
-/** A child exactly `months` old today, so the test cannot age out. */
+/**
+ * A child exactly `months` old today, so the test cannot age out.
+ *
+ * The obvious `birth.setMonth(birth.getMonth() - months)` is wrong nine days a
+ * year: on the 29th to the 31st the target month may be shorter, and `setMonth`
+ * rolls the overflow forward instead of clamping. Run on 31 August, minus six
+ * months lands on 3 March -- five months and change, so the filter derives the
+ * previous group and the assertions go red on a calendar date rather than on a
+ * defect. Clamping to the target month's last day is what "exactly N months
+ * old" means.
+ *
+ * `toLocalDateKey`, not `toISOString().slice(0, 10)`: the latter converts a
+ * local midnight to UTC, which is the previous day everywhere west of UTC and
+ * makes the same assertions depend on the hour the suite runs.
+ */
 const childAged = (
   months: number,
   over: Pick<ChildProfile, 'id' | 'name'> & Partial<ChildProfile>,
 ): ChildProfile => {
-  const birth = new Date();
-  birth.setMonth(birth.getMonth() - months);
+  const today = new Date();
+  const birth = new Date(today.getFullYear(), today.getMonth() - months, 1);
+  const lastDayOfBirthMonth = new Date(birth.getFullYear(), birth.getMonth() + 1, 0).getDate();
+  birth.setDate(Math.min(today.getDate(), lastDayOfBirthMonth));
   return {
-    birthday: birth.toISOString().slice(0, 10),
+    birthday: toLocalDateKey(birth),
     milestoneProgress: {},
     vaccineProgress: {},
     createdAt: new Date().toISOString(),
@@ -85,10 +102,9 @@ const childAged = (
   };
 };
 
-/**
- * The schedule's month groups are 0, 1, 2, 4, 5, 6, 12, 15, 18, 27, 48 and 60,
- * and the filter picks the last one the child has reached.
- */
+// The schedule's month groups are 0, 1, 2, 4, 5, 6, 12, 15, 18, 27, 48 and 60,
+// and the filter picks the last one the child has reached.
+
 /** Six months old: the filter derives 6. */
 const bean = childAged(6, { id: 'c1', name: '小豆' });
 /** Twenty-seven months old: the filter derives 27. */
@@ -158,6 +174,37 @@ describe('switching child on the vaccine tracking page', () => {
     expect(await screen.findByRole('button', { name: '寶寶 小樹' })).toBeInTheDocument();
     expect(monthChip('2個月')).toHaveAttribute('aria-pressed', 'true');
     expect(monthChip('27個月')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('honours a pick of 0個月, the one value JavaScript calls falsy', async () => {
+    // Not a redundant third pick. The precedence is written with `??`, and `||`
+    // reads identically until the parent picks something falsy. 0 is one, and
+    // it is not hypothetical: the birth group holds three real doses
+    // (vaccines.ts:28,46,59). Under `||` the 「0個月」 chip would be inert --
+    // tapping it drops straight back to the derived group, with nothing
+    // anywhere reporting an error. Every other case here passes under `||`.
+    const user = renderScreen();
+    expect(monthChip('6個月')).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(monthChip('0個月'));
+
+    expect(monthChip('0個月')).toHaveAttribute('aria-pressed', 'true');
+    expect(monthChip('6個月')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('honours a pick of 全部, which no other case taps', async () => {
+    // Scoped to the month row: 「全部」 is also the first funding chip, so an
+    // unscoped query matches two buttons. (That ambiguity is a real one for a
+    // screen reader too -- filed separately, not fixed here.) The row is
+    // reached through a month chip rather than by class, because the class is
+    // styling and the chip is the thing under test.
+    const user = renderScreen();
+    const monthRow = within(monthChip('6個月').parentElement as HTMLElement);
+
+    await user.click(monthRow.getByRole('button', { name: '全部' }));
+
+    expect(monthRow.getByRole('button', { name: '全部' })).toHaveAttribute('aria-pressed', 'true');
+    expect(monthChip('6個月')).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('follows a birthday correction on the child already selected', async () => {
