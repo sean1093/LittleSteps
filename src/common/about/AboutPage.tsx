@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, ExternalLink } from 'lucide-react';
 import AppBar from '../ui/AppBar';
@@ -43,7 +43,7 @@ function Section({
 }: {
   title: string;
   tinted?: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <motion.section
@@ -59,7 +59,7 @@ function Section({
 }
 
 /** Body copy, one paragraph per sentence group. */
-function P({ children }: { children: React.ReactNode }) {
+function P({ children }: { children: ReactNode }) {
   return <p className="text-sm text-ink-muted leading-relaxed">{children}</p>;
 }
 
@@ -250,7 +250,9 @@ export default function AboutPage() {
           </AnimatePresence>
         </div>
 
-        <footer className="text-center space-y-1 pb-4">
+        {/* pb-20 keeps the last line clear of the floating feedback button a
+            signed-in parent has at the bottom right. */}
+        <footer className="text-center space-y-1 pb-20">
           <p className="text-xs text-ink-faint">最後更新 {ABOUT_LAST_UPDATED}</p>
           <p className="text-xs text-ink-faint">
             {signedIn
