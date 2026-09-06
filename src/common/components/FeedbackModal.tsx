@@ -4,6 +4,7 @@ import ModalFrame from './ModalFrame';
 import { tap } from '../ui/motion';
 import { SERVICE_THEME } from '../ui/serviceTheme';
 import { FEEDBACK_FAILED_MESSAGE } from '../hooks/useFirebaseChildren';
+import { FEEDBACK_CONTENT_LIMIT } from '../feedbackLimits';
 import {
   CLAIM_NOT_PUBLISHED,
   VENUE_REPORT_NOTE_LIMIT,
@@ -321,6 +322,9 @@ export default function FeedbackModal({
                 className={`${FIELD} resize-none`}
                 rows={6}
                 placeholder="請詳細描述您遇到的問題或想要的功能（至少 10 個字）"
+                // 上限就是規則的上限。超過規則的長度回來的是和一分鐘限制同一個
+                // PERMISSION_DENIED，表單擋在這裡，那個拒絕才只剩一個意思。
+                maxLength={FEEDBACK_CONTENT_LIMIT}
                 disabled={isSubmitting}
               />
               <div className="flex justify-between items-center mt-1">
@@ -333,7 +337,7 @@ export default function FeedbackModal({
                    `還需要 ${10 - contentLength} 個字`}
                 </p>
                 <p className="text-xs text-ink-faint">
-                  {contentLength}/500
+                  {contentLength}/{FEEDBACK_CONTENT_LIMIT}
                 </p>
               </div>
             </div>
