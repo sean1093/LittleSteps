@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type { ChildProfile, DailyLog, DailyLogPatch, FeedingData, SleepData } from '../../types';
 import { ToastProvider } from '../../common/ui/toast';
 import DailyLogPage from './DailyLogPage';
+import { getFeedingTypeLabel } from '../utils/logHelpers';
 
 /**
  * 這一頁以前把 addDailyLog 的失敗接住變成一則 toast，於是 LogEntryModal 收到的
@@ -197,7 +198,7 @@ describe('沿用上一筆', () => {
       </ToastProvider>,
     );
 
-    await user.click(screen.getByRole('button', { name: /再記一次|餵奶（配方奶 120 ml）/ }));
+    await user.click(screen.getByRole('button', { name: '餵奶 · 配方奶 120 ml' }));
 
     expect(addDailyLog).toHaveBeenCalledTimes(1);
     const [, written] = addDailyLog.mock.calls[0];
@@ -219,7 +220,7 @@ describe('沿用上一筆', () => {
       </ToastProvider>,
     );
 
-    await user.click(screen.getByRole('button', { name: /再記一次|餵奶（/ }));
+    await user.click(screen.getByRole('button', { name: /^餵奶 · / }));
 
     expect(addDailyLog).toHaveBeenCalledTimes(1);
     const [childId, written] = addDailyLog.mock.calls[0];
@@ -242,10 +243,28 @@ describe('沿用上一筆', () => {
       </ToastProvider>,
     );
 
-    await user.click(screen.getByRole('button', { name: /再記一次|餵奶（/ }));
+    await user.click(screen.getByRole('button', { name: /^餵奶 · / }));
 
     const [, written] = addDailyLog.mock.calls[0];
     expect((written.data as FeedingData).notes).toBeUndefined();
+  });
+
+  /*
+    「母乳（瓶餵）」自己就帶括號，所以用括號把內容包起來的拼法會寫出
+    「餵奶（母乳（瓶餵） 120 ml）」——一顆 chip 上兩層全形括號，在 320px 上
+    讀起來是一團符號，而這顆按鈕的整段文字就是它會存什麼的唯一說明。
+  */
+  it('帶括號的餵奶類型不會讓按鈕再包一層括號', () => {
+    readState.logs = [feedingLog('bottle', 'c1', { feedingType: 'breast_milk_bottle', amount: 120 })];
+    render(
+      <ToastProvider>
+        <DailyLogPage currentChild={child} user={null} />
+      </ToastProvider>,
+    );
+
+    expect(
+      screen.getByRole('button', { name: `餵奶 · ${getFeedingTypeLabel('breast_milk_bottle')} 120 ml` }),
+    ).toBeInTheDocument();
   });
 
   it('尿布表單也帶出這個孩子上次的類型與性狀', async () => {
@@ -275,7 +294,7 @@ describe('沿用上一筆', () => {
 
   /*
     擠奶是這個孩子最新的一筆 feeding 型別紀錄，但它不是一餐。把它當成「上次的
-    餵奶」有兩個錯：按鈕會寫成「餵奶（擠奶 90 ml）」，而剛擠完奶的媽媽從此
+    餵奶」有兩個錯：按鈕會寫成「餵奶 · 擠奶 90 ml」，而剛擠完奶的媽媽從此
     再也叫不出「再餵一次上次那餐」。
   */
   it('最近一筆是擠奶時，餵奶與擠奶各有各的按鈕', async () => {
@@ -305,10 +324,10 @@ describe('沿用上一筆', () => {
       </ToastProvider>,
     );
 
-    expect(screen.queryByRole('button', { name: /餵奶（擠奶/ })).toBeNull();
-    expect(screen.getByRole('button', { name: '餵奶（配方奶 120 ml）' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^餵奶 · 擠奶/ })).toBeNull();
+    expect(screen.getByRole('button', { name: '餵奶 · 配方奶 120 ml' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: '擠奶（90 ml）' }));
+    await user.click(screen.getByRole('button', { name: '擠奶 · 90 ml' }));
 
     const [, written] = addDailyLog.mock.calls[0];
     expect((written.data as FeedingData).feedingType).toBe('pumping');

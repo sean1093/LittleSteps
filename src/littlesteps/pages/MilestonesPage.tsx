@@ -26,9 +26,17 @@ export default function MilestonesPage({
 }: MilestonesPageProps) {
   // 從孩子現在的月齡起跑，而不是從 0-2 個月。停在出生那一段對任何滿三個月
   // 以上的寶寶都是錯的起點，家長每次進來都得自己滑過去。
-  const [selectedMonth, setSelectedMonth] = useState<MonthRange>(() =>
-    monthRangeForChild(currentChild),
-  );
+  /*
+    月齡區間的優先順序：這次點的 > 孩子的月齡。跟 LittleGuard 的年齡層同一種
+    寫法（RadarPage.tsx），`null` 就是「家長還沒挑過」。
+
+    換寶寶時這一頁不會卸載（App.tsx 的錯誤邊界綁的是路由，不是孩子），所以不能
+    用 useState 的初始值：那只在掛載時算一次，篩選器會一直停在上一個寶寶的月齡，
+    六個月大切到三歲，畫面照樣拿 5-6 個月的里程碑對新寶寶打勾。每次 render 重推，
+    連改生日也跟著更新；家長挑過的則永遠贏過推導出來的值。
+  */
+  const [pickedMonth, setPickedMonth] = useState<MonthRange | null>(null);
+  const selectedMonth = pickedMonth ?? monthRangeForChild(currentChild);
   const [selectedCategory, setSelectedCategory] = useState<Category>("all");
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
 
@@ -50,7 +58,7 @@ export default function MilestonesPage({
         <ChildSwitcher service="littlesteps" className="mb-4" />
 
         <div className="mb-4">
-          <MonthPicker ranges={monthRanges} selected={selectedMonth} onChange={setSelectedMonth} />
+          <MonthPicker ranges={monthRanges} selected={selectedMonth} onChange={setPickedMonth} />
         </div>
 
         <div className="mb-4">

@@ -46,6 +46,34 @@ describe('擠奶那一列', () => {
     expect(screen.getByText('左側 · 20分鐘 · 150ml')).toBeInTheDocument();
   });
 
+  /*
+    這一列的圖示是家長在一長串混排的紀錄裡「找餵奶」用的，所以它掛錯了就會把
+    她停在自己的擠奶紀錄上。測的是「哪一個字形」——只驗「有一個 svg」的話，
+    把水滴換回奶瓶也照樣會過。Lucide 每個圖示都帶 `lucide-<name>` class，那是
+    區分得出字形的唯一把手。
+  */
+  it('不掛餵奶的奶瓶，掛的是擠出來的那個字形', () => {
+    const { container } = render(
+      <LogTimeline logs={[pumping]} onEdit={() => {}} onDelete={() => {}} />,
+    );
+
+    expect(container.querySelector('.lucide-milk')).toBeNull();
+    expect(container.querySelector('.lucide-droplets')).toBeInTheDocument();
+  });
+
+  it('真的餵進去的那幾筆還是奶瓶', () => {
+    const { container } = render(
+      <LogTimeline
+        logs={[{ ...pumping, id: 'f1', data: { feedingType: 'formula', amount: 120 } }]}
+        onEdit={() => {}}
+        onDelete={() => {}}
+      />,
+    );
+
+    expect(container.querySelector('.lucide-milk')).toBeInTheDocument();
+    expect(container.querySelector('.lucide-droplets')).toBeNull();
+  });
+
   it('瓶餵母乳仍然標成餵奶，並跟配方奶區分得出來', () => {
     const bottle: DailyLog = {
       ...pumping,
