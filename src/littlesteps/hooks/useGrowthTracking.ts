@@ -22,9 +22,11 @@ interface UseGrowthTrackingResult {
   /** 讀取被拒或斷線；沒有測量紀錄與讀不到紀錄不是同一件事。 */
   error: boolean;
   addRecord: (record: Omit<GrowthRecord, 'id'>) => Promise<void>;
+  /** opened：表單打開時帶入的那一版（GrowthChartsPage 的 editingRecord），比對的基準。 */
   updateRecord: (
     recordId: string,
-    updates: Partial<Omit<GrowthRecord, 'id' | 'childId'>>
+    updates: Partial<Omit<GrowthRecord, 'id' | 'childId'>>,
+    opened: GrowthRecord,
   ) => Promise<void>;
   deleteRecord: (recordId: string) => Promise<void>;
 }
@@ -125,28 +127,34 @@ export function useGrowthTracking(
    * 沒了，而且兩邊都不會看到任何提示。改成攤平成 <欄位> 一條一條 update()，
    * 各改各的欄位就會合併——跟 useFirebaseChildren.updateDailyLog 同一套。
    *
-   * 送進來卻是 undefined 的欄位是「清掉」，寫 null；沒送的欄位不動。
-   * 沒有任何欄位改到就不寫。
+   * 比對的基準是 opened——表單打開時帶入的那一版，不是 listener 最新的那一版。
+   * 表單每個欄位都送、沒填的送 undefined，而對方存的合併結果會在表單還開著的
+   * 時候抵達畫面：拿最新的那一版當基準，對方剛補的身高在我表單裡是空白，存下
+   * 去就變成 height: null，把它清掉。拿打開時那一版當基準，沒動過的空白兩邊都
+   * 是 undefined，什麼都不寫——跟 DailyLogPage 拿 editingLog 給 dailyLogChanges
+   * 是同一件事。
+   *
+   * percentile 兩邊都先拿掉再比：寫入端不存它，但舊紀錄存著的那一份也不能因
+   * 為表單送了 {} 就被寫成 null。送進來卻是 undefined 的欄位是「清掉」，寫
+   * null；沒送的欄位不動。沒有任何欄位改到就不寫。
    */
   const updateRecord = async (
     recordId: string,
-    updates: Partial<Omit<GrowthRecord, 'id' | 'childId'>>
+    updates: Partial<Omit<GrowthRecord, 'id' | 'childId'>>,
+    opened: GrowthRecord,
   ): Promise<void> => {
     if (!childId) {
       throw new Error('No child selected');
     }
-    const existing = storedRecords.find((r) => r.id === recordId);
-    if (!existing) {
-      throw new Error('Record not found');
-    }
-    validateRecord({ ...existing, ...updates });
+    validateRecord({ ...opened, ...updates });
 
-    const submitted: Record<string, unknown> = { ...updates, percentile: undefined };
-    const opened: Record<string, unknown> = {};
+    const submitted: Record<string, unknown> = { ...updates };
+    delete submitted.percentile;
+    const before: Record<string, unknown> = {};
     for (const key of Object.keys(submitted)) {
-      opened[key] = (existing as unknown as Record<string, unknown>)[key];
+      before[key] = (opened as unknown as Record<string, unknown>)[key];
     }
-    const paths = toUpdatePaths(changedFields(opened, submitted));
+    const paths = toUpdatePaths(changedFields(before, submitted));
     if (Object.keys(paths).length === 0) return;
 
     const recordRef = ref(database, `childRecords/${childId}/growthRecords/${recordId}`);

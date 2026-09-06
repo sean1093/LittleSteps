@@ -232,7 +232,9 @@ childRecords/$childId      dailyLogs/$logId        type (feeding|sleep|diaper),
                                                    timestamp, details
                            diaryEntries/$entryId   date, content, mood
                            growthRecords/$recordId date, weight, height,
-                                                   percentile
+                                                   percentile — 只有舊紀錄
+                                                   才有；現在讀取時算，
+                                                   不再寫入
 childIndex/$childId        true — 公開的存在索引，讓用代碼加入時
                            永遠不必去讀陌生人的孩子節點
 feedbacks/$feedbackId      title, content, userId, timestamp

@@ -117,8 +117,13 @@ describe('改一筆打錯的記錄', () => {
     await user.type(weight, '10.24');
     await user.click(screen.getByRole('button', { name: '更新' }));
 
+    // 第三個參數是打開表單時的那一版：hook 拿它當比對的基準。
     await waitFor(() =>
-      expect(updateRecord).toHaveBeenCalledWith('g1', expect.objectContaining({ weight: 10.24 })),
+      expect(updateRecord).toHaveBeenCalledWith(
+        'g1',
+        expect.objectContaining({ weight: 10.24 }),
+        expect.objectContaining({ id: 'g1', weight: 7.4 }),
+      ),
     );
   });
 
