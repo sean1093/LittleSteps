@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * lib/firebase 在其他測試裡是整個被 mock 掉的（見 test/setup.ts）；這裡要驗的
- * 是它自己在模組載入時做的決定，所以每個案例都重設模組快取、改環境變數，再
- * 用 importActual 讓它重新跑一次。
+ * Every other test mocks lib/firebase wholesale (see test/setup.ts). What is
+ * under test here is the decision the module makes at load time, so each case
+ * resets the module cache, changes the environment, and re-imports the real
+ * module with importActual.
  */
 vi.mock('firebase/app', () => ({ initializeApp: vi.fn(() => ({ name: '[DEFAULT]' })) }));
 vi.mock('firebase/database', () => ({ getDatabase: vi.fn(() => ({})) }));

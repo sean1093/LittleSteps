@@ -525,9 +525,10 @@ Identity Toolkit — 登入與 token 更新 — 所以一把不設限的 key，�
    localhost:5173/*
    ```
 
-   在 Hosting 底下新增的自訂網域，當天就要加進這份清單。讓它和 reCAPTCHA
-   key 的允許網域保持完全一致（見*帳號與資料*）：兩邊守的是不同的東西，任何
-   一邊少了一個主機，登入都會壞掉。
+   在 Hosting 底下新增的自訂網域，當天就要加進這份清單。等 reCAPTCHA site key
+   註冊好之後，讓它和 Firebase 主控台（App Check，網頁 app 的註冊）上那把 key
+   的網域清單保持完全一致：兩邊守的是不同的東西，任何一邊少了一個主機，登入
+   都會壞掉。
 
 2. **API restriction。** 只放 `src/lib/firebase.ts` 裡的 web SDK 會帶著這把
    key 去呼叫的：
