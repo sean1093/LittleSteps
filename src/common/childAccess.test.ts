@@ -97,9 +97,16 @@ describe('紀錄子樹與公開索引都跟著同一份名單', () => {
     expect(rules.childIndex.$childId['.write']).toBe(MEMBER_VIA_ROOT);
   });
 
-  it('users 仍然只有本人讀寫', () => {
+  it('users 仍然只有本人讀得到，寫入權逐個欄位給，整個節點不再有 .write', () => {
     // childrenIds 留著，但只是「我要訂閱哪幾個孩子」的索引，不再是授權來源。
-    expect(rules.users.$userId['.read']).toBe('$userId === auth.uid');
-    expect(rules.users.$userId['.write']).toBe('$userId === auth.uid');
+    // 節點層級的 .write 曾經讓本人刪得掉自己的 lastFeedbackAt（validate 不會對
+    // 刪除跑），一分鐘一則的限制就從一個請求變成兩個。
+    const owner = '$userId === auth.uid';
+    const user = rules.users.$userId;
+    expect(user['.read']).toBe(owner);
+    expect(user['.write']).toBeUndefined();
+    expect(user.childrenIds['.write']).toBe(owner);
+    expect(user.currentChildId['.write']).toBe(owner);
+    expect(user.lastFeedbackAt['.write']).toBe(`${owner} && newData.exists()`);
   });
 });

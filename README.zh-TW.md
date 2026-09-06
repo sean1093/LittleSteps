@@ -216,8 +216,9 @@ users/$uid                 childrenIds, currentChildId, lastFeedbackAt
                            childrenIds 只是這個帳號要訂閱的孩子清單，
                            授權看的是下面的 members
                            lastFeedbackAt 是伺服器時間戳，與回饋在同一筆更新裡
-                           寫入；規則要求它比上一次晚至少 60 秒，所以任何帳號
-                           一分鐘最多一則回饋
+                           寫入；規則要求它比上一次晚至少 60 秒、本人也刪不掉，
+                           所以任何帳號一分鐘最多一則回饋（寫入被拒仍可能有別的
+                           原因，例如帳號被停用）
 children/$childId          id, name, birthday, gender, createdAt, createdBy,
                            isPregnancy, pregnancyData
                            gestationalAgeWeeks, gestationalAgeDays

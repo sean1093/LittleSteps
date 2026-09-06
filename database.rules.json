@@ -3,13 +3,19 @@
     "users": {
       "$userId": {
         ".read": "$userId === auth.uid",
-        ".write": "$userId === auth.uid",
 
         "childrenIds": {
+          ".write": "$userId === auth.uid",
           "$childId": { ".validate": "newData.val() === true" }
         },
-        "currentChildId": { ".validate": "newData.isString() && newData.val().length <= 64" },
-        "lastFeedbackAt": { ".validate": "newData.isNumber() && newData.val() === now && (!data.exists() || newData.val() >= data.val() + 60000)" },
+        "currentChildId": {
+          ".write": "$userId === auth.uid",
+          ".validate": "newData.isString() && newData.val().length <= 64"
+        },
+        "lastFeedbackAt": {
+          ".write": "$userId === auth.uid && newData.exists()",
+          ".validate": "newData.isNumber() && newData.val() === now && (!data.exists() || newData.val() >= data.val() + 60000)"
+        },
         "$other": { ".validate": false }
       }
     },
