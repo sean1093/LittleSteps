@@ -427,25 +427,30 @@ async function main() {
     '部分更新塞進不合法的值一樣被擋',
     alice.patch('childRecords/c1/dailyLogs/log-feed', { type: 'bath', updatedAt: ISO }),
   );
-  // 早期的 key 是 `${prefix}_${Date.now()}`，而且沒有搬遷過的舊紀錄未必帶著
-  // 今天型別裡的每一個欄位。規則只在寫入時跑，所以一條舊紀錄違反的規則會讓
-  // 那一筆永遠改不動——2025 年的一則日記打錯字，家長就再也修不了。
+  // 舊紀錄未必長得像今天的型別：早期的 key 是 `${prefix}_${Date.now()}`，而
+  // 沒有搬遷過的紀錄可能缺 childId、記錄者，連 createdAt 也未必有（LogEntryModal
+  // 補 createdAt 的 fallback 就是為了它們）。規則只在寫入時跑，而且部分更新時
+  // 上層的 .validate 照樣會跑——拿「既有資料 + 這次的 patch」合併後的結果檢
+  // 查，跳過的只是沒被寫到的兄弟欄位。所以 hasChildren 裡要求的每一個欄位，
+  // 一條舊紀錄只要缺了，那一筆就永遠改不動：2025 年的一則日記打錯字，家長就
+  // 再也修不了。這裡用擁有者身分鋪一筆最瘦的舊紀錄，再用 app 實際送的形狀改它。
+  await admin.put('childRecords/c1/dailyLogs/log_1700000000000', {
+    id: 'log_1699999999999',
+    type: 'sleep',
+    timestamp: ISO,
+    data: { startTime: ISO },
+  });
   await expectAllowed(
-    '舊形狀的紀錄（key 不等於 id、沒有 childId、沒有記錄者）寫得進去',
-    alice.put('childRecords/c1/dailyLogs/log_1700000000000', {
-      id: 'log_1699999999999',
-      type: 'diaper',
-      timestamp: ISO,
-      data: { type: 'pee' },
-      createdAt: ISO,
-    }),
-  );
-  await expectAllowed(
-    '舊形狀的紀錄照樣改得動',
+    '舊形狀的日誌（key 不等於 id、沒有 childId、沒有 createdAt）照樣改得動（handleWake 的寫法）',
     alice.patch('childRecords/c1/dailyLogs/log_1700000000000', {
-      data: { type: 'both', consistency: 'normal' },
+      data: { startTime: ISO, endTime: '2026-09-01T10:00:00.000Z', duration: 120 },
       updatedAt: ISO,
     }),
+  );
+  await admin.put('childRecords/c1/dailyLogs/log-no-type', { timestamp: ISO, data: { type: 'pee' } });
+  await expectDenied(
+    '部分更新也會用合併後的資料檢查 hasChildren：少了 type 的紀錄改不動',
+    alice.patch('childRecords/c1/dailyLogs/log-no-type', { data: { type: 'poop' }, updatedAt: ISO }),
   );
 
   await expectAllowed(
@@ -471,6 +476,19 @@ async function main() {
   await expectAllowed(
     '只改內容的部分更新照樣可以',
     alice.patch('childRecords/c1/diaryEntries/d1', { content: '第一次翻身！', updatedAt: ISO }),
+  );
+  await admin.put('childRecords/c1/diaryEntries/diary_1700000000000', {
+    date: '2025-03-01',
+    content: '第一次叫媽媽',
+  });
+  await expectAllowed(
+    '舊形狀的日記（沒有 id、childId、createdAt）照樣改得動（updateDiaryEntry 的寫法）',
+    alice.patch('childRecords/c1/diaryEntries/diary_1700000000000', {
+      date: '2025-03-01',
+      content: '第一次叫媽媽！',
+      mood: 'happy',
+      updatedAt: ISO,
+    }),
   );
 
   await expectAllowed(

@@ -147,7 +147,7 @@
 
         "dailyLogs": {
           "$logId": {
-            ".validate": "newData.hasChildren(['type', 'timestamp', 'data', 'createdAt'])",
+            ".validate": "newData.hasChildren(['type', 'timestamp', 'data'])",
             "id": { ".validate": "newData.isString() && newData.val().length <= 64" },
             "childId": { ".validate": "newData.val() === $childId" },
             "type": { ".validate": "newData.val() === 'feeding' || newData.val() === 'sleep' || newData.val() === 'diaper'" },
@@ -176,7 +176,7 @@
 
         "diaryEntries": {
           "$entryId": {
-            ".validate": "newData.hasChildren(['date', 'content', 'createdAt'])",
+            ".validate": "newData.hasChildren(['date', 'content'])",
             "id": { ".validate": "newData.isString() && newData.val().length <= 64" },
             "childId": { ".validate": "newData.val() === $childId" },
             "date": { ".validate": "newData.isString() && newData.val().matches(/^\\d{4}-\\d{2}-\\d{2}$/)" },
