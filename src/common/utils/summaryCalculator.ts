@@ -2,7 +2,7 @@ import { MilestoneProgress, VaccineProgress, VaccineSchedule } from '../../types
 import { milestones } from '../../littlesteps/data/milestones';
 import { vaccineSchedules } from '../../littlesteps/data/vaccines';
 import {
-  SCHEDULED_FUNDING,
+  isScheduledDose,
   nextScheduledDose,
   resolveVaccineDoses,
 } from '../../littlesteps/utils/vaccineSchedule';
@@ -82,11 +82,15 @@ export interface VaccineSummary {
     doseNumber: number;
   };
   /**
-   * 還沒記錄的公費劑次數。
+   * 還沒記錄的公費常規劑次數。
    *
    * 下一劑只認公費，也只認還沒被孩子的年齡拋在後面的劑次，所以「沒有下一劑」
    * 不再等於「都打完了」：一個從來沒記錄過的五歲孩子兩者都不是。少了這個
    * 數字，卡片只能在兩種相反的情況說同一句「皆已接種完成」。
+   *
+   * 「只給名單上的孩子」的公費劑次不算在裡面，理由和下一劑同一條，寫在
+   * vaccineSchedule.isScheduledDose：這個數字是家長欠的劑數，不是時程表上
+   * 標著公費的劑數。
    */
   remainingNationalDoses: number;
 }
@@ -117,7 +121,7 @@ export function calculateVaccineSummary(
     const dose = vaccineProgress[vaccine.id]?.doses[scheduledDoseNumber(vaccine)];
     if (dose?.administered) {
       administeredCount++;
-    } else if (vaccine.funding === SCHEDULED_FUNDING) {
+    } else if (isScheduledDose(vaccine)) {
       remainingNationalDoses++;
     }
   });
