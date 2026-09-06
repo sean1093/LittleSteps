@@ -499,6 +499,76 @@ src/
 npm run build && firebase deploy --only hosting   # 手動
 ```
 
+### 不在這個 repo 裡的主控台設定
+
+有兩項設定只存在於 Google Cloud 主控台。repo、workflow 和 `firebase deploy`
+都不會重建它們，所以換掉 Web API key 或搬到新專案時，兩項都會無聲無息地
+消失。只要其中一件發生，就把這份清單重做一次。
+
+**Web API key。** `VITE_FIREBASE_API_KEY` 是公開的，不是秘密 — 它就包在
+bundle 裡，Firebase 自己也這麼說。Realtime Database 也不靠它驗證：socket 上
+帶的是 Auth 和 App Check 的 token，由規則決定。這把 key 真正把關的是
+Identity Toolkit — 登入與 token 更新 — 所以一把不設限的 key，等於讓任何來源
+都能對這個專案登入。限制它不花任何成本。到 *APIs & Services → Credentials*
+打開那個變數指到的 key：
+
+1. **Application restriction：HTTP referrers。** 只放下面這些主機，其他都不
+   放。第三個是 `firebase-hosting-pull-request.yml` 部署到的預覽頻道；少了
+   它，每個 pull request 的預覽都會登不進去，而第一個發現的人會把它當成 app
+   的 bug 回報。
+
+   ```
+   littlesteps-c6ab6.web.app/*
+   littlesteps-c6ab6.firebaseapp.com/*
+   littlesteps-c6ab6--*.web.app/*
+   localhost:5173/*
+   ```
+
+   在 Hosting 底下新增的自訂網域，當天就要加進這份清單。讓它和 reCAPTCHA
+   key 的允許網域保持完全一致（見*帳號與資料*）：兩邊守的是不同的東西，任何
+   一邊少了一個主機，登入都會壞掉。
+
+2. **API restriction。** 只放 `src/lib/firebase.ts` 裡的 web SDK 會帶著這把
+   key 去呼叫的：
+
+   | API | 用途 |
+   |---|---|
+   | Identity Toolkit API | 登入，`identitytoolkit.googleapis.com` |
+   | Token Service API | 更新 ID token，`securetoken.googleapis.com` |
+   | Firebase Installations API | Analytics 用它辨識這個安裝 |
+   | Firebase Management API | `getAnalytics()` 在第一個事件之前會帶著 key 到 `firebase.googleapis.com` 抓 app 的 web 設定 — 一律會抓，設定裡的 `measurementId` 只會在不一致時印一則警告 |
+   | Firebase App Check API | 交換 token，設了 site key 之後才用得到 |
+
+   以主控台的清單為準，不要照抄這份；這裡少放一個 API，在瀏覽器裡會變成一個
+   無聲的 `403`。Analytics 壞得最安靜：事件就是再也送不到。
+
+3. **驗證。** 正式站、改完之後才部署的預覽頻道、以及 `localhost:5173` 都能
+   登入；而從外部來源發出的請求會被拒絕：
+
+   ```bash
+   curl -s -H 'Referer: https://example.com/' -H 'Content-Type: application/json' \
+     -d '{"returnSecureToken":true}' \
+     'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=<VITE_FIREBASE_API_KEY>'
+   # expect 403, "Requests from referer https://example.com/ are blocked."
+   ```
+
+**用量警示。** Spark 方案有 1 GB 儲存、每月 10 GB 下載，以及 100 個同時連線，
+而最後那一項是最先撞到的天花板。沒有帳單，所以也沒有帳單警示：額度用完時，
+出現的是家長看到資料載入失敗的訊息，而不是維護者收到一封 email。到
+*Monitoring → Alerting* 建立一個 email 通知管道，再對 Realtime Database 的
+指標建三條 policy，門檻設在上限之下，讓 email 在還來得及處理的時候就送到：
+
+| 指標 | 警示於 | Spark 上限 |
+|---|---|---|
+| `firebasedatabase.googleapis.com/network/active_connections` | 80 | 同時 100 個 |
+| `firebasedatabase.googleapis.com/network/sent_bytes_count`，30 天加總 | 8 GB | 每月 10 GB |
+| `firebasedatabase.googleapis.com/storage/total_bytes` | 800 MB | 1 GB |
+
+如果某條 policy 結果需要 Blaze — 最可能的是 30 天加總那一條 — 就退回每月
+一次的提醒，去 Firebase 主控台打開 *Realtime Database → Usage*，並把是哪一條、
+為什麼記在 issue #88 上。驗證方式：把其中一條 policy 的門檻設到低於目前的值，
+收到 email，再把門檻改回去。
+
 ### 遷移已上線的資料庫
 
 `scripts/migrateChildRecords.cjs` 是那支一次性的遷移腳本，它把授權搬進

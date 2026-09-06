@@ -553,6 +553,85 @@ get a preview URL. Environment variables come from GitHub Secrets.
 npm run build && firebase deploy --only hosting   # manual
 ```
 
+### Console settings that are not in this repo
+
+Two settings live only in the Google Cloud console. Nothing in the repo, the
+workflows or `firebase deploy` recreates them, so rotating the Web API key or
+moving to a new project silently loses both. Redo this list whenever either
+happens.
+
+**The Web API key.** `VITE_FIREBASE_API_KEY` is public and not a secret — it
+ships in the bundle, and Firebase says so. Realtime Database does not
+authenticate with it either: the socket carries the Auth and App Check tokens,
+and the rules decide. What the key does gate is Identity Toolkit — sign-in and
+token refresh — so an unrestricted key lets any origin sign in against this
+project. Restricting it costs nothing. In *APIs & Services → Credentials*, open
+the key the variable points at:
+
+1. **Application restriction: HTTP referrers.** The hosts below and nothing
+   else. The third is the preview channel that
+   `firebase-hosting-pull-request.yml` deploys to; without it every
+   pull-request preview loses sign-in, and the first person to notice files it
+   as a bug in the app.
+
+   ```
+   littlesteps-c6ab6.web.app/*
+   littlesteps-c6ab6.firebaseapp.com/*
+   littlesteps-c6ab6--*.web.app/*
+   localhost:5173/*
+   ```
+
+   A custom domain added under Hosting joins this list the same day. Keep it
+   identical to the reCAPTCHA key's allowed domains (see *Accounts and data*):
+   the two guard different things, and a host missing from either one breaks
+   sign-in.
+
+2. **API restriction.** Only what the web SDK in `src/lib/firebase.ts` calls
+   with the key:
+
+   | API | Why |
+   |---|---|
+   | Identity Toolkit API | sign-in, `identitytoolkit.googleapis.com` |
+   | Token Service API | ID-token refresh, `securetoken.googleapis.com` |
+   | Firebase Installations API | Analytics identifies the install through it |
+   | Firebase Management API | `getAnalytics()` fetches the app's web config from `firebase.googleapis.com` with the key before the first event — always, `measurementId` in the config only produces a mismatch warning |
+   | Firebase App Check API | token exchange, once a site key is set |
+
+   Check the console's list rather than trusting this one; an API missing here
+   fails as a silent `403` in the browser. Analytics fails quietest of all: the
+   events simply never arrive.
+
+3. **Verify.** Sign-in works on production, on a preview channel deployed
+   after the change, and on `localhost:5173`; and a request from a foreign
+   origin is refused:
+
+   ```bash
+   curl -s -H 'Referer: https://example.com/' -H 'Content-Type: application/json' \
+     -d '{"returnSecureToken":true}' \
+     'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=<VITE_FIREBASE_API_KEY>'
+   # expect 403, "Requests from referer https://example.com/ are blocked."
+   ```
+
+**Usage alerts.** Spark has 1 GB stored, 10 GB download a month and 100
+simultaneous connections, and the last is the ceiling that bites first. There
+is no billing, so there is no billing alert: exhaustion shows up as parents
+seeing the data-failed-to-load message, not as an email to the maintainer. In
+*Monitoring → Alerting*, create an email notification channel and three
+policies on the Realtime Database metrics, thresholds below the limit so the
+email arrives while there is still time to act:
+
+| Metric | Alert at | Spark limit |
+|---|---|---|
+| `firebasedatabase.googleapis.com/network/active_connections` | 80 | 100 at once |
+| `firebasedatabase.googleapis.com/network/sent_bytes_count`, summed over 30 days | 8 GB | 10 GB a month |
+| `firebasedatabase.googleapis.com/storage/total_bytes` | 800 MB | 1 GB |
+
+If a policy turns out to need Blaze — the 30-day sum is the likely one — fall
+back to a monthly reminder to open *Realtime Database → Usage* in the Firebase
+console, and record which policy and why on issue #88. Verify by setting one
+policy's threshold below the current value, receiving the email, and putting
+the threshold back.
+
 ### Migrating a deployed database
 
 `scripts/migrateChildRecords.cjs` is the one-shot migration that moved
