@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { vaccineSchedules } from '../../littlesteps/data/vaccines';
+import { isScheduledDose } from '../../littlesteps/utils/vaccineSchedule';
 import { careTaskTemplates } from './careTasks';
 import { TODDLER_MAX_MONTHS, TODDLER_MIN_MONTHS } from '../utils/ageBands';
 
@@ -34,9 +35,12 @@ describe('幼兒期疫苗提醒的涵蓋範圍', () => {
     careTaskTemplates.map((template) => template.vaccineId).filter(Boolean),
   );
 
+  // isScheduledDose，不是 funding === 'national'：公費但帶條件的那一劑只給名
+  // 單上的孩子，isScheduledDose 不把它算成待辦，這份清單也就不該要求它有提醒。
+  // 今天沒有差別——唯一那一劑在 6 個月，不在 1-3 歲區間——但下一劑落在幼兒期
+  // 的條件式公費疫苗會讓這裡索求一個 isScheduledDose 明文禁止的提醒。
   const toddlerPublicDoses = vaccineSchedules.filter(
-    (vaccine) =>
-      vaccine.funding === 'national' && isToddlerAge(vaccine.ageInMonths ?? -1),
+    (vaccine) => isScheduledDose(vaccine) && isToddlerAge(vaccine.ageInMonths ?? -1),
   );
 
   it('掃描範圍不是空的', () => {
