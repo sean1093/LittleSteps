@@ -30,6 +30,16 @@ import type { Page } from '@playwright/test';
  *   a code change that removed the call. Firebase wraps the proactive init in
  *   its own try/catch, which is why aborting the request leaves PWA-03 green
  *   rather than racing a deferred `console.error` out of `AuthContext`.
+ * - `www.google.com/recaptcha` and `www.gstatic.com/recaptcha`: what
+ *   `ReCaptchaV3Provider` loads once App Check is on — `api.js` from the
+ *   first (`RECAPTCHA_URL` in `@firebase/app-check`), which then pulls the
+ *   widget script from the second. Neither request is made today:
+ *   `playwright.config.ts` pins `VITE_FIREBASE_APPCHECK_SITE_KEY` empty, so
+ *   `src/lib/firebase.ts` never initialises App Check under the suite. The
+ *   entries are for the day a site key reaches a preview build. They carry a
+ *   path because `www.google.com` is also where the Maps links in LittleOuting
+ *   and BabyOasis point, and a wholesale block would abort a spec that follows
+ *   one.
  *
  * Exported because PWA-03 asserts "no uncaught console errors" and an aborted
  * request logs one. That case allowlists exactly this list rather than
@@ -40,17 +50,28 @@ export const BLOCKED_HOSTS = [
   'firebase.googleapis.com',
   'google-analytics.com',
   'apis.google.com',
+  'www.google.com/recaptcha',
+  'www.gstatic.com/recaptcha',
 ] as const;
 
-/** True for a blocked host itself or any subdomain of it. */
-export function isBlockedHost(hostname: string): boolean {
-  return BLOCKED_HOSTS.some((host) => hostname === host || hostname.endsWith(`.${host}`));
+/**
+ * True when a URL is on a blocked host — the host itself or any subdomain —
+ * and, for an entry that names a path, under that path.
+ */
+export function isBlocked(url: URL): boolean {
+  return BLOCKED_HOSTS.some((entry) => {
+    const slash = entry.indexOf('/');
+    const host = slash === -1 ? entry : entry.slice(0, slash);
+    const path = slash === -1 ? '' : entry.slice(slash);
+    const onHost = url.hostname === host || url.hostname.endsWith(`.${host}`);
+    return onHost && (path === '' || url.pathname === path || url.pathname.startsWith(`${path}/`));
+  });
 }
 
-/** True when a URL — as it appears in a console message — points at a blocked host. */
+/** True when a URL — as it appears in a console message — is blocked. */
 export function isBlockedUrl(url: string): boolean {
   try {
-    return isBlockedHost(new URL(url).hostname);
+    return isBlocked(new URL(url));
   } catch {
     return false;
   }
@@ -62,7 +83,7 @@ export function isBlockedUrl(url: string): boolean {
  */
 export async function blockThirdPartyHosts(page: Page): Promise<void> {
   await page.route(
-    (url) => isBlockedHost(url.hostname),
+    (url) => isBlocked(url),
     (route) => route.abort('blockedbyclient'),
   );
 }
