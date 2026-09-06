@@ -20,7 +20,11 @@ import { applyUpdatePaths } from '../../test/rtdb';
 type Next = (snapshot: { val: () => unknown }) => void;
 type Cancel = (error: Error) => void;
 
-const subscriptions = new Map<string, { next: Next; cancel: Cancel }>();
+/**
+ * 每條路徑上所有還掛著的 listener。正式環境裡每個開著的畫面都訂著同一條
+ * 路徑，一筆快照抵達時大家都收到——兩位照顧者的測試就靠這個廣播。
+ */
+const subscriptions = new Map<string, { next: Next; cancel: Cancel }[]>();
 /** 這個 hook 只會寫成長紀錄，所以在 mock 這個邊界收斂成該型別一次。 */
 const writes: { path: string; value: Partial<GrowthRecord> }[] = [];
 /** 修改走 update()：每個 key 都是一條路徑，模擬器與正式環境都是逐條合併。 */
@@ -32,8 +36,13 @@ const removals: string[] = [];
 vi.mock('firebase/database', () => ({
   ref: (_db: unknown, path: string) => path,
   onValue: (path: string, next: Next, cancel: Cancel) => {
-    subscriptions.set(path, { next, cancel });
-    return () => subscriptions.delete(path);
+    const entry = { next, cancel };
+    subscriptions.set(path, [...(subscriptions.get(path) ?? []), entry]);
+    return () =>
+      subscriptions.set(
+        path,
+        (subscriptions.get(path) ?? []).filter((listener) => listener !== entry),
+      );
   },
   set: (path: string, value: unknown) => {
     writes.push({ path, value: value as Partial<GrowthRecord> });
@@ -55,10 +64,14 @@ vi.mock('../../lib/firebase', () => ({ database: {} }));
 
 const user = { uid: 'u1' };
 
+/** 對這個孩子的每一個 listener 廣播。 */
 const subscription = (childId: string) => {
-  const entry = subscriptions.get(`childRecords/${childId}/growthRecords`);
-  if (!entry) throw new Error(`沒有訂閱 ${childId}`);
-  return entry;
+  const entries = subscriptions.get(`childRecords/${childId}/growthRecords`) ?? [];
+  if (entries.length === 0) throw new Error(`沒有訂閱 ${childId}`);
+  return {
+    next: (snapshot: { val: () => unknown }) => entries.forEach((entry) => entry.next(snapshot)),
+    cancel: (error: Error) => entries.forEach((entry) => entry.cancel(error)),
+  };
 };
 
 const weight = (id: string, kg: number) => ({
@@ -121,7 +134,7 @@ describe('useGrowthTracking', () => {
   it('沒有登入時不訂閱，也不停在載入中', () => {
     const { result } = renderHook(() => useGrowthTracking('A', null));
 
-    expect(subscriptions.size).toBe(0);
+    expect([...subscriptions.values()].flat()).toHaveLength(0);
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBe(false);
     expect(result.current.records).toEqual([]);
@@ -138,7 +151,7 @@ describe('useGrowthTracking', () => {
         weight: 7.6,
         percentile: {},
       });
-      await result.current.updateRecord('g1', { weight: 7.5 });
+      await result.current.updateRecord('g1', { weight: 7.5 }, weight('g1', 7.4).g1);
       await result.current.deleteRecord('g1');
     });
 
@@ -231,6 +244,13 @@ describe('useGrowthTracking', () => {
  * 的那一筆連著他手上沒有身高的舊版蓋回去，媽媽剛量的身高就沒了，而且存進
  * 去的百分位對的是他手上那一版，不是資料庫裡真的那一筆。
  *
+ * 正式環境的配置是這樣的：GrowthChartsPage 在點下「編輯」那一刻留下
+ * editingRecord，表單從它帶入每個欄位、送出時每個欄位都送（沒填的是
+ * undefined）；同時 listener 一直在跑，對方存的合併結果會在表單還開著的時候
+ * 抵達畫面。所以比對的基準只能是「表單打開時的那一版」——拿 listener 最新的
+ * 那一版當基準，對方剛補的那一項在表單裡是空白，存下去就變成把它清掉。
+ * 跟 DailyLogPage 拿 editingLog 給 dailyLogChanges 是同一件事。
+ *
  * 百分位讀取時本來就會重算（見上面早產矯正那幾條），所以存那一份沒有任何
  * 讀取端在用。不存了、只寫真的改到的欄位，兩個人的測量就會合併，畫面上的
  * 百分位永遠對得上存著的數字。
@@ -255,9 +275,8 @@ describe('兩位照顧者各補一項測量', () => {
     ...fields,
   });
 
-  /** 開一個新的畫面，讀到 stored 這一份快照。 */
+  /** 開一個畫面，讀到 stored 這一份快照（其他開著的畫面也一起收到）。 */
   const openWith = (stored: Record<string, Partial<GrowthRecord>>) => {
-    subscriptions.clear();
     const { result } = renderHook(() => useGrowthTracking('A', user, child));
     act(() => subscription('A').next({ val: () => stored }));
     return result;
@@ -275,18 +294,41 @@ describe('兩位照顧者各補一項測量', () => {
         weightOnly(),
       );
 
-  it('一個補身高、一個補頭圍，兩項都留得住', async () => {
+  /** 媽媽的表單開在只有體重的那一版上；爸爸補了身高，合併結果已經推到她畫面上。 */
+  const dadAddedHeightWhileMumEdits = async () => {
     const mum = openWith({ g1: weightOnly() });
-    await act(async () => {
-      await mum.current.updateRecord('g1', submitted({ weight: 7.4, height: 68 }));
-    });
+    const mumOpened = weightOnly();
 
-    // 爸爸的畫面還是媽媽存之前的那一版。
     const dad = openWith({ g1: weightOnly() });
     await act(async () => {
-      await dad.current.updateRecord('g1', submitted({ weight: 7.4, headCircumference: 43 }));
+      await dad.current.updateRecord('g1', submitted({ weight: 7.4, height: 68 }), weightOnly());
+    });
+    expect(stored()).toEqual({ ...weightOnly(), height: 68 });
+
+    // listener 把合併後的那一筆推給每個開著的畫面，媽媽的表單還開著。
+    act(() => subscription('A').next({ val: () => ({ g1: stored() }) }));
+    return { mum, mumOpened };
+  };
+
+  it('表單開在舊版上、畫面已經收到對方的合併結果：原封不動存下去，什麼都不寫', async () => {
+    const { mum, mumOpened } = await dadAddedHeightWhileMumEdits();
+
+    await act(async () => {
+      await mum.current.updateRecord('g1', submitted({ weight: 7.4 }), mumOpened);
     });
 
+    expect(journal).toHaveLength(1);
+    expect(stored()).toEqual({ ...weightOnly(), height: 68 });
+  });
+
+  it('從同一張舊表單補頭圍，只寫頭圍，兩項都留得住', async () => {
+    const { mum, mumOpened } = await dadAddedHeightWhileMumEdits();
+
+    await act(async () => {
+      await mum.current.updateRecord('g1', submitted({ weight: 7.4, headCircumference: 43 }), mumOpened);
+    });
+
+    expect(updates[1].value).toEqual({ headCircumference: 43 });
     expect(stored()).toEqual({
       id: 'g1',
       childId: 'c1',
@@ -295,20 +337,12 @@ describe('兩位照顧者各補一項測量', () => {
       height: 68,
       headCircumference: 43,
     });
-    expect(updates.map((entry) => entry.path)).toEqual([
-      'childRecords/A/growthRecords/g1',
-      'childRecords/A/growthRecords/g1',
-    ]);
   });
 
   it('畫面上的百分位是照存進去的那一筆算的，不是寫入者手上那一版', async () => {
-    const mum = openWith({ g1: weightOnly() });
+    const { mum, mumOpened } = await dadAddedHeightWhileMumEdits();
     await act(async () => {
-      await mum.current.updateRecord('g1', submitted({ weight: 7.4, height: 68 }));
-    });
-    const dad = openWith({ g1: weightOnly() });
-    await act(async () => {
-      await dad.current.updateRecord('g1', submitted({ weight: 7.4, headCircumference: 43 }));
+      await mum.current.updateRecord('g1', submitted({ weight: 7.4, headCircumference: 43 }), mumOpened);
     });
 
     // 兩筆寫入都不帶百分位：存那一份沒有讀取端在用，而它只會對得上寫入者手上那一版。
@@ -330,11 +364,24 @@ describe('兩位照顧者各補一項測量', () => {
     });
   });
 
+  it('舊紀錄帶著存好的百分位：只改備註時，補丁裡完全沒有 percentile', async () => {
+    // 寫入端不存百分位，不等於把舊紀錄存著的那一份清掉。
+    const legacy = { ...weightOnly(), percentile: { weight: 45.3 } };
+    const mum = openWith({ g1: legacy });
+
+    await act(async () => {
+      await mum.current.updateRecord('g1', submitted({ weight: 7.4, notes: '門診量的' }), legacy);
+    });
+
+    expect(updates[0].value).toEqual({ notes: '門診量的' });
+    expect(applyUpdatePaths(legacy, updates[0].value).percentile).toEqual({ weight: 45.3 });
+  });
+
   it('清掉備註就是清掉：寫 null，不是留著舊值', async () => {
     const withNote = { ...weightOnly(), notes: '在家量的' };
     const mum = openWith({ g1: withNote });
     await act(async () => {
-      await mum.current.updateRecord('g1', submitted({ weight: 7.4, notes: undefined }));
+      await mum.current.updateRecord('g1', submitted({ weight: 7.4, notes: undefined }), withNote);
     });
 
     expect(updates[0].value).toEqual({ notes: null });
@@ -344,7 +391,7 @@ describe('兩位照顧者各補一項測量', () => {
   it('什麼都沒改就不寫', async () => {
     const mum = openWith({ g1: weightOnly() });
     await act(async () => {
-      await mum.current.updateRecord('g1', submitted({ weight: 7.4 }));
+      await mum.current.updateRecord('g1', submitted({ weight: 7.4 }), weightOnly());
     });
 
     expect(journal).toHaveLength(0);

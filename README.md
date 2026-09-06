@@ -273,7 +273,9 @@ childRecords/$childId      dailyLogs/$logId        type (feeding|sleep|diaper),
                                                    timestamp, details
                            diaryEntries/$entryId   date, content, mood
                            growthRecords/$recordId date, weight, height,
-                                                   percentile
+                                                   percentile — legacy rows
+                                                   only; derived on read now,
+                                                   never written
 childIndex/$childId        true — public existence index, so joining by code
                            never has to read a stranger's child node
 feedbacks/$feedbackId      title, content, userId, timestamp

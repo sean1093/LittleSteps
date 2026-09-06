@@ -561,6 +561,20 @@ async function main() {
     '整筆重送、連舊的百分位一起，照樣可以',
     alice.put('childRecords/c1/growthRecords/g1', growthRecord({ weight: 4.4, percentile: {} })),
   );
+  // 寫入端不再存百分位：addRecord 送的就是這個形狀，之後的每一次編輯都是一條
+  // 一條 leaf 打在這種沒有 percentile 的紀錄上。g1 帶著舊的百分位，驗不到這件事。
+  await expectAllowed(
+    '沒有百分位的成長紀錄寫得進去（addRecord 的寫法）',
+    alice.put('childRecords/c1/growthRecords/g2', { id: 'g2', childId: 'c1', date: '2026-09-02', weight: 4.3 }),
+  );
+  await expectAllowed(
+    '沒有百分位的紀錄補一項測量（updateRecord 的寫法）',
+    alice.patch('childRecords/c1/growthRecords/g2', { height: 60 }),
+  );
+  await expectAllowed(
+    '沒有百分位的紀錄再補一項、順手清掉備註',
+    alice.patch('childRecords/c1/growthRecords/g2', { headCircumference: 40, notes: null }),
+  );
 
   await expectDenied(
     'childRecords 底下只有三個集合，別的名字不給寫',

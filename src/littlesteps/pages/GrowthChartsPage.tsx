@@ -47,10 +47,12 @@ export default function GrowthChartsPage({
   /*
     改一筆和新增一筆用同一張表：打錯的體重原本只能整筆刪掉重建。
     失敗時不接住——訊息與「表單留在原地」由 AddGrowthRecordModal 自己處理。
+    editingRecord 是點下「編輯」那一刻的那一版，表單從它帶入，也拿它當比對
+    的基準；listener 後來推來的新版不算，否則對方剛補的那一項會被當成清掉。
   */
   const handleSave = async (record: Omit<GrowthRecord, 'id'>) => {
     if (editingRecord) {
-      await updateRecord(editingRecord.id, record);
+      await updateRecord(editingRecord.id, record, editingRecord);
     } else {
       await addRecord(record);
     }
