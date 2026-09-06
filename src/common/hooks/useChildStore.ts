@@ -153,7 +153,7 @@ export function useChildStore(user: User | null): ChildStore {
     try {
       const isAchieved = !currentChildMilestoneProgress[id]?.achieved;
       await firebaseChildren.updateMilestoneProgress(currentChild.id, id, isAchieved);
-      logMilestoneToggle(id, isAchieved);
+      logMilestoneToggle(isAchieved);
     } catch (error) {
       console.error('更新里程碑失敗:', error);
       toast.show(errorMessage(error, '里程碑更新失敗，請稍後再試'));
@@ -180,7 +180,7 @@ export function useChildStore(user: User | null): ChildStore {
         administered,
         date,
       );
-      logVaccineToggle(vaccineId, doseNumber, administered);
+      logVaccineToggle(administered);
     } catch (error) {
       console.error('更新疫苗記錄失敗:', error);
       toast.show(errorMessage(error, '疫苗記錄更新失敗，請稍後再試'));
