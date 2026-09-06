@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { DailyLog, DiaperData, FeedingData } from '../../../types';
 import {
+  composeLogLabel,
   getConsistencyLabel,
   getDiaperTypeLabel,
   getFeedingTypeLabel,
@@ -21,8 +22,8 @@ function describe(log: DailyLog): string {
   if (log.type === 'feeding') {
     const data = log.data as FeedingData;
     /*
-      擠奶的類型字已經是這顆按鈕的標題。再印一次會變成「擠奶（擠奶 150 ml）」，
-      而寫成「餵奶（擠奶 150 ml）」更糟：那正是把媽媽的產出說成寶寶一餐的說法。
+      擠奶的類型字已經是這顆按鈕的標題。再印一次會變成「擠奶 · 擠奶 150 ml」，
+      而寫成「餵奶 · 擠奶 150 ml」更糟：那正是把媽媽的產出說成寶寶一餐的說法。
     */
     const parts = data.feedingType === 'pumping' ? [] : [getFeedingTypeLabel(data.feedingType)];
     if (data.amount) parts.push(`${data.amount} ml`);
@@ -73,7 +74,7 @@ export default function RepeatLastLog({
             onClick={() => onRepeat(target.log)}
             className="chip min-w-tap justify-center"
           >
-            {target.label}（{describe(target.log)}）
+            {composeLogLabel(target.label, describe(target.log))}
           </motion.button>
         ))}
       </div>
