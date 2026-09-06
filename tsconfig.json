@@ -12,6 +12,9 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
+    /* npm run lint 與 npm run build 各跑一次 tsc，pre-commit 又跑一次 build。
+       增量資訊讓後面幾次只重查改過的部分，不然三次全查是十幾秒起跳。 */
+    "incremental": true,
     "jsx": "react-jsx",
 
     /* Linting */

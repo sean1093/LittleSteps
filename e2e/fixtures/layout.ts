@@ -194,21 +194,68 @@ function measureUndersizedControls(page: Page): Promise<UndersizedControl[]> {
  * class. Only elements whose content is entirely inline are compared this way,
  * because a `Range` around block children measures their margin boxes rather
  * than the text.
+ *
+ * What it does NOT see — measured by injecting each case, not reasoned about,
+ * so do not read the candidate rule as "every possible spill":
+ *
+ * - **A `nowrap` box with any non-inline child.** An absolutely positioned
+ *   element is blockified, so a chip carrying a positioned badge or focus ring
+ *   drops out entirely and its label goes unwatched. Same for a `display:
+ *   block` wrapper. This is the all-inline restriction above, and it is the
+ *   most likely way a real spill escapes.
+ * - **A wrapping box holding one unbreakable run** — a long URL or id in a
+ *   `white-space: normal` container overflows and is out of scope by
+ *   construction.
+ * - **Ancestor clipping.** A spill inside a `.row-bleed` scroller is reported
+ *   even though the scroller contains it; that row is
+ *   `expectRowContainsItsOverflow`'s subject, not this one. A false positive,
+ *   not a miss.
+ * - **Transforms.** A persistently scaled inline child reads as a spill. Today
+ *   the only transforms are `active:scale-95` (transient) and `rotate-180`
+ *   (bounding-box neutral), so nothing fires.
  */
 export async function expectNoContentSpill(page: Page): Promise<void> {
   await expect
-    .poll(() => measureSpillingElements(page), {
+    .poll(() => measureSpillingElements(page).then((result) => result.spills), {
       message: 'elements whose content is drawn outside their own box, in px',
     })
     .toEqual([]);
 }
 
 /**
- * Sub-pixel slack for the spill measurement, wider than `EPSILON` because a
- * `Range` rectangle around a run of glyphs includes the font's side bearings
- * and lands a fraction outside a box that is fitting perfectly. A pixel of
- * overhang is not something anyone can see; the reproduction overhangs by
- * eight.
+ * The route has something this guard could fail on.
+ *
+ * `expect.poll` to `toEqual([])` passes on the *first* evaluation that matches,
+ * and an empty candidate set is indistinguishable from a clean page: a route
+ * with no non-wrapping content, or one measured a frame before its chips paint,
+ * both read as "nothing wrong". `home` and `littlesteps/sleep-training` have a
+ * genuinely empty set, so four of RWD-04's eighteen instances could never fail.
+ *
+ * Same precedent as RWD-03's overflow assertion: say out loud that the thing
+ * under test is present, or the green line means nothing. Deliberately a
+ * separate call, so a route that legitimately has no candidates can opt out
+ * rather than forcing the guard to be loose everywhere.
+ */
+export async function expectSomethingToMeasure(page: Page): Promise<void> {
+  await expect
+    .poll(() => measureSpillingElements(page).then((result) => result.candidates), {
+      message: 'non-wrapping elements RWD-04 could have failed on',
+    })
+    .toBeGreaterThan(0);
+}
+
+/**
+ * Sub-pixel slack for the spill measurement.
+ *
+ * Not side bearings: `Range.getBoundingClientRect()` returns layout rects —
+ * advance widths — so ink extents never enter this. It is ordinary sub-pixel
+ * layout rounding. Measured across all nine public routes at both widths,
+ * every candidate reads either exactly 0.00 (a shrink-to-fit inline span,
+ * where the Range and the box are the same box by construction) or a clean
+ * padding value like -16. Nothing is within 2px of the threshold, and the app
+ * loads no webfont — `index.css` is a system stack — so another machine's
+ * fonts change text widths without changing the sign of a -16px margin.
+ * The reproduction overhangs by eight.
  */
 const SPILL_TOLERANCE_PX = 1;
 
@@ -218,7 +265,9 @@ interface SpillingElement {
   spillRightPx: number;
 }
 
-function measureSpillingElements(page: Page): Promise<SpillingElement[]> {
+function measureSpillingElements(
+  page: Page,
+): Promise<{ candidates: number; spills: SpillingElement[] }> {
   return page.evaluate(
     ({ chrome, tolerance }) => {
       // `pre` keeps explicit newlines and also refuses to wrap on spaces, so
@@ -239,6 +288,7 @@ function measureSpillingElements(page: Page): Promise<SpillingElement[]> {
       };
 
       const spills: SpillingElement[] = [];
+      let candidates = 0;
 
       for (const element of Array.from(document.querySelectorAll('*'))) {
         if (!(element instanceof HTMLElement)) continue;
@@ -252,6 +302,8 @@ function measureSpillingElements(page: Page): Promise<SpillingElement[]> {
         // Anything that clips or scrolls contains its own overflow, and the
         // rows that scroll on purpose are `expectRowContainsItsOverflow`'s.
         if (style.overflowX !== 'visible') continue;
+
+        candidates += 1;
 
         const range = document.createRange();
         range.selectNodeContents(element);
@@ -269,14 +321,17 @@ function measureSpillingElements(page: Page): Promise<SpillingElement[]> {
         const spillRight = content.right - right;
         if (spillLeft <= tolerance && spillRight <= tolerance) continue;
 
+        // One decimal, not rounded to an integer: a 1.4px failure printed as
+        // `spillLeftPx: 1, spillRightPx: 0` reads like no spill at all.
+        const round = (value: number) => Math.round(Math.max(value, 0) * 10) / 10;
         spills.push({
           element: describe(element),
-          spillLeftPx: Math.round(Math.max(spillLeft, 0)),
-          spillRightPx: Math.round(Math.max(spillRight, 0)),
+          spillLeftPx: round(spillLeft),
+          spillRightPx: round(spillRight),
         });
       }
 
-      return spills;
+      return { candidates, spills };
     },
     { chrome: THIRD_PARTY_CHROME, tolerance: SPILL_TOLERANCE_PX },
   );

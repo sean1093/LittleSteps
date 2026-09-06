@@ -2,6 +2,7 @@ import { expect, test } from '../fixtures/test';
 import {
   expectModalFitsViewport,
   expectNoContentSpill,
+  expectSomethingToMeasure,
   expectNoPageOverflow,
   expectReachableByScrolling,
   expectRowContainsItsOverflow,
@@ -13,11 +14,11 @@ import { BabyOasisPage } from '../pages/babyOasisPage';
 import { PublicRoutePage } from '../pages/publicRoutePage';
 
 /**
- * RWD-01…03 — the layout invariants, at 390px and 320px.
+ * RWD-01…04 — the layout invariants, at 390px and 320px.
  *
  * Measurements, never golden images (plan §2 and §7). A pixel baseline on a
  * Tailwind app churns on every token change and teaches a reviewer to accept
- * the diff; these three assert what a parent actually hits — a page that
+ * the diff; these four assert what a parent actually hits — a page that
  * scrolls sideways, a control too small to tap, a modal whose controls are off
  * the screen — and they survive a restyle that broke nothing.
  *
@@ -61,6 +62,18 @@ for (const route of PUBLIC_ROUTES) {
   });
 }
 
+/**
+ * Routes with no non-wrapping content of their own, so RWD-04's candidate set
+ * is legitimately empty there and the non-vacuity assertion would fail.
+ *
+ * Measured, not assumed: every other public route has between 4 and 26
+ * candidates at both widths; these two have zero. The hub is a stack of service
+ * cards and the sleep guide is prose. Listed by name rather than skipped
+ * silently, so a route that *stops* having chips is a decision someone makes
+ * here rather than a green line that quietly stopped meaning anything.
+ */
+const ROUTES_WITH_NOTHING_TO_MEASURE = new Set(['home', 'littlesteps/sleep-training']);
+
 for (const route of PUBLIC_ROUTES) {
   test(`RWD-04 @p1 ${route} keeps every nowrap label inside its own box`, async ({ page }) => {
     const routes = new PublicRoutePage(page);
@@ -75,6 +88,7 @@ for (const route of PUBLIC_ROUTES) {
     // three pills reading as one illegible run at 320px, with the
     // document-level check green the whole time. See the helper for why it is
     // measured with a `Range` and not with `scrollWidth`.
+    if (!ROUTES_WITH_NOTHING_TO_MEASURE.has(route)) await expectSomethingToMeasure(page);
     await expectNoContentSpill(page);
   });
 }
