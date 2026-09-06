@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ChildProfile, DailyLog, FeedingData, SleepData } from '../../types';
+import type { ChildProfile, DailyLog, DailyLogPatch, FeedingData, SleepData } from '../../types';
 import { ToastProvider } from '../../common/ui/toast';
 import DailyLogPage from './DailyLogPage';
 
@@ -365,9 +365,14 @@ describe('進行中的睡眠', () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     vi.setSystemTime(LATE_EVENING);
-    // 寫入成功後把結果放回 logs，模擬 Firebase 監聽器把新值送回畫面。
-    updateDailyLog.mockImplementation(async (_childId: string, logId: string, updates: Partial<DailyLog>) => {
-      readState.logs = readState.logs.map((log) => (log.id === logId ? { ...log, ...updates } : log));
+    // 寫入成功後把結果放回 logs，模擬 Firebase 監聽器把新值送回畫面。補丁是
+    // 欄位級的，所以 data 這裡要用合併的，跟資料庫端一樣只動送上去的欄位。
+    updateDailyLog.mockImplementation(async (_childId: string, logId: string, patch: DailyLogPatch) => {
+      readState.logs = readState.logs.map((log) =>
+        log.id === logId
+          ? { ...log, ...patch, data: { ...log.data, ...patch.data } as DailyLog['data'] }
+          : log,
+      );
     });
     addDailyLog.mockResolvedValue('new-log');
   });
@@ -403,11 +408,11 @@ describe('進行中的睡眠', () => {
     await user.click(screen.getByRole('button', { name: '醒了' }));
 
     expect(updateDailyLog).toHaveBeenCalledTimes(1);
-    const [, logId, updates] = updateDailyLog.mock.calls[0];
+    const [, logId, patch] = updateDailyLog.mock.calls[0];
     expect(logId).toBe('sleep-1');
-    const closed = updates.data as SleepData;
+    const closed = patch.data as SleepData;
     expect(Date.now() - Date.parse(closed.endTime!)).toBeLessThan(1000);
-    expect((updates.data as SleepData).duration).toBe(80);
+    expect(closed.duration).toBe(80);
   });
 
   it('已經在睡的時候再按一次，說清楚原因而不是默默蓋掉', async () => {
@@ -443,16 +448,16 @@ describe('進行中的睡眠', () => {
     await user.click(await screen.findByRole('button', { name: '夜醒 2 次' }));
 
     expect(updateDailyLog).toHaveBeenCalledTimes(2);
-    const [, , updates] = updateDailyLog.mock.calls[1];
-    expect((updates.data as SleepData).nightWakings).toBe(2);
+    const [, , patch] = updateDailyLog.mock.calls[1];
+    expect((patch.data as SleepData).nightWakings).toBe(2);
   });
 
   /*
-    夜醒次數是把整個 data 寫回去的，所以它必須帶著剛剛設好的結束時間。
-    從 logs 重查那一筆會拿到監聽器還沒更新的舊值——也就是還沒關的那一版——
-    於是「回答夜醒次數」會把剛結束的睡眠變回進行中。
+    夜醒次數只寫 nightWakings 這一個欄位，別的什麼都不帶。帶著整個 data 的話
+    送上去的會是這一端手上那一版：監聽器還沒把關掉後的值送回來，於是剛結束的
+    睡眠被寫回進行中；另一位照顧者同時補的備註也會一起被蓋掉。
   */
-  it('補夜醒次數時不會把剛設好的結束時間洗掉', async () => {
+  it('補夜醒次數時只寫夜醒次數，不重放手上那一版的睡眠', async () => {
     readState.logs = [openSleepLog(80)];
     // 監聽器還沒把關掉後的值送回來：logs 裡仍然是沒有結束時間的那一版。
     updateDailyLog.mockResolvedValue(undefined);
@@ -461,11 +466,8 @@ describe('進行中的睡眠', () => {
     await user.click(screen.getByRole('button', { name: '醒了' }));
     await user.click(await screen.findByRole('button', { name: '夜醒 1 次' }));
 
-    const [, , updates] = updateDailyLog.mock.calls[1];
-    const written = updates.data as SleepData;
-    expect(written.nightWakings).toBe(1);
-    expect(written.endTime).toBeDefined();
-    expect(written.duration).toBe(80);
+    const [, , patch] = updateDailyLog.mock.calls[1];
+    expect(patch).toEqual({ data: { nightWakings: 1 } });
   });
 
   it('沒有回答夜醒次數就什麼都不寫', async () => {

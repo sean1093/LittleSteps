@@ -288,6 +288,20 @@ export interface DailyLog {
   createdByName?: string;
 }
 
+/**
+ * 一次修改真正改到的欄位，寫入前會攤平成 `data/<欄位>` 這樣的葉節點路徑。
+ *
+ * 整筆寫回去是不行的：孩子本來就是兩個人共用（見 joinChild 與 members），
+ * 兩位照顧者同時開著同一筆紀錄時，後送出的那一筆會連著他讀到的舊值一起蓋
+ * 過去，對方剛改的欄位就這樣不見了，而且兩邊都不會收到任何提示。只帶改到
+ * 的欄位，兩個人各改各的欄位就會合併而不是互相覆蓋。
+ *
+ * `data` 裡的 `null` 是「把這個欄位清掉」；沒出現的欄位完全不碰。
+ */
+export type DailyLogPatch = Partial<Omit<DailyLog, 'id' | 'data'>> & {
+  data?: Record<string, unknown>;
+};
+
 export interface FeedingData {
   /**
    * `pumping` 是唯一一個「不是餵給寶寶」的值：它記的是擠出來的量，是產出不是
