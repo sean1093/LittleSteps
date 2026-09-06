@@ -100,6 +100,15 @@ const storeChild = (members: string[], createdBy = 'u1') =>
     joinOpen: true,
   });
 
+/** 值裡任何一層（含陣列元素）出現 undefined 的路徑；SDK 就是照這樣拒絕的。 */
+const undefinedPaths = (value: unknown, path = ''): string[] => {
+  if (value === undefined) return [path];
+  if (value === null || typeof value !== 'object') return [];
+  return Object.entries(value).flatMap(([key, child]) =>
+    undefinedPaths(child, path ? `${path}.${key}` : key),
+  );
+};
+
 const rootUpdate = () => {
   const root = updates.find((entry) => entry.path === '');
   if (!root) throw new Error('沒有 root fan-out');
@@ -385,6 +394,25 @@ describe('只增不減的三份紀錄住在 childRecords 底下', () => {
     const foodId = await result.current.addFoodTrial('c1', riceTrial());
 
     expect(writes[0].path).toBe(`children/c1/foodTrackingProgress/${foodId}`);
+  });
+
+  it('過敏反應沒填補充說明時，寫出去的資料裡任何一層都沒有 undefined', async () => {
+    // #91：表單把空白的補充說明送成 description: undefined，而 SDK 在陣列元素裡
+    // 看到 undefined 會拒絕整筆寫入。任何一個家長第一次記過敏都會撞到。
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+    const reaction = { type: 'rash' as const, severity: 'mild' as const, description: undefined, date: '2026-01-01' };
+
+    const foodId = await result.current.addFoodTrial('c1', {
+      ...riceTrial(),
+      hasAllergy: true,
+      allergyReactions: [reaction],
+    });
+    await result.current.updateFoodTrial('c1', foodId, { allergyReactions: [reaction] });
+
+    expect(undefinedPaths(writes[0].value)).toEqual([]);
+    expect(undefinedPaths(updates[0].value)).toEqual([]);
+    // 反應本身要留著，而且還是陣列——它是整個寫成一個節點的。
+    expect((updates[0].value.allergyReactions as unknown[])).toHaveLength(1);
   });
 
   it('日誌與日記的 listener 讀的就是寫進去的那條路徑', async () => {

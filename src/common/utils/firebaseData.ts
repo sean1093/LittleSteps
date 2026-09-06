@@ -1,20 +1,32 @@
 /**
- * Recursively strip `undefined` values from an object before writing to
- * Firebase Realtime Database, which rejects `undefined` (values must be
- * omitted or `null`). Nested plain objects are cleaned too; arrays and
- * primitives pass through unchanged.
+ * Recursively strip `undefined` values before writing to Firebase Realtime
+ * Database, which rejects `undefined` anywhere in the value — a field must be
+ * omitted or `null`. Plain objects are cleaned at every depth, including the
+ * ones inside arrays: the food trial form sends
+ * `allergyReactions: [{ description: undefined }]` whenever the parent leaves
+ * the note blank, and the SDK refused the whole write over that one property
+ * (#91). Primitives pass through.
+ *
+ * An array element that is itself `undefined` is left in place rather than
+ * dropped. The database stores an array as an object keyed by index, so
+ * removing the element would shift every later one and quietly change which
+ * reaction `allergyReactions/1` is. The SDK still rejects such a write and
+ * names the index, which is the useful failure. No caller builds one today.
  */
 export function removeUndefined<T extends object>(obj: T): Partial<T> {
   const cleaned: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {
     if (value === undefined) continue;
-    cleaned[key] =
-      value !== null && typeof value === 'object' && !Array.isArray(value)
-        ? removeUndefined(value as Record<string, unknown>)
-        : value;
+    cleaned[key] = cleanValue(value);
   }
   // Keys/values are preserved 1:1 minus `undefined`, so the result is a Partial<T>.
   return cleaned as Partial<T>;
+}
+
+function cleanValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(cleanValue);
+  if (isPlainObject(value)) return removeUndefined(value);
+  return value;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

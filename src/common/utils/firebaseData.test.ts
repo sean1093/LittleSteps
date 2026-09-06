@@ -135,4 +135,42 @@ describe('removeUndefined', () => {
       c: { e: null },
     });
   });
+
+  it('cleans the objects inside an array, and keeps the array an array', () => {
+    // #91: the food trial form sends `allergyReactions: [{ description:
+    // undefined }]` whenever the parent leaves the note blank, and the SDK
+    // refuses the whole write over that one property. toStrictEqual, because
+    // toEqual treats a key holding undefined as absent and would pass either way.
+    const cleaned = removeUndefined({ list: [{ a: 1, b: undefined }] });
+
+    expect(cleaned).toStrictEqual({ list: [{ a: 1 }] });
+    expect(Array.isArray(cleaned.list)).toBe(true);
+  });
+
+  it('descends through an object inside an array inside an object', () => {
+    const cleaned = removeUndefined({
+      list: [{ inner: { rows: [{ a: undefined, b: 2 }] } }],
+    });
+
+    expect(cleaned).toStrictEqual({ list: [{ inner: { rows: [{ b: 2 }] } }] });
+  });
+
+  it('leaves an array of primitives as it was', () => {
+    // trialDates is written as one leaf; the elements and their order are the record.
+    const cleaned = removeUndefined({ dates: ['2026-01-01', '2026-01-02'], n: [0, null] });
+
+    expect(cleaned).toStrictEqual({ dates: ['2026-01-01', '2026-01-02'], n: [0, null] });
+    expect(Array.isArray(cleaned.dates)).toBe(true);
+  });
+
+  it('does not drop an element that is itself undefined, so indices do not shift', () => {
+    // The database stores an array as an object keyed by index. Removing the
+    // element would quietly turn reaction 2 into reaction 1; leaving it makes
+    // the SDK reject the write and name the index, which is the useful failure.
+    const cleaned = removeUndefined({ list: [1, undefined, 3] });
+
+    expect(cleaned.list).toHaveLength(3);
+    expect(cleaned.list?.[1]).toBeUndefined();
+    expect(cleaned.list?.[2]).toBe(3);
+  });
 });
