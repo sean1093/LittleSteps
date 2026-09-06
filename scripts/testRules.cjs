@@ -313,6 +313,23 @@ async function main() {
     '同一筆更新裡沒帶 lastFeedbackAt 的回饋寫不進去（迴圈灌回饋的寫法）',
     alice.patch('', { 'feedbacks/f4': feedback('f4') }),
   );
+  // validate 不會對刪除跑，所以戳記的 60 秒規則擋不住「先把戳記刪掉」。能不能
+  // 刪只看 .write：users/$uid 若整個節點都是本人可寫，迴圈就從一個請求變成
+  // 兩個——刪戳記、再送一則。
+  await expectDenied(
+    '自己也刪不掉自己的 lastFeedbackAt',
+    alice.del('users/alice/lastFeedbackAt'),
+  );
+  await expectDenied(
+    '刪掉戳記再送一則，一分鐘內照樣被擋（審查時抓到的繞法，整段照做一次）',
+    (async () => {
+      const zed = as('zed');
+      await sendFeedback(zed, 'zed', 'f-zed-1');
+      await sendFeedback(zed, 'zed', 'f-zed-2');
+      await zed.del('users/zed/lastFeedbackAt');
+      return sendFeedback(zed, 'zed', 'f-zed-3');
+    })(),
+  );
   await seedLastFeedback(61000);
   await expectDenied(
     '戳記是客戶端自己填的數字、不是伺服器的 now，就不給寫（否則填個未來的時間就能一直寫）',
@@ -544,6 +561,10 @@ async function main() {
   await expectAllowed(
     '把孩子加進自己的名單（joinChild 的寫法）',
     alice.put('users/alice/childrenIds/c1', true),
+  );
+  await expectAllowed(
+    '從名單裡拿掉一個孩子（useUserChildren 清掉讀不到的 id）',
+    alice.del('users/alice/childrenIds/c1'),
   );
   await expectAllowed(
     '切換目前選取的孩子（setCurrentChild 的寫法）',
@@ -794,14 +815,16 @@ async function main() {
   console.log('\n刪除：一次原子寫入');
   // 順序是關鍵：childRecords 的授權讀的是 children 底下的 members，所以先刪
   // 孩子再刪紀錄一定失敗。同一筆 multi-path 更新裡，所有路徑都對照寫入前的
-  // 狀態判斷，於是四個節點一起消失。
+  // 狀態判斷，於是四個節點一起消失。deleteChild 還會在同一筆裡把 currentChildId
+  // 換成剩下的孩子或 null；root 更新是逐條路徑授權的，所以這裡照它的形狀寫。
   await expectAllowed(
-    '建立者用一筆 multi-path 更新刪掉孩子、紀錄與索引',
+    '建立者用一筆 multi-path 更新刪掉孩子、紀錄、索引與選取狀態（deleteChild 的寫法）',
     alice.patch('', {
       'children/c1': null,
       'childRecords/c1': null,
       'childIndex/c1': null,
       'users/alice/childrenIds/c1': null,
+      'users/alice/currentChildId': null,
     }),
   );
   await expectDenied(
@@ -820,8 +843,14 @@ async function main() {
     '寫不進別人的使用者節點',
     mallory.put('users/alice/childrenIds/c1', true),
   );
+  // 單獨一筆 PUT。混在回饋裡驗的話，就算 users/$uid 對所有人開放，這一筆也
+  // 會因為 mallory 自己的戳記不是 now 而被擋——守衛不見了，測試還是綠的。
   await expectDenied(
-    '寫不進別人的 lastFeedbackAt（用別人的戳記交自己的回饋也不行）',
+    '寫不進別人的 lastFeedbackAt',
+    mallory.put('users/alice/lastFeedbackAt', SERVER_NOW),
+  );
+  await expectDenied(
+    '用別人的戳記交自己的回饋也不行',
     mallory.patch('', {
       'feedbacks/f8': feedback('f8', { userId: 'mallory' }),
       'users/alice/lastFeedbackAt': SERVER_NOW,

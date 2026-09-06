@@ -81,7 +81,7 @@ Two consequences worth knowing before you touch the data layer:
   deleting it would leave a health record nobody can reach.
 
 `npm run test:rules` proves all of it against the real Database emulator
-(`scripts/testRules.cjs`, 125 assertions). It needs a JDK. Change
+(`scripts/testRules.cjs`, 129 assertions). It needs a JDK. Change
 `database.rules.json` without running it and you are guessing.
 
 ---

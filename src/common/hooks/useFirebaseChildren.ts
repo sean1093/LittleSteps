@@ -539,7 +539,10 @@ export function useFirebaseChildren(userId: string | null) {
         [`users/${userId}/lastFeedbackAt`]: serverTimestamp(),
       });
     } catch (error) {
-      // 客戶端寫的 userId 就是自己的 uid，所以規則會拒絕的只剩一分鐘內送過。
+      // 表單這一側能造成的拒絕只剩一種：一分鐘內送過。userId 是自己的 uid，
+      // 欄位長度在表單就已經封頂。伺服器那一側還有兩個不在表單手上的原因——
+      // 帳號在 app 開著的時候被停用（auth 變成 null），或 App Check 開始強制
+      // 執行後 reCAPTCHA 載不進來——它們也回 PERMISSION_DENIED，這裡會說錯話。
       throw new Error(isPermissionDenied(error) ? FEEDBACK_THROTTLED_MESSAGE : FEEDBACK_FAILED_MESSAGE);
     }
 

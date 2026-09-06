@@ -256,8 +256,10 @@ users/$uid                 childrenIds, currentChildId, lastFeedbackAt
                            to subscribe to — authorisation is members, below
                            lastFeedbackAt is a server timestamp written in the
                            same update as a feedback row; the rules require it
-                           to be at least 60 s after the previous one, which
-                           caps any account at one feedback a minute
+                           to be at least 60 s after the previous one and never
+                           let its owner delete it, which caps any account at
+                           one feedback a minute (a refused write can still
+                           have other causes, such as a disabled account)
 children/$childId          id, name, birthday, gender, createdAt, createdBy,
                            isPregnancy, pregnancyData
                            gestationalAgeWeeks, gestationalAgeDays
