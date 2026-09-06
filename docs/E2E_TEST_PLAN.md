@@ -128,8 +128,9 @@ discover it as a timeout.
 
 Two things whoever supplies the dummy values needs to know: the SDK rejects an
 `apiKey` containing `:`, and `VITE_FIREBASE_DATABASE_URL` must be set or
-`getDatabase()` throws. Note that `firebase-hosting-pull-request.yml` omits that
-variable — an E2E job copy-pasted from it renders a blank page.
+`getDatabase()` silently targets the wrong (us-central1) host. Until #92,
+`firebase-hosting-pull-request.yml` omitted that variable, and an E2E job
+copy-pasted from it rendered a blank page.
 
 This buys the whole of §1 except the authenticated half of the auth gate, and
 it needs **no change to production initialisation** — an important property for
