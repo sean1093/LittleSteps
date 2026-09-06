@@ -54,8 +54,8 @@ const withRecords = (records: GrowthRecord[], error = false) =>
 
 const renderPage = () => {
   const user = userEvent.setup();
-  render(<GrowthChartsPage currentChild={child} user={null} />);
-  return user;
+  const { rerender } = render(<GrowthChartsPage currentChild={child} user={null} />);
+  return { user, rerender: () => rerender(<GrowthChartsPage currentChild={child} user={null} />) };
 };
 
 beforeEach(() => {
@@ -85,7 +85,7 @@ describe('完全沒有記錄時', () => {
 describe('有記錄但缺選中的項目時', () => {
   it('切到身高，圖表換成自己的訊息，而不是回到「尚無記錄」', async () => {
     withRecords([weightOnly]);
-    const user = renderPage();
+    const { user } = renderPage();
 
     // 預設的體重有資料，所以先看到圖、看不到任何空狀態。
     expect(screen.queryByRole('heading', { name: '無法顯示圖表' })).toBeNull();
@@ -101,12 +101,18 @@ describe('有記錄但缺選中的項目時', () => {
 describe('改一筆打錯的記錄', () => {
   it('編輯會帶入原本的值，存檔後送出新的體重', async () => {
     withRecords([weightOnly]);
-    const user = renderPage();
+    const { user, rerender } = renderPage();
 
     await user.click(screen.getByRole('button', { name: /^編輯 .* 的記錄$/ }));
 
     const weight = await screen.findByLabelText('體重 (kg)');
     expect(weight).toHaveValue(7.4);
+
+    // 表單開著的時候另一位照顧者改了體重，listener 推來 8.0。hook 拿來當比對
+    // 基準的必須是打開表單那一刻的 7.4，不是畫面上最新的那一版——否則對方
+    // 剛補的欄位在這張表單裡是空白，存下去就變成清掉它。
+    withRecords([{ ...weightOnly, weight: 8.0 }]);
+    rerender();
 
     /*
       體重欄是 step="0.01"，而 happy-dom 的 stepMismatch 用浮點取餘數判斷，
@@ -117,7 +123,7 @@ describe('改一筆打錯的記錄', () => {
     await user.type(weight, '10.24');
     await user.click(screen.getByRole('button', { name: '更新' }));
 
-    // 第三個參數是打開表單時的那一版：hook 拿它當比對的基準。
+    // 第三個參數是打開表單時的那一版（7.4），不是 listener 最新的那一版（8.0）。
     await waitFor(() =>
       expect(updateRecord).toHaveBeenCalledWith(
         'g1',
@@ -129,7 +135,7 @@ describe('改一筆打錯的記錄', () => {
 
   it('新增記錄開的是空白的表，不會沾到剛剛編輯的那筆', async () => {
     withRecords([weightOnly]);
-    const user = renderPage();
+    const { user } = renderPage();
 
     await user.click(screen.getByRole('button', { name: /^編輯 .* 的記錄$/ }));
     await screen.findByRole('heading', { name: '編輯成長記錄' });

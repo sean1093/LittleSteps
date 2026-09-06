@@ -262,10 +262,11 @@ describe('兩位照顧者各補一項測量', () => {
   const weightOnly = () => ({ id: 'g1', childId: 'c1', date: '2026-08-01', weight: 7.4 });
 
   /**
-   * AddGrowthRecordModal 送出的形狀：每個欄位都送，沒填的是 undefined，
-   * percentile 固定是 {}——「會由 hook 算」。
+   * AddGrowthRecordModal 送出的形狀：每個欄位都送（連 childId），沒填的是
+   * undefined，percentile 固定是 {}——「會由 hook 算」。
    */
-  const submitted = (fields: Partial<GrowthRecord>): Omit<GrowthRecord, 'id' | 'childId'> => ({
+  const submitted = (fields: Partial<GrowthRecord>): Omit<GrowthRecord, 'id'> => ({
+    childId: 'c1',
     date: '2026-08-01',
     weight: undefined,
     height: undefined,
@@ -307,8 +308,29 @@ describe('兩位照顧者各補一項測量', () => {
 
     // listener 把合併後的那一筆推給每個開著的畫面，媽媽的表單還開著。
     act(() => subscription('A').next({ val: () => ({ g1: stored() }) }));
+    // 這一行是整組測試的前提：爸爸的身高已經在媽媽的畫面上，而她的表單沒有。
+    // 廣播若退化成一條路徑一個 listener，新舊程式都什麼都不寫，下面三條就沒有牙齒。
+    expect(mum.current.records[0].height).toBe(68);
     return { mum, mumOpened };
   };
+
+  it('對方刪掉這一筆之後，從還開著的表單存下去要被擋掉，不會把它寫回來', async () => {
+    // 比對的基準是表單打開時那一版，但「這一筆還在不在」只有畫面上最新的那一版
+    // 知道。沒有這道檢查，PATCH 打在已經不存在的節點上會被規則收下（合併後有
+    // date 就夠），寫回來的那一筆沒有 id——列表以 undefined 當 key，刪除鍵指向
+    // growthRecords/undefined，一筆誰都刪不掉的健康紀錄。
+    const mum = openWith({ g1: weightOnly() });
+    const mumOpened = weightOnly();
+
+    // 爸爸刪掉了 g1；快照推到媽媽畫面上，她的表單還開著。
+    act(() => subscription('A').next({ val: () => null }));
+    expect(mum.current.records).toEqual([]);
+
+    await expect(
+      mum.current.updateRecord('g1', submitted({ weight: 7.4, date: '2026-08-02' }), mumOpened),
+    ).rejects.toThrow('Record not found');
+    expect(journal).toHaveLength(0);
+  });
 
   it('表單開在舊版上、畫面已經收到對方的合併結果：原封不動存下去，什麼都不寫', async () => {
     const { mum, mumOpened } = await dadAddedHeightWhileMumEdits();
