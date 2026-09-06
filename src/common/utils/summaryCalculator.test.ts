@@ -193,8 +193,16 @@ describe('summaryCalculator', () => {
     // 把 `doses` 加總會把 4 劑膨脹成 16 劑。
     const TOTAL_DOSES = vaccineSchedules.length;
 
-    /** 公費劑次。下一劑只認這些，理由寫在 vaccineSchedule.nextScheduledDose。 */
-    const NATIONAL = vaccineSchedules.filter(vaccine => vaccine.funding === 'national');
+    /**
+     * 公費常規劑次。下一劑與「還沒記錄的公費劑次」都只認這些。
+     *
+     * 規則在這裡重寫一次而不是借用 isScheduledDose：借用的話，述詞改壞了測試
+     * 會跟著改壞。公費也分「每個孩子都該打」與「只給名單上的孩子」——帶
+     * eligibility 的那種是資訊，不是這個孩子欠的劑次。
+     */
+    const NATIONAL = vaccineSchedules.filter(
+      vaccine => vaccine.funding === 'national' && !vaccine.eligibility
+    );
 
     /** 最早的公費劑次。 */
     const EARLIEST_NATIONAL = NATIONAL.reduce((earliest, vaccine) =>

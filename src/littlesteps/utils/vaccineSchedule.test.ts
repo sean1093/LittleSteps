@@ -169,6 +169,59 @@ describe('actionableVaccineDoses', () => {
     actionable.forEach((dose) => expect(dose.funding).toBe('national'));
   });
 
+  it('公費但限定對象的劑次不算漏打——app 不知道這個孩子在不在名單上', () => {
+    // 時程表講得出「公費，但只給名單上的孩子」：公費加上一段 eligibility。
+    // 對每一個健康寶寶的家長說「你漏打了一劑公費疫苗」是新的錯誤資訊，
+    // 只是換了方向；條件本身在疫苗頁上不必展開就看得到。
+    const today = at('2026-05-20');
+    const doses = resolveVaccineDoses(
+      BIRTHDAY,
+      [
+        vaccine({ id: 'gated', ageInMonths: 2, eligibility: '如為高危險群對象' }),
+        vaccine({ id: 'routine', ageInMonths: 4 }),
+      ],
+      {},
+      today,
+    );
+
+    // 前提要成立：兩劑都是公費，限定對象那一劑真的已經到期。
+    expect(doses.map((dose) => dose.funding)).toEqual(['national', 'national']);
+    expect(doses.map((dose) => dose.status)).toEqual(['overdue', 'due']);
+
+    expect(actionableVaccineDoses(doses, today).map((d) => d.vaccineId)).toEqual(['routine']);
+    expect(nextScheduledDose(doses, today)?.vaccineId).toBe('routine');
+  });
+
+  it('只剩下限定對象的那一劑時，答案是「沒有下一劑」而不是它', () => {
+    // 沒有人會去記錄一劑自己不需要打的疫苗，所以它一旦被當成待辦就永遠卡在
+    // 那裡。這一條要在篩選被拿掉時紅，而不是被隔壁那一劑蓋過去。
+    const today = at('2026-03-20');
+    const doses = resolveVaccineDoses(
+      BIRTHDAY,
+      [vaccine({ id: 'gated', eligibility: '如為高危險群對象' })],
+      {},
+      today,
+    );
+
+    expect(doses[0].funding).toBe('national');
+    expect(doses[0].status).toBe('due');
+    expect(actionableVaccineDoses(doses, today)).toEqual([]);
+    expect(nextScheduledDose(doses, today)).toBeUndefined();
+  });
+
+  it('限定對象的劑次仍然留在時程上，條件也跟著它走', () => {
+    // 不是待辦不等於不存在：疫苗頁與行事曆匯出都靠這一列把條件送到家長眼前。
+    const [dose] = resolveVaccineDoses(
+      BIRTHDAY,
+      [vaccine({ id: 'gated', eligibility: '如為高危險群對象' })],
+      {},
+      at('2026-03-20'),
+    );
+
+    expect(dose.vaccineId).toBe('gated');
+    expect(dose.eligibility).toBe('如為高危險群對象');
+  });
+
   it('剛出生時仍然提醒出生那幾劑', () => {
     // 上限是為了擋掉補不回來的歷史，不是擋掉新生兒真正該打的那一劑。
     const doses = resolveVaccineDoses(BIRTHDAY, vaccineSchedules, {}, at('2026-01-18'));
