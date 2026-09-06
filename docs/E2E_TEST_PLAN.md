@@ -98,8 +98,8 @@ We adopt a **two-phase** strategy.
 
 ### Phase 1 — public routes, dummy credentials (no production code changes)
 
-`routePolicy.ts` makes nine pages public: the hub, the three wikis, the care
-guide, the sleep guide, LittleOuting, BabyOasis and LittleGuard. None of them
+`routePolicy.ts` makes ten pages public: the hub, the about page, the three
+wikis, the care guide, the sleep guide, LittleOuting, BabyOasis and LittleGuard. None of them
 reads a child's record, so dummy `VITE_FIREBASE_*` values are enough to get the
 app to boot and **no child's record is ever requested**: both `useUserChildren`
 and `useFirebaseCollection` early-return on a null user, so no database listener
@@ -226,6 +226,30 @@ encodes that as two viewport projects and asserts *invariants*, not images:
   one inside a paragraph. Know the failure mode — renaming the token makes the
   check quietly stop covering those links rather than fail — so a rename
   updates the helper in the same commit.
+- **No content spill out of a non-wrapping box:** for every element that
+  cannot wrap and does not clip or scroll, the content is drawn inside the
+  element's own padding box. This is the per-element half of the first
+  assertion, and it is not redundant with it: a flex item's `min-width: auto`
+  floors it at its min-content width, so an over-wide `nowrap` row normally
+  widens the page and the body check fires — but a row that overrides that
+  floor with an explicit `min-width` squeezes a chip below its own text
+  instead, and because `.chip` is `nowrap` with `overflow: visible` the label
+  spills over its neighbours inside a row that still fits. That is issue #52's
+  defect, shipped in PR #40: the body never widened and every chip was exactly
+  44px, so both of the assertions above stayed green while three pills read as
+  one illegible run at 320px.
+
+  Measured with a `Range` over the element's contents rather than with
+  `scrollWidth`. `scrollWidth` reports the *scrolling* area, which for a
+  left-to-right box includes overflow past the right edge and excludes overflow
+  past the left, so it sees only half the class; the comparison is restricted
+  to elements whose content is entirely inline, because a `Range` around block
+  children measures their margin boxes rather than the text.
+
+  The candidate set is derived from the hazard — cannot wrap, does not clip —
+  and not from a list of classes, so it covers a recipe nobody has written yet.
+  An ellipsising row is excluded by construction, since `text-overflow` needs
+  `overflow: hidden` and truncation is a decision rather than an accident.
 - **No visual overlap** between a truncating name and the tag beside it: the
   tag's left edge is at or after the name's right edge.
 - **Modal reachability:** the submit control of an open modal is inside the
@@ -321,6 +345,15 @@ as artifacts. It does not download browsers (§4).
 ## 13. Out of scope
 
 Performance budgets and Lighthouse; visual regression baselines; accessibility
-auditing beyond the role-based selectors the suite already forces;
-cross-browser beyond Chromium (§4); load testing; anything touching a real
-Firebase project or the real CDC endpoint.
+auditing beyond the role-based selectors the suite already forces **and the
+landmark structure in A11Y-01/02**; cross-browser beyond Chromium (§4); load
+testing; anything touching a real Firebase project or the real CDC endpoint.
+
+The landmark carve-out is deliberate and narrow. It is not an audit — no colour
+contrast, no ARIA sweep, no axe run. It is there because `banner` and `main` are
+the two landmarks that depend on where a page sits in the shell, and that seam
+has no other test: `App.tsx` supplies one half, a lazily-imported page supplies
+the other, and mounting either alone shows nothing wrong. Issue #65 was open for
+a week describing three affected services when the real number was five, because
+reading the code is not enough to tell. Anything that can be decided by mounting
+one component stays out.

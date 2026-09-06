@@ -1,6 +1,8 @@
 import { expect, test } from '../fixtures/test';
 import {
   expectModalFitsViewport,
+  expectNoContentSpill,
+  expectSomethingToMeasure,
   expectNoPageOverflow,
   expectReachableByScrolling,
   expectRowContainsItsOverflow,
@@ -12,17 +14,17 @@ import { BabyOasisPage } from '../pages/babyOasisPage';
 import { PublicRoutePage } from '../pages/publicRoutePage';
 
 /**
- * RWD-01…03 — the layout invariants, at 390px and 320px.
+ * RWD-01…04 — the layout invariants, at 390px and 320px.
  *
  * Measurements, never golden images (plan §2 and §7). A pixel baseline on a
  * Tailwind app churns on every token change and teaches a reviewer to accept
- * the diff; these three assert what a parent actually hits — a page that
+ * the diff; these four assert what a parent actually hits — a page that
  * scrolls sideways, a control too small to tap, a modal whose controls are off
  * the screen — and they survive a restyle that broke nothing.
  *
- * One test per route rather than one loop over all nine: the route is then in
+ * One test per route rather than one loop over all ten: the route is then in
  * the failure's title, and a broken page fails once instead of hiding the
- * eight behind it.
+ * nine behind it.
  */
 
 for (const route of PUBLIC_ROUTES) {
@@ -57,6 +59,47 @@ for (const route of PUBLIC_ROUTES) {
     // carry `min-h-tap` by construction, so what this catches is a control
     // that left the system: a bare `<button>`, or a token that lost its size.
     await expectTapTargets(page);
+  });
+}
+
+/**
+ * Routes with no non-wrapping content of their own, so RWD-04's candidate set
+ * is legitimately empty there and the non-vacuity assertion would fail.
+ *
+ * Measured, not assumed: every other public route has between 4 and 26
+ * candidates at both widths; these three have zero. The hub is a stack of
+ * service cards, and the sleep guide and the about page are prose. Listed by
+ * name rather than skipped silently, so a route that *stops* having chips is a
+ * decision someone makes here rather than a green line that quietly stopped
+ * meaning anything.
+ *
+ * `about` earned its place the day the assertion landed: it arrived on master
+ * while this was in flight and turned RWD-04 red at both widths, which is
+ * precisely the outcome the assertion exists for — a new route joins the
+ * derived list and someone has to say which kind it is.
+ */
+const ROUTES_WITH_NOTHING_TO_MEASURE = new Set([
+  'home',
+  'about',
+  'littlesteps/sleep-training',
+]);
+
+for (const route of PUBLIC_ROUTES) {
+  test(`RWD-04 @p1 ${route} keeps every nowrap label inside its own box`, async ({ page }) => {
+    const routes = new PublicRoutePage(page);
+
+    await routes.goto(route);
+    await expect(routes.ready(route)).toBeVisible();
+
+    // RWD-01 measures the document and is structurally unable to see this:
+    // a `nowrap` chip squeezed below its own text by a sibling spills over
+    // its neighbours *inside* a row that still fits the viewport, so the body
+    // never widens. That is the defect PR #40 shipped and #12 reviewed past —
+    // three pills reading as one illegible run at 320px, with the
+    // document-level check green the whole time. See the helper for why it is
+    // measured with a `Range` and not with `scrollWidth`.
+    if (!ROUTES_WITH_NOTHING_TO_MEASURE.has(route)) await expectSomethingToMeasure(page);
+    await expectNoContentSpill(page);
   });
 }
 

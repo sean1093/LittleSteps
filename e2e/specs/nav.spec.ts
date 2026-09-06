@@ -26,8 +26,8 @@ test('NAV-01 @p1 every public path boots on its own route', async ({ page }) => 
       // The oracle is `document.title`, which `useDocumentMeta` sets from
       // `pageMeta.ts` after hydration. That is the point: `vite preview`
       // serves the *root* `index.html` for an extensionless path, so the
-      // prerendered title on the wire is the home page's for eight of these
-      // nine routes. Only the running app can put the right one there, so
+      // prerendered title on the wire is the home page's for nine of these
+      // ten routes. Only the running app can put the right one there, so
       // this asserts the app booted on this route rather than that a file
       // exists — the file is SEO-03's separate concern.
       await expect(page).toHaveTitle(metaFor(route).title);

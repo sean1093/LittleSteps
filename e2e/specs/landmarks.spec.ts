@@ -5,15 +5,6 @@ import { PublicRoutePage } from '../pages/publicRoutePage';
 /**
  * A11Y-01/02 — one banner and one main on every public route.
  *
- * NOTE FOR THE CATALOGUE. `docs/E2E_TEST_CASES.md` has no A11Y section and no
- * row for these two, because that file is held by another branch while this
- * change is in flight. Two rows still have to be added to it, and `e2e/README`
- * is right that a spec without a catalogue entry is a defect in the suite:
- *
- *   | A11Y-01 | P1 | Every public route exposes exactly one `banner` landmark,
- *     except the hub, which renders no page header at all |
- *   | A11Y-02 | P1 | Every public route exposes exactly one `main` landmark |
- *
  * Why this is E2E and not a unit test. Both landmarks are properties of the
  * whole document, and both are produced by two files that never meet in a unit
  * test: `App.tsx` supplies the shell, and each standalone service supplies its

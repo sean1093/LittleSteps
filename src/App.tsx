@@ -43,6 +43,7 @@ const DevelopmentPage = lazy(() => import('./littleexplorer/pages/DevelopmentPag
 const RemindersPage = lazy(() => import('./littleexplorer/pages/RemindersPage'));
 const DiaryPage = lazy(() => import('./littleexplorer/pages/DiaryPage'));
 const ToddlerWikiPage = lazy(() => import('./littleexplorer/pages/ToddlerWikiPage'));
+const AboutPage = lazy(() => import('./common/about/AboutPage'));
 import FeedbackButton from './common/components/FeedbackButton';
 import { toLocalDateKey } from './common/utils/dateHelpers';
 
@@ -179,12 +180,25 @@ function AppContent() {
     return title;
   };
 
-  // Five standalone sub-apps render their own chrome — LittleBloom,
-  // LittleExplorer, LittleOuting, BabyOasis and LittleGuard — so the LittleSteps
-  // header/sidebar stays hidden for them. The comment used to name three of the
-  // five, which is why it is easy to believe the two shell-based services are on
-  // the other side of this line; they are not.
+  // Everything below renders its own chrome, so the LittleSteps header/sidebar
+  // stays hidden for it: the about page and five standalone sub-apps —
+  // LittleBloom, LittleExplorer, LittleOuting, BabyOasis and LittleGuard.
+  //
+  // The comment here used to name three of the five, which is why it is easy to
+  // believe the two shell-based services are on the other side of this line;
+  // they are not. Issue #65 was filed against that comment rather than the code.
+  //
+  // The about page is not a LittleSteps page either: it describes all six
+  // services and renders its own AppBar. Leaving it out would mount the
+  // LittleSteps sidebar on it with a `currentPage` that is not a LittleStepsPage
+  // — the cast below would be a lie.
+  //
+  // Being on this list is a contract, not just a styling switch: `ContentLandmark`
+  // below stops supplying a `<main>`, so every page reachable under these
+  // prefixes must render its own `<header>` and its own `<main>`. A11Y-01/02
+  // check that on the public ones.
   const isStandaloneSubApp =
+    currentPage === 'about' ||
     currentPage.startsWith('littlebloom') ||
     currentPage.startsWith('littleexplorer') ||
     currentPage === 'littleouting' ||
@@ -510,6 +524,7 @@ function AppContent() {
         )}
 
         {/* Standalone sub-app routes */}
+        {currentPage === 'about' && <AboutPage />}
         {currentPage === 'littleouting' && <OutingPage />}
         {currentPage === 'babyoasis' && <BabyOasisPage />}
         {currentPage === 'littleguard' && <RadarPage />}

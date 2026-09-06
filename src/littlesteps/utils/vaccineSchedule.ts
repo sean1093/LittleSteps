@@ -42,6 +42,11 @@ export interface ResolvedVaccineDose {
   /** 疾管署寫的建議時間，逐字沿用，不改寫成數字 */
   timing: string;
   funding: VaccineSchedule['funding'];
+  /**
+   * 來源寫的給付條件，逐字沿用。有值就代表這一劑只給名單上的孩子，
+   * 於是它是資訊而不是待辦——判斷寫在 isScheduledDose。
+   */
+  eligibility?: string;
   /** 建議接種日 = 出生日 + ageInMonths */
   dueDate: string;
   status: ScheduleStatus;
@@ -90,6 +95,7 @@ export function resolveVaccineDoses(
         name: vaccine.name,
         timing: vaccine.timing,
         funding: vaccine.funding,
+        eligibility: vaccine.eligibility,
         dueDate,
         status: resolveScheduleStatus(
           completedDate,
@@ -131,8 +137,33 @@ export const OVERDUE_LOOKBACK_DAYS = 90;
  * 都指向這個常數。兩份各自判斷 funding 的實作就是 #25 本身——不看 funding
  * 的那一份不只偶爾答錯，而是一旦家長記下出生第一劑就永遠卡在自費那一列，
  * 因為不會去買的劑次永遠不會被記錄，「第一筆沒接種的」就永遠不會往前走。
+ *
+ * 光是這個值還不夠：公費也分「每個孩子都該打」與「只給名單上的孩子」，
+ * 後者由 isScheduledDose 一起判斷，不要單獨比對這個常數。
  */
 export const SCHEDULED_FUNDING: VaccineSchedule['funding'] = 'national';
+
+/**
+ * 這一劑算不算「這個孩子欠的」。
+ *
+ * 光看 funding 不夠：時程表也講得出「公費，但只給名單上的孩子」——公費加上
+ * 一段 eligibility，例如高危險群才多打的那一劑。這個 app 不知道這個孩子在
+ * 不在名單上，而兩種預設不是對稱的錯：
+ *
+ *   * 預設每個孩子都在，等於對絕大多數健康寶寶的家長說「你漏打了一劑公費
+ *     疫苗」，而且那一劑不會有人去打、就永遠不會被記錄，於是它會一直卡在
+ *     「下一劑」那張卡上——正是 #25 拔掉的毛病。
+ *   * 預設都不在，最壞的情況是真的符合條件的那一家在疫苗頁上讀到條件——那
+ *     一段不必展開就看得到，行事曆匯出也帶著它。
+ *
+ * 所以帶 eligibility 的劑次是資訊，不是待辦。提醒清單、下一劑、儀表板卡片
+ * 與看診摘要都問這一個述詞，不要各自再判斷一次 funding。
+ */
+export function isScheduledDose(
+  dose: Pick<VaccineSchedule, 'funding' | 'eligibility'>,
+): boolean {
+  return dose.funding === SCHEDULED_FUNDING && !dose.eligibility;
+}
 
 /**
  * 「還在這個孩子的時程上」——下一劑與提醒清單共用的同一條規則。
@@ -147,7 +178,7 @@ const stillOnSchedule = (today: Date) => {
     (OVERDUE_LOOKBACK_DAYS + DUE_WINDOW_DAYS) * MS_PER_DAY;
 
   return (dose: ResolvedVaccineDose): boolean => {
-    if (dose.funding !== SCHEDULED_FUNDING) return false;
+    if (!isScheduledDose(dose)) return false;
     if (dose.status === 'done') return false;
     if (dose.status !== 'overdue') return true;
 

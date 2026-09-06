@@ -145,6 +145,20 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
             </div>
           )}
 
+          {/* 已登入的家長想確認資料怎麼被保護時，會來這裡找；未登入的人也
+              該在交出帳號之前就看得到。 */}
+          <button
+            type="button"
+            onClick={() => {
+              goTo('about');
+              onClose();
+            }}
+            className="btn-ghost w-full justify-between px-4"
+          >
+            <span className="text-ink">關於資料</span>
+            <span className="text-sm text-ink-faint">存在哪裡、誰看得到</span>
+          </button>
+
           {showChildren && user && (
             <div>
               <h3 className="mb-2">我的寶寶</h3>

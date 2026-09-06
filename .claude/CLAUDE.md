@@ -46,8 +46,8 @@ one.
 
 `common/routePolicy.ts` is a **public allowlist**, not a "needs auth" blocklist.
 This app stores children's health data, so a page nobody classified must fail
-closed. Only the entry point, the three knowledge bases, the care guide, the
-sleep guide, LittleOuting, BabyOasis and LittleGuard are public.
+closed. Only the entry point, the about page, the three knowledge bases, the
+care guide, the sleep guide, LittleOuting, BabyOasis and LittleGuard are public.
 
 A blocked visitor sees that service's intro page **at the same URL** — the path
 is preserved so signing in lands them where they were going. Never redirect.
@@ -147,6 +147,19 @@ Hierarchy comes from type, spacing and one accent colour.
 - **44px minimum** for anything tappable (`min-h-tap`, `w-tap`, `.btn-icon`).
 - Never nest a small tap target inside a large one that does the same thing.
 - No table of prose on a phone — use a card list.
+- **Do not combine `flex-1` with an explicit `min-width` on a `nowrap` item.**
+  Either alone is fine — `RepeatLastLog` ships `chip min-w-tap` on purpose. It
+  is the pair: `flex-1` is `flex: 1 1 0%`, and `min-width: auto` is the only
+  thing flooring such an item at its own text. `min-w-tap` replaces that floor
+  with 44px, and `.chip` is `nowrap` with `overflow: visible`, so the label
+  spills over its neighbours instead of clipping. The page does not widen and
+  the tap target is still 44px, so every document-level check stays green.
+  **The fix is to drop `flex-1`** and let the chips size to their labels, which
+  is what #40's correction did — `flex-wrap` does not help, because line
+  breaking uses the hypothetical main size and the explicit `min-width` pins
+  that at 44px (`NightWakingsPrompt` has both and still shares a line). RWD-04
+  measures it at both widths, **on the public routes only** — every live
+  instance of this recipe is behind the auth gate, which is Phase 2.
 - Charts need `viewBox` + `w-full`, never fixed pixel `width`/`height`.
 - `min-h-dscreen` / `h-dscreen` for full-bleed screens; `100vh` includes the
   browser chrome covering the bottom of the screen.
@@ -167,10 +180,21 @@ Short entrances, small offsets, nothing looping. Import from `common/ui/motion`
 ```bash
 npm run dev            # localhost:5173
 npm run build          # tsc && vite build — must pass
-npm run lint           # zero warnings allowed
+npm run lint           # tsc --noEmit, then eslint; zero warnings allowed
 npm run test           # watch mode; `npx vitest run` for one pass
 npm run test:rules     # database.rules.json against the real emulator (needs a JDK)
 ```
+
+`npm run lint` typechecks before it lints, and that ordering is the point.
+`tsconfig.json` pins `lib` to ES2020, but esbuild strips types without reading
+it and no ESLint rule knows what a built-in is, so `.at()`, `findLast`,
+`toSorted`, `Object.groupBy` and the rest of the ES2021+ family used to run
+green under Vitest and lint clean while only `tsc` objected. The compiler is
+the only thing that knows the ceiling, so the fast loop runs the compiler —
+rather than a second, hand-maintained list of banned built-ins that would drift
+away from `lib` the day it was written. When `tsc` suggests raising `lib`,
+index the array instead; widening the ceiling repo-wide to compile one line is
+damage left for the next reader.
 
 Before claiming a UI change works, **look at it** at 390px. Type-checking is not
 verification for visual work.

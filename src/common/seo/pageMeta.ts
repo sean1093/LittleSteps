@@ -26,6 +26,11 @@ const PAGE_META: Record<Page, PageMeta> = {
     description:
       '孕期產檢、寶寶里程碑與疫苗、幼兒發展檢核、親子好去處、全台哺乳室地圖與每週兒童傳染病。六個服務，陪台灣爸媽走過每個階段。',
   },
+  about: {
+    title: '關於資料與來源｜LittleSteps',
+    description:
+      '孩子的紀錄存在哪裡、誰看得到、我們用它做什麼，以及每一頁的內容出自哪一份政府或 WHO 的公開資料。',
+  },
   littlesteps: {
     title: 'LittleSteps 寶寶追蹤｜0-1 歲里程碑、疫苗與日常記錄',
     description: '記錄 0-1 歲寶寶的發展里程碑、疫苗接種、副食品與每日餵奶睡眠，並可產生看診摘要。',

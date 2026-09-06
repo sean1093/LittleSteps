@@ -47,18 +47,29 @@ group headings answer it rather than leaving six equal rows to be read through.
 ### LittleSteps — baby growth tracking
 - **Growth overview** — one screen summarising milestones, vaccines, sleep, nappies and food
 - **Milestone tracking** — 33 milestones across physical, motor, cognitive and feeding
-- **Vaccine tracking** — 35 doses on Taiwan's MOHW schedule (20 government-funded,
+- **Vaccine tracking** — 36 doses on Taiwan's MOHW schedule (21 government-funded,
   1 conditionally reimbursed by the NHI, 14 self-paid), each citing the CDC page it
   came from, with side-effect and emergency guidance. A dose that is due to change
   funding on a known date says so, and a test goes red once that date passes while
   the row still states the old funding
+- **Publicly funded, but only for a named group** — one of those government-funded
+  doses is the extra PCV13 dose at six months for high-risk children. It carries the
+  CDC's own condition, so it shows on the vaccine page and in the calendar export but
+  is never counted as owed: it is not in the due list, not the next dose, and not part
+  of "doses still unrecorded". Every family sees it; no family is told they are behind.
+  The calendar export is the one place it does prompt — every exported event carries a
+  week's warning, so a family that exports gets an alarm for this dose like any other,
+  with the condition in the event body
 - **Calendar export** — the outstanding doses export as an ICS file, one action for
   everything still due and one per dose, each event naming the dose, its funding
   state and the recommended window, with a week's warning
 - **Next dose** — the dashboard card and the clinic summary name only publicly funded
   doses, resolved by one shared implementation that also drops doses the child has
   aged past, so a dose the family would have to buy is never presented as the next
-  scheduled one
+  scheduled one. With no next dose the card still gives a number rather than going
+  quiet: how many publicly funded doses are unrecorded, or, once none are, how many
+  doses sit outside the routine public schedule and remain available — a count and
+  their availability, never a product to buy
 - **Quick log** — feeding, sleep and nappies in a couple of taps, or one tap to repeat
   the last one. The form reopens with the values this child was logged with, scoped to
   the child rather than the account, so a parent of a formula-fed and a breastfed baby
@@ -182,9 +193,19 @@ write in the product.
 
 `src/common/routePolicy.ts` holds a **public allowlist**, deliberately not a
 "needs auth" blocklist: this app stores children's health data, so forgetting to
-mark a new page should fail closed. Public pages are the entry point, the three
-knowledge bases, the care guide, the sleep guide, LittleOuting, BabyOasis and
-LittleGuard. Everything else needs an account.
+mark a new page should fail closed. Public pages are the entry point, the about
+page, the three knowledge bases, the care guide, the sleep guide, LittleOuting,
+BabyOasis and LittleGuard. Everything else needs an account.
+
+The about page at `/about` says all of this in a parent's words: where a child's
+records live, who can read them, what the app does and does not do with them,
+and which government, WHO or OpenStreetMap dataset every number on every other
+page comes from. Its claims are data in `src/common/about/dataSources.ts` and
+each one is held against the real thing by a test — the counts against the
+data files, the source URLs against an official-host allowlist, the sentence
+about what the device stores against the preference module's key set — so the
+page cannot quietly fall behind the system it describes. It is reachable from
+the entry page, the account sheet and the share sheet.
 
 A signed-out visitor hitting a private route gets that service's intro page at
 the same URL — the path is preserved, so after signing in they land where they
@@ -243,7 +264,7 @@ feedbacks/$feedbackId      title, content, userId, timestamp
 ```
 
 The child node holds who the child is, plus progress against fixed lists — 33
-milestones, 35 vaccine doses, 30 development checks — so it is bounded. The
+milestones, 36 vaccine doses, 30 development checks — so it is bounded. The
 three collections under `childRecords` are not: they grow by one row per nappy,
 forever. They sit in a sibling subtree because the child listener subscribes to
 the whole `children/$childId` node, so with the logs inside it one nappy change
@@ -359,12 +380,20 @@ VITE_FIREBASE_DATABASE_URL=
 npm run dev            # http://localhost:5173
 npm run build          # tsc && vite build
 npm run preview
-npm run lint
+npm run lint           # tsc --noEmit, then eslint
 npm run test           # watch
 npm run test:coverage
 npm run test:rules     # database.rules.json against the Database emulator
 npm run test:e2e       # Playwright, at 390px and 320px
 ```
+
+`npm run lint` typechecks before it lints. `tsconfig.json` pins `lib` to
+ES2020, and the compiler is the only tool in the repo that knows it: esbuild
+strips types without reading `lib`, and no ESLint rule knows what a built-in
+is, so `.at()`, `findLast`, `toSorted` and the rest of the ES2021+ family used
+to pass lint and the unit suite and fail only at `npm run build`. Running `tsc`
+in the fast loop closes that without inventing a second list of banned
+built-ins to drift away from `lib`.
 
 `npm run test:rules` runs `scripts/testRules.cjs` against the Database emulator
 via `firebase emulators:exec`, so it needs a JDK: `brew install openjdk`, and

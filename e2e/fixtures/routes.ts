@@ -19,7 +19,7 @@ import { ROUTE_PATH, type Page } from '../../src/types/routes';
  */
 export const ALL_ROUTES = Object.keys(ROUTE_PATH) as Page[];
 
-/** Reachable without an account. Nine pages, and the only ones ever indexed. */
+/** Reachable without an account. Ten pages, and the only ones ever indexed. */
 export const PUBLIC_ROUTES = ALL_ROUTES.filter((route) => !requiresAuth(route));
 
 /** Everything else: a signed-out visitor gets that service's intro page here. */

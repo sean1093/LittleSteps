@@ -40,7 +40,7 @@ address bar and the real chunk loader.
 
 | ID | Pri | Case | Expected |
 |---|---|---|---|
-| NAV-01 | P1 | Deep-link directly to each of the nine public paths | Page boots on that route and the URL is unchanged after load. Oracle is `document.title`, set per-route at runtime by `useDocumentMeta` from `pageMeta.ts` — this is hydration, not the prerendered file, which is SEO-03's separate concern. Do **not** assert `SERVICE_THEME[id].name`: only LittleOuting, BabyOasis and LittleGuard pass it to their `AppBar`; the hub has no `AppBar`, the LittleSteps wikis get theirs from `App.tsx`'s `getPageTitle()`, and the two other wikis use their own shells |
+| NAV-01 | P1 | Deep-link directly to each of the ten public paths | Page boots on that route and the URL is unchanged after load. Oracle is `document.title`, set per-route at runtime by `useDocumentMeta` from `pageMeta.ts` — this is hydration, not the prerendered file, which is SEO-03's separate concern. Do **not** assert `SERVICE_THEME[id].name`: only LittleOuting, BabyOasis and LittleGuard pass it to their `AppBar`; the hub has no `AppBar`, the LittleSteps wikis get theirs from `App.tsx`'s `getPageTitle()`, and the two other wikis use their own shells |
 | NAV-02 | P1 | Deep-link to a gated path (`/littlesteps/daily-log`) while signed out | See AUTH-01; asserted here only for "the URL does not change" |
 | NAV-03 | P1 | Navigate to an unknown path (`/nope`, `/littlesteps/nope`) | The hub landing renders; no blank page, no thrown error in the console |
 | NAV-04 | P1 | Legacy hash link (`/#/littleexplorer/wiki`) | `redirectLegacyHash()` lands on the path route, and the hash is gone from the URL |
@@ -138,6 +138,28 @@ Per plan §7. These assert measurements, never images. Each runs at 390px and
 | RWD-01 | P1 | No horizontal page scroll on every public route | `body.scrollWidth <= body.clientWidth`; deliberate scrollers exempted by asserting on their own container, selected by `data-testid` — that it is a scroll container and fits the viewport, never that it overflows |
 | RWD-02 | P1 | Tap targets on every public route | Every enabled control **the design system owns** — `button`, `input`, `[role=button]`, links styled as buttons — is ≥44px in its smaller dimension. Inline links in prose are excluded, and so is everything inside `.leaflet-container`: Leaflet marks its markers `role="button"`, so a 3,852-room map is otherwise the whole result. See the plan's §7, including the residual risk of an app-owned control inside a Leaflet popup |
 | RWD-03 | P1 | An open modal's submit control is inside the viewport | Guards `max-h-[85vh] overflow-y-auto`, which exists so the submit button is reachable with the keyboard open |
+| RWD-04 | P1 | No nowrap label spills out of its own box, on every public route | Per element, not per document, and therefore not a duplicate of RWD-01. A `nowrap` chip squeezed below its own text by an explicit `min-width` spills over its neighbours inside a row that still fits the viewport: the body never widens and every control is still 44px, so RWD-01 and RWD-02 both stay green — the defect PR #40 shipped and issue #52 was opened about. Content extent is measured with a `Range` against the padding box, not with `scrollWidth`, which is blind to overflow past the left edge. **Candidates are elements whose children are all inline**, so a `nowrap` box carrying a positioned badge or a block wrapper is not watched; ancestor clipping and persistent transforms are not accounted for either — the helper lists all four. `home` and `littlesteps/sleep-training` have no candidates at all and are named as exempt, because a guard over an empty set passes forever. Every live instance of the recipe today is behind the auth gate, so this is a forward guard on the public routes rather than cover for the daily-log UI |
+
+## A11Y — the landmarks a keyboard and screen-reader user navigates by
+
+Per plan §13, which excludes accessibility auditing in general and carves out
+landmark structure for the reason below. Each runs at 390px and 320px.
+
+| ID | Pri | Assertion | Notes |
+|---|---|---|---|
+| A11Y-01 | P1 | Every public route exposes exactly one `banner` landmark, except the hub, which renders no page header at all | A `<header>` is a `banner` only when it is **not** inside `main`/`section`/`article`/`aside`/`nav`. The six pages that draw their own chrome — the about page and five standalone services — render their `AppBar` from inside a lazily-imported page, so a shell that wraps them in `<main>` silently demotes it. Counted, not asserted present: the failure is zero, and `toBeVisible()` on the first match passes through it. The hub is named as the one route expected to have none, so another page losing its header stays red |
+| A11Y-02 | P1 | Every public route exposes exactly one `main` landmark | The other half of the same seam, and the same counting reason: the failure is **two**, from a shell wrapping a page that already brings its own. `<main>` may not have a `main` ancestor |
+
+**Why E2E and not a unit test.** Both landmarks are properties of the whole
+document, produced by two files that never meet in a unit test: `App.tsx`
+supplies the shell, each standalone page supplies its own `AppBar` and `<main>`.
+Mounting either alone shows nothing wrong.
+
+**What it does not cover.** Gated standalone routes — `littlebloom`,
+`/prenatal`, `littleexplorer`, `/reminders`, `/diary` — render their intro page
+signed out, before the shell decides anything, so the suite never meets them.
+Adding a service to `isStandaloneSubApp` and forgetting its `<main>` stays green
+there. See #80 for the intro pages themselves, which have no landmarks at all.
 
 ## SEO — the crawl boundary over gated routes
 
@@ -242,10 +264,11 @@ green while asserting nothing.
 | The auth gate | AUTH-01…04, SEO-01/02, Phase 2 (A-ISO-01/02) |
 | Real data files | GUARD-01…04/08, OASIS-01/07, OUTING-03/04, WIKI-01 |
 | Lazy chunks and the PWA | NAV-01, NAV-07, WIKI-05, PWA-01…03, SEO-03 |
-| Layout at 390px and 320px | RWD-01…03, GUARD-09, OASIS-08 |
+| Layout at 390px and 320px | RWD-01…04, GUARD-09, OASIS-08 |
+| Document structure across the shell seam | A11Y-01/02 |
 | Third-party rendering | OASIS-06 |
 
 ## Case count
 
-Phase 1: **48** cases — HARNESS 1, NAV 7, AUTH 4, GUARD 9, OASIS 8, OUTING 5,
-WIKI 5, RWD 3, SEO 3, PWA 3. Phase 2: **12** reserved IDs.
+Phase 1: **51** cases — HARNESS 1, NAV 7, AUTH 4, GUARD 9, OASIS 8, OUTING 5,
+WIKI 5, RWD 4, A11Y 2, SEO 3, PWA 3. Phase 2: **12** reserved IDs.
