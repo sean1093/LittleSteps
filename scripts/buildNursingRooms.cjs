@@ -51,6 +51,18 @@ const { execFileSync } = require('child_process');
 const ROOT = path.join(__dirname, '..');
 const FACILITIES = path.join(ROOT, 'src/babyoasis/data/facilities.json');
 const OUTPUT = path.join(ROOT, 'public/data/nursingRooms.json');
+/**
+ * 資料集的產生日期與出處，另外寫成一個小檔。
+ *
+ * nursingRooms.json 本身沒有日期：它是一個 3,852 筆的純陣列，BabyOasis 在執行期
+ * 直接 fetch，E2E 也照這個形狀攔截，所以不在它身上包一層。日期放在 src/ 底下
+ * 而不是 public/，是為了讓「關於資料」頁和地圖的資料來源標註都能 import 同一份、
+ * 永遠寫出同一個查證日期——這正是 mrtStations.json 已經走的路。
+ *
+ * 少了這個檔，關於頁只能拿 git 的提交日期當查證日期，而那個日期沒有任何測試
+ * 看得到。
+ */
+const META_OUTPUT = path.join(ROOT, 'src/babyoasis/data/nursingRoomsMeta.json');
 
 const MAP_ENDPOINT = 'https://mammy.hpa.gov.tw/Map/AjaxBreastfeedingRoom';
 const ODS_URL =
@@ -298,6 +310,23 @@ function main() {
 
   fs.writeFileSync(OUTPUT, JSON.stringify(output));
 
+  // 查證日期取本地日期，不取 UTC：台灣早上八點前跑這支腳本，toISOString()
+  // 會給前一天，dataSources.test.ts 那條「不在未來」的檢查反而擋不到它。
+  const now = new Date();
+  const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 10);
+  const meta = {
+    generatedAt: now.toISOString(),
+    verifiedOn: localDate,
+    source: '衛生福利部國民健康署 哺集乳室地圖、依法應設置哺集乳室公共場所名單',
+    sourceUrls: [MAP_ENDPOINT, ODS_URL, 'https://data.gov.tw/dataset/23750'],
+    license: '政府資料開放授權條款第 1 版；地圖資料依 https://mammy.hpa.gov.tw/Home/CopyRight 標示來源',
+    count: output.length,
+    statutoryCount,
+  };
+  fs.writeFileSync(META_OUTPUT, `${JSON.stringify(meta, null, 2)}\n`);
+
   const byCity = {};
   output.forEach((r) => {
     byCity[r.city] = (byCity[r.city] || 0) + 1;
@@ -306,6 +335,7 @@ function main() {
   console.log(`  有開放時間或注意事項 ${withDetail} 筆，有設施明細 ${withFacilities} 筆`);
   console.log(`  在依法應設置名單上 ${statutoryCount} 筆`);
   console.log(`  ${path.relative(ROOT, OUTPUT)} ${(fs.statSync(OUTPUT).size / 1024).toFixed(0)} KB`);
+  console.log(`  ${path.relative(ROOT, META_OUTPUT)} 查證日期 ${meta.verifiedOn}`);
 }
 
 main();

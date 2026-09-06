@@ -37,6 +37,7 @@ import {
   isInternalVenue,
 } from '../utils/roomCategory';
 import type { MrtStation } from '../data/mrtStations';
+import nursingRoomsMeta from '../data/nursingRoomsMeta.json';
 
 // Import leaflet CSS
 import 'leaflet/dist/leaflet.css';
@@ -887,7 +888,8 @@ const BabyOasisPage = () => {
           zoomControl={false}
         >
           <TileLayer
-            attribution='地圖 &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ｜ 哺乳室資料：<a href="https://data.gov.tw/dataset/23750">衛生福利部國民健康署</a>'
+            // 查證日期來自 buildNursingRooms.cjs 寫出的 sidecar，關於頁讀的是同一份。
+            attribution={`地圖 &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ｜ 哺乳室資料：<a href="https://data.gov.tw/dataset/23750">衛生福利部國民健康署</a>（${nursingRoomsMeta.verifiedOn} 查證）`}
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
