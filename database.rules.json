@@ -30,7 +30,73 @@
     "childRecords": {
       "$childId": {
         ".read": "root.child('children').child($childId).child('members').child(auth.uid).val() === true",
-        ".write": "root.child('children').child($childId).child('members').child(auth.uid).val() === true"
+        ".write": "root.child('children').child($childId).child('members').child(auth.uid).val() === true",
+
+        "dailyLogs": {
+          "$logId": {
+            ".validate": "newData.hasChildren(['type', 'timestamp', 'data', 'createdAt'])",
+            "id": { ".validate": "newData.isString() && newData.val().length <= 64" },
+            "childId": { ".validate": "newData.val() === $childId" },
+            "type": { ".validate": "newData.val() === 'feeding' || newData.val() === 'sleep' || newData.val() === 'diaper'" },
+            "timestamp": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "createdAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "updatedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "createdBy": { ".validate": "newData.isString() && newData.val().length <= 128" },
+            "createdByName": { ".validate": "newData.isString() && newData.val().length <= 200" },
+            "data": {
+              ".validate": "newData.hasChildren()",
+              "feedingType": { ".validate": "newData.val() === 'breast_left' || newData.val() === 'breast_right' || newData.val() === 'breast_both' || newData.val() === 'breast_milk_bottle' || newData.val() === 'formula' || newData.val() === 'solid' || newData.val() === 'pumping'" },
+              "amount": { ".validate": "newData.isNumber()" },
+              "duration": { ".validate": "newData.isNumber()" },
+              "side": { ".validate": "newData.val() === 'left' || newData.val() === 'right' || newData.val() === 'both'" },
+              "startTime": { ".validate": "newData.isString() && newData.val().length <= 40" },
+              "endTime": { ".validate": "newData.isString() && newData.val().length <= 40" },
+              "nightWakings": { ".validate": "newData.isNumber()" },
+              "type": { ".validate": "newData.val() === 'pee' || newData.val() === 'poop' || newData.val() === 'both'" },
+              "consistency": { ".validate": "newData.val() === 'normal' || newData.val() === 'soft' || newData.val() === 'hard'" },
+              "notes": { ".validate": "newData.isString() && newData.val().length <= 2000" },
+              "$other": { ".validate": false }
+            },
+            "$other": { ".validate": false }
+          }
+        },
+
+        "diaryEntries": {
+          "$entryId": {
+            ".validate": "newData.hasChildren(['date', 'content', 'createdAt'])",
+            "id": { ".validate": "newData.isString() && newData.val().length <= 64" },
+            "childId": { ".validate": "newData.val() === $childId" },
+            "date": { ".validate": "newData.isString() && newData.val().matches(/^\\d{4}-\\d{2}-\\d{2}$/)" },
+            "content": { ".validate": "newData.isString() && newData.val().length <= 5000" },
+            "mood": { ".validate": "newData.val() === 'happy' || newData.val() === 'proud' || newData.val() === 'tired' || newData.val() === 'worried' || newData.val() === 'funny'" },
+            "linkedCheckItemId": { ".validate": "newData.isString() && newData.val().length <= 64" },
+            "createdAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "updatedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "$other": { ".validate": false }
+          }
+        },
+
+        "growthRecords": {
+          "$recordId": {
+            ".validate": "newData.hasChildren(['date'])",
+            "id": { ".validate": "newData.isString() && newData.val().length <= 64" },
+            "childId": { ".validate": "newData.val() === $childId" },
+            "date": { ".validate": "newData.isString() && newData.val().matches(/^\\d{4}-\\d{2}-\\d{2}$/)" },
+            "weight": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50" },
+            "height": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 150" },
+            "headCircumference": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 70" },
+            "percentile": {
+              "weight": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+              "height": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+              "headCircumference": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+              "$other": { ".validate": false }
+            },
+            "notes": { ".validate": "newData.isString() && newData.val().length <= 2000" },
+            "$other": { ".validate": false }
+          }
+        },
+
+        "$other": { ".validate": false }
       }
     },
 

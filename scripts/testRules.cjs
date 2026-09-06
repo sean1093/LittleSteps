@@ -111,6 +111,42 @@ const childProfile = (overrides = {}) => ({
   ...overrides,
 });
 
+const ISO = '2026-09-01T08:00:00.000Z';
+
+/** 一筆合法的餵奶紀錄，欄位形狀照 src/types 的 DailyLog。 */
+const dailyLog = (overrides = {}) => ({
+  id: 'log1',
+  childId: 'c1',
+  type: 'feeding',
+  timestamp: ISO,
+  data: { feedingType: 'formula', amount: 120, duration: 15 },
+  createdAt: ISO,
+  createdBy: 'alice',
+  createdByName: '小豆媽',
+  ...overrides,
+});
+
+const diaryEntry = (overrides = {}) => ({
+  id: 'd1',
+  childId: 'c1',
+  date: '2026-09-01',
+  content: '第一次翻身',
+  mood: 'proud',
+  createdAt: ISO,
+  ...overrides,
+});
+
+const growthRecord = (overrides = {}) => ({
+  id: 'g1',
+  childId: 'c1',
+  date: '2026-09-01',
+  weight: 4.2,
+  height: 52,
+  headCircumference: 36.5,
+  percentile: { weight: 45.3, height: 50.1, headCircumference: 48.9 },
+  ...overrides,
+});
+
 async function main() {
   // emulators:exec 每次都起一台乾淨的模擬器，所以不需要（也沒有辦法）先清空：
   // 模擬器上不帶憑證的請求同樣受規則管，沒有 admin 後門。
@@ -142,12 +178,12 @@ async function main() {
   console.log('\n紀錄與索引');
   await expectAllowed(
     '成員寫得進 childRecords',
-    mallory.put('childRecords/c1/dailyLogs/log1', { type: 'feeding', timestamp: 1 }),
+    mallory.put('childRecords/c1/dailyLogs/log1', dailyLog()),
   );
   await expectDenied('非成員讀不到 childRecords', as('stranger').get('childRecords/c1'));
   await expectDenied(
     '非成員寫不進 childRecords',
-    as('stranger').put('childRecords/c1/dailyLogs/log2', { type: 'sleep' }),
+    as('stranger').put('childRecords/c1/dailyLogs/log2', dailyLog()),
   );
   await expectAllowed('任何登入者查得到代碼存不存在', mallory.get('childIndex/c1'));
   await expectAllowed('成員補得上索引', alice.put('childIndex/c1', true));
@@ -215,6 +251,191 @@ async function main() {
   );
   await expectDenied('回饋沒有人讀得到', alice.get('feedbacks/f1'));
 
+  console.log('\n紀錄的形狀與大小');
+  // childRecords 是唯一沒有上限的子樹，而每一位成員都寫得進去。這裡驗的是
+  // 「寫進來的東西長得像 src/types 裡的那一份」：型別、枚舉值、字串長度、
+  // 數值範圍，以及沒有不認識的欄位。
+  await expectAllowed(
+    '完整的餵奶紀錄寫得進去',
+    alice.put('childRecords/c1/dailyLogs/log-feed', dailyLog({ id: 'log-feed' })),
+  );
+  await expectAllowed(
+    '睡眠紀錄連夜醒次數與備註一起寫得進去',
+    alice.put(
+      'childRecords/c1/dailyLogs/log-sleep',
+      dailyLog({
+        id: 'log-sleep',
+        type: 'sleep',
+        data: {
+          startTime: ISO,
+          endTime: '2026-09-01T10:00:00.000Z',
+          duration: 120,
+          nightWakings: 1,
+          notes: '睡前哭了一下',
+        },
+      }),
+    ),
+  );
+  await expectAllowed(
+    '尿布紀錄寫得進去',
+    alice.put(
+      'childRecords/c1/dailyLogs/log-diaper',
+      dailyLog({ id: 'log-diaper', type: 'diaper', data: { type: 'poop', consistency: 'soft' } }),
+    ),
+  );
+  await expectDenied(
+    'type 不是 feeding／sleep／diaper 就不給寫',
+    alice.put('childRecords/c1/dailyLogs/log-bad', dailyLog({ id: 'log-bad', type: 'bath' })),
+  );
+  await expectDenied(
+    'childId 指向別的孩子就不給寫',
+    alice.put('childRecords/c1/dailyLogs/log-bad', dailyLog({ id: 'log-bad', childId: 'c2' })),
+  );
+  await expectDenied(
+    'timestamp 不是字串就不給寫',
+    alice.put('childRecords/c1/dailyLogs/log-bad', dailyLog({ id: 'log-bad', timestamp: 1 })),
+  );
+  await expectDenied(
+    '紀錄少了 data 就不給寫',
+    alice.put('childRecords/c1/dailyLogs/log-bad', dailyLog({ id: 'log-bad', data: undefined })),
+  );
+  await expectDenied(
+    '紀錄本身不是物件就不給寫',
+    alice.put('childRecords/c1/dailyLogs/log-bad', 'x'.repeat(50)),
+  );
+  await expectDenied(
+    '紀錄上塞不認識的欄位會被擋',
+    alice.put('childRecords/c1/dailyLogs/log-bad', dailyLog({ id: 'log-bad', payload: 'x'.repeat(50) })),
+  );
+  await expectDenied(
+    'data 裡塞不認識的欄位會被擋',
+    alice.put(
+      'childRecords/c1/dailyLogs/log-bad',
+      dailyLog({ id: 'log-bad', data: { feedingType: 'formula', payload: 'x'.repeat(50) } }),
+    ),
+  );
+  await expectDenied(
+    'feedingType 不在清單裡就不給寫',
+    alice.put('childRecords/c1/dailyLogs/log-bad', dailyLog({ id: 'log-bad', data: { feedingType: 'juice' } })),
+  );
+  await expectDenied(
+    'amount 不是數字就不給寫',
+    alice.put(
+      'childRecords/c1/dailyLogs/log-bad',
+      dailyLog({ id: 'log-bad', data: { feedingType: 'formula', amount: '120' } }),
+    ),
+  );
+  await expectDenied(
+    '備註超過 2000 字就不給寫',
+    alice.put(
+      'childRecords/c1/dailyLogs/log-bad',
+      dailyLog({ id: 'log-bad', data: { feedingType: 'formula', notes: 'x'.repeat(2001) } }),
+    ),
+  );
+  await expectAllowed(
+    '只改一個欄位的部分更新照樣可以（編輯時間）',
+    alice.patch('childRecords/c1/dailyLogs/log-feed', {
+      timestamp: '2026-09-01T09:00:00.000Z',
+      updatedAt: ISO,
+    }),
+  );
+  await expectAllowed(
+    '只換掉 data 的部分更新照樣可以（按「醒了」結束睡眠）',
+    alice.patch('childRecords/c1/dailyLogs/log-sleep', {
+      data: { startTime: ISO, endTime: '2026-09-01T11:00:00.000Z', duration: 180 },
+      updatedAt: ISO,
+    }),
+  );
+  await expectDenied(
+    '部分更新塞進不合法的值一樣被擋',
+    alice.patch('childRecords/c1/dailyLogs/log-feed', { type: 'bath', updatedAt: ISO }),
+  );
+  // 早期的 key 是 `${prefix}_${Date.now()}`，而且沒有搬遷過的舊紀錄未必帶著
+  // 今天型別裡的每一個欄位。規則只在寫入時跑，所以一條舊紀錄違反的規則會讓
+  // 那一筆永遠改不動——2025 年的一則日記打錯字，家長就再也修不了。
+  await expectAllowed(
+    '舊形狀的紀錄（key 不等於 id、沒有 childId、沒有記錄者）寫得進去',
+    alice.put('childRecords/c1/dailyLogs/log_1700000000000', {
+      id: 'log_1699999999999',
+      type: 'diaper',
+      timestamp: ISO,
+      data: { type: 'pee' },
+      createdAt: ISO,
+    }),
+  );
+  await expectAllowed(
+    '舊形狀的紀錄照樣改得動',
+    alice.patch('childRecords/c1/dailyLogs/log_1700000000000', {
+      data: { type: 'both', consistency: 'normal' },
+      updatedAt: ISO,
+    }),
+  );
+
+  await expectAllowed(
+    '完整的日記寫得進去',
+    alice.put('childRecords/c1/diaryEntries/d1', diaryEntry({ linkedCheckItemId: 'check-1' })),
+  );
+  await expectDenied(
+    '日記內容超過 5000 字就不給寫',
+    alice.put('childRecords/c1/diaryEntries/d-bad', diaryEntry({ id: 'd-bad', content: 'x'.repeat(5001) })),
+  );
+  await expectDenied(
+    '日期不是 YYYY-MM-DD 就不給寫',
+    alice.put('childRecords/c1/diaryEntries/d-bad', diaryEntry({ id: 'd-bad', date: '2026/09/01' })),
+  );
+  await expectDenied(
+    'mood 不在清單裡就不給寫',
+    alice.put('childRecords/c1/diaryEntries/d-bad', diaryEntry({ id: 'd-bad', mood: 'angry' })),
+  );
+  await expectDenied(
+    '日記上塞不認識的欄位會被擋',
+    alice.put('childRecords/c1/diaryEntries/d-bad', diaryEntry({ id: 'd-bad', payload: 'x'.repeat(50) })),
+  );
+  await expectAllowed(
+    '只改內容的部分更新照樣可以',
+    alice.patch('childRecords/c1/diaryEntries/d1', { content: '第一次翻身！', updatedAt: ISO }),
+  );
+
+  await expectAllowed(
+    '完整的成長紀錄寫得進去',
+    alice.put('childRecords/c1/growthRecords/g1', growthRecord({ notes: '健兒門診量的' })),
+  );
+  await expectDenied(
+    '體重 900 公斤就不給寫',
+    alice.put('childRecords/c1/growthRecords/g-bad', growthRecord({ id: 'g-bad', weight: 900 })),
+  );
+  await expectDenied(
+    '體重是字串就不給寫',
+    alice.put('childRecords/c1/growthRecords/g-bad', growthRecord({ id: 'g-bad', weight: 'abc' })),
+  );
+  await expectDenied(
+    '百分位超過 100 就不給寫',
+    alice.put(
+      'childRecords/c1/growthRecords/g-bad',
+      growthRecord({ id: 'g-bad', percentile: { weight: 150 } }),
+    ),
+  );
+  await expectDenied(
+    'percentile 裡塞不認識的欄位會被擋',
+    alice.put(
+      'childRecords/c1/growthRecords/g-bad',
+      growthRecord({ id: 'g-bad', percentile: { bmi: 50 } }),
+    ),
+  );
+  await expectDenied(
+    '成長紀錄上塞不認識的欄位會被擋',
+    alice.put('childRecords/c1/growthRecords/g-bad', growthRecord({ id: 'g-bad', payload: 'x'.repeat(50) })),
+  );
+  await expectAllowed(
+    '整筆重送的更新照樣可以（成長紀錄的編輯是 set 整份）',
+    alice.put('childRecords/c1/growthRecords/g1', growthRecord({ weight: 4.4, percentile: {} })),
+  );
+
+  await expectDenied(
+    'childRecords 底下只有三個集合，別的名字不給寫',
+    alice.put('childRecords/c1/notes/n1', { text: 'x'.repeat(50) }),
+  );
+
   console.log('\n刪除：一次原子寫入');
   // 順序是關鍵：childRecords 的授權讀的是 children 底下的 members，所以先刪
   // 孩子再刪紀錄一定失敗。同一筆 multi-path 更新裡，所有路徑都對照寫入前的
@@ -232,7 +453,7 @@ async function main() {
     '先刪孩子再刪紀錄會失敗，所以客戶端必須用上面那一筆',
     (async () => {
       await alice.put('children/c3', childProfile({ id: 'c3' }));
-      await alice.put('childRecords/c3/dailyLogs/log1', { type: 'feeding' });
+      await alice.put('childRecords/c3/dailyLogs/log1', dailyLog({ childId: 'c3' }));
       await alice.del('children/c3');
       return alice.del('childRecords/c3');
     })(),
