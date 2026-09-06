@@ -90,7 +90,10 @@ export default function AboutPage() {
     <div className="screen">
       <AppBar theme={theme} title="關於資料" backTo="home" backLabel="返回所有服務" />
 
-      <div className="screen-body space-y-6">
+      {/* 自帶 chrome 的頁面要自己給 <main>：App.tsx 的外框對這一份名單上的頁面
+          不再包一層（見那裡的註解），因為包住 AppBar 會讓它不再是 banner 地標。
+          少了這一行，這一頁就一個地標都沒有。A11Y-02 會抓。 */}
+      <main className="screen-body space-y-6">
         <motion.header
           initial="hidden"
           animate="visible"
@@ -260,7 +263,7 @@ export default function AboutPage() {
               : '發現寫錯的地方？登入後可以用右下角的回報鍵告訴我們。'}
           </p>
         </footer>
-      </div>
+      </main>
     </div>
   );
 }

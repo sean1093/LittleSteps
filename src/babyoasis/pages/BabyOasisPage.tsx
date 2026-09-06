@@ -270,7 +270,11 @@ const RoomDetailSheet = ({ room, onClose }: RoomDetailSheetProps) => {
       </button>
 
       <div className="p-5 pb-8">
-        <h2 id={ROOM_SHEET_TITLE_ID} className="text-xl font-bold text-ink mb-4 pr-12">
+        {/* 沒有 text-* 覆寫：h2 的級距由 index.css 的 @layer base 給（text-lg）。
+            這裡原本寫 text-xl（20px），比它上面那顆 AppBar 的 h1（text-lg，18px）
+            還大——巢狀在底下的標題不能比外層的大。附近清單那張 sheet 的標題本來
+            就是預設級距，兩張面板現在也一致了。 */}
+        <h2 id={ROOM_SHEET_TITLE_ID} className="text-ink mb-4 pr-12">
           {room.name}
         </h2>
 
@@ -819,6 +823,9 @@ const BabyOasisPage = () => {
        locate button and sheet handles under it. */
     <div className="relative h-dscreen w-full overflow-hidden">
       {/* Sits above Leaflet's panes, hence the z-[1000]. */}
+      {/* 標題列自成一層，不跟底下的內容共用容器：<header> 只有在不位於 <main>
+          之內時才算 banner 地標，而這一頁的主要內容（搜尋、地圖、面板）就是
+          底下那個 <main>。 */}
       <div className="absolute top-0 left-0 right-0 z-[1000]">
         <AppBar
           theme={theme}
@@ -840,9 +847,19 @@ const BabyOasisPage = () => {
           }
         />
 
+      </div>
+
+      {/* h-full：地圖那一層是 h-full，要有一個有高度的父層才量得到。這一層
+          不設 position，底下 absolute 的定位鈕與搜尋列因此仍然以最外層那個
+          relative 容器為準，位置與先前完全一樣。 */}
+      <main className="h-full">
         {/* 搜尋列掛在標題列下方，畫面下緣要留給定位鈕與地圖的資料來源標註。
+            搜尋列先前是接在標題列後面自然流下來的，現在標題列在另一層，只好
+            自己定位；top-16 是 AppBar 講好的掛法（見 AppBar.tsx 與 DiaryPage
+            的月份分隔），它對的是 4rem 的本體，不含底下那條 1px 的分隔線，
+            所以搜尋列比先前高 1px。
             外層不吃指標事件，否則搜尋列旁邊的透明留白會把地圖的拖曳攔下來。 */}
-        <div className="max-w-2xl mx-auto px-4 pt-3 pointer-events-none">
+        <div className="absolute top-16 left-0 right-0 z-[1000] max-w-2xl mx-auto px-4 pt-3 pointer-events-none">
           {loadState === 'ready' ? (
             <RoomSearch
               rooms={sortedRooms}
@@ -873,95 +890,95 @@ const BabyOasisPage = () => {
             </div>
           )}
         </div>
-      </div>
 
-      {/* Map */}
-      {/* data-testid 掛在外層而不是 MapContainer：Leaflet 是用 JS 直接把地圖畫進
-          這個 div，畫出來的東西沒有角色也沒有可及名稱可以選；而 MapContainer 只
-          轉傳 className/id/style，其餘的 prop 都當成 Leaflet 的設定值。
-          E2E 的選取規則見 docs/E2E_TEST_PLAN.md §6。 */}
-      <div data-testid="oasis-map" className="h-full w-full">
-        <MapContainer
-          center={userLocation || TAIWAN_CENTER}
-          zoom={userLocation ? 15 : TAIWAN_ZOOM}
-          className="h-full w-full"
-          zoomControl={false}
-        >
-          <TileLayer
-            // 查證日期來自 buildNursingRooms.cjs 寫出的 sidecar，關於頁讀的是同一份。
-            attribution={`地圖 &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ｜ 哺乳室資料：<a href="https://data.gov.tw/dataset/23750">衛生福利部國民健康署</a>（${nursingRoomsMeta.verifiedOn} 查證）`}
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+        {/* Map */}
+        {/* data-testid 掛在外層而不是 MapContainer：Leaflet 是用 JS 直接把地圖畫進
+            這個 div，畫出來的東西沒有角色也沒有可及名稱可以選；而 MapContainer 只
+            轉傳 className/id/style，其餘的 prop 都當成 Leaflet 的設定值。
+            E2E 的選取規則見 docs/E2E_TEST_PLAN.md §6。 */}
+        <div data-testid="oasis-map" className="h-full w-full">
+          <MapContainer
+            center={userLocation || TAIWAN_CENTER}
+            zoom={userLocation ? 15 : TAIWAN_ZOOM}
+            className="h-full w-full"
+            zoomControl={false}
+          >
+            <TileLayer
+              // 查證日期來自 buildNursingRooms.cjs 寫出的 sidecar，關於頁讀的是同一份。
+              attribution={`地圖 &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ｜ 哺乳室資料：<a href="https://data.gov.tw/dataset/23750">衛生福利部國民健康署</a>（${nursingRoomsMeta.verifiedOn} 查證）`}
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
 
-          {/* User location marker */}
-          <LocationMarker position={userLocation} />
+            {/* User location marker */}
+            <LocationMarker position={userLocation} />
 
-          {/* 選定的那一站。空心環標的是「你要去的地方」，不是一筆哺乳室。 */}
-          {station && (
-            <Marker
-              position={[station.latitude, station.longitude]}
-              icon={STATION_ICON}
-              title={`捷運${station.name}站`}
+            {/* 選定的那一站。空心環標的是「你要去的地方」，不是一筆哺乳室。 */}
+            {station && (
+              <Marker
+                position={[station.latitude, station.longitude]}
+                icon={STATION_ICON}
+                title={`捷運${station.name}站`}
+              />
+            )}
+
+            {/* 選了哪一筆、或哪一站，地圖就跟過去 */}
+            <PointFocus point={selectedRoom} />
+            <PointFocus point={station} />
+
+            {/* 篩了條件就把視角帶到剩下的那些點上；選定某一筆、或選定某一站時，
+                讓給上面那兩個——那時家長看的是那個點，不是整個篩選範圍。 */}
+            <FilteredAreaFocus
+              rooms={filteredRooms}
+              active={
+                isFiltered &&
+                selectedRoom === null &&
+                station === null &&
+                filteredRooms.length > 0 &&
+                filteredRooms.length < nursingRooms.length
+              }
+            />
+
+            {/*
+              全台近四千個點必須分群，否則低倍率下會糊成一片而且互相遮蔽。
+              maxClusterRadius 由 50 放大到 80（Leaflet 預設值）：先前的值是為
+              僅臺北 306 筆調的，在全國尺度下會分出過多小群。放到第 16 級後
+              改顯示個別標記，此時同一條街的點已經分得開。
+            */}
+            <MarkerClusterGroup
+              chunkedLoading
+              maxClusterRadius={80}
+              disableClusteringAtZoom={MARKER_ZOOM}
+              showCoverageOnHover={false}
+              iconCreateFunction={CLUSTER_ICON}
+            >
+              {markers}
+            </MarkerClusterGroup>
+          </MapContainer>
+        </div>
+
+        {/* Locate me button */}
+        <LocateButton onLocate={handleLocate} isLocating={isLocating} />
+
+        {/* 附近清單：以定位或選定的捷運站為原點，用空間索引取最近幾筆並顯示實際
+            距離。資料還沒到就先不開——那時清單只會說「沒有已登記的哺乳室」，
+            等於謊報。 */}
+        <AnimatePresence>
+          {showNearby && origin && !selectedRoom && loadState === 'ready' && (
+            <NearbyRoomsSheet
+              nearby={nearby}
+              title={origin.title}
+              emptyText={origin.emptyText}
+              onSelect={setSelectedRoom}
+              onClose={closeNearby}
             />
           )}
+        </AnimatePresence>
 
-          {/* 選了哪一筆、或哪一站，地圖就跟過去 */}
-          <PointFocus point={selectedRoom} />
-          <PointFocus point={station} />
-
-          {/* 篩了條件就把視角帶到剩下的那些點上；選定某一筆、或選定某一站時，
-              讓給上面那兩個——那時家長看的是那個點，不是整個篩選範圍。 */}
-          <FilteredAreaFocus
-            rooms={filteredRooms}
-            active={
-              isFiltered &&
-              selectedRoom === null &&
-              station === null &&
-              filteredRooms.length > 0 &&
-              filteredRooms.length < nursingRooms.length
-            }
-          />
-
-          {/*
-            全台近四千個點必須分群，否則低倍率下會糊成一片而且互相遮蔽。
-            maxClusterRadius 由 50 放大到 80（Leaflet 預設值）：先前的值是為
-            僅臺北 306 筆調的，在全國尺度下會分出過多小群。放到第 16 級後
-            改顯示個別標記，此時同一條街的點已經分得開。
-          */}
-          <MarkerClusterGroup
-            chunkedLoading
-            maxClusterRadius={80}
-            disableClusteringAtZoom={MARKER_ZOOM}
-            showCoverageOnHover={false}
-            iconCreateFunction={CLUSTER_ICON}
-          >
-            {markers}
-          </MarkerClusterGroup>
-        </MapContainer>
-      </div>
-
-      {/* Locate me button */}
-      <LocateButton onLocate={handleLocate} isLocating={isLocating} />
-
-      {/* 附近清單：以定位或選定的捷運站為原點，用空間索引取最近幾筆並顯示實際
-          距離。資料還沒到就先不開——那時清單只會說「沒有已登記的哺乳室」，
-          等於謊報。 */}
-      <AnimatePresence>
-        {showNearby && origin && !selectedRoom && loadState === 'ready' && (
-          <NearbyRoomsSheet
-            nearby={nearby}
-            title={origin.title}
-            emptyText={origin.emptyText}
-            onSelect={setSelectedRoom}
-            onClose={closeNearby}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Room detail bottom sheet */}
-      <AnimatePresence>
-        {selectedRoom && <RoomDetailSheet room={selectedRoom} onClose={closeRoom} />}
-      </AnimatePresence>
+        {/* Room detail bottom sheet */}
+        <AnimatePresence>
+          {selectedRoom && <RoomDetailSheet room={selectedRoom} onClose={closeRoom} />}
+        </AnimatePresence>
+      </main>
     </div>
   );
 };

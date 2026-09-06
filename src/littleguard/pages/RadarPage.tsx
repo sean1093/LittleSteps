@@ -162,7 +162,9 @@ export default function RadarPage() {
     return (
       <div className={`screen ${theme.pageBg}`}>
         <AppBar theme={theme} title={theme.name} subtitle={theme.role} actions={<HeaderActions />} />
-        <div className="screen-body">
+        {/* AppBar 留在 <main> 外面，它的 <header> 才算得上 banner 地標；
+            同 BloomShell、ExplorerShell 與 OutingPage 的形狀。 */}
+        <main className="screen-body">
           <EmptyState
             theme={theme}
             title="現在抓不到資料"
@@ -172,7 +174,7 @@ export default function RadarPage() {
               onClick: () => window.open(NIDSS, '_blank', 'noreferrer'),
             }}
           />
-        </div>
+        </main>
       </div>
     );
   }
@@ -180,7 +182,7 @@ export default function RadarPage() {
   return (
     <div className={`screen ${theme.pageBg}`}>
       <AppBar theme={theme} title={theme.name} subtitle={theme.role} actions={<HeaderActions />} />
-      <div className="screen-body space-y-4">
+      <main className="screen-body space-y-4">
         <p className="text-sm text-ink-muted">
           {data
             ? `${formatWeekRange(data.weekStart, data.weekEnd)} · 疾管署健保門診就診統計`
@@ -273,7 +275,7 @@ export default function RadarPage() {
             </p>
           </>
         )}
-      </div>
+      </main>
       {open && cells && data && (
         <DiseaseDrawer
           disease={open}

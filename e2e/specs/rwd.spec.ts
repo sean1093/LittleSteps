@@ -72,6 +72,12 @@ for (const route of PUBLIC_ROUTES) {
  * source cards with nothing set to `nowrap`. Listed by name rather than skipped
  * silently, so a route that *stops* having chips is a decision someone makes
  * here rather than a green line that quietly stopped meaning anything.
+ *
+ * `about` earned its place the day the assertion landed: it arrived on master
+ * between #76 being written and merged, joined the derived route list, and
+ * turned RWD-04 red at both widths — which is precisely the outcome the
+ * assertion exists for. Without it the route would have joined silently and
+ * contributed two permanently-green instances instead.
  */
 const ROUTES_WITH_NOTHING_TO_MEASURE = new Set(['home', 'littlesteps/sleep-training', 'about']);
 

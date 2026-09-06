@@ -180,12 +180,23 @@ function AppContent() {
     return title;
   };
 
-  // LittleBloom (hub + wiki), BabyOasis and LittleGuard are standalone sub-apps
-  // that render their own chrome, so the LittleSteps header/sidebar stays hidden
-  // for them. The about page is not a LittleSteps page either: it describes all
-  // six services and renders its own AppBar. Leaving it out of this list would
-  // mount the LittleSteps sidebar on it with a `currentPage` that is not a
-  // LittleStepsPage — the cast below would be a lie.
+  // Everything below renders its own chrome, so the LittleSteps header/sidebar
+  // stays hidden for it: the about page and five standalone sub-apps —
+  // LittleBloom, LittleExplorer, LittleOuting, BabyOasis and LittleGuard.
+  //
+  // The comment here used to name three of the five, which is why it is easy to
+  // believe the two shell-based services are on the other side of this line;
+  // they are not. Issue #65 was filed against that comment rather than the code.
+  //
+  // The about page is not a LittleSteps page either: it describes all six
+  // services and renders its own AppBar. Leaving it out would mount the
+  // LittleSteps sidebar on it with a `currentPage` that is not a LittleStepsPage
+  // — the cast below would be a lie.
+  //
+  // Being on this list is a contract, not just a styling switch: `ContentLandmark`
+  // below stops supplying a `<main>`, so every page reachable under these
+  // prefixes must render its own `<header>` and its own `<main>`. A11Y-01/02
+  // check that on the public ones.
   const isStandaloneSubApp =
     currentPage === 'about' ||
     currentPage.startsWith('littlebloom') ||
@@ -196,6 +207,9 @@ function AppContent() {
   // Login is mandatory, so every LittleSteps route shows the header (and thus the
   // sidebar/menu) once we reach the authenticated tree below.
   const showHeader = !(currentPage === 'home' || isStandaloneSubApp);
+  // 自帶 header 與 <main> 的服務由自己描述文件結構；其餘的由這個外框提供。
+  // 理由寫在下面 render 的那段註解裡。
+  const ContentLandmark = isStandaloneSubApp ? 'div' : 'main';
 
 
   // RTDB 沒有磁碟快取。已安裝的 PWA 在離線時仍然開得起來（shell 有 precache），
@@ -314,7 +328,23 @@ function AppContent() {
       )}
 
       {/* Main Content */}
-      <main className={showHeader ? "pb-6" : ""}>
+      {/*
+        Standalone 子服務底下這一層不能是 <main>。
+
+        HTML 只在 <header> 不位於 main / section / article / aside / nav 之內時
+        才把它算成 banner 地標，而那五個服務的 AppBar 是它們自己的頁面畫出來的，
+        由這裡 lazy-load 進來——包在 <main> 裡，那顆 header 就不再是地標，用地標
+        跳轉的螢幕閱讀器使用者在 BabyOasis、LittleGuard、LittleOuting、
+        LittleBloom 與 LittleExplorer 上會找不到頁首，而 LittleSteps 的每一頁都
+        找得到。同一個捷徑在半個 app 上有效、另外半個安靜失效，比兩邊都沒有更糟。
+
+        另一半是 <main> 自己：BloomShell、ExplorerShell 與 OutingPage 各有一個
+        <main>，包在這一層裡就變成巢狀的兩個 main，而 <main> 依規格不得有 main
+        祖先。這兩件事是同一個錯誤的兩面——外框替自帶版面的頁面多包了一層。
+
+        LittleSteps 的外框與入口頁沒有自己的地標，那一層仍然由這裡提供。
+      */}
+      <ContentLandmark className={showHeader ? "pb-6" : ""}>
         {/* key 綁 currentPage：一頁壞掉之後換頁就會重掛，不會把家長困在
             錯誤畫面裡直到重新整理。 */}
         <ErrorBoundary key={currentPage} scope={currentPage}>
@@ -500,7 +530,7 @@ function AppContent() {
         {currentPage === 'littleguard' && <RadarPage />}
         </Suspense>
         </ErrorBoundary>
-      </main>
+      </ContentLandmark>
 
       {/* Feedback Button */}
       <FeedbackButton user={user} />

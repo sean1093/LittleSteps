@@ -345,6 +345,15 @@ as artifacts. It does not download browsers (§4).
 ## 13. Out of scope
 
 Performance budgets and Lighthouse; visual regression baselines; accessibility
-auditing beyond the role-based selectors the suite already forces;
-cross-browser beyond Chromium (§4); load testing; anything touching a real
-Firebase project or the real CDC endpoint.
+auditing beyond the role-based selectors the suite already forces **and the
+landmark structure in A11Y-01/02**; cross-browser beyond Chromium (§4); load
+testing; anything touching a real Firebase project or the real CDC endpoint.
+
+The landmark carve-out is deliberate and narrow. It is not an audit — no colour
+contrast, no ARIA sweep, no axe run. It is there because `banner` and `main` are
+the two landmarks that depend on where a page sits in the shell, and that seam
+has no other test: `App.tsx` supplies one half, a lazily-imported page supplies
+the other, and mounting either alone shows nothing wrong. Issue #65 was open for
+a week describing three affected services when the real number was five, because
+reading the code is not enough to tell. Anything that can be decided by mounting
+one component stays out.
