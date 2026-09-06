@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ref, set, onValue, remove } from 'firebase/database';
+import { ref, set, update, onValue, remove } from 'firebase/database';
 import { database } from '../../lib/firebase';
 import type { ChildProfile, GrowthRecord, Gender } from '../../types';
 import { calculateZScore, calculatePercentile } from '../utils/growthCalculator';
 import { growthAgeMonths } from '../../common/correctedAge';
-import { removeUndefined } from '../../common/utils/firebaseData';
+import { changedFields, removeUndefined, toUpdatePaths } from '../../common/utils/firebaseData';
 
 /**
  * 算百分位需要孩子的哪些欄位。整份 ChildProfile 傳進來也可以，型別相容。
@@ -38,8 +38,12 @@ interface UseGrowthTrackingResult {
  *
  * 百分位在讀取時重算，而不是只信資料庫裡那一份。百分位本來是寫入當下算好存
  * 進去的，所以早產矯正上線之前寫下的每一筆都是用實際月齡算的——只改寫入端的
- * 話，那些紀錄會永遠停在偏低的百分位，而它們正是家長最在意的那幾筆。存的那
- * 一份仍然照寫，資料庫形狀與規則都不動。
+ * 話，那些紀錄會永遠停在偏低的百分位，而它們正是家長最在意的那幾筆。
+ *
+ * 寫入端不再存百分位。讀取端一律重算之後，存的那一份沒有任何地方在讀；而它
+ * 對得上的只是寫入者手上那一版——共享的孩子有兩位照顧者，媽媽補身高、爸爸補
+ * 頭圍，各自從自己的舊版算出來的百分位都對不上資料庫裡真的那一筆。舊紀錄裡
+ * 存著的百分位留著不動，規則也照樣收（見 withPercentiles 的第 2 點）。
  */
 export function useGrowthTracking(
   childId: string | null,
@@ -103,15 +107,27 @@ export function useGrowthTracking(
       throw new Error('No child selected');
     }
     validateRecord(record);
-    const recordWithPercentiles = withPercentiles(record, child);
     const newRecord: GrowthRecord = {
-      ...recordWithPercentiles,
+      ...record,
       id: crypto.randomUUID(),
+      // 表單送的是 {}；不存，讀取時算。
+      percentile: undefined,
     };
     const recordRef = ref(database, `childRecords/${childId}/growthRecords/${newRecord.id}`);
     await set(recordRef, removeUndefined(newRecord));
   };
 
+  /**
+   * 改一筆測量：只寫真的改到的欄位。
+   *
+   * 原本是拿手上那一版加上這次的欄位、重算百分位、set 整筆。兩位照顧者各補一
+   * 項測量時，後到的那一筆連著他手上沒有另一項的舊版蓋回去，對方剛量的數字就
+   * 沒了，而且兩邊都不會看到任何提示。改成攤平成 <欄位> 一條一條 update()，
+   * 各改各的欄位就會合併——跟 useFirebaseChildren.updateDailyLog 同一套。
+   *
+   * 送進來卻是 undefined 的欄位是「清掉」，寫 null；沒送的欄位不動。
+   * 沒有任何欄位改到就不寫。
+   */
   const updateRecord = async (
     recordId: string,
     updates: Partial<Omit<GrowthRecord, 'id' | 'childId'>>
@@ -119,15 +135,22 @@ export function useGrowthTracking(
     if (!childId) {
       throw new Error('No child selected');
     }
-    const existing = records.find((r) => r.id === recordId);
+    const existing = storedRecords.find((r) => r.id === recordId);
     if (!existing) {
       throw new Error('Record not found');
     }
-    const updated = { ...existing, ...updates };
-    validateRecord(updated);
-    const updatedWithPercentiles = withPercentiles(updated, child);
+    validateRecord({ ...existing, ...updates });
+
+    const submitted: Record<string, unknown> = { ...updates, percentile: undefined };
+    const opened: Record<string, unknown> = {};
+    for (const key of Object.keys(submitted)) {
+      opened[key] = (existing as unknown as Record<string, unknown>)[key];
+    }
+    const paths = toUpdatePaths(changedFields(opened, submitted));
+    if (Object.keys(paths).length === 0) return;
+
     const recordRef = ref(database, `childRecords/${childId}/growthRecords/${recordId}`);
-    await set(recordRef, removeUndefined({ ...updatedWithPercentiles, id: recordId }));
+    await update(recordRef, paths);
   };
 
   const deleteRecord = async (recordId: string): Promise<void> => {
@@ -209,7 +232,9 @@ function validateRecord(record: Omit<GrowthRecord, 'id'>): void {
  *    直接回傳——寫入時算一次就不再動。矯正機制上線後，那個捷徑等於保證舊的
  *    早產紀錄永遠是錯的。百分位只是快取，不是使用者輸入，重算是安全的。
  * 2. 算不出來時保留原本存著的那一份，不清空。缺性別或生日的情況下把
- *    percentile 覆蓋成 `{}`，畫面會從「第 45 百分位」變成什麼都沒有。
+ *    percentile 覆蓋成 `{}`，畫面會從「第 45 百分位」變成什麼都沒有。存著的
+ *    只會是舊紀錄：現在的寫入端不存百分位，而那時算不出來的，寫入當下也
+ *    一樣算不出來，所以新紀錄在這裡沒有東西可留。
  * 3. 同步。原本掛著 async 卻沒有任何 await；讀取端每一筆都要算，多包一層
  *    promise 只是讓 useMemo 沒辦法用。
  */

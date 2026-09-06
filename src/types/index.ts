@@ -425,7 +425,11 @@ export interface GrowthRecord {
   weight?: number; // kg
   height?: number; // cm
   headCircumference?: number; // cm
-  percentile: {
+  /**
+   * 讀取時由 useGrowthTracking 依孩子檔案算出來，寫入端不存。資料庫裡的舊
+   * 紀錄可能還帶著寫入當下算的那一份，算不出來時會拿它當備援。
+   */
+  percentile?: {
     weight?: number; // 0-100
     height?: number;
     headCircumference?: number;
