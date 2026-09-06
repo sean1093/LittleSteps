@@ -49,7 +49,7 @@ export interface ClinicSummaryData {
     weight?: number;
     height?: number;
     headCircumference?: number;
-    percentile: { weight?: number; height?: number; headCircumference?: number };
+    percentile?: { weight?: number; height?: number; headCircumference?: number };
   };
 
   // Recent 3 growth records

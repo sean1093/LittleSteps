@@ -550,8 +550,15 @@ async function main() {
     '成長紀錄上塞不認識的欄位會被擋',
     alice.put('childRecords/c1/growthRecords/g-bad', growthRecord({ id: 'g-bad', payload: 'x'.repeat(50) })),
   );
+  // 編輯只寫改到的欄位：兩位照顧者一個補身高、一個補頭圍，各自的 leaf 才合得
+  // 起來。上層的 hasChildren(['date']) 拿合併後的結果檢查，所以不帶 date 也過。
   await expectAllowed(
-    '整筆重送的更新照樣可以（成長紀錄的編輯是 set 整份）',
+    '只改一個欄位的部分更新可以（updateRecord 的寫法）',
+    alice.patch('childRecords/c1/growthRecords/g1', { height: 53, notes: null }),
+  );
+  // 寫入端已經不存百分位，但舊紀錄裡存著的那一份得留得住、改得動。
+  await expectAllowed(
+    '整筆重送、連舊的百分位一起，照樣可以',
     alice.put('childRecords/c1/growthRecords/g1', growthRecord({ weight: 4.4, percentile: {} })),
   );
 

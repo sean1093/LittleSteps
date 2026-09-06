@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import type { GrowthRecord } from '../../types';
 import { useGrowthTracking } from './useGrowthTracking';
+import { growthAgeMonths } from '../../common/correctedAge';
+import { calculatePercentile, calculateZScore } from '../utils/growthCalculator';
+import { applyUpdatePaths } from '../../test/rtdb';
 
 /**
  * 成長紀錄是掛在孩子身上的測量值，換孩子時沒清掉的話，新孩子的快照抵達之前，
@@ -20,6 +23,10 @@ type Cancel = (error: Error) => void;
 const subscriptions = new Map<string, { next: Next; cancel: Cancel }>();
 /** 這個 hook 只會寫成長紀錄，所以在 mock 這個邊界收斂成該型別一次。 */
 const writes: { path: string; value: Partial<GrowthRecord> }[] = [];
+/** 修改走 update()：每個 key 都是一條路徑，模擬器與正式環境都是逐條合併。 */
+const updates: { path: string; value: Record<string, unknown> }[] = [];
+/** set() 與 update() 依發生順序的流水帳，重播時才分得出「整筆換掉」與「逐條合併」。 */
+const journal: { kind: 'set' | 'update'; path: string; value: unknown }[] = [];
 const removals: string[] = [];
 
 vi.mock('firebase/database', () => ({
@@ -30,6 +37,12 @@ vi.mock('firebase/database', () => ({
   },
   set: (path: string, value: unknown) => {
     writes.push({ path, value: value as Partial<GrowthRecord> });
+    journal.push({ kind: 'set', path, value });
+    return Promise.resolve();
+  },
+  update: (path: string, value: Record<string, unknown>) => {
+    updates.push({ path, value });
+    journal.push({ kind: 'update', path, value });
     return Promise.resolve();
   },
   remove: (path: string) => {
@@ -55,6 +68,8 @@ const weight = (id: string, kg: number) => ({
 beforeEach(() => {
   subscriptions.clear();
   writes.length = 0;
+  updates.length = 0;
+  journal.length = 0;
   removals.length = 0;
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
@@ -128,7 +143,7 @@ describe('useGrowthTracking', () => {
     });
 
     expect(writes[0].path).toMatch(/^childRecords\/A\/growthRecords\/[^/]+$/);
-    expect(writes[1].path).toBe('childRecords/A/growthRecords/g1');
+    expect(updates[0].path).toBe('childRecords/A/growthRecords/g1');
     expect(removals).toEqual(['childRecords/A/growthRecords/g1']);
   });
 
@@ -208,38 +223,143 @@ describe('useGrowthTracking', () => {
 
     expect(result.current.records[0].percentile?.weight).toBe(45);
   });
+});
 
-  it('寫入時存的也是矯正後的百分位', async () => {
-    const record = {
-      childId: 'A',
-      date: '2026-08-01',
-      weight: 6.4,
-      percentile: {},
-    };
+/**
+ * 共享的孩子有兩位照顧者，同一筆測量同時開著是常態。修改原本是拿「手上那
+ * 一版 + 這次改的欄位」重算百分位再 set 整筆：媽媽補身高、爸爸補頭圍，後到
+ * 的那一筆連著他手上沒有身高的舊版蓋回去，媽媽剛量的身高就沒了，而且存進
+ * 去的百分位對的是他手上那一版，不是資料庫裡真的那一筆。
+ *
+ * 百分位讀取時本來就會重算（見上面早產矯正那幾條），所以存那一份沒有任何
+ * 讀取端在用。不存了、只寫真的改到的欄位，兩個人的測量就會合併，畫面上的
+ * 百分位永遠對得上存著的數字。
+ */
+describe('兩位照顧者各補一項測量', () => {
+  const child = { gender: 'male' as const, birthday: '2026-02-01' };
 
-    const term = renderHook(() =>
-      useGrowthTracking('A', user, { gender: 'male', birthday: '2026-02-01' }),
-    );
-    act(() => subscription('A').next({ val: () => null }));
-    await act(async () => {
-      await term.result.current.addRecord(record);
-    });
+  /** 資料庫上那一筆：只量了體重。 */
+  const weightOnly = () => ({ id: 'g1', childId: 'c1', date: '2026-08-01', weight: 7.4 });
 
+  /**
+   * AddGrowthRecordModal 送出的形狀：每個欄位都送，沒填的是 undefined，
+   * percentile 固定是 {}——「會由 hook 算」。
+   */
+  const submitted = (fields: Partial<GrowthRecord>): Omit<GrowthRecord, 'id' | 'childId'> => ({
+    date: '2026-08-01',
+    weight: undefined,
+    height: undefined,
+    headCircumference: undefined,
+    notes: undefined,
+    percentile: {},
+    ...fields,
+  });
+
+  /** 開一個新的畫面，讀到 stored 這一份快照。 */
+  const openWith = (stored: Record<string, Partial<GrowthRecord>>) => {
     subscriptions.clear();
-    const preterm = renderHook(() =>
-      useGrowthTracking('A', user, {
-        gender: 'male',
-        birthday: '2026-02-01',
-        gestationalAgeWeeks: 32,
-      }),
-    );
-    act(() => subscription('A').next({ val: () => null }));
+    const { result } = renderHook(() => useGrowthTracking('A', user, child));
+    act(() => subscription('A').next({ val: () => stored }));
+    return result;
+  };
+
+  /** 把每一筆寫入依序套到資料庫上那一筆：set 整筆換掉，update 逐條合併。 */
+  const stored = () =>
+    journal
+      .filter((entry) => entry.path === 'childRecords/A/growthRecords/g1')
+      .reduce<Partial<GrowthRecord>>(
+        (row, entry) =>
+          entry.kind === 'set'
+            ? (entry.value as Partial<GrowthRecord>)
+            : applyUpdatePaths(row, entry.value as Record<string, unknown>),
+        weightOnly(),
+      );
+
+  it('一個補身高、一個補頭圍，兩項都留得住', async () => {
+    const mum = openWith({ g1: weightOnly() });
     await act(async () => {
-      await preterm.result.current.addRecord(record);
+      await mum.current.updateRecord('g1', submitted({ weight: 7.4, height: 68 }));
     });
 
-    const stored = writes.map((write) => write.value.percentile?.weight);
-    expect(stored[0]).toBeDefined();
-    expect(stored[1] as number).toBeGreaterThan(stored[0] as number);
+    // 爸爸的畫面還是媽媽存之前的那一版。
+    const dad = openWith({ g1: weightOnly() });
+    await act(async () => {
+      await dad.current.updateRecord('g1', submitted({ weight: 7.4, headCircumference: 43 }));
+    });
+
+    expect(stored()).toEqual({
+      id: 'g1',
+      childId: 'c1',
+      date: '2026-08-01',
+      weight: 7.4,
+      height: 68,
+      headCircumference: 43,
+    });
+    expect(updates.map((entry) => entry.path)).toEqual([
+      'childRecords/A/growthRecords/g1',
+      'childRecords/A/growthRecords/g1',
+    ]);
+  });
+
+  it('畫面上的百分位是照存進去的那一筆算的，不是寫入者手上那一版', async () => {
+    const mum = openWith({ g1: weightOnly() });
+    await act(async () => {
+      await mum.current.updateRecord('g1', submitted({ weight: 7.4, height: 68 }));
+    });
+    const dad = openWith({ g1: weightOnly() });
+    await act(async () => {
+      await dad.current.updateRecord('g1', submitted({ weight: 7.4, headCircumference: 43 }));
+    });
+
+    // 兩筆寫入都不帶百分位：存那一份沒有讀取端在用，而它只會對得上寫入者手上那一版。
+    for (const entry of journal) {
+      expect(entry.value).not.toHaveProperty('percentile');
+      expect(Object.keys(entry.value as object).some((path) => path.startsWith('percentile'))).toBe(false);
+    }
+
+    const row = stored();
+    const viewer = openWith({ g1: row });
+    const ageMonths = growthAgeMonths({ birthday: child.birthday }, new Date(row.date as string));
+    const expected = (value: number, type: 'weight' | 'height' | 'headCircumference') =>
+      calculatePercentile(calculateZScore(value, ageMonths, type, child.gender));
+
+    expect(viewer.current.records[0].percentile).toEqual({
+      weight: expected(7.4, 'weight'),
+      height: expected(68, 'height'),
+      headCircumference: expected(43, 'headCircumference'),
+    });
+  });
+
+  it('清掉備註就是清掉：寫 null，不是留著舊值', async () => {
+    const withNote = { ...weightOnly(), notes: '在家量的' };
+    const mum = openWith({ g1: withNote });
+    await act(async () => {
+      await mum.current.updateRecord('g1', submitted({ weight: 7.4, notes: undefined }));
+    });
+
+    expect(updates[0].value).toEqual({ notes: null });
+    expect(applyUpdatePaths(withNote, updates[0].value)).toEqual(weightOnly());
+  });
+
+  it('什麼都沒改就不寫', async () => {
+    const mum = openWith({ g1: weightOnly() });
+    await act(async () => {
+      await mum.current.updateRecord('g1', submitted({ weight: 7.4 }));
+    });
+
+    expect(journal).toHaveLength(0);
+  });
+
+  it('新增時不存百分位；讀回來時照孩子檔案算', async () => {
+    const mum = openWith({});
+    await act(async () => {
+      await mum.current.addRecord({ childId: 'A', date: '2026-08-01', weight: 6.4, percentile: {} });
+    });
+
+    expect(writes).toHaveLength(1);
+    expect(writes[0].value).not.toHaveProperty('percentile');
+
+    const viewer = openWith({ [writes[0].value.id as string]: writes[0].value });
+    expect(viewer.current.records[0].percentile?.weight).toBeDefined();
   });
 });
