@@ -400,7 +400,10 @@ via `firebase emulators:exec`, so it needs a JDK: `brew install openjdk`, and
 because that formula is keg-only, `/opt/homebrew/opt/openjdk/bin` has to be on
 `PATH` or the emulator will not find `java`. Run it after every change to
 `database.rules.json` — it is the only way to find out that you have just cut a
-family off from a child's health record, or opened one to a stranger.
+family off from a child's health record, or opened one to a stranger. The same
+suite runs in CI on every pull request (the `rules` job in
+`.github/workflows/ci.yml`), so a contributor without a JDK is still covered:
+a loosened rule goes red before it can merge.
 
 `npm run test:e2e` builds the app and serves `dist/` before it opens Chromium,
 so it takes a build's worth of time to start and asserts the production output

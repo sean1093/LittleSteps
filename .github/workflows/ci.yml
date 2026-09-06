@@ -105,3 +105,61 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+
+  # database.rules.json is the only authorisation boundary in the product, and
+  # scripts/testRules.cjs against the real Database emulator is the only proof
+  # of it. Until this job existed that proof ran only on a machine with a JDK,
+  # so a pull request could loosen a rule and arrive green. No `needs:` — the
+  # suite exercises the rules file, not the app, so a red unit suite explains
+  # nothing about a red rules suite, and the minute it takes runs in parallel.
+  # No `paths:` filter either: the assertions encode assumptions the hooks make,
+  # so a change to either side has to run them.
+  rules:
+    name: Database rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # The emulator is a jar. The runner image ships several JDKs and which
+      # one is first on PATH is the image's choice, not ours; pinning one keeps
+      # the emulator's Java stable across image updates. The emulator wants
+      # 11 or later.
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # firebase-tools downloads the emulator jar (~35 MB) into this directory
+      # on first run. Keyed on the firebase-tools version, not the whole
+      # lockfile: the jar version is pinned inside firebase-tools, so only a
+      # bump of that package makes the cached jar stale, and an unrelated
+      # dependency change should not cost a re-download.
+      - name: Resolve the firebase-tools version
+        id: firebase-tools
+        run: |
+          version="$(node -p "require('./package-lock.json').packages['node_modules/firebase-tools'].version")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Cache the emulator jar
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ runner.os }}-firebase-tools-${{ steps.firebase-tools.outputs.version }}
+
+      # The `demo-` project prefix is what keeps the emulator offline: a demo
+      # project has no real counterpart, so nothing here can reach a live
+      # database whatever credentials the runner happens to hold. The script
+      # sets a non-zero exit code on any failed assertion and emulators:exec
+      # propagates it, so a loosened rule turns this job red.
+      - name: Database rules
+        run: npm run test:rules

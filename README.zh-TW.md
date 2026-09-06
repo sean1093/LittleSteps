@@ -358,6 +358,9 @@ ESLint 規則認得內建方法，所以 `.at()`、`findLast`、`toSorted` 這�
 formula 是 keg-only，`/opt/homebrew/opt/openjdk/bin` 必須在 `PATH` 上，不然
 模擬器會找不到 `java`。每次改完 `database.rules.json` 都要跑一次 — 這是唯一能
 讓你發現自己剛剛把一家人擋在孩子的健康紀錄外面、或是把紀錄開放給陌生人的方法。
+同一套測試也會在 CI 上對每一個 pull request 跑一次（`.github/workflows/ci.yml`
+裡的 `rules` job），所以沒有 JDK 的貢獻者一樣有保障：規則一放鬆，合併前就會
+先變紅。
 
 `npm run test:e2e` 會先 build 再把 `dist/` 服務起來才開 Chromium，所以啟動時
 要等一次 build 的時間，驗的也是正式建置的輸出，而不是 dev server。怎麼只跑一
