@@ -24,6 +24,7 @@ import {
   isOpenSleep,
   isStaleOpenSleep,
   openSleepElapsedMinutes,
+  composeLogLabel,
 } from './logHelpers';
 
 /** Frozen "now" used by every clock-dependent assertion. */
@@ -606,6 +607,32 @@ describe('logHelpers', () => {
 
     it('大便性狀', () => {
       distinctLabels(CONSISTENCIES.map(getConsistencyLabel));
+    });
+  });
+
+  /*
+    七種餵奶類型裡有四種的正確寫法自己就帶括號（母乳（瓶餵）……），所以「用括號
+    把內容包起來」這種拼法對其中四種一定會拼出兩層括號。這裡對每一種都跑一次，
+    而不是只挑會出事的那一個：下一個帶括號的類型加進來時，這個測試要先壞掉。
+  */
+  describe('composeLogLabel', () => {
+    it('接得出「餵奶 · 配方奶 120 ml」', () => {
+      expect(composeLogLabel('餵奶', '配方奶 120 ml')).toBe('餵奶 · 配方奶 120 ml');
+    });
+
+    it('任何一種餵奶類型都不會拼出巢狀括號', () => {
+      for (const type of FEEDING_TYPES) {
+        const label = composeLogLabel('餵奶', `${getFeedingTypeLabel(type)} 120 ml`);
+        // 類型自己那一對留著（那是正確的寫法），外面不再包一層。
+        expect(label.startsWith('餵奶 · ')).toBe(true);
+        expect(label.endsWith('）')).toBe(false);
+        const opens = (label.match(/（/g) ?? []).length;
+        expect(opens).toBe((getFeedingTypeLabel(type).match(/（/g) ?? []).length);
+      }
+    });
+
+    it('沒有內容時只留標題，不留一對空括號', () => {
+      expect(composeLogLabel('擠奶', '')).toBe('擠奶');
     });
   });
 });
