@@ -241,9 +241,13 @@ What that adds up to, asserted by `npm run test:rules` against the emulator:
 ### Database shape
 
 ```
-users/$uid                 childrenIds, currentChildId
+users/$uid                 childrenIds, currentChildId, lastFeedbackAt
                            childrenIds is only this account's list of children
                            to subscribe to — authorisation is members, below
+                           lastFeedbackAt is a server timestamp written in the
+                           same update as a feedback row; the rules require it
+                           to be at least 60 s after the previous one, which
+                           caps any account at one feedback a minute
 children/$childId          id, name, birthday, gender, createdAt, createdBy,
                            isPregnancy, pregnancyData
                            gestationalAgeWeeks, gestationalAgeDays

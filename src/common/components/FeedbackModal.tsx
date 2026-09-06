@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import ModalFrame from './ModalFrame';
 import { tap } from '../ui/motion';
 import { SERVICE_THEME } from '../ui/serviceTheme';
+import { FEEDBACK_FAILED_MESSAGE } from '../hooks/useFirebaseChildren';
 import {
   CLAIM_NOT_PUBLISHED,
   VENUE_REPORT_NOTE_LIMIT,
@@ -203,7 +204,7 @@ export default function FeedbackModal({
       onClose();
     } catch (err: unknown) {
       console.error('提交回報失敗:', err);
-      setError(err instanceof Error ? err.message : '提交失敗，請稍後再試');
+      setError(err instanceof Error ? err.message : FEEDBACK_FAILED_MESSAGE);
     } finally {
       setIsSubmitting(false);
     }
