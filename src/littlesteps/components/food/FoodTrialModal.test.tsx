@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { FoodTrialRecord } from '../../../types';
 import FoodTrialModal from './FoodTrialModal';
+import { ALLERGY_DESCRIPTION_LIMIT, FOOD_NAME_LIMIT, FOOD_NOTES_LIMIT } from '../../../common/recordLimits';
 
 /**
  * 這張表以前先呼叫 onSave 再無條件 onClose：寫入失敗被上層接成一則 toast，
@@ -73,5 +74,22 @@ describe('嘗試日期', () => {
 
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
     expect(onSave.mock.calls[0][0].trialDates).toEqual(['2026-08-28']);
+  });
+});
+
+describe('欄位上限', () => {
+  // 規則對食物名稱、備註與過敏反應的補充說明各有長度上限；超過時回來的是
+  // PERMISSION_DENIED，表單只能照印。欄位本身不能超過規則，那個錯誤才不會出現。
+  it('食物名稱、備註與過敏反應說明的上限就是規則的上限', async () => {
+    const { user } = renderModal();
+
+    expect(screen.getByLabelText(/食物名稱/)).toHaveAttribute('maxlength', String(FOOD_NAME_LIMIT));
+    expect(screen.getByLabelText('備註')).toHaveAttribute('maxlength', String(FOOD_NOTES_LIMIT));
+
+    await user.click(screen.getByRole('switch', { name: '有過敏反應' }));
+    expect(screen.getByLabelText('補充說明')).toHaveAttribute(
+      'maxlength',
+      String(ALLERGY_DESCRIPTION_LIMIT),
+    );
   });
 });

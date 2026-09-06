@@ -9,6 +9,7 @@ import LittleBloomWikiPage from './LittleBloomWikiPage';
 import { pregnancyWikiArticles } from '../data/wiki';
 import { prenatalCheckupSchedule } from '../data/prenatalCheckups';
 import { dueDateFromLmp, resolvePrenatalItems } from '../utils/prenatalSchedule';
+import { PRENATAL_CLINIC_LIMIT, PRENATAL_NOTES_LIMIT } from '../../common/recordLimits';
 
 /**
  * LittleBloom shipped as a shell: no code path wrote pregnancyData, so every
@@ -563,5 +564,26 @@ describe('出生之後', () => {
 
     expect(screen.queryByText('寶寶已經出生了')).not.toBeInTheDocument();
     expect(screen.getByText(`第 ${EXPECTED_WEEK} 週`)).toBeInTheDocument();
+  });
+});
+
+describe('欄位上限', () => {
+  // 規則對產檢記錄的院所與備註各有長度上限；超過時回來的是 PERMISSION_DENIED，
+  // 而這一頁把它講成「請確認網路」。欄位本身不能超過規則，那句話才是真的。
+  it('產檢記錄的院所與備註的上限就是規則的上限', async () => {
+    const user = userEvent.setup();
+    render(
+      <PrenatalPage currentChild={pregnant()} progress={{}} onComplete={noop} onUndo={noop} />,
+    );
+
+    await user.click(screen.getAllByRole('button', { name: '標記完成' })[0]);
+    expect(screen.getByPlaceholderText('院所（選填）')).toHaveAttribute(
+      'maxlength',
+      String(PRENATAL_CLINIC_LIMIT),
+    );
+    expect(screen.getByPlaceholderText('備註（選填）')).toHaveAttribute(
+      'maxlength',
+      String(PRENATAL_NOTES_LIMIT),
+    );
   });
 });

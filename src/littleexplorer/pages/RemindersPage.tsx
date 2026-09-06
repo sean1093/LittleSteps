@@ -26,6 +26,7 @@ import ExplorerShell from '../components/ExplorerShell';
 import NoChildNotice from '../components/NoChildNotice';
 import AgeBandPicker from '../components/AgeBandPicker';
 import { goTo } from '../../common/navigate';
+import { CARE_TASK_LOCATION_LIMIT, CARE_TASK_NOTES_LIMIT } from '../../common/recordLimits';
 
 const THEME = SERVICE_THEME.littleexplorer;
 
@@ -323,6 +324,9 @@ export default function RemindersPage({
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="院所（選填）"
+              // 上限就是規則的上限。超過它回來的是 PERMISSION_DENIED，這一頁只會說
+              // 「請確認網路」，家長會一直重送一筆永遠寫不進去的紀錄。
+              maxLength={CARE_TASK_LOCATION_LIMIT}
               className="w-full px-3 min-h-tap rounded-xl border border-explorer-sand text-sm text-explorer-bark"
             />
             <input
@@ -330,6 +334,7 @@ export default function RemindersPage({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="備註（選填）"
+              maxLength={CARE_TASK_NOTES_LIMIT}
               className="w-full px-3 min-h-tap rounded-xl border border-explorer-sand text-sm text-explorer-bark"
             />
             <button

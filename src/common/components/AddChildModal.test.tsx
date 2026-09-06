@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import AddChildModal from './AddChildModal';
+import { CHILD_NAME_LIMIT } from '../recordLimits';
 
 describe('AddChildModal', () => {
   it('submits the create form with name, birthday and gender, then closes', async () => {
@@ -114,5 +115,22 @@ describe('AddChildModal', () => {
   it('renders nothing when closed', () => {
     const { container } = render(<AddChildModal isOpen={false} onClose={vi.fn()} onSave={vi.fn()} />);
     expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe('欄位上限', () => {
+  // children/$childId/name 的規則有長度上限；兩張表（寶寶、孕期）都寫這個欄位。
+  // 超過時回來的是 PERMISSION_DENIED，表單會說「請確認網路」。
+  it('寶寶姓名的上限就是規則的上限', () => {
+    render(<AddChildModal isOpen onClose={vi.fn()} onSave={vi.fn()} />);
+    expect(screen.getByLabelText('寶寶姓名')).toHaveAttribute('maxlength', String(CHILD_NAME_LIMIT));
+  });
+
+  it('孕期檔案的小名也用同一個上限', async () => {
+    render(
+      <AddChildModal isOpen onClose={vi.fn()} onSave={vi.fn()} modes={['create', 'pregnancy']} />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: '懷孕中' }));
+    expect(screen.getByLabelText(/寶寶小名/)).toHaveAttribute('maxlength', String(CHILD_NAME_LIMIT));
   });
 });

@@ -18,6 +18,7 @@ import { isPregnancyProfile } from '../../common/pregnancy';
 import { formatDate, toLocalDateKey } from '../../common/utils/dateHelpers';
 import { splitOverdueByProfileStart } from '../../common/utils/profileHistory';
 import { goTo } from '../../common/navigate';
+import { PRENATAL_CLINIC_LIMIT, PRENATAL_NOTES_LIMIT } from '../../common/recordLimits';
 
 const THEME = SERVICE_THEME.littlebloom;
 
@@ -263,6 +264,9 @@ export default function PrenatalPage({
               value={clinicName}
               onChange={(e) => setClinicName(e.target.value)}
               placeholder="院所（選填）"
+              // 上限就是規則的上限。超過它回來的是 PERMISSION_DENIED，這一頁只會說
+              // 「請確認網路」，家長會一直重送一筆永遠寫不進去的紀錄。
+              maxLength={PRENATAL_CLINIC_LIMIT}
               className="w-full px-3 min-h-tap rounded-xl border border-bloom-sand text-sm text-bloom-stone-ink"
             />
             <input
@@ -270,6 +274,7 @@ export default function PrenatalPage({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="備註（選填）"
+              maxLength={PRENATAL_NOTES_LIMIT}
               className="w-full px-3 min-h-tap rounded-xl border border-bloom-sand text-sm text-bloom-stone-ink"
             />
             <button
