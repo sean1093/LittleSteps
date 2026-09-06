@@ -67,12 +67,13 @@ for (const route of PUBLIC_ROUTES) {
  * is legitimately empty there and the non-vacuity assertion would fail.
  *
  * Measured, not assumed: every other public route has between 4 and 26
- * candidates at both widths; these two have zero. The hub is a stack of service
- * cards and the sleep guide is prose. Listed by name rather than skipped
+ * candidates at both widths; these three have zero. The hub is a stack of
+ * service cards, the sleep guide is prose, and the about page is prose and
+ * source cards with nothing set to `nowrap`. Listed by name rather than skipped
  * silently, so a route that *stops* having chips is a decision someone makes
  * here rather than a green line that quietly stopped meaning anything.
  */
-const ROUTES_WITH_NOTHING_TO_MEASURE = new Set(['home', 'littlesteps/sleep-training']);
+const ROUTES_WITH_NOTHING_TO_MEASURE = new Set(['home', 'littlesteps/sleep-training', 'about']);
 
 for (const route of PUBLIC_ROUTES) {
   test(`RWD-04 @p1 ${route} keeps every nowrap label inside its own box`, async ({ page }) => {
