@@ -293,6 +293,13 @@ async function main() {
     '寫自己的回饋：回饋與 lastFeedbackAt 同一筆寫入',
     sendFeedback(alice, 'alice', 'f1'),
   );
+  // 第一次登入就送回饋的帳號，users/$uid 還不存在。上面那一則也是這個狀況，
+  // 但只因為套件裡沒有任何更早的步驟寫過 users/alice——順序一調就悄悄漏掉。
+  // 這裡用一個從沒寫過任何東西的身分把它釘住。
+  await expectAllowed(
+    '從沒寫過任何東西的新帳號，第一則回饋直接寫得進去',
+    sendFeedback(as('newcomer'), 'newcomer', 'f-newcomer'),
+  );
   await expectDenied(
     '一分鐘內的第二則被擋下',
     sendFeedback(alice, 'alice', 'f2'),

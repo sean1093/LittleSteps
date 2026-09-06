@@ -1,4 +1,5 @@
 import { SERVICE_THEME, type ServiceId } from './ui/serviceTheme';
+import { FEEDBACK_CONTENT_LIMIT, FEEDBACK_TITLE_LIMIT } from './feedbackLimits';
 
 /**
  * A parent telling us that a published venue record is wrong.
@@ -81,10 +82,6 @@ export interface VenueReportTarget {
   readonly claims: readonly VenueClaim[];
 }
 
-/** Field limits from `database.rules.json`; a longer string is rejected outright. */
-const TITLE_LIMIT = 200;
-const CONTENT_LIMIT = 5000;
-
 /**
  * The optional note. Short on purpose: the reason carries the report, and the
  * note is for the one sentence a reason cannot say ("the sign says it moved to
@@ -99,7 +96,7 @@ const truncate = (text: string, limit: number): string =>
 export function venueReportTitle(target: VenueReportTarget, reason: VenueReportReason): string {
   return truncate(
     `場館資料回報：${target.name}｜${VENUE_REPORT_REASON_LABEL[reason]}`,
-    TITLE_LIMIT,
+    FEEDBACK_TITLE_LIMIT,
   );
 }
 
@@ -135,5 +132,5 @@ export function venueReportContent(
     lines.push(`家長補充：${truncate(trimmed, VENUE_REPORT_NOTE_LIMIT)}`);
   }
 
-  return truncate(lines.join('\n'), CONTENT_LIMIT);
+  return truncate(lines.join('\n'), FEEDBACK_CONTENT_LIMIT);
 }
