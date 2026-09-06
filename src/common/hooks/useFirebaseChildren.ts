@@ -1,4 +1,4 @@
-import { ref, set, update, remove, get, push, type DatabaseReference } from 'firebase/database';
+import { ref, set, update, remove, get, push, serverTimestamp, type DatabaseReference } from 'firebase/database';
 import { database } from '../../lib/firebase';
 import { CareTaskRecord, ChildProfile, DailyLog, DailyLogPatch, DiaryEntry, FoodTrialRecord, Gender } from '../../types';
 import { removeUndefined, toUpdatePaths } from '../utils/firebaseData';
@@ -21,6 +21,20 @@ function newRecordRef(path: string): { recordRef: DatabaseReference; id: string 
   if (!recordRef.key) throw new Error('無法產生紀錄編號');
   return { recordRef, id: recordRef.key };
 }
+
+/** 規則擋下回饋時給家長看的話：每個帳號一分鐘一則，見 submitFeedback。 */
+export const FEEDBACK_THROTTLED_MESSAGE = '剛剛才送出過一次，請稍後再試';
+/** 其他失敗（斷線、SDK 例外）的一句；SDK 的原文對家長沒有意義。 */
+export const FEEDBACK_FAILED_MESSAGE = '提交失敗，請稍後再試';
+
+/**
+ * SDK 把規則的拒絕包成 message 以 PERMISSION_DENIED 開頭、code 也是它的 Error。
+ * 兩個都看：測試裡的假 SDK 只給 message。
+ */
+const isPermissionDenied = (error: unknown): boolean =>
+  error instanceof Error &&
+  ((error as { code?: unknown }).code === 'PERMISSION_DENIED' ||
+    /permission_denied/i.test(error.message));
 
 export function useFirebaseChildren(userId: string | null) {
   /**
@@ -490,7 +504,18 @@ export function useFirebaseChildren(userId: string | null) {
     await remove(foodRef);
   };
 
-  // Feedback submission
+  /**
+   * 回饋與 users/$uid/lastFeedbackAt 是同一筆 multi-path 更新，不能拆成兩筆。
+   *
+   * feedbacks 是唯一任何登入者都寫得進去的節點，而登入對每一個 Google 帳號
+   * 開放：沒有上限的話，一支迴圈就能把 Spark 方案的儲存額度寫滿，而回饋沒有
+   * 人讀得到，所以不會有人發現。規則的解法是每個帳號一分鐘一則：feedbacks 的
+   * .write 從同一筆寫入裡讀自己的 lastFeedbackAt（newData.parent()），要求它
+   * 等於伺服器的 now，而 lastFeedbackAt 自己的 validate 又要求比上一次晚 60 秒。
+   * 戳記交給 serverTimestamp()，客戶端填的數字永遠對不上 now。
+   *
+   * 分開寫的話，單獨的回饋那一筆讀不到戳記，一定被擋。
+   */
   const submitFeedback = async (feedback: {
     title: string;
     content: string;
@@ -500,14 +525,23 @@ export function useFirebaseChildren(userId: string | null) {
   }) => {
     if (!userId) throw new Error('User not authenticated');
 
-    const { recordRef, id } = newRecordRef('feedbacks');
+    const { id } = newRecordRef('feedbacks');
+    const now = new Date().toISOString();
     const feedbackData = {
       id,
       ...feedback,
-      timestamp: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
+      timestamp: now,
+      createdAt: now,
     };
-    await set(recordRef, feedbackData);
+    try {
+      await update(ref(database), {
+        [`feedbacks/${id}`]: feedbackData,
+        [`users/${userId}/lastFeedbackAt`]: serverTimestamp(),
+      });
+    } catch (error) {
+      // 客戶端寫的 userId 就是自己的 uid，所以規則會拒絕的只剩一分鐘內送過。
+      throw new Error(isPermissionDenied(error) ? FEEDBACK_THROTTLED_MESSAGE : FEEDBACK_FAILED_MESSAGE);
+    }
 
     return id;
   };

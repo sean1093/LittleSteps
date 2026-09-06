@@ -36,6 +36,8 @@ const stored = new Map<string, unknown>();
 const denied = new Set<string>();
 /** 讀不到的路徑：成員資格被收回之後，讀本體就是這個樣子。 */
 const unreadable = new Set<string>();
+/** 有值時下一筆 update() 就用它拒絕；模擬規則擋下 root fan-out 的樣子。 */
+let updateFailure: Error | null = null;
 let pushSeq = 0;
 
 vi.mock('firebase/database', () => ({
@@ -55,9 +57,11 @@ vi.mock('firebase/database', () => ({
     return Promise.resolve();
   },
   update: (target: FakeRef, value: Record<string, unknown>) => {
+    if (updateFailure) return Promise.reject(updateFailure);
     updates.push({ path: target.path, value });
     return Promise.resolve();
   },
+  serverTimestamp: () => ({ '.sv': 'timestamp' }),
   remove: (target: FakeRef) => {
     removals.push(target.path);
     return Promise.resolve();
@@ -110,6 +114,7 @@ beforeEach(() => {
   stored.clear();
   denied.clear();
   unreadable.clear();
+  updateFailure = null;
   pushSeq = 0;
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
@@ -403,6 +408,49 @@ describe('只增不減的三份紀錄住在 childRecords 底下', () => {
       `childRecords/c1/dailyLogs/${logId}`,
       `childRecords/c1/diaryEntries/${entryId}`,
     ]);
+  });
+});
+
+describe('submitFeedback', () => {
+  // feedbacks 是唯一任何登入者都寫得進去的節點，規則靠 users/$uid/lastFeedbackAt
+  // 限制每個帳號一分鐘一則，而那個戳記必須跟回饋在同一筆寫入裡。
+  const feedback = () => ({
+    title: '很好用',
+    content: '謝謝',
+    userId: 'u1',
+    userEmail: 'a@example.com',
+    userName: '小豆媽',
+  });
+
+  /** SDK 真的丟出來的樣子：message 以代碼開頭，code 是大寫的同一個代碼。 */
+  const sdkError = (code: string) =>
+    Object.assign(new Error(`${code}: Permission denied`), { code });
+
+  it('回饋與自己的 lastFeedbackAt 是同一筆 root 更新，戳記交給伺服器', async () => {
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+
+    const id = await result.current.submitFeedback(feedback());
+
+    const root = rootUpdate();
+    expect(root[`feedbacks/${id}`]).toMatchObject({ id, title: '很好用', userId: 'u1' });
+    expect(root['users/u1/lastFeedbackAt']).toEqual({ '.sv': 'timestamp' });
+    expect(writes).toHaveLength(0);
+  });
+
+  it('被規則擋下時說的是「剛剛才送出過」，不是通用的失敗', async () => {
+    updateFailure = sdkError('PERMISSION_DENIED');
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+
+    await expect(result.current.submitFeedback(feedback())).rejects.toThrow(
+      '剛剛才送出過一次，請稍後再試',
+    );
+  });
+
+  it('其他錯誤給通用的一句，不把 SDK 的訊息丟給家長看', async () => {
+    updateFailure = sdkError('NETWORK_ERROR');
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+
+    await expect(result.current.submitFeedback(feedback())).rejects.toThrow('提交失敗，請稍後再試');
   });
 });
 

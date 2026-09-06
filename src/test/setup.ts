@@ -24,6 +24,9 @@ const mockOnValue = vi.fn((_ref, callback) => {
 });
 const mockRemove = vi.fn().mockResolvedValue(undefined);
 const mockGet = vi.fn().mockResolvedValue({ exists: () => false, val: () => null });
+// SDK 送出去的是這個 sentinel，伺服器收到才換成時間；mock 照原樣給出來，
+// 測試才驗得到「戳記交給伺服器、不是客戶端自己填」。
+const mockServerTimestamp = vi.fn(() => ({ '.sv': 'timestamp' }));
 // push() 的重點是「每次都不一樣」：Date.now() 當 key 會讓同一毫秒內的兩筆
 // 紀錄互相覆蓋，而共用同一個孩子的兩位家長就是兩個寫入者。
 let pushCount = 0;
@@ -74,6 +77,7 @@ vi.mock('firebase/database', () => ({
   get: mockGet,
   onValue: mockOnValue,
   remove: mockRemove,
+  serverTimestamp: mockServerTimestamp,
 }));
 
 // Mock window.matchMedia

@@ -204,9 +204,12 @@ OpenStreetMap 的資料。它的每一句宣稱都是 `src/common/about/dataSour
 ### 資料庫結構
 
 ```
-users/$uid                 childrenIds, currentChildId
+users/$uid                 childrenIds, currentChildId, lastFeedbackAt
                            childrenIds 只是這個帳號要訂閱的孩子清單，
                            授權看的是下面的 members
+                           lastFeedbackAt 是伺服器時間戳，與回饋在同一筆更新裡
+                           寫入；規則要求它比上一次晚至少 60 秒，所以任何帳號
+                           一分鐘最多一則回饋
 children/$childId          id, name, birthday, gender, createdAt, createdBy,
                            isPregnancy, pregnancyData
                            gestationalAgeWeeks, gestationalAgeDays

@@ -9,8 +9,9 @@
  * 只會是那份重寫。
  *
  * 執行：npm run test:rules（由 firebase emulators:exec 起停模擬器）
- * 需要 Java。模擬器的 REST 介面用 auth_variable_override 假冒不同使用者，
- * 不帶這個參數的請求一律是 admin，正好用來鋪測試資料。
+ * 需要 Java。模擬器的 REST 介面用未簽名的 JWT 假冒不同使用者（見下面的
+ * tokenFor）；鋪測試資料則用 `Authorization: Bearer owner`，那是模擬器認得的
+ * 專案擁有者身分（見 admin）。
  */
 
 const host = process.env.FIREBASE_DATABASE_EMULATOR_HOST || '127.0.0.1:9000';
@@ -49,15 +50,26 @@ const tokenFor = (uid) => {
   return `${header}.${payload}.`;
 };
 
+/**
+ * 鋪測試資料用的擁有者身分。模擬器把 `Authorization: Bearer owner` 當成專案
+ * 擁有者、不套規則——firebase-tools 自己的 database:set 就是這樣打進模擬器
+ * 的（實測：query 參數 auth=owner 與不帶憑證都回 401，只有這個 header 放行）。
+ * 只用來擺出規則本身寫不出來的狀態，例如一分鐘前的回饋戳記；驗行為一律用
+ * 假冒的使用者。
+ */
+const OWNER = Symbol('owner');
+
 const url = (path, uid) => {
-  const query = `ns=${NS}&auth=${tokenFor(uid)}`;
+  const query = uid === OWNER ? `ns=${NS}` : `ns=${NS}&auth=${tokenFor(uid)}`;
   return `http://${host}/${path}.json?${query}`;
 };
 
 async function req(method, path, uid, body) {
+  const headers = uid === OWNER ? { Authorization: 'Bearer owner' } : {};
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
   const res = await fetch(url(path, uid), {
     method,
-    headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
+    headers,
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   return { status: res.status, text: await res.text() };
@@ -97,6 +109,7 @@ async function expectDenied(label, promise) {
 
 const alice = as('alice');
 const mallory = as('mallory');
+const admin = as(OWNER);
 
 const childProfile = (overrides = {}) => ({
   id: 'c1',
@@ -165,8 +178,7 @@ const foodTrial = (overrides = {}) => ({
 });
 
 async function main() {
-  // emulators:exec 每次都起一台乾淨的模擬器，所以不需要（也沒有辦法）先清空：
-  // 模擬器上不帶憑證的請求同樣受規則管，沒有 admin 後門。
+  // emulators:exec 每次都起一台乾淨的模擬器，所以不需要先清空。
 
   console.log('\n建立與讀取');
   await expectAllowed(
@@ -245,26 +257,74 @@ async function main() {
   );
 
   console.log('\n意見回饋');
+  // feedbacks 是唯一「任何登入者都寫得進去」的節點，而登入對每一個 Google 帳號
+  // 開放：一筆最多 5.6 KB，用迴圈寫就能把 Spark 方案的儲存額度吃光，而且
+  // 沒有人讀得到，所以不會有人發現。規則的解法是每個帳號一分鐘一則：回饋
+  // 與 users/$uid/lastFeedbackAt 必須同一筆 multi-path 更新，戳記必須是
+  // 伺服器的 now，而且要比上一次晚 60 秒以上。
+  /** submitFeedback 寫出來的形狀。 */
+  const feedback = (id, overrides = {}) => ({
+    id,
+    title: '很好用',
+    content: '謝謝',
+    userId: 'alice',
+    userEmail: 'a@example.com',
+    userName: '小豆媽',
+    timestamp: ISO,
+    createdAt: ISO,
+    ...overrides,
+  });
+  /**
+   * submitFeedback 的寫法：回饋與自己的 lastFeedbackAt 同一筆 root 更新。
+   * SDK 的 serverTimestamp() 在 REST 上寫成 { '.sv': 'timestamp' }，規則裡
+   * 讀到的就是 now。
+   */
+  const SERVER_NOW = { '.sv': 'timestamp' };
+  const sendFeedback = (who, uid, id, stamp = SERVER_NOW) =>
+    who.patch('', {
+      [`feedbacks/${id}`]: feedback(id, { userId: uid }),
+      [`users/${uid}/lastFeedbackAt`]: stamp,
+    });
+  /** 把 alice 上一次回饋的時間擺到一分鐘以前——模擬器的 now 是真的時間，不用等。 */
+  const seedLastFeedback = (msAgo) =>
+    admin.put('users/alice/lastFeedbackAt', Date.now() - msAgo);
+
   await expectAllowed(
-    '寫自己的回饋',
-    alice.put('feedbacks/f1', {
-      id: 'f1',
-      title: '很好用',
-      content: '謝謝',
-      userId: 'alice',
-      userEmail: 'a@example.com',
-      userName: '小豆媽',
-      timestamp: '2026-09-01T00:00:00.000Z',
-      createdAt: '2026-09-01T00:00:00.000Z',
+    '寫自己的回饋：回饋與 lastFeedbackAt 同一筆寫入',
+    sendFeedback(alice, 'alice', 'f1'),
+  );
+  await expectDenied(
+    '一分鐘內的第二則被擋下',
+    sendFeedback(alice, 'alice', 'f2'),
+  );
+  await seedLastFeedback(61000);
+  await expectAllowed(
+    '距上一則超過一分鐘就又寫得進去',
+    sendFeedback(alice, 'alice', 'f3'),
+  );
+  await expectDenied(
+    '同一筆更新裡沒帶 lastFeedbackAt 的回饋寫不進去（迴圈灌回饋的寫法）',
+    alice.patch('', { 'feedbacks/f4': feedback('f4') }),
+  );
+  await seedLastFeedback(61000);
+  await expectDenied(
+    '戳記是客戶端自己填的數字、不是伺服器的 now，就不給寫（否則填個未來的時間就能一直寫）',
+    sendFeedback(alice, 'alice', 'f5', Date.now() + 600000),
+  );
+  await seedLastFeedback(61000);
+  await expectDenied(
+    '不能冒用別人的 userId',
+    alice.patch('', {
+      'feedbacks/f6': feedback('f6', { userId: 'mallory' }),
+      'users/alice/lastFeedbackAt': SERVER_NOW,
     }),
   );
   await expectDenied(
-    '不能冒用別人的 userId',
-    alice.put('feedbacks/f2', { title: 'x', content: 'y', userId: 'mallory' }),
-  );
-  await expectDenied(
-    '塞不認識的欄位進來會被擋（回饋節點是任何登入者都寫得進去的）',
-    alice.put('feedbacks/f3', { title: 'x', content: 'y', userId: 'alice', payload: 'x'.repeat(50) }),
+    '塞不認識的欄位進來會被擋',
+    alice.patch('', {
+      'feedbacks/f7': feedback('f7', { payload: 'x'.repeat(50) }),
+      'users/alice/lastFeedbackAt': SERVER_NOW,
+    }),
   );
   await expectDenied('回饋沒有人讀得到', alice.get('feedbacks/f1'));
 
@@ -734,6 +794,13 @@ async function main() {
   await expectDenied(
     '寫不進別人的使用者節點',
     mallory.put('users/alice/childrenIds/c1', true),
+  );
+  await expectDenied(
+    '寫不進別人的 lastFeedbackAt（用別人的戳記交自己的回饋也不行）',
+    mallory.patch('', {
+      'feedbacks/f8': feedback('f8', { userId: 'mallory' }),
+      'users/alice/lastFeedbackAt': SERVER_NOW,
+    }),
   );
 
   console.log(`\n${passed} 項通過，${failures.length} 項失敗`);

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { set } from 'firebase/database';
+import { update } from 'firebase/database';
 import { ToastProvider } from '../ui/toast';
 import { VENUE_REPORT_REASON_LABEL, type VenueReportTarget } from '../venueReport';
 import type * as AuthContextModule from '../../contexts/AuthContext';
@@ -55,18 +55,25 @@ const openReport = async () => {
   return user;
 };
 
-/** The tsconfig `lib` stops at ES2020, so `Array.prototype.at` is unavailable. */
+/**
+ * The feedback row travels in a root multi-path update alongside the sender's
+ * `lastFeedbackAt` stamp, so the record is the `feedbacks/...` entry of the
+ * last update. The tsconfig `lib` stops at ES2020, so `Array.prototype.at` is
+ * unavailable.
+ */
 const lastWrite = () => {
-  const { calls } = vi.mocked(set).mock;
-  return calls[calls.length - 1]?.[1] as
-    | { title: string; content: string; userId: string }
-    | undefined;
+  const { calls } = vi.mocked(update).mock;
+  const payload = calls[calls.length - 1]?.[1] as Record<string, unknown> | undefined;
+  const key = Object.keys(payload ?? {}).find((path) => path.startsWith('feedbacks/'));
+  return key === undefined
+    ? undefined
+    : (payload?.[key] as { title: string; content: string; userId: string });
 };
 
 beforeEach(() => {
   currentUser = null;
   signInWithGoogle.mockClear();
-  vi.mocked(set).mockClear();
+  vi.mocked(update).mockClear();
 });
 
 describe('a signed-out parent', () => {
@@ -115,7 +122,7 @@ describe('a signed-in parent', () => {
     await user.click(screen.getByRole('button', { name: VENUE_REPORT_REASON_LABEL.gone }));
     await user.click(screen.getByRole('button', { name: '送出回報' }));
 
-    await waitFor(() => expect(set).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(update).toHaveBeenCalledTimes(1));
     const written = lastWrite();
     expect(written?.content).not.toContain('家長補充');
     expect(written?.userId).toBe('parent-1');
@@ -127,7 +134,7 @@ describe('a signed-in parent', () => {
     await user.click(screen.getByRole('button', { name: VENUE_REPORT_REASON_LABEL.hoursWrong }));
     await user.click(screen.getByRole('button', { name: '送出回報' }));
 
-    await waitFor(() => expect(set).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(update).toHaveBeenCalledTimes(1));
     const written = lastWrite();
     expect(written?.title).toContain('SOGO 忠孝館');
     expect(written?.content).toContain('tpe-sogo-zhongxiao');
@@ -143,8 +150,23 @@ describe('a signed-in parent', () => {
     await user.type(screen.getByLabelText(/還想補一句/), '門鎖著，要員工卡');
     await user.click(screen.getByRole('button', { name: '送出回報' }));
 
-    await waitFor(() => expect(set).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(update).toHaveBeenCalledTimes(1));
     expect(lastWrite()?.content).toContain('門鎖著，要員工卡');
+  });
+
+  it('is told to wait when the rules throttle a second report, not shown an SDK code', async () => {
+    // The rules allow one feedback a minute per account. The SDK reports the
+    // refusal as PERMISSION_DENIED, which means nothing to a parent.
+    vi.mocked(update).mockRejectedValueOnce(
+      Object.assign(new Error('PERMISSION_DENIED: Permission denied'), { code: 'PERMISSION_DENIED' }),
+    );
+    const user = await openReport();
+
+    await user.click(screen.getByRole('button', { name: VENUE_REPORT_REASON_LABEL.gone }));
+    await user.click(screen.getByRole('button', { name: '送出回報' }));
+
+    expect(await screen.findByText('剛剛才送出過一次，請稍後再試')).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: '這裡的資訊不對？' })).toBeInTheDocument();
   });
 
   it('closes the form once the report is in, so the send is not left in doubt', async () => {

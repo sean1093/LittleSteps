@@ -9,6 +9,7 @@
           "$childId": { ".validate": "newData.val() === true" }
         },
         "currentChildId": { ".validate": "newData.isString() && newData.val().length <= 64" },
+        "lastFeedbackAt": { ".validate": "newData.isNumber() && newData.val() === now && (!data.exists() || newData.val() >= data.val() + 60000)" },
         "$other": { ".validate": false }
       }
     },
@@ -222,7 +223,7 @@
     "feedbacks": {
       "$feedbackId": {
         ".read": "false",
-        ".write": "auth != null && !data.exists() && newData.child('userId').val() === auth.uid",
+        ".write": "auth != null && !data.exists() && newData.child('userId').val() === auth.uid && newData.parent().parent().child('users').child(auth.uid).child('lastFeedbackAt').val() === now",
         ".validate": "newData.hasChildren(['title', 'content', 'userId'])",
         "title": { ".validate": "newData.isString() && newData.val().length <= 200" },
         "content": { ".validate": "newData.isString() && newData.val().length <= 5000" },
