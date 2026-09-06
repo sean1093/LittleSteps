@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import type { User } from 'firebase/auth';
-import type { DailyLog } from '../../types';
+import type { DailyLog, FeedingData } from '../../types';
 import { useFirebaseChildren } from './useFirebaseChildren';
+// 補丁是在頁面那一端算出來的，合不合併要連著它一起驗才算數。
+import { dailyLogChanges } from '../../littlesteps/utils/logHelpers';
 // 讀與寫必須指向同一個子樹，所以那兩個 listener 一起在這裡驗。
 import { useDailyLogs } from '../../littlesteps/hooks/useDailyLogs';
 import { useDiary } from '../../littleexplorer/hooks/useDiary';
@@ -455,5 +457,122 @@ describe('新紀錄的 key', () => {
     ];
 
     expect(new Set([...entries, ...foods]).size).toBe(4);
+  });
+});
+
+/**
+ * 共享的孩子有兩位照顧者，兩個人同時開著同一筆紀錄本來就是這個 app 預期會發生
+ * 的事（見 joinChild 與 members）。整筆寫回去的話，後送出的那一筆會連著他當初
+ * 讀到的舊值一起蓋過去，對方剛改的欄位就這樣不見了，而且兩邊都不會收到任何
+ * 提示——紀錄只是自己變回去而已。
+ */
+describe('兩位照顧者同時改同一筆日誌', () => {
+  const START = '2026-01-01T20:00:00.000Z';
+  const END = '2026-01-01T21:20:00.000Z';
+
+  /** 資料庫上那一筆睡眠：已經開始，還沒結束。 */
+  const openSleep = (): DailyLog => ({
+    id: 'log1',
+    childId: 'c1',
+    type: 'sleep',
+    timestamp: START,
+    data: { startTime: START },
+    createdAt: START,
+  });
+
+  /** 資料庫上那一筆餵奶，備註還在。 */
+  const feedingWithNote = (): DailyLog => ({
+    id: 'log2',
+    childId: 'c1',
+    type: 'feeding',
+    timestamp: START,
+    data: { feedingType: 'formula', amount: 120, notes: '吐了一點' },
+    createdAt: START,
+  });
+
+  /**
+   * 把最後一筆 update() 套到紀錄上，語意跟 Realtime Database 一樣：收到的每一
+   * 個 key 就是一條路徑，那條路徑指到的節點整個換掉，沒有列到的節點不動。
+   */
+  const applyLastUpdate = (record: DailyLog): DailyLog => {
+    const next = JSON.parse(JSON.stringify(record)) as Record<string, unknown>;
+    for (const [path, value] of Object.entries(updates[updates.length - 1].value)) {
+      const segments = path.split('/');
+      let node = next;
+      for (const segment of segments.slice(0, -1)) {
+        node[segment] = { ...(node[segment] as Record<string, unknown>) };
+        node = node[segment] as Record<string, unknown>;
+      }
+      const leaf = segments[segments.length - 1];
+      if (value === null) delete node[leaf];
+      else node[leaf] = value;
+    }
+    return next as unknown as DailyLog;
+  };
+
+  it('各改各的欄位時，兩個人的修改都留得住', async () => {
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+    let record = openSleep();
+
+    // 媽媽按下「醒了」，寫的是結束時間與時長。
+    await result.current.updateDailyLog('c1', 'log1', { data: { endTime: END, duration: 80 } });
+    record = applyLastUpdate(record);
+
+    // 爸爸畫面上還是關掉之前的那一版，他補的是備註。
+    const onHisScreen = openSleep();
+    const hisEdit = { ...onHisScreen, data: { startTime: START, notes: '哭了很久才睡' } };
+    await result.current.updateDailyLog('c1', 'log1', dailyLogChanges(onHisScreen, hisEdit));
+    record = applyLastUpdate(record);
+
+    expect(record.data).toEqual({
+      startTime: START,
+      endTime: END,
+      duration: 80,
+      notes: '哭了很久才睡',
+    });
+  });
+
+  it('編輯不會把另一位照顧者剛清掉的欄位救回來', async () => {
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+    // 媽媽已經把備註刪掉了：資料庫上這一筆沒有 notes。
+    let record: DailyLog = {
+      ...feedingWithNote(),
+      data: { feedingType: 'formula', amount: 120 },
+    };
+
+    // 爸爸的表單是備註還在的時候打開的，他只改了奶量。
+    const onHisScreen = feedingWithNote();
+    const hisEdit = {
+      ...onHisScreen,
+      data: { feedingType: 'formula' as const, amount: 150, notes: '吐了一點' },
+    };
+    await result.current.updateDailyLog('c1', 'log2', dailyLogChanges(onHisScreen, hisEdit));
+    record = applyLastUpdate(record);
+
+    expect(record.data).toEqual({ feedingType: 'formula', amount: 150 });
+  });
+
+  it('家長把備註清掉就是真的清掉，不是留著舊值', async () => {
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+    let record = feedingWithNote();
+
+    const hers = feedingWithNote();
+    const herEdit = {
+      ...hers,
+      data: { feedingType: 'formula' as const, amount: 120, notes: undefined },
+    };
+    await result.current.updateDailyLog('c1', 'log2', dailyLogChanges(hers, herEdit));
+    record = applyLastUpdate(record);
+
+    expect((record.data as FeedingData).notes).toBeUndefined();
+  });
+
+  it('什麼都沒改就不寫，連 updatedAt 都不動', async () => {
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+    const unchanged = feedingWithNote();
+
+    await result.current.updateDailyLog('c1', 'log2', dailyLogChanges(unchanged, { ...unchanged }));
+
+    expect(updates).toHaveLength(0);
   });
 });

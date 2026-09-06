@@ -1,5 +1,6 @@
-import { DailyLog, DailySummary, FeedingData, SleepData, DiaperData } from '../../types';
+import { DailyLog, DailyLogPatch, DailySummary, FeedingData, SleepData, DiaperData } from '../../types';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
+import { changedFields } from '../../common/utils/firebaseData';
 
 /**
  * 按時間倒序排序日誌（最新的在前）
@@ -134,6 +135,30 @@ export function findLastLog(
     }
   }
   return latest;
+}
+
+/**
+ * 一次編輯真正改到的欄位。
+ *
+ * 表單送回來的是整筆紀錄，但整筆寫回去就會把另一位照顧者同時改的欄位一起
+ * 蓋掉——他改的是我沒有動到的欄位，我卻連著我開啟表單當下讀到的舊值一起
+ * 送上去。這裡比對的是「我打開表單時看到的那一版」與「我送出的那一版」，
+ * 中間別人做了什麼都不在這兩者裡面，自然也就不會被覆蓋。
+ *
+ * 被清空的欄位要寫 null 而不是略過：略過的話舊值留在資料庫裡，家長把備註
+ * 刪掉之後它會原封不動地回來。
+ */
+export function dailyLogChanges(before: DailyLog, next: Omit<DailyLog, 'id'>): DailyLogPatch {
+  const patch: DailyLogPatch = {};
+  if (next.type !== before.type) patch.type = next.type;
+  if (next.timestamp !== before.timestamp) patch.timestamp = next.timestamp;
+
+  // cast：changedFields 是結構性比對，回傳的是三種 data 形狀裡的哪一種，只有
+  // 呼叫端知道。型別在 DailyLogPatch 那邊守住，這裡是唯一一個逃生口。
+  const data = changedFields(before.data, next.data);
+  if (Object.keys(data).length > 0) patch.data = data as DailyLogPatch['data'];
+
+  return patch;
 }
 
 /**

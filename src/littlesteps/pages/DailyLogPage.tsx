@@ -6,6 +6,7 @@ import { useDailyLogs } from '../hooks/useDailyLogs';
 import { useFirebaseChildren } from '../../common/hooks/useFirebaseChildren';
 import { calculateDuration, isSameDay } from '../../common/utils/dateHelpers';
 import {
+  dailyLogChanges,
   findLastLog,
   findOpenSleep,
   isIntakeFeedingLog,
@@ -169,16 +170,21 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
     if (!currentChild) return;
 
     const endTime = new Date().toISOString();
+    const duration = calculateDuration((log.data as SleepData).startTime, endTime);
     const closed: DailyLog = {
       ...log,
-      data: {
-        ...(log.data as SleepData),
-        endTime,
-        duration: calculateDuration((log.data as SleepData).startTime, endTime),
-      },
+      data: { ...(log.data as SleepData), endTime, duration },
     };
     try {
-      await firebaseChildren.updateDailyLog(currentChild.id, log.id, { data: closed.data });
+      // 只送結束時間與時長。整個 data 寫回去的話，另一位照顧者同時補的備註
+      // 或夜醒次數會被我手上的舊值蓋掉。
+      //
+      // 代價要說清楚：duration 是拿我手上這一版的 startTime 算的。如果對方剛
+      // 好在這幾秒內改了開始時間，資料庫就會留下新的 startTime 配上舊的
+      // duration——兩個對不起來的欄位，而 sleepAnalysis 會照單全收。這仍然比
+      // 原本的行為好：原本是直接把對方改的 startTime 整個蓋掉。欄位級合併換
+      // 掉的是「整片被洗掉」，換來的是「衍生欄位可能對不上」。
+      await firebaseChildren.updateDailyLog(currentChild.id, log.id, { data: { endTime, duration } });
       setJustClosedSleep(closed);
     } catch (error) {
       reportWriteFailure(error, '結束睡眠記錄失敗，請稍後再試');
@@ -189,9 +195,10 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
     if (!currentChild) return;
 
     try {
-      await firebaseChildren.updateDailyLog(currentChild.id, log.id, {
-        data: { ...(log.data as SleepData), nightWakings },
-      });
+      // 只送夜醒次數。連著整個 data 寫回去的話，這一筆會帶著我手上那一版的
+      // 結束時間——剛按下「醒了」的那一版可能還沒回來，於是剛結束的睡眠又
+      // 變回進行中，另一位照顧者同時改的欄位也一起被蓋掉。
+      await firebaseChildren.updateDailyLog(currentChild.id, log.id, { data: { nightWakings } });
       setJustClosedSleep(null);
     } catch (error) {
       reportWriteFailure(error, '記錄夜醒次數失敗，請稍後再試');
@@ -221,7 +228,14 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
     };
 
     if (editingLog) {
-      await firebaseChildren.updateDailyLog(currentChild.id, editingLog.id, completeLogData);
+      // 只送這次編輯真的改到的欄位。表單狀態是打開它的那一刻讀到的，整筆寫
+      // 回去等於把當時那一版重放一次——另一位照顧者在這段時間內改的欄位會
+      // 被那些我根本沒有碰過的舊值蓋掉。
+      await firebaseChildren.updateDailyLog(
+        currentChild.id,
+        editingLog.id,
+        dailyLogChanges(editingLog, completeLogData),
+      );
     } else {
       await firebaseChildren.addDailyLog(currentChild.id, completeLogData);
     }

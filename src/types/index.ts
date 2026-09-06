@@ -288,6 +288,32 @@ export interface DailyLog {
   createdByName?: string;
 }
 
+/**
+ * 一次修改真正改到的欄位，寫入前會攤平成 `data/<欄位>` 這樣的葉節點路徑。
+ *
+ * 整筆寫回去是不行的：孩子本來就是兩個人共用（見 joinChild 與 members），
+ * 兩位照顧者同時開著同一筆紀錄時，後送出的那一筆會連著他讀到的舊值一起蓋
+ * 過去，對方剛改的欄位就這樣不見了，而且兩邊都不會收到任何提示。只帶改到
+ * 的欄位，兩個人各改各的欄位就會合併而不是互相覆蓋。
+ *
+ * `data` 裡的 `null` 是「把這個欄位清掉」；沒出現的欄位完全不碰——`Clearable`
+ * 就是這個意思，每個欄位都可選、而且可以是 null。
+ *
+ * 不是 `Record<string, unknown>`：三個呼叫點裡有兩個是手寫的物件字面量，打錯
+ * 一個欄位名（`endTme`）在那種型別下完全合法，然後就把一個沒人認得的葉節點寫
+ * 進孩子的健康紀錄裡。列成三種形狀的聯集之後，錯的欄位名、錯的值型別都編不過。
+ * 代價是 dailyLogChanges 裡一個 cast：changedFields 是結構性的比對，它本來就
+ * 不可能知道自己產出的是三種裡的哪一種。
+ *
+ * 也不是 `Omit<DailyLog, 'id' | 'data'>`：那會讓 childId、createdAt、createdBy
+ * 與 updatedAt 都變成可以 patch 的欄位，而沒有任何一個應該被 patch。
+ */
+type Clearable<T> = { [K in keyof T]?: T[K] | null };
+
+export type DailyLogPatch = Partial<Pick<DailyLog, 'type' | 'timestamp'>> & {
+  data?: Clearable<FeedingData> | Clearable<SleepData> | Clearable<DiaperData>;
+};
+
 export interface FeedingData {
   /**
    * `pumping` 是唯一一個「不是餵給寶寶」的值：它記的是擠出來的量，是產出不是

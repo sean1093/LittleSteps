@@ -68,21 +68,18 @@ for (const route of PUBLIC_ROUTES) {
  *
  * Measured, not assumed: every other public route has between 4 and 26
  * candidates at both widths; these three have zero. The hub is a stack of
- * service cards, and the sleep guide and the about page are prose. Listed by
- * name rather than skipped silently, so a route that *stops* having chips is a
- * decision someone makes here rather than a green line that quietly stopped
- * meaning anything.
+ * service cards, the sleep guide is prose, and the about page is prose and
+ * source cards with nothing set to `nowrap`. Listed by name rather than skipped
+ * silently, so a route that *stops* having chips is a decision someone makes
+ * here rather than a green line that quietly stopped meaning anything.
  *
  * `about` earned its place the day the assertion landed: it arrived on master
- * while this was in flight and turned RWD-04 red at both widths, which is
- * precisely the outcome the assertion exists for — a new route joins the
- * derived list and someone has to say which kind it is.
+ * between #76 being written and merged, joined the derived route list, and
+ * turned RWD-04 red at both widths — which is precisely the outcome the
+ * assertion exists for. Without it the route would have joined silently and
+ * contributed two permanently-green instances instead.
  */
-const ROUTES_WITH_NOTHING_TO_MEASURE = new Set([
-  'home',
-  'about',
-  'littlesteps/sleep-training',
-]);
+const ROUTES_WITH_NOTHING_TO_MEASURE = new Set(['home', 'littlesteps/sleep-training', 'about']);
 
 for (const route of PUBLIC_ROUTES) {
   test(`RWD-04 @p1 ${route} keeps every nowrap label inside its own box`, async ({ page }) => {
