@@ -39,9 +39,10 @@ const BASE_URL = `http://127.0.0.1:${PREVIEW_PORT}`;
  *
  * Two traps, both of which cost an afternoon once:
  * - The SDK rejects an `apiKey` containing `:`, so the key below has none.
- * - `getDatabase()` throws without `VITE_FIREBASE_DATABASE_URL`. It is absent
- *   from `firebase-hosting-pull-request.yml`, so an env block copied from that
- *   workflow renders a blank page.
+ * - `getDatabase()` without `VITE_FIREBASE_DATABASE_URL` falls back to
+ *   `<projectId>-default-rtdb.firebaseio.com`, the us-central1 host, which is
+ *   not where an `asia-southeast1` instance lives. Keep it set; both hosting
+ *   workflows write it (the pull-request one only since #92).
  *
  * These are build-time values: Vite inlines `import.meta.env` when `webServer`
  * runs `vite build`, so they belong on `webServer.env`, not on `use`.
