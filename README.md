@@ -394,8 +394,9 @@ VITE_FIREBASE_APPCHECK_SITE_KEY=
 VITE_FIREBASE_APPCHECK_DEBUG=
 ```
 
-`VITE_FIREBASE_APPCHECK_SITE_KEY` is the reCAPTCHA v3 site key from Firebase
-console → App Check. Leave it empty and the app runs without App Check, which
+`VITE_FIREBASE_APPCHECK_SITE_KEY` is the reCAPTCHA v3 site key: created in the
+Google reCAPTCHA admin console, then registered under Firebase console → App
+Check with its secret. Leave it empty and the app runs without App Check, which
 is the expected state until the key is registered. With a key set, `localhost`
 cannot get a real reCAPTCHA token, so to develop against App Check:
 
@@ -584,9 +585,10 @@ the key the variable points at:
    ```
 
    A custom domain added under Hosting joins this list the same day. Keep it
-   identical to the domain list on the reCAPTCHA site key in the Firebase
-   console (App Check, the web app's registration) once one exists: the two
-   guard different things, and a host missing from either one breaks sign-in.
+   identical to the domain list on the reCAPTCHA site key, which lives in the
+   Google reCAPTCHA admin console (not in Firebase console, which only holds
+   the key's secret) once one exists: the two guard different things, and a
+   host missing from either one breaks sign-in.
 
 2. **API restriction.** Only what the web SDK in `src/lib/firebase.ts` calls
    with the key:
