@@ -584,9 +584,9 @@ the key the variable points at:
    ```
 
    A custom domain added under Hosting joins this list the same day. Keep it
-   identical to the reCAPTCHA key's allowed domains (see *Accounts and data*):
-   the two guard different things, and a host missing from either one breaks
-   sign-in.
+   identical to the domain list on the reCAPTCHA site key in the Firebase
+   console (App Check, the web app's registration) once one exists: the two
+   guard different things, and a host missing from either one breaks sign-in.
 
 2. **API restriction.** Only what the web SDK in `src/lib/firebase.ts` calls
    with the key:
