@@ -147,6 +147,12 @@ Hierarchy comes from type, spacing and one accent colour.
 - **44px minimum** for anything tappable (`min-h-tap`, `w-tap`, `.btn-icon`).
 - Never nest a small tap target inside a large one that does the same thing.
 - No table of prose on a phone — use a card list.
+- **Do not give a `nowrap` flex item an explicit `min-width`.** `min-width:
+  auto` is what floors a flex item at its own text; `min-w-tap` removes that
+  floor, and `.chip` is `nowrap` with `overflow: visible`, so the label spills
+  over its neighbours instead of clipping. The page does not widen and the tap
+  target is still 44px, so this looks fine to every document-level check. Let
+  the row wrap (`flex-wrap`) instead. RWD-04 measures it at both widths.
 - Charts need `viewBox` + `w-full`, never fixed pixel `width`/`height`.
 - `min-h-dscreen` / `h-dscreen` for full-bleed screens; `100vh` includes the
   browser chrome covering the bottom of the screen.

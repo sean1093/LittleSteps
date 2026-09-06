@@ -4,11 +4,11 @@ import { expect, type Locator, type Page } from '@playwright/test';
  * Layout assertions, as measurements rather than golden images (plan §7).
  *
  * `.claude/CLAUDE.md` requires every change to be checked at 390px, and at
- * 320px for anything in a grid; happy-dom has no layout engine, so these four
+ * 320px for anything in a grid; happy-dom has no layout engine, so these
  * invariants are the only place that requirement can be enforced. They survive
  * a restyle and fail on the things a parent actually hits: a page that scrolls
- * sideways, a control too small to tap, a name behind a tag, a submit button
- * under the keyboard.
+ * sideways, a label spilling over the control beside it, a control too small to
+ * tap, a name behind a tag, a submit button under the keyboard.
  *
  * Every helper here polls. A bounding box read once is read mid-animation:
  * `common/ui/motion`'s `sheet` springs a modal from `y: '100%'` to `0`, so a
@@ -156,6 +156,129 @@ function measureUndersizedControls(page: Page): Promise<UndersizedControl[]> {
       minimum: MIN_TAP_PX,
       epsilon: EPSILON,
     },
+  );
+}
+
+/**
+ * No non-wrapping element draws its content outside its own box.
+ *
+ * This is the per-element half of `expectNoPageOverflow`, and it exists
+ * because that one is structurally unable to see the defect issue #52 is
+ * about. A flex item's `min-width: auto` normally floors it at its own
+ * min-content width, so a row of `nowrap` chips too wide for the screen pushes
+ * the *page* sideways and the document-level check fires. Give one of them an
+ * explicit `min-width` — `min-w-tap`, which several rows carry so a chip stays
+ * tappable — and that floor is gone: the chip shrinks below its text, and
+ * because `.chip` is `white-space: nowrap` with `overflow: visible` the label
+ * is neither clipped nor ellipsised. It spills out over its neighbours, inside
+ * a row that still fits the viewport, so the body never widens by a pixel and
+ * every tap target is still exactly 44px.
+ *
+ * Measured on the reproduction at 320px: the first chip's box ran x=24…125
+ * while its text ran x=16…133 — eight pixels outside each edge, three pills
+ * reading as one illegible run — with `body.scrollWidth - body.clientWidth`
+ * at 0 throughout.
+ *
+ * The candidate set is derived from the hazard rather than from a class list,
+ * so it also covers a recipe nobody has written yet: every element that cannot
+ * wrap and does not clip or scroll. Those two together are what make a spill
+ * visible instead of contained, and they are why an ellipsising row is not
+ * flagged — `text-overflow` needs `overflow: hidden`, and truncation is a
+ * decision rather than an accident.
+ *
+ * Measured with a `Range` over the element's contents rather than with
+ * `scrollWidth`, which reports the *scrolling* area: for a left-to-right box
+ * that includes overflow past the right edge and silently excludes overflow
+ * past the left. A centred label spills both ways and an end-aligned one
+ * spills only left, so `scrollWidth > clientWidth` would have missed half the
+ * class. Only elements whose content is entirely inline are compared this way,
+ * because a `Range` around block children measures their margin boxes rather
+ * than the text.
+ */
+export async function expectNoContentSpill(page: Page): Promise<void> {
+  await expect
+    .poll(() => measureSpillingElements(page), {
+      message: 'elements whose content is drawn outside their own box, in px',
+    })
+    .toEqual([]);
+}
+
+/**
+ * Sub-pixel slack for the spill measurement, wider than `EPSILON` because a
+ * `Range` rectangle around a run of glyphs includes the font's side bearings
+ * and lands a fraction outside a box that is fitting perfectly. A pixel of
+ * overhang is not something anyone can see; the reproduction overhangs by
+ * eight.
+ */
+const SPILL_TOLERANCE_PX = 1;
+
+interface SpillingElement {
+  element: string;
+  spillLeftPx: number;
+  spillRightPx: number;
+}
+
+function measureSpillingElements(page: Page): Promise<SpillingElement[]> {
+  return page.evaluate(
+    ({ chrome, tolerance }) => {
+      // `pre` keeps explicit newlines and also refuses to wrap on spaces, so
+      // it belongs here with `nowrap`. `pre-wrap`, `pre-line` and
+      // `break-spaces` all wrap, and a box that can wrap cannot spill.
+      const NON_WRAPPING = new Set(['nowrap', 'pre']);
+
+      const isInline = (node: ChildNode) => {
+        if (node.nodeType === Node.TEXT_NODE) return true;
+        if (!(node instanceof Element)) return false;
+        const display = getComputedStyle(node).display;
+        return display.startsWith('inline') || display === 'contents' || display === 'none';
+      };
+
+      const describe = (element: Element) => {
+        const label = element.getAttribute('aria-label') ?? element.textContent?.trim() ?? '';
+        return `${element.tagName.toLowerCase()}${label ? ` "${label.slice(0, 40)}"` : ''}`;
+      };
+
+      const spills: SpillingElement[] = [];
+
+      for (const element of Array.from(document.querySelectorAll('*'))) {
+        if (!(element instanceof HTMLElement)) continue;
+        if (element.closest(chrome)) continue;
+        if (element.getClientRects().length === 0) continue;
+        if (element.childNodes.length === 0) continue;
+        if (!Array.from(element.childNodes).every(isInline)) continue;
+
+        const style = getComputedStyle(element);
+        if (!NON_WRAPPING.has(style.whiteSpace)) continue;
+        // Anything that clips or scrolls contains its own overflow, and the
+        // rows that scroll on purpose are `expectRowContainsItsOverflow`'s.
+        if (style.overflowX !== 'visible') continue;
+
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const content = range.getBoundingClientRect();
+        range.detach();
+        if (content.width === 0) continue;
+
+        // The padding box, not the border box: the border is the element's own
+        // ink, and content sitting under it is not spilling out of anything.
+        const box = element.getBoundingClientRect();
+        const left = box.left + parseFloat(style.borderLeftWidth);
+        const right = box.right - parseFloat(style.borderRightWidth);
+
+        const spillLeft = left - content.left;
+        const spillRight = content.right - right;
+        if (spillLeft <= tolerance && spillRight <= tolerance) continue;
+
+        spills.push({
+          element: describe(element),
+          spillLeftPx: Math.round(Math.max(spillLeft, 0)),
+          spillRightPx: Math.round(Math.max(spillRight, 0)),
+        });
+      }
+
+      return spills;
+    },
+    { chrome: THIRD_PARTY_CHROME, tolerance: SPILL_TOLERANCE_PX },
   );
 }
 

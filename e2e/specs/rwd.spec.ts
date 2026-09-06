@@ -1,6 +1,7 @@
 import { expect, test } from '../fixtures/test';
 import {
   expectModalFitsViewport,
+  expectNoContentSpill,
   expectNoPageOverflow,
   expectReachableByScrolling,
   expectRowContainsItsOverflow,
@@ -57,6 +58,24 @@ for (const route of PUBLIC_ROUTES) {
     // carry `min-h-tap` by construction, so what this catches is a control
     // that left the system: a bare `<button>`, or a token that lost its size.
     await expectTapTargets(page);
+  });
+}
+
+for (const route of PUBLIC_ROUTES) {
+  test(`RWD-04 @p1 ${route} keeps every nowrap label inside its own box`, async ({ page }) => {
+    const routes = new PublicRoutePage(page);
+
+    await routes.goto(route);
+    await expect(routes.ready(route)).toBeVisible();
+
+    // RWD-01 measures the document and is structurally unable to see this:
+    // a `nowrap` chip squeezed below its own text by a sibling spills over
+    // its neighbours *inside* a row that still fits the viewport, so the body
+    // never widens. That is the defect PR #40 shipped and #12 reviewed past —
+    // three pills reading as one illegible run at 320px, with the
+    // document-level check green the whole time. See the helper for why it is
+    // measured with a `Range` and not with `scrollWidth`.
+    await expectNoContentSpill(page);
   });
 }
 
