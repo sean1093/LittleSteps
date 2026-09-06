@@ -29,8 +29,27 @@ export default function MilestonesPage({
   const [selectedMonth, setSelectedMonth] = useState<MonthRange>(() =>
     monthRangeForChild(currentChild),
   );
+  // 家長自己挑過月齡了沒有。換寶寶時的優先順序全靠這個旗標：沒挑過的值只是
+  // 上面那行推導出來的預設值，換寶寶就該重推；挑過的是家長的決定，任何推導
+  // 都不該蓋過去。
+  const [monthPickedByParent, setMonthPickedByParent] = useState(false);
+  const [childIdInFilter, setChildIdInFilter] = useState(currentChild?.id);
   const [selectedCategory, setSelectedCategory] = useState<Category>("all");
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
+
+  // 換寶寶時這一頁不會卸載（App.tsx 的錯誤邊界綁的是路由，不是孩子），所以
+  // useState 的初始值只在掛載時算過一次，篩選器會一直停在上一個寶寶的月齡：
+  // 六個月大切到三歲，畫面照樣拿 5-6 個月的里程碑對新寶寶打勾。在 render 中
+  // 直接調整，而不是放進 useEffect，才不會先閃一格舊區間再跳。
+  if (currentChild?.id !== childIdInFilter) {
+    setChildIdInFilter(currentChild?.id);
+    if (!monthPickedByParent) setSelectedMonth(monthRangeForChild(currentChild));
+  }
+
+  const pickMonth = (value: MonthRange) => {
+    setMonthPickedByParent(true);
+    setSelectedMonth(value);
+  };
 
   const filteredMilestones = useMemo(() => {
     return milestones.filter(m => {
@@ -50,7 +69,7 @@ export default function MilestonesPage({
         <ChildSwitcher service="littlesteps" className="mb-4" />
 
         <div className="mb-4">
-          <MonthPicker ranges={monthRanges} selected={selectedMonth} onChange={setSelectedMonth} />
+          <MonthPicker ranges={monthRanges} selected={selectedMonth} onChange={pickMonth} />
         </div>
 
         <div className="mb-4">
