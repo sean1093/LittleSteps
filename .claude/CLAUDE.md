@@ -167,10 +167,21 @@ Short entrances, small offsets, nothing looping. Import from `common/ui/motion`
 ```bash
 npm run dev            # localhost:5173
 npm run build          # tsc && vite build — must pass
-npm run lint           # zero warnings allowed
+npm run lint           # tsc --noEmit, then eslint; zero warnings allowed
 npm run test           # watch mode; `npx vitest run` for one pass
 npm run test:rules     # database.rules.json against the real emulator (needs a JDK)
 ```
+
+`npm run lint` typechecks before it lints, and that ordering is the point.
+`tsconfig.json` pins `lib` to ES2020, but esbuild strips types without reading
+it and no ESLint rule knows what a built-in is, so `.at()`, `findLast`,
+`toSorted`, `Object.groupBy` and the rest of the ES2021+ family used to run
+green under Vitest and lint clean while only `tsc` objected. The compiler is
+the only thing that knows the ceiling, so the fast loop runs the compiler —
+rather than a second, hand-maintained list of banned built-ins that would drift
+away from `lib` the day it was written. When `tsc` suggests raising `lib`,
+index the array instead; widening the ceiling repo-wide to compile one line is
+damage left for the next reader.
 
 Before claiming a UI change works, **look at it** at 390px. Type-checking is not
 verification for visual work.

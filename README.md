@@ -359,12 +359,20 @@ VITE_FIREBASE_DATABASE_URL=
 npm run dev            # http://localhost:5173
 npm run build          # tsc && vite build
 npm run preview
-npm run lint
+npm run lint           # tsc --noEmit, then eslint
 npm run test           # watch
 npm run test:coverage
 npm run test:rules     # database.rules.json against the Database emulator
 npm run test:e2e       # Playwright, at 390px and 320px
 ```
+
+`npm run lint` typechecks before it lints. `tsconfig.json` pins `lib` to
+ES2020, and the compiler is the only tool in the repo that knows it: esbuild
+strips types without reading `lib`, and no ESLint rule knows what a built-in
+is, so `.at()`, `findLast`, `toSorted` and the rest of the ES2021+ family used
+to pass lint and the unit suite and fail only at `npm run build`. Running `tsc`
+in the fast loop closes that without inventing a second list of banned
+built-ins to drift away from `lib`.
 
 `npm run test:rules` runs `scripts/testRules.cjs` against the Database emulator
 via `firebase emulators:exec`, so it needs a JDK: `brew install openjdk`, and
