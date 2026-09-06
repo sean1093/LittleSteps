@@ -126,7 +126,9 @@ describe('the source cards', () => {
       86_400_000;
     expect(dayApart).toBeLessThanOrEqual(1);
 
-    const card = DATA_SOURCES.find((source) => source.what.includes('哺乳室地圖上'));
+    // Found by its host, which is the source's identity; the prose on the card
+    // is free to change.
+    const card = DATA_SOURCES.find((source) => source.sourceUrl.includes('mammy.hpa.gov.tw'));
     expect(card?.verifiedOn).toBe(nursingRoomsMeta.verifiedOn);
   });
 
