@@ -350,8 +350,9 @@ VITE_FIREBASE_APPCHECK_SITE_KEY=
 VITE_FIREBASE_APPCHECK_DEBUG=
 ```
 
-`VITE_FIREBASE_APPCHECK_SITE_KEY` 是 Firebase 主控台 → App Check 裡的
-reCAPTCHA v3 site key。留空的話 app 就在沒有 App Check 的狀態下跑，在 key
+`VITE_FIREBASE_APPCHECK_SITE_KEY` 是 reCAPTCHA v3 site key：在 Google
+reCAPTCHA 管理主控台建立，再連同它的 secret 註冊到 Firebase 主控台 → App
+Check。留空的話 app 就在沒有 App Check 的狀態下跑，在 key
 註冊好之前這是預期的狀態。設了 key 之後，`localhost` 拿不到真的 reCAPTCHA
 token，所以要在本機對著 App Check 開發：
 
@@ -526,9 +527,9 @@ Identity Toolkit — 登入與 token 更新 — 所以一把不設限的 key，�
    ```
 
    在 Hosting 底下新增的自訂網域，當天就要加進這份清單。等 reCAPTCHA site key
-   註冊好之後，讓它和 Firebase 主控台（App Check，網頁 app 的註冊）上那把 key
-   的網域清單保持完全一致：兩邊守的是不同的東西，任何一邊少了一個主機，登入
-   都會壞掉。
+   建好之後，讓它和那把 key 的網域清單保持完全一致——清單在 Google reCAPTCHA
+   管理主控台上，不在 Firebase 主控台（那裡只放 key 的 secret）：兩邊守的是
+   不同的東西，任何一邊少了一個主機，登入都會壞掉。
 
 2. **API restriction。** 只放 `src/lib/firebase.ts` 裡的 web SDK 會帶著這把
    key 去呼叫的：

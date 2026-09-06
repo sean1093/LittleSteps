@@ -10,6 +10,10 @@
  * field from exceeding the rule in the first place, so a denial can only
  * mean what the form says it means.
  *
+ * `maxLength` bounds what is typed or pasted, not what React pre-fills. A
+ * value stored before the rules gained their caps, reopened for editing and
+ * re-saved, still meets `.validate`; that is a data question, not a form one.
+ *
  * `recordLimits.test.ts` reads the rules file and checks that every number
  * here is the one its rule enforces; change one side and the test says so.
  * The feedback form's caps live in `feedbackLimits.ts` and are not repeated

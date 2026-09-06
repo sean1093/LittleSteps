@@ -323,10 +323,15 @@ async function main() {
   await expectDenied(
     '刪掉戳記再送一則，一分鐘內照樣被擋（審查時抓到的繞法，整段照做一次）',
     (async () => {
+      // 中間每一步的狀態碼都要看：req 不會丟例外，只看最後一則的話，前面哪一步
+      // 沒照劇本走（例如第一則就被擋）都會靜靜地變成「通過」。
       const zed = as('zed');
-      await sendFeedback(zed, 'zed', 'f-zed-1');
-      await sendFeedback(zed, 'zed', 'f-zed-2');
-      await zed.del('users/zed/lastFeedbackAt');
+      const first = await sendFeedback(zed, 'zed', 'f-zed-1');
+      if (first.status !== 200) return first;
+      const second = await sendFeedback(zed, 'zed', 'f-zed-2');
+      if (second.status !== 401) return { status: 200, text: `第二則應被擋，卻回 ${second.status}` };
+      const removed = await zed.del('users/zed/lastFeedbackAt');
+      if (removed.status === 200) return removed;
       return sendFeedback(zed, 'zed', 'f-zed-3');
     })(),
   );

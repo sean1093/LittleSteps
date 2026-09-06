@@ -37,7 +37,12 @@ const ruleAt = (path: string[]): string =>
 
 describe('every form cap is the cap its rule enforces', () => {
   it.each(FIELDS)('%s', (name, path) => {
-    expect(ruleAt(path)).toContain(`newData.val().length <= ${limits[name]}`);
+    // Parse the number rather than substring-match it: `<= 100` is a prefix
+    // of `<= 1000`, so a rule raised by a trailing zero would stay green while
+    // the form silently truncated below what the rule allows.
+    const match = /newData\.val\(\)\.length <= (\d+)(?!\d)/.exec(ruleAt(path));
+    expect(match?.[1]).toBeDefined();
+    expect(Number(match?.[1])).toBe(limits[name]);
   });
 
   it('lists every limit the module exports', () => {
