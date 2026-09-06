@@ -55,15 +55,18 @@ export default function LogTimeline({
     擠奶因此不能掛餵奶的奶瓶：那一列的字已經寫著「擠奶」，圖示卻還說它是一餐，
     掃過去找餵奶的家長會停在自己的擠奶紀錄上——跟總量把它加進去是同一個錯誤。
     水滴是擠出來的量，不是喝進去的。
+
+    但兩者共用奶黃色：擠奶是餵食家族的一員，不是第四種類型，形狀已經分得開。
+    primary-dark 是 LittleSteps 的服務重點色，花在一個類型標記上會讓擠奶變成
+    整份清單最搶眼的一列——正好是報告與總量都刻意不強調的那一種；它跟同一列的
+    紅色刪除鍵也只差三度色相。
   */
   const getLogIcon = (log: DailyLog) => {
     switch (log.type) {
-      case 'feeding':
-        return isPumpingLog(log) ? (
-          <Droplets className="w-5 h-5 text-primary-dark" />
-        ) : (
-          <Milk className="w-5 h-5 text-butter-dark" />
-        );
+      case 'feeding': {
+        const Glyph = isPumpingLog(log) ? Droplets : Milk;
+        return <Glyph className="w-5 h-5 text-butter-dark" />;
+      }
       case 'sleep':
         return <Moon className="w-5 h-5 text-secondary-dark" />;
       case 'diaper':
@@ -137,51 +140,57 @@ export default function LogTimeline({
       animate="visible"
       className="space-y-3"
     >
-      {todayLogs.map((log) => (
-        <motion.div key={log.id} variants={listItem} className="card">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 mt-1">{getLogIcon(log)}</div>
+      {todayLogs.map((log) => {
+        // 擠奶可以只記一個時間：側別、時長、奶量都是選填的，所以這一列真的可能
+        // 沒有細節可寫。空的 <p> 撐出來的那道空白，會讓它看起來像漏掉了東西。
+        const details = getLogDetails(log);
 
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm font-semibold text-ink-faint">
-                  {formatTime(log.timestamp)}
-                </span>
-                <span className="font-bold">{getLogTitle(log)}</span>
+        return (
+          <motion.div key={log.id} variants={listItem} className="card">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-1">{getLogIcon(log)}</div>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-semibold text-ink-faint">
+                    {formatTime(log.timestamp)}
+                  </span>
+                  <span className="font-bold">{getLogTitle(log)}</span>
+                </div>
+
+                {details && <p className="text-sm text-ink-muted">{details}</p>}
+
+                {log.data.notes && (
+                  <p className="text-xs text-ink-faint mt-1">備註：{log.data.notes}</p>
+                )}
+
+                {/* 「上一餐誰餵的」是兩個人輪流照顧時最常問的問題。只在確定是
+                    別人記的時候才顯示：舊紀錄沒有這個欄位，不能因為缺值就猜。 */}
+                {log.createdByName && log.createdBy && log.createdBy !== currentUserId && (
+                  <p className="text-xs text-ink-faint mt-1">由 {log.createdByName} 記錄</p>
+                )}
               </div>
 
-              <p className="text-sm text-ink-muted">{getLogDetails(log)}</p>
-
-              {log.data.notes && (
-                <p className="text-xs text-ink-faint mt-1">備註：{log.data.notes}</p>
-              )}
-
-              {/* 「上一餐誰餵的」是兩個人輪流照顧時最常問的問題。只在確定是
-                  別人記的時候才顯示：舊紀錄沒有這個欄位，不能因為缺值就猜。 */}
-              {log.createdByName && log.createdBy && log.createdBy !== currentUserId && (
-                <p className="text-xs text-ink-faint mt-1">由 {log.createdByName} 記錄</p>
-              )}
+              <div className="flex gap-1 flex-shrink-0 -my-2.5">
+                <button
+                  onClick={() => onEdit(log)}
+                  className="btn-icon text-secondary-dark hover:bg-secondary-soft"
+                  aria-label="編輯"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleDelete(log)}
+                  className="btn-icon text-red-600 hover:bg-red-50"
+                  aria-label="刪除"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-
-            <div className="flex gap-1 flex-shrink-0 -my-2.5">
-              <button
-                onClick={() => onEdit(log)}
-                className="btn-icon text-secondary-dark hover:bg-secondary-soft"
-                aria-label="編輯"
-              >
-                <Edit className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => handleDelete(log)}
-                className="btn-icon text-red-600 hover:bg-red-50"
-                aria-label="刪除"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </motion.div>
-      ))}
+          </motion.div>
+        );
+      })}
     </motion.div>
   );
 }
