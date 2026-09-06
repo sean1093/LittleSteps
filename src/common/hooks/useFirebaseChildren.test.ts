@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import type { User } from 'firebase/auth';
-import type { DailyLog, FeedingData } from '../../types';
+import type { DailyLog, FeedingData, FoodTrialRecord } from '../../types';
 import { useFirebaseChildren } from './useFirebaseChildren';
+import { applyUpdatePaths } from '../../test/rtdb';
+import { trialDatePatch, trialDatesOf } from '../../littlesteps/utils/foodTrialDates';
 // 補丁是在頁面那一端算出來的，合不合併要連著它一起驗才算數。
 import { dailyLogChanges } from '../../littlesteps/utils/logHelpers';
 // 讀與寫必須指向同一個子樹，所以那兩個 listener 一起在這裡驗。
@@ -83,10 +85,11 @@ const feeding = (): Omit<DailyLog, 'id'> => ({
   createdAt: '2026-01-01T08:00:00.000Z',
 });
 
+/** 表單送出的一筆新食物：嘗試日期是日期集合，不再是陣列（#89）。 */
 const riceTrial = () => ({
   foodName: '米糊',
   firstTriedDate: '2026-01-01',
-  trialDates: ['2026-01-01'],
+  trialDates: { '2026-01-01': true as const },
   hasAllergy: false,
 });
 
@@ -114,6 +117,13 @@ const rootUpdate = () => {
   if (!root) throw new Error('沒有 root fan-out');
   return root.value;
 };
+
+/**
+ * 把最後一筆 update() 套到紀錄上，語意跟 Realtime Database 一樣：收到的每一
+ * 個 key 就是一條路徑，那條路徑指到的節點整個換掉，沒有列到的節點不動。
+ */
+const applyLastUpdate = <T extends object>(record: T): T =>
+  applyUpdatePaths(record, updates[updates.length - 1].value);
 
 beforeEach(() => {
   writes.length = 0;
@@ -566,26 +576,6 @@ describe('兩位照顧者同時改同一筆日誌', () => {
     createdAt: START,
   });
 
-  /**
-   * 把最後一筆 update() 套到紀錄上，語意跟 Realtime Database 一樣：收到的每一
-   * 個 key 就是一條路徑，那條路徑指到的節點整個換掉，沒有列到的節點不動。
-   */
-  const applyLastUpdate = (record: DailyLog): DailyLog => {
-    const next = JSON.parse(JSON.stringify(record)) as Record<string, unknown>;
-    for (const [path, value] of Object.entries(updates[updates.length - 1].value)) {
-      const segments = path.split('/');
-      let node = next;
-      for (const segment of segments.slice(0, -1)) {
-        node[segment] = { ...(node[segment] as Record<string, unknown>) };
-        node = node[segment] as Record<string, unknown>;
-      }
-      const leaf = segments[segments.length - 1];
-      if (value === null) delete node[leaf];
-      else node[leaf] = value;
-    }
-    return next as unknown as DailyLog;
-  };
-
   it('各改各的欄位時，兩個人的修改都留得住', async () => {
     const { result } = renderHook(() => useFirebaseChildren('u1'));
     let record = openSleep();
@@ -650,5 +640,85 @@ describe('兩位照顧者同時改同一筆日誌', () => {
     await result.current.updateDailyLog('c1', 'log2', dailyLogChanges(unchanged, { ...unchanged }));
 
     expect(updates).toHaveLength(0);
+  });
+});
+
+/**
+ * #89：同一種食物、同一天，兩位照顧者各按一次「記錄今天嘗試」。嘗試日期原本
+ * 是整個陣列重寫，後到的那筆連著自己手上的舊清單把對方那一天蓋掉。改成以日期
+ * 為 key 的集合、一天一條 leaf 之後，update() 逐條合併。
+ *
+ * 舊紀錄不搬：陣列在資料庫裡本來就是 0、1、… 為 key 的物件，多記一天之後兩種
+ * key 並存在同一個節點上，讀的那一端靠 trialDatesOf 整理。
+ */
+describe('兩位照顧者同一天各記一次嘗試', () => {
+  const ISO = '2026-09-01T08:00:00.000Z';
+
+  /** 資料庫上一筆舊形狀的紀錄：嘗試日期還是陣列。 */
+  const legacyRice = (): FoodTrialRecord => ({
+    id: 'f1',
+    foodName: '米糊',
+    firstTriedDate: '2026-09-01',
+    trialDates: ['2026-09-01', '2026-09-02'],
+    hasAllergy: false,
+    createdAt: ISO,
+  });
+
+  it('各記一天，兩天都留得住，舊的索引也還在', async () => {
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+    let record = legacyRice();
+
+    // 媽媽記今天。
+    await result.current.updateFoodTrial('c1', 'f1', { trialDates: { '2026-09-06': true } });
+    record = applyLastUpdate(record);
+
+    // 爸爸的畫面還是媽媽存之前的那一版，他補記的是昨天。
+    await result.current.updateFoodTrial('c1', 'f1', { trialDates: { '2026-09-05': true } });
+    record = applyLastUpdate(record);
+
+    expect(record.trialDates).toEqual({
+      0: '2026-09-01',
+      1: '2026-09-02',
+      '2026-09-05': true,
+      '2026-09-06': true,
+    });
+    expect(trialDatesOf(record)).toEqual(['2026-09-01', '2026-09-02', '2026-09-05', '2026-09-06']);
+  });
+
+  it('同一天各按一次，是同一條 leaf，只算一天', async () => {
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+    let record = legacyRice();
+
+    await result.current.updateFoodTrial('c1', 'f1', { trialDates: { '2026-09-06': true } });
+    record = applyLastUpdate(record);
+    await result.current.updateFoodTrial('c1', 'f1', { trialDates: { '2026-09-06': true } });
+    record = applyLastUpdate(record);
+
+    expect(trialDatesOf(record)).toEqual(['2026-09-01', '2026-09-02', '2026-09-06']);
+    for (const entry of updates) {
+      expect(Object.keys(entry.value).sort()).toEqual(['trialDates/2026-09-06', 'updatedAt']);
+    }
+  });
+
+  it('編輯表單從舊版存下去，不會洗掉對方剛記的那一天', async () => {
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+    let record = legacyRice();
+
+    // 媽媽記了今天。
+    await result.current.updateFoodTrial('c1', 'f1', { trialDates: { '2026-09-06': true } });
+    record = applyLastUpdate(record);
+
+    // 爸爸的表單是媽媽存之前開的，他把 9/1 拿掉、順手改了備註。
+    const onHisScreen = legacyRice();
+    await result.current.updateFoodTrial('c1', 'f1', {
+      notes: '有點軟便',
+      trialDates: trialDatePatch(onHisScreen.trialDates, ['2026-09-02']),
+    });
+    record = applyLastUpdate(record);
+
+    expect(trialDatesOf(record)).toEqual(['2026-09-02', '2026-09-06']);
+    expect(record.notes).toBe('有點軟便');
+    // 拿掉的是舊的索引 key，留下的索引沒有被重寫。
+    expect(record.trialDates).toEqual({ 1: '2026-09-02', '2026-09-06': true });
   });
 });

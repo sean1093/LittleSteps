@@ -7,6 +7,7 @@ import { pressable } from '../../../common/ui/pressable';
 import { FoodTrialRecord } from '../../../types';
 import { formatDate, toLocalDateKey } from '../../../common/utils/dateHelpers';
 import { allergyTestingMethod } from '../../data/complementaryFood';
+import { trialDatesOf } from '../../utils/foodTrialDates';
 
 interface FourByThreeTrackerProps {
   foodTrials: FoodTrialRecord[];
@@ -31,13 +32,16 @@ export default function FourByThreeTracker({
 }: FourByThreeTrackerProps) {
   const today = toLocalDateKey();
 
+  // 嘗試日期在資料庫裡有兩種形狀（見 StoredTrialDates），一律先整理成日期清單。
+  const datesOf = new Map(foodTrials.map((food) => [food.id, trialDatesOf(food)]));
+  const dates = (food: FoodTrialRecord) => datesOf.get(food.id) ?? [];
+
   // 追蹤中的食物：這一輪還沒走完的那些。
-  const activeFoods = foodTrials.filter((food) => (food.trialDates || []).length < TOTAL_DAYS);
+  const activeFoods = foodTrials.filter((food) => dates(food).length < TOTAL_DAYS);
 
   // 今天還沒記的排前面（一天只記一次），其餘維持原本的順序。
   const sortedFoods = [...activeFoods].sort(
-    (a, b) =>
-      Number((a.trialDates || []).includes(today)) - Number((b.trialDates || []).includes(today)),
+    (a, b) => Number(dates(a).includes(today)) - Number(dates(b).includes(today)),
   );
 
   return (
@@ -71,7 +75,7 @@ export default function FourByThreeTracker({
         className="space-y-3"
       >
         {sortedFoods.map((food) => {
-          const trialDates = food.trialDates || [];
+          const trialDates = dates(food);
           const canTry = !trialDates.includes(today);
           const progressPercent = (trialDates.length / TOTAL_DAYS) * 100;
           // 前 3 次小量、再 3 次增量、之後都是觀察期。

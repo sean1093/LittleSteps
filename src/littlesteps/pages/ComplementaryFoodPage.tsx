@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Hand, TestTube } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { allergyTestingMethod, fingerFoodPrinciples } from '../data/complementaryFood';
-import { ChildProfile, FoodTrialRecord } from '../../types';
+import { ChildProfile, FoodTrialInput, FoodTrialRecord } from '../../types';
 import { useFoodTracking } from '../hooks/useFoodTracking';
 import { useFirebaseChildren } from '../../common/hooks/useFirebaseChildren';
 import FoodTrialModal from '../components/food/FoodTrialModal';
@@ -16,6 +16,7 @@ import FoodGuideSafety from '../components/food/FoodGuideSafety';
 import FoodTrackingView from '../components/food/FoodTrackingView';
 import type { TrackingTab, ViewMode } from '../components/food/types';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
+import { trialDatePatch, trialDatesOf } from '../utils/foodTrialDates';
 import { fadeInUp } from '../../common/ui/motion';
 import { useToast } from '../../common/ui/toast';
 
@@ -61,13 +62,17 @@ export default function ComplementaryFoodPage({
     失敗時不接住：訊息與「表單留在原地」都由 FoodTrialModal 自己處理，
     這裡再 toast 一次就是同一件事講兩遍。
   */
-  const handleSaveFood = async (foodData: Omit<FoodTrialRecord, 'id' | 'createdAt'>) => {
+  const handleSaveFood = async (foodData: FoodTrialInput) => {
     if (!childId) {
       throw new Error('請先選擇寶寶');
     }
 
     if (editingFood) {
-      await firebaseChildren.updateFoodTrial(childId, editingFood.id, foodData);
+      // 嘗試日期只寫加減的那幾條：表單開著的時候對方記的那一天才留得住。
+      await firebaseChildren.updateFoodTrial(childId, editingFood.id, {
+        ...foodData,
+        trialDates: trialDatePatch(editingFood.trialDates, trialDatesOf(foodData)),
+      });
     } else {
       await firebaseChildren.addFoodTrial(childId, foodData);
     }
@@ -92,12 +97,13 @@ export default function ComplementaryFoodPage({
     if (!food) return;
 
     // 同一天按兩次不該記成兩次嘗試。
-    const trialDates = food.trialDates || [];
-    if (trialDates.includes(today)) return;
+    if (trialDatesOf(food).includes(today)) return;
 
     try {
+      // 一天一條 leaf。整個清單重寫的話，兩位照顧者同一天各按一次，後到的那筆
+      // 會連著自己手上的舊清單把對方那一天蓋掉。
       await firebaseChildren.updateFoodTrial(childId, foodId, {
-        trialDates: [...trialDates, today].sort(),
+        trialDates: { [today]: true },
       });
     } catch (error) {
       console.error('新增嘗試日期失敗:', error);

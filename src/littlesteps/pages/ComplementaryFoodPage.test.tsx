@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ChildProfile } from '../../types';
+import type { ChildProfile, FoodTrackingProgress } from '../../types';
 import type * as FoodTracking from '../hooks/useFoodTracking';
+import { toLocalDateKey } from '../../common/utils/dateHelpers';
 import ComplementaryFoodPage from './ComplementaryFoodPage';
 
 /**
@@ -16,27 +17,34 @@ import ComplementaryFoodPage from './ComplementaryFoodPage';
  * 所以每次互動之後都得用 findBy* 等，不能用 getBy* 直接抓。
  */
 
-const { addFoodTrial, readState } = vi.hoisted(() => ({
+const { addFoodTrial, updateFoodTrial, readState } = vi.hoisted(() => ({
   addFoodTrial: vi.fn(),
-  readState: { error: false },
+  updateFoodTrial: vi.fn(),
+  readState: { error: false, foodProgress: null as FoodTrackingProgress | null },
 }));
 
-// 只覆蓋讀取失敗這個旗標，其餘照真的 hook 走。
+// 只覆蓋讀取失敗這個旗標與（有擺時）資料庫上的紀錄，其餘照真的 hook 走。
 vi.mock('../hooks/useFoodTracking', async (importOriginal) => {
   const actual = await importOriginal<typeof FoodTracking>();
   return {
     ...actual,
-    useFoodTracking: (...args: Parameters<typeof actual.useFoodTracking>) => ({
-      ...actual.useFoodTracking(...args),
-      error: readState.error,
-    }),
+    useFoodTracking: (...args: Parameters<typeof actual.useFoodTracking>) => {
+      const real = actual.useFoodTracking(...args);
+      const foodProgress = readState.foodProgress ?? real.foodProgress;
+      return {
+        ...real,
+        foodProgress,
+        foodTrials: Object.values(foodProgress),
+        error: readState.error,
+      };
+    },
   };
 });
 
 vi.mock('../../common/hooks/useFirebaseChildren', () => ({
   useFirebaseChildren: () => ({
     addFoodTrial,
-    updateFoodTrial: vi.fn(),
+    updateFoodTrial,
     deleteFoodTrial: vi.fn(),
   }),
 }));
@@ -74,6 +82,7 @@ beforeEach(() => {
   localStorage.clear();
   vi.clearAllMocks();
   readState.error = false;
+  readState.foodProgress = null;
 });
 
 describe('進到這一頁的第一眼', () => {
@@ -214,5 +223,37 @@ describe('讀不到食物記錄時', () => {
     expect(
       await screen.findByText('讀不到食物記錄，請確認網路後重新載入'),
     ).toBeInTheDocument();
+  });
+});
+
+describe('記錄今天嘗試', () => {
+  // 舊紀錄的陣列在資料庫裡是 0、1、… 為 key 的物件；在上面多記過一天之後，
+  // 兩種 key 並存在同一個節點上。這就是 #89 之後每一筆舊紀錄會長的樣子。
+  const mixed: FoodTrackingProgress = {
+    f1: {
+      id: 'f1',
+      foodName: '米糊',
+      firstTriedDate: '2026-09-01',
+      trialDates: { 0: '2026-09-01', 1: '2026-09-02', '2026-09-04': true },
+      hasAllergy: false,
+      createdAt: '2026-09-01T00:00:00.000Z',
+    },
+  };
+
+  it('兩種形狀並存的紀錄算成三天，多記一天只寫今天那一條 leaf', async () => {
+    readState.foodProgress = mixed;
+    updateFoodTrial.mockResolvedValue(undefined);
+    const user = renderPage();
+
+    await user.click(screen.getByRole('button', { name: /4×3 追蹤/ }));
+    expect(await screen.findByText(/進度：3 \/ 9 天/)).toBeInTheDocument();
+
+    // 卡片本身也是 role=button（pressable），名字含裡面那顆按鈕的字；精確比對才抓得到按鈕。
+    await user.click(screen.getByRole('button', { name: '記錄今天嘗試' }));
+
+    await waitFor(() => expect(updateFoodTrial).toHaveBeenCalledTimes(1));
+    expect(updateFoodTrial).toHaveBeenCalledWith('c1', 'f1', {
+      trialDates: { [toLocalDateKey()]: true },
+    });
   });
 });

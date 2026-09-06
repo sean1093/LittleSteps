@@ -9,6 +9,7 @@ import { FoodTrialRecord, FoodPreference, AllergySeverity } from '../../../types
 import type { FoodStats } from '../../hooks/useFoodTracking';
 import { formatDate } from '../../../common/utils/dateHelpers';
 import { confirmDelete } from '../../../common/ui/confirmDelete';
+import { trialDatesOf } from '../../utils/foodTrialDates';
 
 interface FoodTrackingTabProps {
   foodTrials: FoodTrialRecord[];
@@ -145,7 +146,7 @@ export default function FoodTrackingTab({
       >
         {filteredFoods.map((food) => {
           const preferenceDisplay = getPreferenceDisplay(food.preference);
-          const trialCount = food.trialDates?.length || 1;
+          const trialCount = trialDatesOf(food).length || 1;
 
           return (
             <motion.div
