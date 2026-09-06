@@ -55,8 +55,11 @@ group headings answer it rather than leaving six equal rows to be read through.
 - **Publicly funded, but only for a named group** — one of those government-funded
   doses is the extra PCV13 dose at six months for high-risk children. It carries the
   CDC's own condition, so it shows on the vaccine page and in the calendar export but
-  is never counted as owed: it is not a reminder, not the next dose, and not part of
-  "doses still unrecorded". Every family sees it; no family is told they are behind
+  is never counted as owed: it is not in the due list, not the next dose, and not part
+  of "doses still unrecorded". Every family sees it; no family is told they are behind.
+  The calendar export is the one place it does prompt — every exported event carries a
+  week's warning, so a family that exports gets an alarm for this dose like any other,
+  with the condition in the event body
 - **Calendar export** — the outstanding doses export as an ICS file, one action for
   everything still due and one per dose, each event naming the dose, its funding
   state and the recommended window, with a week's warning
