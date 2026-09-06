@@ -131,7 +131,10 @@ describe('useClinicSummary', () => {
   // 下一劑只認公費，也不再回答已經被年齡拋在後面的劑次，所以「沒有下一劑」
   // 變成常見的情形。這一段若就這樣少一行，醫師讀到的是「沒事要談」。
   describe('沒有下一劑時', () => {
-    const NATIONAL_DOSES = vaccineSchedules.filter((v) => v.funding === 'national').length;
+    // 公費常規劑次：帶 eligibility 的那種只給名單上的孩子，不是家長欠的。
+    const NATIONAL_DOSES = vaccineSchedules.filter(
+      (v) => v.funding === 'national' && !v.eligibility,
+    ).length;
 
     /** 相對於今天推算，測試才不會隨時間過期。 */
     const yearsAgo = (years: number): string => {

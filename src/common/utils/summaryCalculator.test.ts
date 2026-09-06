@@ -193,8 +193,16 @@ describe('summaryCalculator', () => {
     // 把 `doses` 加總會把 4 劑膨脹成 16 劑。
     const TOTAL_DOSES = vaccineSchedules.length;
 
-    /** 公費劑次。下一劑只認這些，理由寫在 vaccineSchedule.nextScheduledDose。 */
-    const NATIONAL = vaccineSchedules.filter(vaccine => vaccine.funding === 'national');
+    /**
+     * 公費常規劑次。下一劑與「還沒記錄的公費劑次」都只認這些。
+     *
+     * 規則在這裡重寫一次而不是借用 isScheduledDose：借用的話，述詞改壞了測試
+     * 會跟著改壞。公費也分「每個孩子都該打」與「只給名單上的孩子」——帶
+     * eligibility 的那種是資訊，不是這個孩子欠的劑次。
+     */
+    const NATIONAL = vaccineSchedules.filter(
+      vaccine => vaccine.funding === 'national' && !vaccine.eligibility
+    );
 
     /** 最早的公費劑次。 */
     const EARLIEST_NATIONAL = NATIONAL.reduce((earliest, vaccine) =>
@@ -349,6 +357,25 @@ describe('summaryCalculator', () => {
       expect(
         calculateVaccineSummary(administered(NATIONAL), BIRTHDAY).remainingNationalDoses
       ).toBe(0);
+    });
+
+    it('does not count a dose reserved for a named group as one the family owes', () => {
+      // 公費、算得出日期，卻只給名單上的孩子。算進「還有幾劑公費疫苗沒記錄」
+      // 等於對每一個健康寶寶的家長多報一劑；端成「下一劑」它還會永遠卡在那
+      // 裡，因為不會去打的劑次永遠不會被記錄。
+      const gated = vaccineSchedules.filter(
+        vaccine => vaccine.funding === 'national' && vaccine.eligibility
+      );
+      // 資料集真的有這種劑次，否則這個測試不具鑑別力。
+      expect(gated.length).toBeGreaterThan(0);
+      expect(gated.every(vaccine => !NATIONAL.includes(vaccine))).toBe(true);
+
+      // 六個月大：限定對象那一劑正好到期，而且沒有被記錄。
+      const summary = calculateVaccineSummary(administered(NATIONAL), BIRTHDAY, at('2026-07-20'));
+
+      expect(summary.administeredCount).toBe(NATIONAL.length);
+      expect(summary.remainingNationalDoses).toBe(0);
+      expect(summary.nextVaccine).toBeUndefined();
     });
 
     it('advances past an optional dose once the first recorded dose is logged', () => {

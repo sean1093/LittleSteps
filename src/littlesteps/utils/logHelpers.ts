@@ -290,3 +290,19 @@ export function getConsistencyLabel(consistency?: DiaperData['consistency']): st
   if (!consistency) return '';
   return CONSISTENCY_LABEL[consistency];
 }
+
+/**
+ * 把「這是什麼」跟「內容是什麼」接成一句，例如「餵奶 · 配方奶 120 ml」。
+ *
+ * 內容那一段本來就可能自己帶括號——`母乳（瓶餵）` 是這份對照表裡正確的寫法——
+ * 所以接的人不能再用一對括號包住它：那會拼成「餵奶（母乳（瓶餵） 120 ml）」，
+ * 一句話裡兩層全形括號，在 320px 的一排 chip 上讀起來是一團符號。中點是時間軸
+ * 細節本來就在用的分隔符，接得起來，也永遠不會巢狀。
+ *
+ * 內容是空的（沒填奶量也沒填時長的擠奶）就只剩標題，不留一對空括號。
+ *
+ * 放在這裡而不是放在那張卡裡，是因為下一個要拼標籤的畫面該直接拿到這條規則。
+ */
+export function composeLogLabel(title: string, detail: string): string {
+  return detail ? `${title} · ${detail}` : title;
+}

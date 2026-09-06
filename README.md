@@ -47,18 +47,29 @@ group headings answer it rather than leaving six equal rows to be read through.
 ### LittleSteps — baby growth tracking
 - **Growth overview** — one screen summarising milestones, vaccines, sleep, nappies and food
 - **Milestone tracking** — 33 milestones across physical, motor, cognitive and feeding
-- **Vaccine tracking** — 35 doses on Taiwan's MOHW schedule (20 government-funded,
+- **Vaccine tracking** — 36 doses on Taiwan's MOHW schedule (21 government-funded,
   1 conditionally reimbursed by the NHI, 14 self-paid), each citing the CDC page it
   came from, with side-effect and emergency guidance. A dose that is due to change
   funding on a known date says so, and a test goes red once that date passes while
   the row still states the old funding
+- **Publicly funded, but only for a named group** — one of those government-funded
+  doses is the extra PCV13 dose at six months for high-risk children. It carries the
+  CDC's own condition, so it shows on the vaccine page and in the calendar export but
+  is never counted as owed: it is not in the due list, not the next dose, and not part
+  of "doses still unrecorded". Every family sees it; no family is told they are behind.
+  The calendar export is the one place it does prompt — every exported event carries a
+  week's warning, so a family that exports gets an alarm for this dose like any other,
+  with the condition in the event body
 - **Calendar export** — the outstanding doses export as an ICS file, one action for
   everything still due and one per dose, each event naming the dose, its funding
   state and the recommended window, with a week's warning
 - **Next dose** — the dashboard card and the clinic summary name only publicly funded
   doses, resolved by one shared implementation that also drops doses the child has
   aged past, so a dose the family would have to buy is never presented as the next
-  scheduled one
+  scheduled one. With no next dose the card still gives a number rather than going
+  quiet: how many publicly funded doses are unrecorded, or, once none are, how many
+  doses sit outside the routine public schedule and remain available — a count and
+  their availability, never a product to buy
 - **Quick log** — feeding, sleep and nappies in a couple of taps, or one tap to repeat
   the last one. The form reopens with the values this child was logged with, scoped to
   the child rather than the account, so a parent of a formula-fed and a breastfed baby
@@ -243,7 +254,7 @@ feedbacks/$feedbackId      title, content, userId, timestamp
 ```
 
 The child node holds who the child is, plus progress against fixed lists — 33
-milestones, 35 vaccine doses, 30 development checks — so it is bounded. The
+milestones, 36 vaccine doses, 30 development checks — so it is bounded. The
 three collections under `childRecords` are not: they grow by one row per nappy,
 forever. They sit in a sibling subtree because the child listener subscribes to
 the whole `children/$childId` node, so with the logs inside it one nappy change
