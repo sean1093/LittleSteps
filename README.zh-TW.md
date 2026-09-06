@@ -340,12 +340,18 @@ VITE_FIREBASE_DATABASE_URL=
 npm run dev            # http://localhost:5173
 npm run build          # tsc && vite build
 npm run preview
-npm run lint
+npm run lint           # 先 tsc --noEmit，再 eslint
 npm run test           # watch 模式
 npm run test:coverage
 npm run test:rules     # 用 Database 模擬器驗 database.rules.json
 npm run test:e2e       # Playwright，390px 與 320px 各跑一次
 ```
+
+`npm run lint` 會先型別檢查再 lint。`tsconfig.json` 把 `lib` 釘在 ES2020，而
+整個 repo 只有編譯器知道這件事：esbuild 剝掉型別時不會讀 `lib`，也沒有任何
+ESLint 規則認得內建方法，所以 `.at()`、`findLast`、`toSorted` 這一整族 ES2021+
+的方法以前都能通過 lint 和單元測試，只在 `npm run build` 才失敗。把 `tsc` 放進
+快速迴圈就補上了這個洞，也不必再多一份會跟 `lib` 走位的禁用清單。
 
 `npm run test:rules` 會透過 `firebase emulators:exec`，把 `scripts/testRules.cjs`
 跑在 Database 模擬器上，所以它需要 JDK：`brew install openjdk`，而因為那個

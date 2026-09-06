@@ -56,3 +56,4 @@ blob-report/
 
 # SDD isolated worktrees
 .worktrees/
+*.tsbuildinfo
