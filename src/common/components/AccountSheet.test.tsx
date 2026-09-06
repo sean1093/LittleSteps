@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ChildStoreProvider } from '../contexts/ChildStoreContext';
 import AccountButton from './AccountButton';
@@ -107,6 +107,25 @@ describe('寶寶切換只出現在會讀孩子資料的服務', () => {
       // 帳號仍然在，只有切換器不該出現。
       expect(await screen.findByText('測試家長')).toBeInTheDocument();
       expect(screen.queryByRole('heading', { name: '我的寶寶' })).toBeNull();
+    },
+  );
+});
+
+describe('關於資料', () => {
+  it.each(['littlesteps', 'babyoasis'] as const)(
+    '%s 的帳號視窗都到得了關於頁，而且到了就把視窗收起來',
+    async (service) => {
+      window.history.replaceState(null, '', '/');
+      const user = await openSheet(service);
+
+      await user.click(await screen.findByRole('button', { name: /關於資料/ }));
+
+      expect(window.location.pathname).toBe('/about');
+      // 視窗留在新頁面上，看起來就像那一頁自己開了一張帳號表。AnimatePresence
+      // 會讓它多留一個退場動畫的時間，所以等它消失而不是立刻斷言。
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog', { name: '帳號與寶寶' })).toBeNull(),
+      );
     },
   );
 });

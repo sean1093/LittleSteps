@@ -193,9 +193,19 @@ write in the product.
 
 `src/common/routePolicy.ts` holds a **public allowlist**, deliberately not a
 "needs auth" blocklist: this app stores children's health data, so forgetting to
-mark a new page should fail closed. Public pages are the entry point, the three
-knowledge bases, the care guide, the sleep guide, LittleOuting, BabyOasis and
-LittleGuard. Everything else needs an account.
+mark a new page should fail closed. Public pages are the entry point, the about
+page, the three knowledge bases, the care guide, the sleep guide, LittleOuting,
+BabyOasis and LittleGuard. Everything else needs an account.
+
+The about page at `/about` says all of this in a parent's words: where a child's
+records live, who can read them, what the app does and does not do with them,
+and which government, WHO or OpenStreetMap dataset every number on every other
+page comes from. Its claims are data in `src/common/about/dataSources.ts` and
+each one is held against the real thing by a test — the counts against the
+data files, the source URLs against an official-host allowlist, the sentence
+about what the device stores against the preference module's key set — so the
+page cannot quietly fall behind the system it describes. It is reachable from
+the entry page, the account sheet and the share sheet.
 
 A signed-out visitor hitting a private route gets that service's intro page at
 the same URL — the path is preserved, so after signing in they land where they

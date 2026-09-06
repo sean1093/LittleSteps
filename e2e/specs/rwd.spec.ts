@@ -20,9 +20,9 @@ import { PublicRoutePage } from '../pages/publicRoutePage';
  * scrolls sideways, a control too small to tap, a modal whose controls are off
  * the screen — and they survive a restyle that broke nothing.
  *
- * One test per route rather than one loop over all nine: the route is then in
+ * One test per route rather than one loop over all ten: the route is then in
  * the failure's title, and a broken page fails once instead of hiding the
- * eight behind it.
+ * nine behind it.
  */
 
 for (const route of PUBLIC_ROUTES) {

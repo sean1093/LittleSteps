@@ -40,7 +40,7 @@ address bar and the real chunk loader.
 
 | ID | Pri | Case | Expected |
 |---|---|---|---|
-| NAV-01 | P1 | Deep-link directly to each of the nine public paths | Page boots on that route and the URL is unchanged after load. Oracle is `document.title`, set per-route at runtime by `useDocumentMeta` from `pageMeta.ts` — this is hydration, not the prerendered file, which is SEO-03's separate concern. Do **not** assert `SERVICE_THEME[id].name`: only LittleOuting, BabyOasis and LittleGuard pass it to their `AppBar`; the hub has no `AppBar`, the LittleSteps wikis get theirs from `App.tsx`'s `getPageTitle()`, and the two other wikis use their own shells |
+| NAV-01 | P1 | Deep-link directly to each of the ten public paths | Page boots on that route and the URL is unchanged after load. Oracle is `document.title`, set per-route at runtime by `useDocumentMeta` from `pageMeta.ts` — this is hydration, not the prerendered file, which is SEO-03's separate concern. Do **not** assert `SERVICE_THEME[id].name`: only LittleOuting, BabyOasis and LittleGuard pass it to their `AppBar`; the hub has no `AppBar`, the LittleSteps wikis get theirs from `App.tsx`'s `getPageTitle()`, and the two other wikis use their own shells |
 | NAV-02 | P1 | Deep-link to a gated path (`/littlesteps/daily-log`) while signed out | See AUTH-01; asserted here only for "the URL does not change" |
 | NAV-03 | P1 | Navigate to an unknown path (`/nope`, `/littlesteps/nope`) | The hub landing renders; no blank page, no thrown error in the console |
 | NAV-04 | P1 | Legacy hash link (`/#/littleexplorer/wiki`) | `redirectLegacyHash()` lands on the path route, and the hash is gone from the URL |

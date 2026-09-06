@@ -20,6 +20,9 @@
  */
 export const ROUTE_PATH = {
   home: '/',
+  // 關於資料：孩子的紀錄存在哪裡、誰看得到，以及每一頁的內容出自哪一份公開
+  // 資料。和 home 一樣不屬於任何服務。
+  about: '/about',
   littlesteps: '/littlesteps',
   'littlesteps/dashboard': '/littlesteps/dashboard',
   'littlesteps/milestones': '/littlesteps/milestones',

@@ -46,8 +46,8 @@ one.
 
 `common/routePolicy.ts` is a **public allowlist**, not a "needs auth" blocklist.
 This app stores children's health data, so a page nobody classified must fail
-closed. Only the entry point, the three knowledge bases, the care guide, the
-sleep guide, LittleOuting, BabyOasis and LittleGuard are public.
+closed. Only the entry point, the about page, the three knowledge bases, the
+care guide, the sleep guide, LittleOuting, BabyOasis and LittleGuard are public.
 
 A blocked visitor sees that service's intro page **at the same URL** — the path
 is preserved so signing in lands them where they were going. Never redirect.

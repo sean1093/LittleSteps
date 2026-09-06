@@ -208,4 +208,19 @@ describe('HubLanding', () => {
     );
     expect(screen.queryByRole('button', { name: /使用 Google 登入/ })).not.toBeInTheDocument();
   });
+
+  it('「資料從哪裡來」整塊就是進關於頁的入口，鍵盤也進得去', async () => {
+    // 這一段是入口頁最有說服力的文字，而關於頁把它講完整。它原本是一塊點不
+    // 動的區域；現在整塊可按，而且不靠 onNavigate——那個 prop 只認服務。
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', '/');
+    render(<HubLanding onNavigate={vi.fn()} />);
+
+    const panel = screen.getByRole('button', { name: /資料從哪裡來/ });
+    expect(panel).toHaveAttribute('tabindex', '0');
+    expect(panel).toHaveTextContent('誰看得到');
+
+    await user.click(panel);
+    expect(window.location.pathname).toBe('/about');
+  });
 });

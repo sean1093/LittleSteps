@@ -24,6 +24,7 @@ const ALL_PAGES = Object.keys(ROUTE_PATH) as Page[];
  */
 const PUBLIC: Page[] = [
   'home',
+  'about',
   'littlesteps/baby-wiki',
   'littlesteps/care-guide',
   'littlesteps/sleep-training',
@@ -131,14 +132,20 @@ describe('requiresAuth', () => {
   });
 });
 
+/** 不屬於任何服務的頁面：服務集合首頁，以及講全站資料的關於頁。 */
+const SERVICELESS: Page[] = ['home', 'about'];
+
 describe('serviceOf', () => {
-  it('home 不屬於任何服務', () => {
-    expect(serviceOf('home')).toBeNull();
+  it('home 與 about 不屬於任何服務', () => {
+    // about 沒有明講就會掉進最後那行 fallthrough，被當成 BabyOasis 的頁面。
+    for (const page of SERVICELESS) {
+      expect(serviceOf(page), page).toBeNull();
+    }
   });
 
-  it('每個非 home 路由都對應到一個服務', () => {
+  it('其餘每個路由都對應到一個服務', () => {
     for (const page of ALL_PAGES) {
-      if (page === 'home') continue;
+      if (SERVICELESS.includes(page)) continue;
       expect(serviceOf(page), page).not.toBeNull();
     }
   });
@@ -169,7 +176,7 @@ describe('serviceOf', () => {
 
   it('每條路由都歸到自己前綴的服務', () => {
     for (const page of ALL_PAGES) {
-      if (page === 'home') continue;
+      if (SERVICELESS.includes(page)) continue;
       const service = serviceOf(page);
       expect(page === service || page.startsWith(`${service}/`), page).toBe(true);
     }
