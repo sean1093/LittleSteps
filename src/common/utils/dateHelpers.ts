@@ -179,6 +179,27 @@ export function dateTimeLocalToISO(dateTimeLocal: string): string {
 }
 
 /**
+ * ISO 字串轉回 datetime-local 的格式，也就是 dateTimeLocalToISO 的反函式。
+ *
+ * 存起來的是 UTC，input 讀的是本地時間，所以不能拿 ISO 字串前 16 個字元充數：
+ * 那是 UTC 的時鐘讀數，貼進 datetime-local 就被當成本地時間。在台灣（UTC+8）
+ * 晚上 9 點記的那一餐，打開編輯表單顯示的是下午 1 點；家長就算一個字都沒改
+ * 按下更新，dateTimeLocalToISO 也會把那個 13:00 當成本地時間送回去，紀錄就
+ * 往前跳 8 小時。錯兩次，而且兩次都不會有任何提示。
+ */
+export function isoToDateTimeLocal(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    throw new RangeError(`無法解析的時間：${iso}`);
+  }
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}`
+  );
+}
+
+/**
  * 在 YYYY-MM-DD 上加指定月數。
  * 目標月份沒有該日時（例：1/31 + 1 個月、2/29 + 12 個月）退回當月最後一日，
  * 而非 JS Date 預設的溢位到下個月。

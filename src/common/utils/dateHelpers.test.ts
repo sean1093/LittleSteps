@@ -10,6 +10,7 @@ import {
   formatDuration,
   getCurrentDateTimeLocal,
   dateTimeLocalToISO,
+  isoToDateTimeLocal,
   lmpFromDueDate,
   parseLocalDate,
 } from './dateHelpers';
@@ -322,6 +323,38 @@ describe('dateHelpers', () => {
 
       expect(getCurrentDateTimeLocal()).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
       expect(getCurrentDateTimeLocal()).toBe('2026-12-31T00:00');
+    });
+  });
+
+  describe('isoToDateTimeLocal', () => {
+    it('should round-trip with dateTimeLocalToISO, which is the whole point', () => {
+      // The edit form reads with one and writes with the other. If they are not
+      // inverses, a parent who changes nothing still moves the record.
+      const local = '2026-06-15T08:05';
+      expect(isoToDateTimeLocal(dateTimeLocalToISO(local))).toBe(local);
+    });
+
+    it('should show the local wall time, not the UTC clock reading', () => {
+      // The regression this exists for: the form used iso.slice(0, 16), which
+      // is UTC. In Asia/Taipei a 21:00 feed opened as 13:00, and saving it
+      // unchanged wrote the record back eight hours early.
+      expect(isoToDateTimeLocal(JUN_15_0805.toISOString())).toBe('2026-06-15T08:05');
+    });
+
+    it('should drop the seconds a datetime-local input cannot hold', () => {
+      expect(isoToDateTimeLocal(localDate(2026, 6, 15, 8, 5, 30).toISOString())).toBe(
+        '2026-06-15T08:05'
+      );
+    });
+
+    it('should pad every field to the width the input format requires', () => {
+      expect(isoToDateTimeLocal(localDate(2026, 1, 3, 7, 9, 0).toISOString())).toBe(
+        '2026-01-03T07:09'
+      );
+    });
+
+    it('should throw rather than emit NaN-NaN-NaN into a form', () => {
+      expect(() => isoToDateTimeLocal('not a date')).toThrow(RangeError);
     });
   });
 
