@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useState } from 'react';
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ChildProfile } from '../../types';
 import ChildSwitcher from '../../common/components/ChildSwitcher';
@@ -192,18 +192,16 @@ describe('switching child on the vaccine tracking page', () => {
     expect(monthChip('6個月')).toHaveAttribute('aria-pressed', 'false');
   });
 
-  it('honours a pick of 全部, which no other case taps', async () => {
-    // Scoped to the month row: 「全部」 is also the first funding chip, so an
-    // unscoped query matches two buttons. (That ambiguity is a real one for a
-    // screen reader too -- filed separately, not fixed here.) The row is
-    // reached through a month chip rather than by class, because the class is
-    // styling and the chip is the thing under test.
+  it('honours a pick of 全部月齡, which no other case taps', async () => {
+    // Unscoped on purpose. The month row's reset chip and the funding row's
+    // both read 全部, so this query only resolves while they carry distinct
+    // accessible names; a query scoped to the row would keep passing if the
+    // ambiguity came back.
     const user = renderScreen();
-    const monthRow = within(monthChip('6個月').parentElement as HTMLElement);
 
-    await user.click(monthRow.getByRole('button', { name: '全部' }));
+    await user.click(monthChip('全部月齡'));
 
-    expect(monthRow.getByRole('button', { name: '全部' })).toHaveAttribute('aria-pressed', 'true');
+    expect(monthChip('全部月齡')).toHaveAttribute('aria-pressed', 'true');
     expect(monthChip('6個月')).toHaveAttribute('aria-pressed', 'false');
   });
 

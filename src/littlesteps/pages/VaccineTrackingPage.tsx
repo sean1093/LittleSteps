@@ -78,8 +78,14 @@ const FUNDING_UI: Record<
  * 合條件。健保給付和縣市加碼都落在第三種，而且都得讀那一行條件才知道自己算不
  * 算，拆成兩顆 chip 是把同一個動作分成兩次。390px 上也放不下五顆。
  */
-const FUNDING_FILTERS: { value: FundingFilter; label: string; funding: VaccineFunding[] }[] = [
-  { value: 'all', label: '全部', funding: [] },
+const FUNDING_FILTERS: {
+  value: FundingFilter;
+  label: string;
+  /** 只有「全部」需要：那兩個字在這一頁的兩排篩選器裡各出現一次。 */
+  ariaLabel?: string;
+  funding: VaccineFunding[];
+}[] = [
+  { value: 'all', label: '全部', ariaLabel: '全部給付方式', funding: [] },
   { value: 'national', label: '公費', funding: ['national'] },
   { value: 'conditional', label: '有條件', funding: ['nhi-conditional', 'local-varies'] },
   { value: 'self-paid', label: '自費', funding: ['self-paid'] },
@@ -289,12 +295,17 @@ export default function VaccineTrackingPage({
         </div>
 
         {/* 兩排篩選器的標題（「篩選疫苗類型」「月齡篩選」）拿掉了：chip 本身
-            就說明了它在篩什麼，標題只是多佔兩行。 */}
+            就說明了它在篩什麼，標題只是多佔兩行。代價是兩排的第一顆都叫「全部」，
+            照著控制項瀏覽的人聽到的是兩顆一模一樣的切換鈕，而且沒有列名可以退
+            回去分辨——所以那兩顆各自帶 aria-label。標籤刻意包含看得見的「全部」
+            兩個字：語音控制是照畫面上的字比對的，「全部月齡」對得上，「月齡篩
+            選：全部」對不上。 */}
         <div className="flex gap-2 mb-2">
           {FUNDING_FILTERS.map((option) => (
             <button
               key={option.value}
               onClick={() => setFundingFilter(option.value)}
+              aria-label={option.ariaLabel}
               aria-pressed={fundingFilter === option.value}
               className={`chip flex-1 justify-center ${fundingFilter === option.value ? 'chip-on' : ''}`}
             >
@@ -307,6 +318,7 @@ export default function VaccineTrackingPage({
           <button
             ref={monthFilter === 'all' ? selectedRef : undefined}
             onClick={() => setPickedMonth('all')}
+            aria-label="全部月齡"
             aria-pressed={monthFilter === 'all'}
             className={`chip flex-shrink-0 ${monthFilter === 'all' ? 'chip-on' : ''}`}
           >
