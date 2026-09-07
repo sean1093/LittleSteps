@@ -1,6 +1,7 @@
 import { expect, test } from '../fixtures/test';
-import { PUBLIC_ROUTES } from '../fixtures/routes';
+import { GATED_ROUTES, PUBLIC_ROUTES } from '../fixtures/routes';
 import { PublicRoutePage } from '../pages/publicRoutePage';
+import { ServiceIntroPage } from '../pages/serviceIntroPage';
 
 /**
  * A11Y-01/02 — one banner and one main on every public route.
@@ -22,14 +23,30 @@ import { PublicRoutePage } from '../pages/publicRoutePage';
  *
  * One test per route, as in `rwd.spec.ts`: the route is then in the failure's
  * title and one broken page does not hide the eight behind it.
+ *
+ * The gated routes are covered here too, in the state the signed-out suite
+ * actually meets them: an intro page at the gated URL. That is a route/state
+ * combination the rest of the matrix never visits — every other spec either
+ * asks a public route what it renders, or asks a gated route whether it leaked
+ * a child's record — which is exactly why both intro pages shipped with no
+ * landmarks at all (#80).
  */
 
 /**
- * The hub is a service chooser and deliberately renders no `AppBar` — see
- * `HubLanding`, and `publicRoutePage.ts`'s note that its `h1` is the only one
- * on the page. It is the one public route with no header to expose, so it is
- * named here rather than left to a `>= 0` assertion that would let any other
- * page lose its header quietly.
+ * The routes that expose no `banner`, and why each one has none.
+ *
+ * The hub (`home`) is a service chooser and deliberately renders no `AppBar` —
+ * see `HubLanding`, and `publicRoutePage.ts`'s note that its `h1` is the only
+ * one on the page.
+ *
+ * Every **gated** route joins it while signed out, because what renders there
+ * is `StepsLanding` or `ServiceLanding`. Their whole chrome is one link back to
+ * the hub; the wordmark below it is the page's content, not its header, so a
+ * `<header>` there would be a landmark naming nothing. They do owe a `<main>`,
+ * and they return before the shell can supply one, so they render their own.
+ *
+ * Both are named rather than left to a `>= 0` assertion that would let any
+ * other page lose its header quietly.
  */
 const ROUTES_WITHOUT_A_HEADER = new Set<string>(['home']);
 
@@ -64,5 +81,29 @@ for (const route of PUBLIC_ROUTES) {
       page.getByRole('main'),
       'a page has exactly one main landmark — two means the shell wrapped a page that brings its own',
     ).toHaveCount(1);
+  });
+}
+
+for (const route of GATED_ROUTES) {
+  // Both counts in one case: they are two properties of a single page state,
+  // and splitting them would navigate to every gated route twice per viewport
+  // to assert nothing new.
+  test(`A11Y-01/02 @p1 ${route} signed out exposes one main and no banner`, async ({ page }) => {
+    const intro = new ServiceIntroPage(page);
+
+    await intro.goto(route);
+    // The intro heading is the oracle for "the gate decided and rendered":
+    // `goto` resolves on `load`, which is before React has painted anything.
+    await expect(intro.heading(route)).toBeVisible();
+
+    await expect(
+      page.getByRole('main'),
+      'the intro page a signed-out visitor gets here brings no main landmark, and it returns before the shell could supply one',
+    ).toHaveCount(1);
+
+    await expect(
+      page.getByRole('banner'),
+      'an intro page has no page header to expose — one link back to the hub is not a banner',
+    ).toHaveCount(0);
   });
 }

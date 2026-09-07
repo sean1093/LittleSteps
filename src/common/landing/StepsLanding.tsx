@@ -76,7 +76,18 @@ export const PUBLIC_CONTENT: { title: string; detail: string; page: PublicConten
 export default function StepsLanding({ onNavigate, onSignIn }: StepsLandingProps) {
   return (
     <div className="min-h-dscreen bg-warm-white">
-      <div className="screen-body space-y-4">
+      {/*
+        這一頁自己給 <main>，但刻意不給 <header>。
+
+        它在 App.tsx 的 isStandaloneLanding 那裡就先回傳了，外框的 <main> 根本
+        走不到——而這是每個未登入的訪客在需登入路由上看到的第一頁，少了這一層
+        就整頁沒有任何地標可以跳。
+
+        沒有 banner 是因為這一頁的 chrome 只有一顆回服務集合首頁的連結，
+        wordmark 與說明本身就是內容；把那顆連結包成 <header>，等於多一個什麼
+        都沒指名的地標，比沒有更難用。
+      */}
+      <main className="screen-body space-y-4">
         {/*
           沒登入時，任何需要登入的 LittleSteps 路由都會落到這一頁——登出後、
           從書籤進入、瀏覽器還原分頁都算。少了這顆按鈕，這裡就是死路：頁面
@@ -160,7 +171,7 @@ export default function StepsLanding({ onNavigate, onSignIn }: StepsLandingProps
             ))}
           </ul>
         </motion.section>
-      </div>
+      </main>
     </div>
   );
 }

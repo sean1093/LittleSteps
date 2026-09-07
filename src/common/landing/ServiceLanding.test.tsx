@@ -44,6 +44,18 @@ describe('ServiceLanding', () => {
     expect(window.location.pathname).toBe('/');
   });
 
+  /**
+   * 同 StepsLanding：這一頁在 App.tsx 的 isStandaloneLanding 那裡就先回傳了，
+   * 外框的 <main> 走不到，所以少了自己這一層就整頁沒有地標。banner 是零，因為
+   * 這一頁的 chrome 只有一顆回服務集合首頁的連結。
+   */
+  it.each(SERVICES)('$name 恰好一個 main 地標，而且沒有 banner', ({ id }) => {
+    render(<ServiceLanding service={id} onSignIn={vi.fn()} />);
+
+    expect(screen.getAllByRole('main')).toHaveLength(1);
+    expect(screen.queryAllByRole('banner')).toHaveLength(0);
+  });
+
   it('說明哪些功能需要登入，哪些不用', () => {
     render(<ServiceLanding service="littleexplorer" onSignIn={vi.fn()} />);
     expect(
