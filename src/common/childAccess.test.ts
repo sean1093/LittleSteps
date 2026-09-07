@@ -69,11 +69,13 @@ describe('成員名單：加得進來，也收得回去', () => {
     expect(memberRule).toContain("data.parent().child(auth.uid).val() === true");
   });
 
-  it('建立者自己的成員資格刪不掉', () => {
-    // 全部成員都被移掉的話，孩子本體會沒有任何人讀得到或刪得掉。
-    expect(memberRule).toContain(
-      "$memberUid !== root.child('children').child($childId).child('createdBy').val()",
-    );
+  it('成員數不歸零：任何一筆刪除都要求寫入後名單上還有人', () => {
+    // 沒有任何成員的孩子節點誰都讀不到、也刪不掉。這一條原本是靠點名
+    // createdBy 來守的，而那把家長綁在帳號上——他為別人建的檔案只要對方還在
+    // 用，他就永遠刪不掉自己的帳號——同時還漏掉「建立者走掉之後，最後一位
+    // 成員照樣刪得掉自己」。改成看寫入後的名單，一條式子守住同一個不變量。
+    expect(memberRule).toContain('newData.exists() || newData.parent().hasChildren()');
+    expect(memberRule).not.toContain('createdBy');
   });
 
   it('把自己加進一份還沒加入過的名單，要對方開著 joinOpen', () => {
@@ -100,13 +102,17 @@ describe('紀錄子樹與公開索引都跟著同一份名單', () => {
   it('users 仍然只有本人讀得到，寫入權逐個欄位給，整個節點不再有 .write', () => {
     // childrenIds 留著，但只是「我要訂閱哪幾個孩子」的索引，不再是授權來源。
     // 節點層級的 .write 曾經讓本人刪得掉自己的 lastFeedbackAt（validate 不會對
-    // 刪除跑），一分鐘一則的限制就從一個請求變成兩個。
+    // 刪除跑），一分鐘一則的限制就從一個請求變成兩個。現在刪除只在戳記過了
+    // 節流窗口之後才放行：過期的戳記刪掉換不到任何一則額外的回饋，而刪帳號
+    // 需要清得掉它。
     const owner = '$userId === auth.uid';
     const user = rules.users.$userId;
     expect(user['.read']).toBe(owner);
     expect(user['.write']).toBeUndefined();
     expect(user.childrenIds['.write']).toBe(owner);
     expect(user.currentChildId['.write']).toBe(owner);
-    expect(user.lastFeedbackAt['.write']).toBe(`${owner} && newData.exists()`);
+    expect(user.lastFeedbackAt['.write']).toBe(
+      `${owner} && (newData.exists() || !data.exists() || data.val() + 60000 <= now)`,
+    );
   });
 });

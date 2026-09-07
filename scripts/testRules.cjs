@@ -234,8 +234,37 @@ async function main() {
     mallory.put('children/c1/members/alice', null),
   );
   await expectDenied(
-    '建立者的成員資格刪不掉——刪得掉就會留下一份沒有人碰得到的健康紀錄',
+    '建立者是唯一的成員時走不掉——只剩「整份刪掉」這條路',
     alice.put('children/c1/members/alice', null),
+  );
+  // 建立者也走得掉，只要名單上還有別人。
+  //
+  // 原本的規則是「createdBy 自己的成員資格一律刪不掉」，而那條規則把家長綁在
+  // 帳號上：他為別人建的檔案只要對方還在用，他就永遠刪不掉自己的帳號。規則真正
+  // 要守的不變量是「成員數不歸零」（沒有成員的健康紀錄誰都讀不到、也刪不掉），
+  // 所以改成用寫入後的名單判斷：newData.parent() 就是這一筆寫完之後的 members。
+  await admin.put(
+    'children/c5',
+    childProfile({ id: 'c5', members: { alice: true, mallory: true } }),
+  );
+  await expectAllowed(
+    '建立者離開：名單上還有另一位成員，就刪得掉自己的成員資格',
+    alice.put('children/c5/members/alice', null),
+  );
+  await expectDenied(
+    '最後一位成員也走不掉，即使他不是建立者——成員數歸零就是一份沒有人碰得到的紀錄',
+    mallory.put('children/c5/members/mallory', null),
+  );
+  // 「誰都不是不可移除的」是這條規則現在的另一面。本來就擋不住：成員可以整份
+  // 覆寫 children/$id，而 .write 是在那個節點上授予的，底下的 members 規則不會
+  // 被問到。README 的「任何成員實際上都等於擁有者」講的就是這件事。
+  await admin.put(
+    'children/c6',
+    childProfile({ id: 'c6', members: { alice: true, mallory: true } }),
+  );
+  await expectAllowed(
+    '成員移除得掉建立者，只要自己還留在名單上',
+    mallory.put('children/c6/members/alice', null),
   );
 
   console.log('\n欄位驗證');
@@ -317,7 +346,7 @@ async function main() {
   // 刪只看 .write：users/$uid 若整個節點都是本人可寫，迴圈就從一個請求變成
   // 兩個——刪戳記、再送一則。
   await expectDenied(
-    '自己也刪不掉自己的 lastFeedbackAt',
+    '節流窗口內刪不掉自己的 lastFeedbackAt（刪戳記再送一則就是那個繞法）',
     alice.del('users/alice/lastFeedbackAt'),
   );
   await expectDenied(
@@ -334,6 +363,17 @@ async function main() {
       if (removed.status === 200) return removed;
       return sendFeedback(zed, 'zed', 'f-zed-3');
     })(),
+  );
+  // 過期之後就刪得掉：節流窗口已經過了，刪掉戳記換不到任何一則額外的回饋。
+  // 刪帳號需要這一條——不然 users/{uid} 會留下一個沒有人碰得到的時間戳。
+  await seedLastFeedback(61000);
+  await expectAllowed(
+    '戳記過了節流窗口就刪得掉（刪帳號要清得掉 users/{uid}）',
+    alice.del('users/alice/lastFeedbackAt'),
+  );
+  await expectAllowed(
+    '從沒送過回饋的帳號也刪得掉這條不存在的路徑（刪帳號一律帶上它）',
+    as('quitter').del('users/quitter/lastFeedbackAt'),
   );
   await seedLastFeedback(61000);
   await expectDenied(
@@ -896,6 +936,32 @@ async function main() {
       await alice.del('children/c3');
       return alice.del('childRecords/c3');
     })(),
+  );
+  // 刪帳號的那一筆：獨有的孩子整份消失，共用的只交回自己的成員資格，加上自己的
+  // 帳號節點——全部同一筆（見 useFirebaseChildren 的 deleteAccountData）。c8 的
+  // createdBy 就是 quitter 自己，所以這裡也一起驗了「建立者離開共用的檔案」在
+  // root fan-out 裡同樣走得通。
+  await admin.put(
+    'children/c7',
+    childProfile({ id: 'c7', createdBy: 'quitter', members: { quitter: true } }),
+  );
+  await admin.put('childRecords/c7/dailyLogs/log1', dailyLog({ childId: 'c7' }));
+  await admin.put('childIndex/c7', true);
+  await admin.put(
+    'children/c8',
+    childProfile({ id: 'c8', createdBy: 'quitter', members: { quitter: true, alice: true } }),
+  );
+  await admin.put('users/quitter/childrenIds', { c7: true, c8: true });
+  await expectAllowed(
+    '刪帳號：獨有的孩子整份刪掉、共用的只退出名單、帳號節點一起清掉（deleteAccountData 的寫法）',
+    as('quitter').patch('', {
+      'children/c7': null,
+      'childRecords/c7': null,
+      'childIndex/c7': null,
+      'children/c8/members/quitter': null,
+      'users/quitter/childrenIds': null,
+      'users/quitter/currentChildId': null,
+    }),
   );
 
   console.log('\n別人的帳號');
