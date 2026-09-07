@@ -421,6 +421,34 @@ describe('記住上次選的縣市與年齡層', () => {
     expect(screen.getByRole('button', { name: '3-6 歲' })).not.toHaveClass('chip-on');
   });
 
+  it('點了已經選中的那一顆年齡層，這一頁還是跟著孩子走', async () => {
+    // 那一下畫面上什麼都沒變，所以它不該把年齡層釘住。少了這一道，家長之後換
+    // 一個孩子就不再重推，而畫面上沒有任何線索可以發現。點「別的」那一顆不管
+    // 有沒有這一道都會過（上一個案例守的就是那個釘住），所以這裡點的必須是已
+    // 經選中的那一顆。
+    childStore.current = { currentChild: child('2022-03-14') };
+    mockFetch(fixture());
+    const view = render(<RadarPage />);
+    await waitFor(() => expect(screen.getByText('腸病毒')).toBeInTheDocument());
+    // 這裡看 aria-pressed 而不是 chip-on：被選中是控制項的狀態，chip-on 只是
+    // 它現在長什麼樣。
+    expect(screen.getByRole('button', { name: '3-6 歲' })).toHaveAttribute('aria-pressed', 'true');
+
+    await user().click(screen.getByRole('button', { name: '3-6 歲' }));
+    expect(screen.getByRole('button', { name: '3-6 歲' })).toHaveAttribute('aria-pressed', 'true');
+
+    // 這一頁沒有自己的切換器，孩子是從 store 下來的。換掉再 render 一次，就是
+    // 家長在別的地方切了寶寶之後這一頁看到的樣子——它不會卸載。
+    childStore.current = { currentChild: child('2019-03-14') };
+    view.rerender(<RadarPage />);
+
+    expect(screen.getByRole('button', { name: '7-12 歲' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '3-6 歲' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  });
+
   it('孕期檔案不參與推論，年齡層留給上次點的', async () => {
     savePreferences({ guardAgeBand: '7~12' });
     childStore.current = {

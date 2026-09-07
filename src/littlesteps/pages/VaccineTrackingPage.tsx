@@ -145,9 +145,18 @@ export default function VaccineTrackingPage({
     上一個寶寶的月齡——從新生兒切到兩歲，畫面照樣拿出生那幾劑對新寶寶打勾。
     每次 render 重推就不會過期，連改生日也跟著更新；家長挑過的則永遠贏過推
     導出來的值。
+
+    點到「已經選中的那一顆」不算挑過：pickMonth 會把 picked 收回 null。少了這
+    一道，一次畫面上什麼都沒變的點擊——或在這排十二顆的橫向捲動列上滑歪手——就
+    會把篩選器釘住，之後換寶寶、改生日都不再重推，而家長沒有任何線索可以發現。
+    代價要講明：家長刻意點下「正好等於孩子現在月齡」那一顆，得到的是「沒釘住」，
+    所以之後訂正生日篩選器會跟著動。那正好就是他進來時的狀態。
   */
   const [pickedMonth, setPickedMonth] = useState<MonthFilter | null>(null);
-  const monthFilter = pickedMonth ?? vaccineMonthForChild(currentChild, AVAILABLE_MONTHS);
+  const derivedMonth = vaccineMonthForChild(currentChild, AVAILABLE_MONTHS);
+  const monthFilter = pickedMonth ?? derivedMonth;
+  const pickMonth = (value: MonthFilter) =>
+    setPickedMonth(value === derivedMonth ? null : value);
   const [showReferences, setShowReferences] = useState(false);
   const [showEmergencies, setShowEmergencies] = useState(false);
   const [showContraindications, setShowContraindications] = useState(false);
@@ -317,7 +326,7 @@ export default function VaccineTrackingPage({
         <div ref={scrollerRef} className="row-bleed flex gap-2 pb-2 mb-4">
           <button
             ref={monthFilter === 'all' ? selectedRef : undefined}
-            onClick={() => setPickedMonth('all')}
+            onClick={() => pickMonth('all')}
             aria-label="全部月齡"
             aria-pressed={monthFilter === 'all'}
             className={`chip flex-shrink-0 ${monthFilter === 'all' ? 'chip-on' : ''}`}
@@ -328,7 +337,7 @@ export default function VaccineTrackingPage({
             <button
               key={month}
               ref={monthFilter === month ? selectedRef : undefined}
-              onClick={() => setPickedMonth(month)}
+              onClick={() => pickMonth(month)}
               aria-pressed={monthFilter === month}
               className={`chip flex-shrink-0 ${monthFilter === month ? 'chip-on' : ''}`}
             >

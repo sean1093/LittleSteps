@@ -205,6 +205,25 @@ describe('switching child on the vaccine tracking page', () => {
     expect(monthChip('6個月')).toHaveAttribute('aria-pressed', 'false');
   });
 
+  it('un-pins the filter when the parent taps the chip already pressed', async () => {
+    // A tap that changes nothing on screen must not change what the page
+    // follows. Tapping any *other* chip passes with or without the guard --
+    // the pin is what the first case above already proves survives a switch --
+    // so this has to be the chip that is already pressed.
+    const user = renderScreen();
+
+    await user.click(monthChip('6個月'));
+    expect(monthChip('6個月')).toHaveAttribute('aria-pressed', 'true');
+
+    await switchTo(user, '小豆', '小樹');
+
+    expect(await screen.findByRole('button', { name: '27個月' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(monthChip('6個月')).toHaveAttribute('aria-pressed', 'false');
+  });
+
   it('follows a birthday correction on the child already selected', async () => {
     // The derived default is recomputed from the child every render rather than
     // remembered against an id, so correcting a birthday that was entered wrong
