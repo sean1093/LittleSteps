@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import type { User } from 'firebase/auth';
-import type { DailyLog, FeedingData, FoodTrialRecord } from '../../types';
+import type { DailyLog, FeedingData, FoodTrialInput, FoodTrialRecord } from '../../types';
 import { useFirebaseChildren } from './useFirebaseChildren';
 import { applyUpdatePaths } from '../../test/rtdb';
-import { trialDatePatch, trialDatesOf } from '../../littlesteps/utils/foodTrialDates';
+import { trialDatePatch, trialDateSet, trialDatesOf } from '../../littlesteps/utils/foodTrialDates';
 // 補丁是在頁面那一端算出來的，合不合併要連著它一起驗才算數。
 import { dailyLogChanges } from '../../littlesteps/utils/logHelpers';
+import { foodTrialChanges } from '../../littlesteps/utils/foodTrialEdit';
 // 讀與寫必須指向同一個子樹，所以那兩個 listener 一起在這裡驗。
 import { useDailyLogs } from '../../littlesteps/hooks/useDailyLogs';
 import { useDiary } from '../../littleexplorer/hooks/useDiary';
@@ -720,5 +721,159 @@ describe('兩位照顧者同一天各記一次嘗試', () => {
     expect(record.notes).toBe('有點軟便');
     // 拿掉的是舊的索引 key，留下的索引沒有被重寫。
     expect(record.trialDates).toEqual({ 1: '2026-09-02', '2026-09-06': true });
+  });
+});
+
+/**
+ * #104：同一筆食物紀錄，兩位照顧者各改各的欄位。編輯以前是把表單上的整筆送
+ * 出去，後到的那筆連著自己開表單時讀到的舊值一起蓋回去；而被清空的欄位送出
+ * 來是 undefined，寫入前被 removeUndefined 濾掉，舊值就這樣原封不動留著。
+ * 補丁改成跟「打開表單當下那一版」比出來的差集之後，沒改到的欄位不寫，被清
+ * 掉的欄位寫 null。
+ *
+ * 驗的是資料庫最後會長什麼樣：補丁本身在 littlesteps/utils/foodTrialEdit 那
+ * 邊逐條驗過，這裡把它套回紀錄上，看兩個人的修改有沒有真的都留下來。
+ */
+describe('兩位照顧者同時改同一筆食物紀錄', () => {
+  const ISO = '2026-09-01T08:00:00.000Z';
+
+  /** 資料庫上那一版，也是兩個人各自打開表單時看到的那一版。 */
+  const rice = (): FoodTrialRecord => ({
+    id: 'f1',
+    foodName: '米糊',
+    category: '穀類',
+    firstTriedDate: '2026-09-01',
+    trialDates: { '2026-09-01': true },
+    hasAllergy: false,
+    preference: 'like',
+    notes: '吃得很快',
+    createdAt: ISO,
+  });
+
+  /** 表單送出的形狀：嘗試日期是集合，其餘欄位照著螢幕上那一版原封送回。 */
+  const asSubmitted = (
+    onScreen: FoodTrialRecord,
+    edits: Partial<FoodTrialInput> = {},
+  ): FoodTrialInput => ({
+    foodName: onScreen.foodName,
+    category: onScreen.category,
+    firstTriedDate: onScreen.firstTriedDate,
+    trialDates: trialDateSet(trialDatesOf(onScreen)),
+    hasAllergy: onScreen.hasAllergy,
+    allergyReactions: onScreen.allergyReactions,
+    preference: onScreen.preference,
+    notes: onScreen.notes,
+    updatedAt: '2026-09-07T09:00:00.000Z',
+    ...edits,
+  });
+
+  it('一個人清掉備註、一個人改喜好度，兩邊都算數', async () => {
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+    let record = rice();
+
+    // 媽媽把備註刪掉。
+    const onHerScreen = rice();
+    await result.current.updateFoodTrial(
+      'c1',
+      'f1',
+      foodTrialChanges(onHerScreen, asSubmitted(onHerScreen, { notes: undefined })),
+    );
+    record = applyLastUpdate(record);
+
+    // 爸爸的表單是媽媽存之前開的，備註在他螢幕上還在，他只改了喜好度。
+    const onHisScreen = rice();
+    await result.current.updateFoodTrial(
+      'c1',
+      'f1',
+      foodTrialChanges(onHisScreen, asSubmitted(onHisScreen, { preference: 'love' })),
+    );
+    record = applyLastUpdate(record);
+
+    expect(record.preference).toBe('love');
+    expect(record.notes).toBeUndefined();
+  });
+
+  it('清掉的備註是寫 null，不是整個欄位不送', async () => {
+    // 不送等於不碰：舊值留在資料庫裡，下次打開表單那句備註又回來了。
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+    const onScreen = rice();
+
+    await result.current.updateFoodTrial(
+      'c1',
+      'f1',
+      foodTrialChanges(onScreen, asSubmitted(onScreen, { notes: undefined })),
+    );
+
+    expect(Object.keys(updates[0].value).sort()).toEqual(['notes', 'updatedAt']);
+    expect(updates[0].value.notes).toBeNull();
+  });
+
+  it('關掉過敏，存著的過敏反應真的跟著不見', async () => {
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+    const onScreen: FoodTrialRecord = {
+      ...rice(),
+      hasAllergy: true,
+      allergyReactions: [{ type: 'rash', severity: 'mild', date: '2026-09-02' }],
+    };
+
+    await result.current.updateFoodTrial(
+      'c1',
+      'f1',
+      foodTrialChanges(
+        onScreen,
+        asSubmitted(onScreen, { hasAllergy: false, allergyReactions: undefined }),
+      ),
+    );
+    const record = applyLastUpdate(onScreen);
+
+    expect(record.hasAllergy).toBe(false);
+    expect(record.allergyReactions).toBeUndefined();
+  });
+
+  it('把唯一一筆過敏反應移掉，開關留著，紀錄上也不會剩一份空清單', async () => {
+    // 空陣列在 Realtime Database 裡就是「沒有這個節點」，跟 null 同一件事。
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+    const onScreen: FoodTrialRecord = {
+      ...rice(),
+      hasAllergy: true,
+      allergyReactions: [{ type: 'rash', severity: 'mild', date: '2026-09-02' }],
+    };
+
+    await result.current.updateFoodTrial(
+      'c1',
+      'f1',
+      foodTrialChanges(onScreen, asSubmitted(onScreen, { allergyReactions: [] })),
+    );
+    const record = applyLastUpdate(onScreen);
+
+    expect(record.hasAllergy).toBe(true);
+    expect(record.allergyReactions).toBeUndefined();
+  });
+
+  it('對方剛加的過敏反應，不會被一張沒動到清單的表單洗掉', async () => {
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+    const reaction = { type: 'rash' as const, severity: 'mild' as const, date: '2026-09-02' };
+    let record: FoodTrialRecord = { ...rice(), hasAllergy: true, allergyReactions: [reaction] };
+
+    // 媽媽補了第二筆反應。
+    const added = { type: 'cough' as const, severity: 'moderate' as const, date: '2026-09-06' };
+    await result.current.updateFoodTrial('c1', 'f1', { allergyReactions: [reaction, added] });
+    record = applyLastUpdate(record);
+
+    // 爸爸的表單只有第一筆，他改的是分類——清單整個是一條 leaf，重送就蓋掉。
+    const onHisScreen: FoodTrialRecord = {
+      ...rice(),
+      hasAllergy: true,
+      allergyReactions: [{ ...reaction }],
+    };
+    await result.current.updateFoodTrial(
+      'c1',
+      'f1',
+      foodTrialChanges(onHisScreen, asSubmitted(onHisScreen, { category: '蛋白質' })),
+    );
+    record = applyLastUpdate(record);
+
+    expect(record.allergyReactions).toEqual([reaction, added]);
+    expect(record.category).toBe('蛋白質');
   });
 });

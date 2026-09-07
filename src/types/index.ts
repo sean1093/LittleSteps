@@ -501,8 +501,15 @@ export type FoodTrialInput = Omit<FoodTrialRecord, 'id' | 'createdAt' | 'trialDa
   trialDates: TrialDateSet;
 };
 
-/** updateFoodTrial 收的補丁：嘗試日期只能逐條加減，不能整個換掉。 */
-export type FoodTrialPatch = Partial<Omit<FoodTrialRecord, 'id' | 'createdAt' | 'trialDates'>> & {
+/**
+ * updateFoodTrial 收的補丁：嘗試日期只能逐條加減，不能整個換掉。
+ *
+ * 其餘欄位是 Clearable 而不是 Partial：家長把分類或備註清掉時要寫 null，
+ * 沒被列到的欄位才是「不要動」。少了 null 這個值，清空就只能靠把欄位整個
+ * 省略，而省略在 update() 眼裡等於不碰，舊值原封不動留在資料庫裡，家長刪掉
+ * 的備註下次讀回來又在了（#104）。
+ */
+export type FoodTrialPatch = Clearable<Omit<FoodTrialRecord, 'id' | 'createdAt' | 'trialDates'>> & {
   trialDates?: TrialDatePatch;
 };
 

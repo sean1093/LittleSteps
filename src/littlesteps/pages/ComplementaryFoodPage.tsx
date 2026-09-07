@@ -16,7 +16,8 @@ import FoodGuideSafety from '../components/food/FoodGuideSafety';
 import FoodTrackingView from '../components/food/FoodTrackingView';
 import type { TrackingTab, ViewMode } from '../components/food/types';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
-import { trialDatePatch, trialDatesOf } from '../utils/foodTrialDates';
+import { trialDatesOf } from '../utils/foodTrialDates';
+import { foodTrialChanges } from '../utils/foodTrialEdit';
 import { fadeInUp } from '../../common/ui/motion';
 import { useToast } from '../../common/ui/toast';
 
@@ -68,11 +69,14 @@ export default function ComplementaryFoodPage({
     }
 
     if (editingFood) {
-      // 嘗試日期只寫加減的那幾條：表單開著的時候對方記的那一天才留得住。
-      await firebaseChildren.updateFoodTrial(childId, editingFood.id, {
-        ...foodData,
-        trialDates: trialDatePatch(editingFood.trialDates, trialDatesOf(foodData)),
-      });
+      // 只送這次真的改到的欄位，而且是跟「打開表單當下那一版」比出來的：整筆
+      // 寫回去會把另一位照顧者同時改的欄位一起蓋掉，被清空的欄位則要寫成
+      // null，省略它等於不碰，家長刪掉的備註就會原封不動留在資料庫裡。
+      await firebaseChildren.updateFoodTrial(
+        childId,
+        editingFood.id,
+        foodTrialChanges(editingFood, foodData),
+      );
     } else {
       await firebaseChildren.addFoodTrial(childId, foodData);
     }

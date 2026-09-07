@@ -257,3 +257,38 @@ describe('記錄今天嘗試', () => {
     });
   });
 });
+
+describe('編輯食物記錄', () => {
+  const rice: FoodTrackingProgress = {
+    f1: {
+      id: 'f1',
+      foodName: '米糊',
+      category: '穀類',
+      firstTriedDate: '2026-09-01',
+      trialDates: { '2026-09-01': true },
+      hasAllergy: false,
+      preference: 'like',
+      notes: '吃得很快',
+      createdAt: '2026-09-01T00:00:00.000Z',
+    },
+  };
+
+  it('只送這次改到的欄位，清掉的備註寫成 null', async () => {
+    // 整筆送出去的話，另一位照顧者同時改的分類或喜好度會被自己手上的舊值蓋
+    // 掉；而清空的欄位送成 undefined 會在寫入前被濾掉，備註根本刪不掉（#104）。
+    readState.foodProgress = rice;
+    updateFoodTrial.mockResolvedValue(undefined);
+    const user = renderPage();
+
+    await user.click(screen.getByRole('button', { name: /我的食物清單/ }));
+    await user.click(await screen.findByRole('button', { name: /米糊/ }));
+
+    await user.clear(await screen.findByLabelText('備註'));
+    await user.click(screen.getByRole('button', { name: '更新' }));
+
+    await waitFor(() => expect(updateFoodTrial).toHaveBeenCalledTimes(1));
+    expect(updateFoodTrial).toHaveBeenCalledWith('c1', 'f1', { notes: null });
+    // 寫入成功就把表單收起來。
+    await goneEventually('編輯食物記錄');
+  });
+});
