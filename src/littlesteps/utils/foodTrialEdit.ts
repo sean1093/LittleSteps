@@ -3,23 +3,30 @@ import { changedFields } from '../../common/utils/firebaseData';
 import { trialDatePatch, trialDatesOf } from './foodTrialDates';
 
 /**
- * The fields FoodTrialModal actually holds. Everything else on the record —
- * `id`, `createdAt`, `updatedAt` — belongs to the data layer: the first two
- * are the record's identity and `updateFoodTrial` stamps `updatedAt` on every
- * write, so a form-supplied one is at best noise and at worst an older clock.
+ * The fields FoodTrialModal actually holds.
+ *
+ * Derived from the submitted shape rather than listed against the record, so
+ * a field added to `FoodTrialRecord` lands here too and stops the build at the
+ * projection below until someone decides what an edit does with it. Listing
+ * the names by hand made the opposite mistake cheap: the new field would just
+ * never be diffed, and the parent would edit it and watch it not save.
+ *
+ * What is left out is the data layer's: `id` and `createdAt` are the record's
+ * identity, and `updateFoodTrial` stamps its own `updatedAt`, so the form's is
+ * at best noise and at worst an older clock. `trialDates` is not a scalar and
+ * is handled on its own below.
  */
-type FormFields = Pick<
-  FoodTrialRecord,
-  | 'foodName'
-  | 'category'
-  | 'firstTriedDate'
-  | 'hasAllergy'
-  | 'allergyReactions'
-  | 'preference'
-  | 'notes'
->;
+type FormFields = Omit<FoodTrialInput, 'trialDates' | 'updatedAt'>;
 
-const formFields = (record: FormFields): FormFields => ({
+/**
+ * The same fields with every key required, so the projection below has to
+ * name all of them. An optional key would otherwise be legal to leave out of
+ * the object literal, which is exactly how a new field ends up never diffed.
+ * The values keep their `| undefined`: absent still means absent.
+ */
+type EveryFormField = { [K in keyof Required<FormFields>]: FormFields[K] };
+
+const formFields = (record: FormFields): EveryFormField => ({
   foodName: record.foodName,
   category: record.category,
   firstTriedDate: record.firstTriedDate,
