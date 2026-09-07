@@ -96,55 +96,55 @@ const NOW = new Date('2026-09-07T04:30:00.000Z');
 
 describe('buildChildExport', () => {
   it('carries every child field except members', () => {
-    const document = buildChildExport(source, NOW);
+    const exported = buildChildExport(source, NOW);
 
     // Against the fixture's own key set, not a hand-written list: a field added
     // to ChildProfile later must not be able to fall out of the export unnoticed.
     const expected = Object.keys(child).filter((key) => key !== 'members');
-    expect(Object.keys(document.child).sort()).toEqual(expected.sort());
+    expect(Object.keys(exported.child).sort()).toEqual(expected.sort());
     for (const key of expected) {
-      expect(document.child[key as keyof typeof document.child]).toEqual(
+      expect(exported.child[key as keyof typeof exported.child]).toEqual(
         child[key as keyof ChildProfile],
       );
     }
   });
 
   it("drops members: it is a list of other people's accounts, not the parent's data", () => {
-    const document = buildChildExport(source, NOW);
+    const exported = buildChildExport(source, NOW);
 
-    expect('members' in document.child).toBe(false);
+    expect('members' in exported.child).toBe(false);
     // The co-parent's uid is only in members, so the serialised file must not
     // name them anywhere the child node used to.
-    expect(Object.values(document.child)).not.toContainEqual(child.members);
+    expect(Object.values(exported.child)).not.toContainEqual(child.members);
   });
 
   it('carries every entry of all three collections', () => {
-    const document = buildChildExport(source, NOW);
+    const exported = buildChildExport(source, NOW);
 
-    expect(document.dailyLogs).toEqual(dailyLogs);
-    expect(document.diaryEntries).toEqual(diaryEntries);
-    expect(document.growthRecords).toEqual(growthRecords);
+    expect(exported.dailyLogs).toEqual(dailyLogs);
+    expect(exported.diaryEntries).toEqual(diaryEntries);
+    expect(exported.growthRecords).toEqual(growthRecords);
   });
 
   it('names itself and the moment it was taken', () => {
-    const document = buildChildExport(source, NOW);
+    const exported = buildChildExport(source, NOW);
 
-    expect(document.app).toBe('LittleSteps');
-    expect(document.exportedAt).toBe(NOW.toISOString());
+    expect(exported.app).toBe('LittleSteps');
+    expect(exported.exportedAt).toBe(NOW.toISOString());
   });
 
   it('survives JSON round-tripping unchanged, because that is how it is delivered', () => {
-    const document = buildChildExport(source, NOW);
+    const exported = buildChildExport(source, NOW);
 
-    expect(JSON.parse(JSON.stringify(document))).toEqual(document);
+    expect(JSON.parse(JSON.stringify(exported))).toEqual(exported);
   });
 
   it('gives a child with no records empty arrays, never missing keys', () => {
-    const document = buildChildExport(
+    const exported = buildChildExport(
       { child, dailyLogs: [], diaryEntries: [], growthRecords: [] },
       NOW,
     );
-    const parsed = JSON.parse(JSON.stringify(document));
+    const parsed = JSON.parse(JSON.stringify(exported));
 
     expect(parsed.dailyLogs).toEqual([]);
     expect(parsed.diaryEntries).toEqual([]);

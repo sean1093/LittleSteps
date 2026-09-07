@@ -49,6 +49,9 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
 
   const [showChildModal, setShowChildModal] = useState(false);
   const [editingChild, setEditingChild] = useState<ChildProfile | null>(null);
+  // 正在讀哪個孩子的資料。四筆讀取要一點時間，而按鍵在那段時間裡看起來
+  // 跟沒按過一樣——再按一次就會下載出第二個一模一樣的檔案。
+  const [exportingChildId, setExportingChildId] = useState<string | null>(null);
   // 存 id 而不是 child 物件：切換「開放用代碼加入」之後 store 會送新的 profile
   // 進來，抓著開窗當下那份快照的話，開關會停在資料庫沒有的狀態。
   const [sharingChildId, setSharingChildId] = useState<string | null>(null);
@@ -95,7 +98,8 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
    * 按下去毫無反應與「檔案正在準備」在畫面上長得一模一樣。
    */
   const handleExportChild = async (childId: string) => {
-    if (!store) return;
+    if (!store || exportingChildId) return;
+    setExportingChildId(childId);
     try {
       const source = await store.readChildExport(childId);
       downloadFile(
@@ -106,6 +110,8 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
     } catch (error) {
       console.error('匯出寶寶資料失敗:', error);
       toast.show('匯出失敗，請稍後再試');
+    } finally {
+      setExportingChildId(null);
     }
   };
 
@@ -242,7 +248,8 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
                     <button
                       type="button"
                       onClick={() => handleExportChild(child.id)}
-                      className="btn-icon"
+                      disabled={exportingChildId === child.id}
+                      className="btn-icon disabled:opacity-50"
                       title="匯出寶寶的完整紀錄"
                       aria-label={`匯出 ${child.name} 的資料`}
                     >

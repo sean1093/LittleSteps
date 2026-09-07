@@ -185,12 +185,34 @@ describe('匯出整份紀錄', () => {
     expect(filename).toMatch(/^littlesteps-小豆-\d{4}-\d{2}-\d{2}\.json$/);
     expect(mimeType).toContain('application/json');
 
-    const document = JSON.parse(content);
-    expect(document.child.name).toBe('小豆');
-    expect(document.child.members).toBeUndefined();
-    expect(document.dailyLogs).toHaveLength(1);
-    expect(document.diaryEntries).toEqual([]);
-    expect(document.growthRecords).toEqual([]);
+    const exported = JSON.parse(content);
+    expect(exported.child.name).toBe('小豆');
+    expect(exported.child.members).toBeUndefined();
+    expect(exported.dailyLogs).toHaveLength(1);
+    expect(exported.diaryEntries).toEqual([]);
+    expect(exported.growthRecords).toEqual([]);
+  });
+
+  it('讀取還沒回來時再按一次，不會多下載一份一模一樣的檔案', async () => {
+    // 四筆讀取要一點時間，而按鍵在那段時間裡看起來跟沒按過一樣。
+    // Promise.withResolvers needs lib es2024; this repo targets lower.
+    let release!: (source: ChildExportSource) => void;
+    mocks.readChildExport.mockReturnValue(
+      new Promise<ChildExportSource>((resolve) => {
+        release = resolve;
+      }),
+    );
+    const user = await openSheet('littlesteps');
+
+    const button = await screen.findByRole('button', { name: '匯出 小豆 的資料' });
+    await user.click(button);
+    await waitFor(() => expect(button).toBeDisabled());
+    await user.click(button);
+
+    release(exportSource());
+    await waitFor(() => expect(downloadFile).toHaveBeenCalledTimes(1));
+    expect(mocks.readChildExport).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(button).toBeEnabled());
   });
 
   it('讀失敗時說出來，而不是安靜地什麼都不做', async () => {
