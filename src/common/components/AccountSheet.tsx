@@ -40,7 +40,6 @@ interface AccountSheetProps {
 
 export default function AccountSheet({ service, onClose }: AccountSheetProps) {
   const { user, signInWithGoogle, signOut, deleteAccount } = useAuth();
-  const toast = useToast();
   const store = useOptionalChildStore();
   const toast = useToast();
   // 只在開著的時候才掛載（AccountButton 用 AnimatePresence 包住），所以固定傳 true。

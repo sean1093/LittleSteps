@@ -221,6 +221,9 @@ were going.
   `littlesteps-<child>-<date>.json`, shaped like the database below so it needs no
   schema of its own. The member list is the one thing left out: it is other
   accounts' ids, not the parent's data
+- **Deletion**: the account sheet can delete the account itself — every child
+  this parent is the only member of, their membership in the shared ones, their
+  `users/$uid` node, then the Firebase Auth user
 - **Limit**: 2 children per account on the free tier
 
 The Firebase config in the bundle is public by design. Auth and the rules
@@ -259,8 +262,14 @@ What that adds up to, asserted by `npm run test:rules` against the emulator:
 
 - an existing member can remove another member
 - a removed member cannot re-add themselves while `joinOpen` is `false`
-- the `createdBy` user's own membership cannot be deleted at all — that is what
-  keeps a child node from ending up with no members and unreachable by anyone
+- a membership may be removed as long as one member remains after the write,
+  the `createdBy` user's own included. Never zero members, and no member is
+  unremovable: a child node with an empty member list is a health record
+  nobody can read or delete, while naming one uid unremovable locked a parent
+  into an account whenever they had created a child someone else still used
+- the last remaining member cannot leave, whether or not they created the
+  child. Deleting is the way out, and their "delete" removes the whole record
+  rather than just their own membership
 - any member is effectively an owner. Realtime Database cannot revoke a write
   granted at an ancestor node, so a member can write anything under the child,
   the member list included. This is a deliberate trade-off: two parents who can
@@ -275,10 +284,13 @@ users/$uid                 childrenIds, currentChildId, lastFeedbackAt
                            to subscribe to — authorisation is members, below
                            lastFeedbackAt is a server timestamp written in the
                            same update as a feedback row; the rules require it
-                           to be at least 60 s after the previous one and never
-                           let its owner delete it, which caps any account at
-                           one feedback a minute (a refused write can still
-                           have other causes, such as a disabled account)
+                           to be at least 60 s after the previous one and
+                           refuse to delete it inside that window, which caps
+                           any account at one feedback a minute (a refused
+                           write can still have other causes, such as a
+                           disabled account). Deleting an account clears it
+                           once the window has lapsed, so a deletion within
+                           60 s of a feedback leaves that one integer behind
 children/$childId          id, name, birthday, gender, createdAt, createdBy,
                            isPregnancy, pregnancyData
                            gestationalAgeWeeks, gestationalAgeDays

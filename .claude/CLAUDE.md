@@ -76,12 +76,15 @@ Two consequences worth knowing before you touch the data layer:
   `childIndex/$id` and your own `childrenIds` entry all go null in one
   `update()`.
 - **Any member is effectively an owner.** RTDB cannot revoke a write granted at
-  an ancestor node, so a member can write anything under the child. The
-  `createdBy` user's own membership is the one thing rules do protect, because
-  deleting it would leave a health record nobody can reach.
+  an ancestor node, so a member can write anything under the child, the member
+  list included. What the rules hold is the member count: a membership may go
+  only when at least one member remains after the write. Never zero members —
+  an empty member list is a health record nobody can read or delete — and no
+  member is unremovable, `createdBy` included, so a parent is never locked into
+  an account by a child they created for somebody else.
 
 `npm run test:rules` proves all of it against the real Database emulator
-(`scripts/testRules.cjs`, 139 assertions). It needs a JDK. Change
+(`scripts/testRules.cjs`, 145 assertions). It needs a JDK. Change
 `database.rules.json` without running it and you are guessing.
 
 ---
