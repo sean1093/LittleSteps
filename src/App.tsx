@@ -325,11 +325,16 @@ function AppContent() {
         祖先。這兩件事是同一個錯誤的兩面——外框替自帶版面的頁面多包了一層。
 
         LittleSteps 的外框與入口頁沒有自己的地標，那一層仍然由這裡提供。
+
+        兩個 fallback 分開處理。下面 Suspense 的載入畫面刻意不給地標：那個狀態是
+        暫時的，role="status" 已經報過一次，而只活過一次 chunk 載入就被換掉的地標
+        對用地標跳轉的人沒有可以落腳的地方；ErrorBoundary 的錯誤畫面相反，它是終
+        局，就是那一刻整頁的內容，所以 standalone 路由上由它自己當 <main>。
       */}
       <ContentLandmark className={showHeader ? "pb-6" : ""}>
         {/* key 綁 currentPage：一頁壞掉之後換頁就會重掛，不會把家長困在
             錯誤畫面裡直到重新整理。 */}
-        <ErrorBoundary key={currentPage} scope={currentPage}>
+        <ErrorBoundary key={currentPage} scope={currentPage} ownsMain={isStandalone}>
         <Suspense
           fallback={
             <div className="min-h-[50vh] flex items-center justify-center">
@@ -523,8 +528,9 @@ function AppContent() {
 function App() {
   return (
     // 外層這道攔的是頁首、側邊欄、context provider 之類的外框錯誤——那些
-    // 在 <main> 之外，裡面那道 boundary 看不到。
-    <ErrorBoundary scope="app">
+    // 在 <main> 之外，裡面那道 boundary 看不到。上面沒有任何一層會給地標，
+    // 所以這道的錯誤畫面自己就是整頁的 <main>。
+    <ErrorBoundary scope="app" ownsMain>
       {/* Toast 在最外層：AuthProvider 自己也會回報登入失敗。 */}
       <ToastProvider>
         <AuthProvider>

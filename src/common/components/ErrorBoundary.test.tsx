@@ -49,6 +49,29 @@ describe('ErrorBoundary', () => {
     expect(screen.getByRole('button', { name: '回所有服務' })).toBeInTheDocument();
   });
 
+  it('ownsMain 時，錯誤畫面自己就是那一頁的 <main>', () => {
+    render(
+      <ErrorBoundary scope="littleguard" ownsMain>
+        <Boom shouldThrow />
+      </ErrorBoundary>,
+    );
+
+    // 自帶版面的路由，<main> 是頁面自己畫的，而壞掉的正是那個頁面：
+    // 少了這一層，錯誤畫面會是一頁沒有任何地標可以跳的內容。
+    expect(screen.getAllByRole('main')).toHaveLength(1);
+  });
+
+  it('外框已經提供 <main> 時不再多一個', () => {
+    render(
+      <ErrorBoundary scope="littlesteps/report">
+        <Boom shouldThrow />
+      </ErrorBoundary>,
+    );
+
+    // 巢狀的兩個 main 和一個都沒有一樣是錯的。
+    expect(screen.queryAllByRole('main')).toHaveLength(0);
+  });
+
   it('把錯誤記下來，而不是安靜吞掉', () => {
     render(
       <ErrorBoundary scope="littlesteps/clinic-summary">
