@@ -78,8 +78,14 @@ const FUNDING_UI: Record<
  * 合條件。健保給付和縣市加碼都落在第三種，而且都得讀那一行條件才知道自己算不
  * 算，拆成兩顆 chip 是把同一個動作分成兩次。390px 上也放不下五顆。
  */
-const FUNDING_FILTERS: { value: FundingFilter; label: string; funding: VaccineFunding[] }[] = [
-  { value: 'all', label: '全部', funding: [] },
+const FUNDING_FILTERS: {
+  value: FundingFilter;
+  label: string;
+  /** 只有「全部」需要：那兩個字在這一頁的兩排篩選器裡各出現一次。 */
+  ariaLabel?: string;
+  funding: VaccineFunding[];
+}[] = [
+  { value: 'all', label: '全部', ariaLabel: '全部給付方式', funding: [] },
   { value: 'national', label: '公費', funding: ['national'] },
   { value: 'conditional', label: '有條件', funding: ['nhi-conditional', 'local-varies'] },
   { value: 'self-paid', label: '自費', funding: ['self-paid'] },
@@ -139,9 +145,18 @@ export default function VaccineTrackingPage({
     上一個寶寶的月齡——從新生兒切到兩歲，畫面照樣拿出生那幾劑對新寶寶打勾。
     每次 render 重推就不會過期，連改生日也跟著更新；家長挑過的則永遠贏過推
     導出來的值。
+
+    點到「已經選中的那一顆」不算挑過：pickMonth 會把 picked 收回 null。少了這
+    一道，一次畫面上什麼都沒變的點擊——或在這排十二顆的橫向捲動列上滑歪手——就
+    會把篩選器釘住，之後換寶寶、改生日都不再重推，而家長沒有任何線索可以發現。
+    代價要講明：家長刻意點下「正好等於孩子現在月齡」那一顆，得到的是「沒釘住」，
+    所以之後訂正生日篩選器會跟著動。那正好就是他進來時的狀態。
   */
   const [pickedMonth, setPickedMonth] = useState<MonthFilter | null>(null);
-  const monthFilter = pickedMonth ?? vaccineMonthForChild(currentChild, AVAILABLE_MONTHS);
+  const derivedMonth = vaccineMonthForChild(currentChild, AVAILABLE_MONTHS);
+  const monthFilter = pickedMonth ?? derivedMonth;
+  const pickMonth = (value: MonthFilter) =>
+    setPickedMonth(value === derivedMonth ? null : value);
   const [showReferences, setShowReferences] = useState(false);
   const [showEmergencies, setShowEmergencies] = useState(false);
   const [showContraindications, setShowContraindications] = useState(false);
@@ -289,12 +304,17 @@ export default function VaccineTrackingPage({
         </div>
 
         {/* 兩排篩選器的標題（「篩選疫苗類型」「月齡篩選」）拿掉了：chip 本身
-            就說明了它在篩什麼，標題只是多佔兩行。 */}
+            就說明了它在篩什麼，標題只是多佔兩行。代價是兩排的第一顆都叫「全部」，
+            照著控制項瀏覽的人聽到的是兩顆一模一樣的切換鈕，而且沒有列名可以退
+            回去分辨——所以那兩顆各自帶 aria-label。標籤刻意包含看得見的「全部」
+            兩個字：語音控制是照畫面上的字比對的，「全部月齡」對得上，「月齡篩
+            選：全部」對不上。 */}
         <div className="flex gap-2 mb-2">
           {FUNDING_FILTERS.map((option) => (
             <button
               key={option.value}
               onClick={() => setFundingFilter(option.value)}
+              aria-label={option.ariaLabel}
               aria-pressed={fundingFilter === option.value}
               className={`chip flex-1 justify-center ${fundingFilter === option.value ? 'chip-on' : ''}`}
             >
@@ -306,7 +326,8 @@ export default function VaccineTrackingPage({
         <div ref={scrollerRef} className="row-bleed flex gap-2 pb-2 mb-4">
           <button
             ref={monthFilter === 'all' ? selectedRef : undefined}
-            onClick={() => setPickedMonth('all')}
+            onClick={() => pickMonth('all')}
+            aria-label="全部月齡"
             aria-pressed={monthFilter === 'all'}
             className={`chip flex-shrink-0 ${monthFilter === 'all' ? 'chip-on' : ''}`}
           >
@@ -316,7 +337,7 @@ export default function VaccineTrackingPage({
             <button
               key={month}
               ref={monthFilter === month ? selectedRef : undefined}
-              onClick={() => setPickedMonth(month)}
+              onClick={() => pickMonth(month)}
               aria-pressed={monthFilter === month}
               className={`chip flex-shrink-0 ${monthFilter === month ? 'chip-on' : ''}`}
             >

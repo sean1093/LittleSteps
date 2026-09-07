@@ -108,3 +108,39 @@ describe('已經接種的那一劑', () => {
     expect(screen.getByRole('button', { name: '取消接種記錄' })).toBeInTheDocument();
   });
 });
+
+describe('兩排篩選器', () => {
+  it('兩顆「全部」各自叫得出名字，不必先框住某一排才分得出來', async () => {
+    // 兩排的標題拿掉之後，兩排的第一顆都寫著「全部」：沒有 aria-label 的話這個
+    // 查詢會同時撞到兩顆按鈕，而照著控制項瀏覽的人聽到的也是兩顆一模一樣的切換
+    // 鈕。查詢刻意不框住任何容器——框過的查詢今天會過，歧義回來的那天也照樣過。
+    const { user } = renderPage();
+
+    expect(screen.getAllByRole('button', { name: '全部月齡' })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: '全部給付方式' })).toHaveLength(1);
+
+    // WCAG 2.5.3（Label in Name）：語音控制是照畫面上看得見的字比對的，所以
+    // 可及名稱必須包含那兩個字。「全部月齡」對得上，「月齡篩選：全部」對不上。
+    for (const name of ['全部月齡', '全部給付方式']) {
+      // trim：JSX 把標籤排成獨立一行時 textContent 會帶上換行與縮排，那會讓
+      // 這個判斷因為排版而紅，而不是因為標籤真的不含畫面上的字。
+      const visible = screen.getByRole('button', { name }).textContent?.trim();
+      expect(name).toContain(visible);
+    }
+
+    // 兩顆各管一排：點月齡那顆不會動到給付方式那一排。
+    expect(screen.getByRole('button', { name: '0個月' })).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(screen.getByRole('button', { name: '全部月齡' }));
+
+    expect(screen.getByRole('button', { name: '全部月齡' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: '0個月' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: '全部給付方式' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+});

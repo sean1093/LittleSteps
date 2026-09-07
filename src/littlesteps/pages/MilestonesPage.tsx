@@ -34,9 +34,15 @@ export default function MilestonesPage({
     用 useState 的初始值：那只在掛載時算一次，篩選器會一直停在上一個寶寶的月齡，
     六個月大切到三歲，畫面照樣拿 5-6 個月的里程碑對新寶寶打勾。每次 render 重推，
     連改生日也跟著更新；家長挑過的則永遠贏過推導出來的值。
+
+    點到已經選中的那一顆不算挑過：pickMonth 把 picked 收回 null，這一頁就繼續
+    跟著孩子走。理由與代價寫在 VaccineTrackingPage.tsx 的同一段註解裡。
   */
   const [pickedMonth, setPickedMonth] = useState<MonthRange | null>(null);
-  const selectedMonth = pickedMonth ?? monthRangeForChild(currentChild);
+  const derivedMonth = monthRangeForChild(currentChild);
+  const selectedMonth = pickedMonth ?? derivedMonth;
+  const pickMonth = (value: MonthRange) =>
+    setPickedMonth(value === derivedMonth ? null : value);
   const [selectedCategory, setSelectedCategory] = useState<Category>("all");
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
 
@@ -58,7 +64,7 @@ export default function MilestonesPage({
         <ChildSwitcher service="littlesteps" className="mb-4" />
 
         <div className="mb-4">
-          <MonthPicker ranges={monthRanges} selected={selectedMonth} onChange={setPickedMonth} />
+          <MonthPicker ranges={monthRanges} selected={selectedMonth} onChange={pickMonth} />
         </div>
 
         <div className="mb-4">

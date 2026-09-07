@@ -114,11 +114,15 @@ export default function RadarPage() {
     生日贏過上次點的，因為孩子的年齡是更好的答案，而且它自己會變；這次點的又
     贏過生日，因為那是家長剛剛的動作。上次存的一樣要對得上今天的資料——對不上
     的話 cells 會是 undefined，整頁會變成「現在抓不到資料」。
+
+    點到已經選中的那一顆不算挑過：chooseAge 把 picked 收回 null，年齡層就繼續
+    跟著孩子走。理由與代價寫在 VaccineTrackingPage.tsx 的同一段註解裡。
   */
   const bands = data?.ageBands ?? [];
   const storedAge =
     stored.guardAgeBand !== null && bands.includes(stored.guardAgeBand) ? stored.guardAgeBand : null;
-  const age = pickedAge ?? bandForChild(currentChild, bands) ?? storedAge ?? DEFAULT_AGE;
+  const derivedAge = bandForChild(currentChild, bands) ?? storedAge ?? DEFAULT_AGE;
+  const age = pickedAge ?? derivedAge;
 
   const { scrollerRef, selectedRef } = useCentreSelectedChip(age);
 
@@ -154,7 +158,8 @@ export default function RadarPage() {
   };
 
   const chooseAge = (next: string) => {
-    setPickedAge(next);
+    // 只有 picked 收回 null，偏好照樣記下來：那是家長剛剛的動作，本來就該記得。
+    setPickedAge(next === derivedAge ? null : next);
     savePreferences({ guardAgeBand: next });
   };
 

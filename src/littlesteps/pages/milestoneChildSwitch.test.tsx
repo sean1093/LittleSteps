@@ -158,6 +158,25 @@ describe('switching child on the milestones page', () => {
     expect(rangeChip('10-12 個月')).toHaveAttribute('aria-pressed', 'false');
   });
 
+  it('un-pins the range when the parent taps the chip already pressed', async () => {
+    // A tap that changes nothing on screen must not change what the page
+    // follows. Tapping any *other* chip passes with or without the guard --
+    // the case above already proves that pin survives a switch -- so this has
+    // to be the chip that is already pressed.
+    const user = renderScreen();
+
+    await user.click(rangeChip('5-6 個月'));
+    expect(rangeChip('5-6 個月')).toHaveAttribute('aria-pressed', 'true');
+
+    await switchTo(user, '小豆', '小樹');
+
+    expect(await screen.findByRole('button', { name: '10-12 個月' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(rangeChip('5-6 個月')).toHaveAttribute('aria-pressed', 'false');
+  });
+
   it('follows a birthday correction on the child already selected', async () => {
     // The derived default is recomputed from the child every render rather than
     // remembered against an id, so correcting a birthday that was entered wrong
