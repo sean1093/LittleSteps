@@ -33,6 +33,8 @@ const updates: { path: string; value: Record<string, unknown> }[] = [];
 const removals: string[] = [];
 /** listener 訂閱過的路徑。 */
 const subscriptions: string[] = [];
+/** get() 讀過的路徑，依序。一次性讀取靠它證明自己只讀了該讀的那幾條。 */
+const reads: string[] = [];
 /** get() 讀得到什麼由每個測試自己擺；沒擺的路徑就是不存在。 */
 const stored = new Map<string, unknown>();
 /** 被規則拒絕的寫入路徑，用來模擬「對方沒有開放加入」。 */
@@ -70,6 +72,7 @@ vi.mock('firebase/database', () => ({
     return Promise.resolve();
   },
   get: (target: FakeRef) => {
+    reads.push(target.path);
     if (unreadable.has(target.path)) return Promise.reject(new Error('PERMISSION_DENIED'));
     const value = stored.get(target.path);
     return Promise.resolve({ exists: () => value !== undefined, val: () => value ?? null });
@@ -131,6 +134,7 @@ beforeEach(() => {
   updates.length = 0;
   removals.length = 0;
   subscriptions.length = 0;
+  reads.length = 0;
   stored.clear();
   denied.clear();
   unreadable.clear();
@@ -318,6 +322,81 @@ describe('deleteChild', () => {
       'users/u2/childrenIds/c1': null,
       'users/u2/currentChildId': 'c3',
     });
+  });
+});
+
+/**
+ * 匯出讀的是「這一刻的全部」，不是「接下來的每一次變動」。掛成 listener 的話，
+ * 家長按一次匯出就替整段歷史開一條持續同步的訂閱，而那份資料只會被用一次。
+ */
+describe('readChildExport', () => {
+  const storeRecords = () => {
+    stored.set('childRecords/c1/dailyLogs', {
+      '-A': { id: '-A', childId: 'c1', type: 'feeding', timestamp: '2026-01-01T08:00:00.000Z' },
+      '-B': { id: '-B', childId: 'c1', type: 'diaper', timestamp: '2026-01-03T08:00:00.000Z' },
+    });
+    stored.set('childRecords/c1/diaryEntries', {
+      '-C': { id: '-C', date: '2026-01-02', content: '翻身', createdAt: '2026-01-02T10:00:00.000Z' },
+      '-D': { id: '-D', date: '2026-01-05', content: '長牙', createdAt: '2026-01-05T10:00:00.000Z' },
+    });
+    stored.set('childRecords/c1/growthRecords', {
+      '-E': { id: '-E', childId: 'c1', date: '2026-01-04', weight: 6.4 },
+      '-F': { id: '-F', childId: 'c1', date: '2026-01-06', weight: 6.6 },
+    });
+  };
+
+  it('四條路徑各讀一次，而且沒有掛上任何 listener', async () => {
+    storeChild(['u1']);
+    storeRecords();
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+
+    await result.current.readChildExport('c1');
+
+    expect(reads).toEqual([
+      'children/c1',
+      'childRecords/c1/dailyLogs',
+      'childRecords/c1/diaryEntries',
+      'childRecords/c1/growthRecords',
+    ]);
+    expect(subscriptions).toEqual([]);
+  });
+
+  it('三份紀錄照畫面上的順序給：新的在前', async () => {
+    // 資料庫給的是 push key 的順序，那對打開檔案的家長沒有任何意義。
+    storeChild(['u1']);
+    storeRecords();
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+
+    const source = await result.current.readChildExport('c1');
+
+    expect(source.dailyLogs.map((log) => log.id)).toEqual(['-B', '-A']);
+    expect(source.diaryEntries.map((entry) => entry.id)).toEqual(['-D', '-C']);
+    expect(source.growthRecords.map((record) => record.id)).toEqual(['-F', '-E']);
+  });
+
+  it('一筆紀錄都沒有的孩子拿到三個空陣列', async () => {
+    // 缺 key 的檔案，讀的人分不出「沒有紀錄」與「這個版本沒有這個欄位」。
+    storeChild(['u1']);
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+
+    const source = await result.current.readChildExport('c1');
+
+    expect(source).toMatchObject({ dailyLogs: [], diaryEntries: [], growthRecords: [] });
+    expect(source.child.name).toBe('小豆');
+  });
+
+  it('讀不到孩子本體就失敗，不會匯出一個沒有孩子的檔案', async () => {
+    // 空殼檔案要等到家長真的需要它的時候才會被發現，那時已經來不及。
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+
+    await expect(result.current.readChildExport('c1')).rejects.toThrow('找不到這個寶寶的資料');
+  });
+
+  it('沒登入就不讀，一條路徑都不碰', async () => {
+    const { result } = renderHook(() => useFirebaseChildren(null));
+
+    await expect(result.current.readChildExport('c1')).rejects.toThrow('User not authenticated');
+    expect(reads).toEqual([]);
   });
 });
 

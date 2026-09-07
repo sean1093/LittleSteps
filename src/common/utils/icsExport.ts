@@ -1,17 +1,11 @@
 import type { ResolvedCareTask } from '../../types';
 import { formatDate, parseLocalDate, toLocalDateKey } from '../../common/utils/dateHelpers';
+import { downloadFile } from './download';
 
 const CRLF = '\r\n';
 
 /** RFC 5545 §3.1：一列最多 75 個 octet，不含收尾的 CRLF。 */
 const MAX_OCTETS = 75;
-
-/**
- * 下載觸發後才能撤銷 blob URL，否則有些瀏覽器（尤其 iOS Safari）還沒讀完
- * blob 就拿不到內容，家長按了匯出卻得到一個空檔案。原本是 click() 的下一行
- * 就撤銷，等於和下載賽跑。
- */
-const REVOKE_DELAY_MS = 40_000;
 
 /** RFC 5545 §3.3.11 文字跳脫。反斜線必須最先處理。 */
 function escapeText(value: string): string {
@@ -137,15 +131,9 @@ export function buildCalendar(
   return lines.map(foldLine).join(CRLF) + CRLF;
 }
 
-/** 觸發 .ics 下載。純瀏覽器副作用，故不在單元測試涵蓋範圍。 */
+/** 觸發 .ics 下載。錨點、blob 與撤銷的時機在 utils/download，全 app 共用同一套。 */
 export function downloadCalendar(ics: string, filename: string): void {
-  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS);
+  downloadFile(ics, filename, 'text/calendar;charset=utf-8');
 }
 
 const CARE_PRODID = '-//LittleExplorer//幼兒照護時程//ZH-TW';

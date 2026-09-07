@@ -11,6 +11,7 @@ import type {
   ToothProgress,
   VaccineProgress,
 } from '../../types';
+import type { ChildExportSource } from '../utils/childExport';
 import { isPregnancyProfile, resolvePregnancyChild } from '../pregnancy';
 import { CHILD_LIMIT_MESSAGE, MAX_CHILDREN } from '../childLimits';
 import type { GestationalAge } from '../correctedAge';
@@ -60,6 +61,14 @@ export interface ChildStore {
     gestationalAge?: GestationalAge,
   ) => Promise<void>;
   deleteChild: (id: string) => Promise<void>;
+  /**
+   * 一次讀完整份紀錄，給匯出用。回傳資料而不是直接下載：組檔與觸發下載是
+   * 瀏覽器那一側的事，留在呼叫端做，資料層只負責讀。
+   *
+   * 失敗往上丟。帳號視窗接住之後出訊息——在這裡吞掉的話，家長按了匯出，
+   * 畫面上什麼都不會發生。
+   */
+  readChildExport: (childId: string) => Promise<ChildExportSource>;
   /**
    * 收回分享：把其他成員移出這個孩子的名單，並關掉加入。分享視窗自己出訊息，
    * 所以這兩個跟表單那一組一樣往上丟。
@@ -421,6 +430,8 @@ export function useChildStore(user: User | null): ChildStore {
     joinChild,
     updateChild,
     deleteChild,
+    // 直接轉手，不包一層：這裡沒有什麼要加的，錯誤要原樣讓呼叫端看見。
+    readChildExport: firebaseChildren.readChildExport,
     revokeOtherMembers,
     setJoinOpen,
     setCurrentChild,

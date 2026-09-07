@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ChildExportSource } from '../utils/childExport';
+import { downloadFile } from '../utils/download';
+import { ToastProvider } from '../ui/toast';
 import { ChildStoreProvider } from '../contexts/ChildStoreContext';
 import AccountButton from './AccountButton';
 
@@ -16,7 +19,10 @@ import AccountButton from './AccountButton';
 const mocks = vi.hoisted(() => ({
   setCurrentChild: vi.fn(),
   signOut: vi.fn().mockResolvedValue(undefined),
+  readChildExport: vi.fn(),
 }));
+
+vi.mock('../utils/download', () => ({ downloadFile: vi.fn() }));
 
 vi.mock('../hooks/useChildStore', () => ({
   useChildStore: () => ({
@@ -46,6 +52,7 @@ vi.mock('../hooks/useChildStore', () => ({
     joinChild: vi.fn(),
     updateChild: vi.fn(),
     deleteChild: vi.fn(),
+    readChildExport: mocks.readChildExport,
   }),
 }));
 
@@ -65,9 +72,11 @@ vi.mock('../../contexts/AuthContext', async () => {
 const openSheet = async (service: 'littlesteps' | 'littleexplorer' | 'babyoasis' | 'littleouting') => {
   const user = userEvent.setup();
   render(
-    <ChildStoreProvider>
-      <AccountButton service={service} />
-    </ChildStoreProvider>,
+    <ToastProvider>
+      <ChildStoreProvider>
+        <AccountButton service={service} />
+      </ChildStoreProvider>
+    </ToastProvider>,
   );
   await user.click(screen.getByRole('button', { name: '帳號與寶寶' }));
   return user;
@@ -128,4 +137,92 @@ describe('關於資料', () => {
       );
     },
   );
+});
+
+/**
+ * 「帶得走」在這個 app 裡原本只有看診摘要、週報與行事曆三種摘要版本。整份
+ * 紀錄匯出是家長離開這個 app 之後手上唯一會留下的東西，所以這裡驗的是那個
+ * 檔案真的被交出去了，以及交不出去的時候他知道。
+ */
+describe('匯出整份紀錄', () => {
+  const exportSource = (): ChildExportSource => ({
+    child: {
+      id: 'c1',
+      name: '小豆',
+      birthday: '2025-02-27',
+      milestoneProgress: {},
+      vaccineProgress: {},
+      createdAt: '2025-02-27T00:00:00.000Z',
+      createdBy: 'u1',
+      members: { u1: true },
+    },
+    dailyLogs: [
+      {
+        id: 'l1',
+        childId: 'c1',
+        type: 'feeding',
+        timestamp: '2026-01-01T08:00:00.000Z',
+        data: { feedingType: 'formula', amount: 120 },
+        createdAt: '2026-01-01T08:00:00.000Z',
+      },
+    ],
+    diaryEntries: [],
+    growthRecords: [],
+  });
+
+  it('每個寶寶都有自己的匯出鍵，按下去就送出一份檔案', async () => {
+    mocks.readChildExport.mockResolvedValue(exportSource());
+    const user = await openSheet('littlesteps');
+
+    // 兩個寶寶各一個，而且說得出是誰的——四顆圖示鍵擠在同一列，只靠圖示分不出來。
+    expect(await screen.findByRole('button', { name: '匯出 小樹 的資料' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '匯出 小豆 的資料' }));
+
+    await waitFor(() => expect(downloadFile).toHaveBeenCalledTimes(1));
+    expect(mocks.readChildExport).toHaveBeenCalledWith('c1');
+
+    const [content, filename, mimeType] = vi.mocked(downloadFile).mock.calls[0];
+    expect(filename).toMatch(/^littlesteps-小豆-\d{4}-\d{2}-\d{2}\.json$/);
+    expect(mimeType).toContain('application/json');
+
+    const exported = JSON.parse(content);
+    expect(exported.child.name).toBe('小豆');
+    expect(exported.child.members).toBeUndefined();
+    expect(exported.dailyLogs).toHaveLength(1);
+    expect(exported.diaryEntries).toEqual([]);
+    expect(exported.growthRecords).toEqual([]);
+  });
+
+  it('讀取還沒回來時再按一次，不會多下載一份一模一樣的檔案', async () => {
+    // 四筆讀取要一點時間，而按鍵在那段時間裡看起來跟沒按過一樣。
+    // Promise.withResolvers needs lib es2024; this repo targets lower.
+    let release!: (source: ChildExportSource) => void;
+    mocks.readChildExport.mockReturnValue(
+      new Promise<ChildExportSource>((resolve) => {
+        release = resolve;
+      }),
+    );
+    const user = await openSheet('littlesteps');
+
+    const button = await screen.findByRole('button', { name: '匯出 小豆 的資料' });
+    await user.click(button);
+    await waitFor(() => expect(button).toBeDisabled());
+    await user.click(button);
+
+    release(exportSource());
+    await waitFor(() => expect(downloadFile).toHaveBeenCalledTimes(1));
+    expect(mocks.readChildExport).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(button).toBeEnabled());
+  });
+
+  it('讀失敗時說出來，而不是安靜地什麼都不做', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    mocks.readChildExport.mockRejectedValue(new Error('PERMISSION_DENIED'));
+    const user = await openSheet('littlesteps');
+
+    await user.click(await screen.findByRole('button', { name: '匯出 小豆 的資料' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('匯出失敗');
+    expect(downloadFile).not.toHaveBeenCalled();
+  });
 });
