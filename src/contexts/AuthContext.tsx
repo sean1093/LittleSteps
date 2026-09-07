@@ -20,10 +20,11 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   /**
-   * 刪掉 Firebase Auth 使用者本身。資料端要先刪乾淨（見 useChildStore 的
-   * deleteAccountData），這一步一走，這個客戶端就沒有身分再回頭清資料了。
+   * 刪掉 Firebase Auth 使用者本身，並回報有沒有真的刪掉。資料端要先刪乾淨
+   * （見 useChildStore 的 deleteAccountData），這一步一走，這個客戶端就沒有
+   * 身分再回頭清資料了。回 false 時帳號還在，呼叫端該把入口留著讓家長再試。
    */
-  deleteAccount: () => Promise<void>;
+  deleteAccount: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -131,14 +132,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * redirect 會把整個頁面換掉、回來時這個流程已經不存在——所以那裡改成登出並
    * 請家長重新登入後再按一次，那正是取得「最近登入」的方式。
    */
-  const deleteAccount = async () => {
+  const deleteAccount = async (): Promise<boolean> => {
     const current = auth.currentUser;
-    if (!current) return;
+    if (!current) return false;
 
     // 刪完、或決定改請家長重新登入，兩條路都要回到未登入的入口頁：留在需要
     // 登入的頁面上，畫面會換成某個服務的介紹頁，看起來像被丟進了那個服務。
     const leave = async () => {
-      await firebaseSignOut(auth);
+      // 登出失敗不改變結果：使用者已經刪掉的話這只是收尾，走重新登入那條路時
+      // 它是第一步。兩種情況都不該擋住換頁，否則家長會留在一個需要登入的頁面上。
+      await firebaseSignOut(auth).catch((error) => {
+        console.error('刪除帳號後登出失敗:', error);
+      });
       goTo('home');
     };
 
@@ -151,13 +156,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (!needsRecentLogin) {
         console.error('刪除帳號失敗:', error);
         toast.show('帳號還沒刪掉，請稍後再試');
-        return;
+        return false;
       }
 
       if (isInAppBrowser()) {
         toast.show('為了安全，請重新登入一次，再按一次刪除帳號');
         await leave();
-        return;
+        return false;
       }
 
       try {
@@ -166,11 +171,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } catch (reauthError) {
         console.error('重新驗證後刪除帳號失敗:', reauthError);
         toast.show('帳號還沒刪掉，請重新登入後再試一次');
-        return;
+        return false;
       }
     }
 
     await leave();
+    return true;
   };
 
   const value = {
