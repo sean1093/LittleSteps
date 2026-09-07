@@ -11,12 +11,22 @@ import { VaccineSchedule, VaccineSideEffect, VaccineEmergency } from '../../type
  * 的是這一劑替代掉的公費時程，不是這個自費產品本身。寧可標得出處不完整，
  * 也不編一個看起來對的網址。
  *
- * 第二個例外：pneumococcal-highrisk-6m 於 2026-09-06 新增，當時的環境連不上
- * 疾管署（www.cdc.gov.tw 一律 403），所以那一列的 sourceUrl 沒有被打開過。
- * 它引用的那句條文本身不是新的——2026-09-04 那次查證已經記錄在檔案裡，該列
- * 的 eligibility 與 notes 都沒有超出那一句——但「這頁還是不是那張 ICD 參考
- * 表」「這一劑是不是還是公費」都待人工覆核，追蹤在 issue #73。
- * 上面那句「每一劑的 sourceUrl 就是它的出處」對這一列還不成立。
+ * 第二個例外：pneumococcal-highrisk-6m 的 sourceUrl 指的不是它那句條文的出
+ * 處。條文與公費身分出自 PCV13 的「疫苗簡介」頁（公費疫苗 →
+ * https://www.cdc.gov.tw/Category/Page/mIlV6UzT8mIK49ADAOjz2w ），sourceUrl
+ * 指的是那一頁在條文後面連出去的 ICD code 參考表——誰算高危險群由那張表認
+ * 定，這是 #33 刻意的選擇（見那一列上方的註解）。
+ *
+ * 這一列 2026-09-06 新增時連不上疾管署（www.cdc.gov.tw 一律 403），四個欄
+ * 位都待覆核，追蹤在 issue #73。2026-09-07 在連得到的環境上逐頁核完（#73）：
+ * 「疫苗簡介」頁（最後更新 2026/2/11）在標題「公費對象及接種時程」底下寫的
+ * 是「自104年1月起全面推動嬰幼兒接種3劑PCV13，接種時程依序為出生滿2個月、
+ * 4個月及12-15個月，如為高危險群對象，出生滿6個月時可增加接種1劑。」——
+ * eligibility 引的就是這一句，逐字相符；公費而且仍然限高危險群（不是全面
+ * 適用、也沒有變成自費），所以 funding: "national" 加 eligibility 是對的；
+ * 常規時程還是 2、4、12-15 個月共 3 劑，所以這一列的 doses: 1 站得住；
+ * sourceUrl 打開仍是「幼童肺炎鏈球菌高危險群之ICD code參考表」（最後更新
+ * 2025/3/10）。
  *
  * funding 不是布林：見 VaccineFunding。nhi-conditional 與 local-varies 一定
  * 要附 eligibility，而且逐字引用來源的用語。

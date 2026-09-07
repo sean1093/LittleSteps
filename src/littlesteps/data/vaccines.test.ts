@@ -120,6 +120,10 @@ describe('vaccineSchedules 時程正確性', () => {
     expect(highRisk!.doses).toBe(1);
     expect(highRisk!.currentDose).toBe(1);
     expect(highRisk!.eligibility).toContain('高危險群');
+    // 逐字引用，不是改寫：這一句 2026-09-07 對照過疾管署 PCV13「疫苗簡介」頁
+    // 「公費對象及接種時程」那一段（#73）。改寫過的條文會讓家長拿著一句官方
+    // 頁面上找不到的話去問醫師。
+    expect(highRisk!.eligibility).toContain('出生滿6個月時可增加接種1劑');
     // 認定的依據是 ICD code 參考表，不是這一段文字自己。
     expect(highRisk!.sourceUrl).toBe(
       'https://www.cdc.gov.tw/Category/Page/t-6cjd2WDeB6NdExzrQCVw',
