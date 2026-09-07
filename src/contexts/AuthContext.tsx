@@ -5,10 +5,13 @@ import {
   signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
+  reauthenticateWithPopup,
+  deleteUser,
   signOut as firebaseSignOut
 } from 'firebase/auth';
 import { auth, googleProvider, logAuthEvent } from '../lib/firebase';
 import { useToast } from '../common/ui/toast';
+import { goTo } from '../common/navigate';
 
 
 interface AuthContextType {
@@ -16,6 +19,11 @@ interface AuthContextType {
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  /**
+   * 刪掉 Firebase Auth 使用者本身。資料端要先刪乾淨（見 useChildStore 的
+   * deleteAccountData），這一步一走，這個客戶端就沒有身分再回頭清資料了。
+   */
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -113,11 +121,64 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  /**
+   * 帳號刪除的 Auth 那一半。
+   *
+   * deleteUser 只接受「最近登入過」的使用者，隔一段時間就回
+   * auth/requires-recent-login。那不是可以吞掉的錯誤：資料端已經刪完了，靜靜
+   * 失敗會留下一個登得進來、卻什麼都沒有的帳號。一般瀏覽器用 popup 重新驗證，
+   * 成功後立刻再刪一次。WebView（LINE、FB）沒有 popup 只有 redirect，而
+   * redirect 會把整個頁面換掉、回來時這個流程已經不存在——所以那裡改成登出並
+   * 請家長重新登入後再按一次，那正是取得「最近登入」的方式。
+   */
+  const deleteAccount = async () => {
+    const current = auth.currentUser;
+    if (!current) return;
+
+    // 刪完、或決定改請家長重新登入，兩條路都要回到未登入的入口頁：留在需要
+    // 登入的頁面上，畫面會換成某個服務的介紹頁，看起來像被丟進了那個服務。
+    const leave = async () => {
+      await firebaseSignOut(auth);
+      goTo('home');
+    };
+
+    try {
+      await deleteUser(current);
+    } catch (error) {
+      // Firebase 的錯誤是 Error 的子類，多帶一個 code 字串。
+      const needsRecentLogin =
+        error instanceof Error && 'code' in error && error.code === 'auth/requires-recent-login';
+      if (!needsRecentLogin) {
+        console.error('刪除帳號失敗:', error);
+        toast.show('帳號還沒刪掉，請稍後再試');
+        return;
+      }
+
+      if (isInAppBrowser()) {
+        toast.show('為了安全，請重新登入一次，再按一次刪除帳號');
+        await leave();
+        return;
+      }
+
+      try {
+        await reauthenticateWithPopup(current, googleProvider);
+        await deleteUser(current);
+      } catch (reauthError) {
+        console.error('重新驗證後刪除帳號失敗:', reauthError);
+        toast.show('帳號還沒刪掉，請重新登入後再試一次');
+        return;
+      }
+    }
+
+    await leave();
+  };
+
   const value = {
     user,
     loading,
     signInWithGoogle,
     signOut,
+    deleteAccount,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
