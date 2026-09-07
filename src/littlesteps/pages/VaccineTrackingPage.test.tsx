@@ -122,7 +122,10 @@ describe('兩排篩選器', () => {
     // WCAG 2.5.3（Label in Name）：語音控制是照畫面上看得見的字比對的，所以
     // 可及名稱必須包含那兩個字。「全部月齡」對得上，「月齡篩選：全部」對不上。
     for (const name of ['全部月齡', '全部給付方式']) {
-      expect(name).toContain(screen.getByRole('button', { name }).textContent);
+      // trim：JSX 把標籤排成獨立一行時 textContent 會帶上換行與縮排，那會讓
+      // 這個判斷因為排版而紅，而不是因為標籤真的不含畫面上的字。
+      const visible = screen.getByRole('button', { name }).textContent?.trim();
+      expect(name).toContain(visible);
     }
 
     // 兩顆各管一排：點月齡那顆不會動到給付方式那一排。
