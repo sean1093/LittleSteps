@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { ROUTE_PATH, pageFromPath, type Page } from '../types/routes';
 import type { ServiceId } from './routePolicy';
-import { SERVICE_HOME, requiresAuth, serviceOf } from './routePolicy';
+import { SERVICE_HOME, isStandaloneSubApp, requiresAuth, serviceOf } from './routePolicy';
 
 /**
  * 執行期的 Page 清單，直接從路由表推導。
@@ -129,6 +129,24 @@ describe('requiresAuth', () => {
 
   it('未知路由預設需要登入，而不是預設公開', () => {
     expect(requiresAuth('littlesteps/something-new' as Page)).toBe(true);
+  });
+});
+
+describe('isStandaloneSubApp', () => {
+  /**
+   * 這條守的是「誰靠 LittleSteps 外框」的補集，而不是再抄一份自帶版面的清單。
+   *
+   * 外框只認得服務集合首頁與 LittleSteps 的頁面：多出第三種，App.tsx 的
+   * `currentPage as LittleStepsPage` 就會是謊話，側邊欄會掛在一個不屬於
+   * LittleSteps 的頁面上；反過來少一種，那一頁就會同時拿到外框的 <main> 與
+   * 自己畫的那一個，變成巢狀的兩個 main。
+   */
+  it('恰好切分全部路由：不是自帶版面，就是靠 LittleSteps 外框', () => {
+    const shellBased = ALL_PAGES.filter((page) => !isStandaloneSubApp(page)).sort();
+
+    expect(shellBased).toEqual(
+      ALL_PAGES.filter((page) => page === 'home' || page.startsWith('littlesteps')).sort(),
+    );
   });
 });
 
