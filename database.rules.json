@@ -13,7 +13,7 @@
           ".validate": "newData.isString() && newData.val().length <= 64"
         },
         "lastFeedbackAt": {
-          ".write": "$userId === auth.uid && newData.exists()",
+          ".write": "$userId === auth.uid && (newData.exists() || !data.exists() || data.val() + 60000 <= now)",
           ".validate": "newData.isNumber() && newData.val() === now && (!data.exists() || newData.val() >= data.val() + 60000)"
         },
         "$other": { ".validate": false }
@@ -39,7 +39,7 @@
 
         "members": {
           "$memberUid": {
-            ".write": "auth != null && ($memberUid === auth.uid || data.parent().child(auth.uid).val() === true) && (newData.exists() || $memberUid !== root.child('children').child($childId).child('createdBy').val()) && (!newData.exists() || data.exists() || data.parent().child(auth.uid).val() === true || root.child('children').child($childId).child('joinOpen').val() === true)",
+            ".write": "auth != null && ($memberUid === auth.uid || data.parent().child(auth.uid).val() === true) && (newData.exists() || newData.parent().hasChildren()) && (!newData.exists() || data.exists() || data.parent().child(auth.uid).val() === true || root.child('children').child($childId).child('joinOpen').val() === true)",
             ".validate": "newData.val() === true"
           }
         },
