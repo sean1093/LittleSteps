@@ -39,7 +39,8 @@ interface AccountSheetProps {
 }
 
 export default function AccountSheet({ service, onClose }: AccountSheetProps) {
-  const { user, signInWithGoogle, signOut } = useAuth();
+  const { user, signInWithGoogle, signOut, deleteAccount } = useAuth();
+  const toast = useToast();
   const store = useOptionalChildStore();
   const toast = useToast();
   // 只在開著的時候才掛載（AccountButton 用 AnimatePresence 包住），所以固定傳 true。
@@ -55,6 +56,9 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
   // 存 id 而不是 child 物件：切換「開放用代碼加入」之後 store 會送新的 profile
   // 進來，抓著開窗當下那份快照的話，開關會停在資料庫沒有的狀態。
   const [sharingChildId, setSharingChildId] = useState<string | null>(null);
+  // 刪除帳號要走網路，而且不能來第二次：沒有這個狀態，連按兩下的第二下會對一個
+  // 已經刪掉的使用者再刪一次，只換到一則講不出原因的錯誤。
+  const [deleting, setDeleting] = useState(false);
 
   const theme = SERVICE_THEME[service];
   const showChildren = SERVICE_USES_CHILD[service] && store !== null;
@@ -122,6 +126,26 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
     await signOut();
     goTo('home');
     onClose();
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!store || deleting) return;
+    if (!confirmDelete('這個帳號', '你獨有的寶寶資料與所有紀錄')) return;
+
+    setDeleting(true);
+    try {
+      // 資料先刪、Auth 使用者後刪。反過來的話，使用者一消失就沒有任何身分回得去
+      // 清那些節點——孩子的紀錄會留在資料庫裡，誰都讀不到也刪不掉。
+      await store.deleteAccountData();
+      // 重新驗證、登出與回到入口頁都在 deleteAccount 裡，失敗也由它出訊息。
+      await deleteAccount();
+      onClose();
+    } catch {
+      // 資料那一步沒過，所以 Auth 使用者還在，家長可以再試一次。store 記過 log。
+      toast.show('帳號還沒刪掉，請稍後再試');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -272,6 +296,20 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
                 </button>
               </div>
             </div>
+          )}
+
+          {/* 放在整張表的最後，離右上角的登出最遠：兩個動作的後果差得太多，
+              擠在一起就會有人誤按。整句文字而不是圖示——這裡沒有任何圖示
+              說得比字清楚，而且它不該看起來像一個順手的動作。 */}
+          {user && store && (
+            <button
+              type="button"
+              onClick={handleDeleteAccount}
+              disabled={deleting}
+              className="btn-ghost w-full text-primary-dark hover:bg-primary-light disabled:opacity-60"
+            >
+              {deleting ? '刪除中…' : '刪除帳號'}
+            </button>
           )}
         </div>
       </motion.div>

@@ -20,6 +20,8 @@ const mocks = vi.hoisted(() => ({
   setCurrentChild: vi.fn(),
   signOut: vi.fn().mockResolvedValue(undefined),
   readChildExport: vi.fn(),
+  deleteAccount: vi.fn().mockResolvedValue(undefined),
+  deleteAccountData: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../utils/download', () => ({ downloadFile: vi.fn() }));
@@ -53,6 +55,7 @@ vi.mock('../hooks/useChildStore', () => ({
     updateChild: vi.fn(),
     deleteChild: vi.fn(),
     readChildExport: mocks.readChildExport,
+    deleteAccountData: mocks.deleteAccountData,
   }),
 }));
 
@@ -65,6 +68,7 @@ vi.mock('../../contexts/AuthContext', async () => {
     loading: false,
     signInWithGoogle: vi.fn(),
     signOut: mocks.signOut,
+    deleteAccount: mocks.deleteAccount,
   };
   return { ...actual, useAuth: () => value, useOptionalAuth: () => value };
 });
@@ -226,3 +230,55 @@ describe('匯出整份紀錄', () => {
     expect(downloadFile).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * 刪除帳號。兩個順序上的事實要釘住：確認視窗按取消時什麼都不刪，以及資料
+ * 一定刪在 Auth 使用者之前——反過來的話，使用者一消失就沒有任何身分回得去清
+ * 那些節點，孩子的紀錄會留在資料庫裡而且誰都碰不到。
+ */
+describe('刪除帳號', () => {
+  it.each(['littlesteps', 'babyoasis'] as const)('%s 的帳號視窗都到得了刪除帳號', async (service) => {
+    await openSheet(service);
+
+    expect(await screen.findByRole('button', { name: '刪除帳號' })).toBeInTheDocument();
+  });
+
+  it('確認視窗按取消時，什麼都不刪', async () => {
+    // happy-dom 沒有實作 window.confirm，所以是指派而不是 spyOn。
+    window.confirm = vi.fn(() => false);
+    const user = await openSheet('littlesteps');
+
+    await user.click(await screen.findByRole('button', { name: '刪除帳號' }));
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(mocks.deleteAccountData).not.toHaveBeenCalled();
+    expect(mocks.deleteAccount).not.toHaveBeenCalled();
+  });
+
+  it('確認之後先刪資料，才刪 Auth 使用者', async () => {
+    window.confirm = vi.fn(() => true);
+    const user = await openSheet('littlesteps');
+
+    await user.click(await screen.findByRole('button', { name: '刪除帳號' }));
+
+    await waitFor(() => expect(mocks.deleteAccount).toHaveBeenCalled());
+    expect(mocks.deleteAccountData.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.deleteAccount.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('資料刪不掉時，Auth 使用者留著', async () => {
+    // 這一步失敗就停住。照樣刪掉使用者的話，那些節點就再也沒有人碰得到了。
+    window.confirm = vi.fn(() => true);
+    window.alert = vi.fn();
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mocks.deleteAccountData.mockRejectedValueOnce(new Error('PERMISSION_DENIED'));
+    const user = await openSheet('littlesteps');
+
+    await user.click(await screen.findByRole('button', { name: '刪除帳號' }));
+
+    await waitFor(() => expect(mocks.deleteAccountData).toHaveBeenCalled());
+    expect(mocks.deleteAccount).not.toHaveBeenCalled();
+  });
+});
+
