@@ -228,6 +228,20 @@ and, once enforcement is switched on in the console, refused. It is an origin
 check, not authorisation: `database.rules.json` remains the only boundary that
 decides what a signed-in user can touch.
 
+The token comes from a script on `www.google.com`, and some of this app's
+parents cannot load it: an ad blocker refuses it, and so do the LINE, Facebook
+and Instagram in-app browsers that `isInAppBrowser()` in `AuthContext.tsx`
+already exists for. `@firebase/app-check` 0.11.2 has no answer for that — its
+loader sets `script.onload` and nothing else, so a failed load leaves the
+token promise pending forever and the database waits on it. `src/lib/firebase.ts`
+therefore loads the script itself, with an error handler and an 8 s timeout,
+and initialises App Check only once `grecaptcha` is really there. A parent who
+cannot load it loses their App Check token for that session and nothing else.
+That is the right trade while App Check is in monitoring mode; before
+enforcement is switched on, the share of unverified requests coming from those
+browsers is the number to look at, because enforcement turns "unverified" into
+"refused".
+
 ### Sharing, and taking it back
 
 Membership lives in `children/$childId/members`, inside the child rather than
