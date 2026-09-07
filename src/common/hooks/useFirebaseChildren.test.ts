@@ -830,6 +830,26 @@ describe('兩位照顧者同時改同一筆食物紀錄', () => {
     expect(record.allergyReactions).toBeUndefined();
   });
 
+  it('把唯一一筆過敏反應移掉，開關留著，紀錄上也不會剩一份空清單', async () => {
+    // 空陣列在 Realtime Database 裡就是「沒有這個節點」，跟 null 同一件事。
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+    const onScreen: FoodTrialRecord = {
+      ...rice(),
+      hasAllergy: true,
+      allergyReactions: [{ type: 'rash', severity: 'mild', date: '2026-09-02' }],
+    };
+
+    await result.current.updateFoodTrial(
+      'c1',
+      'f1',
+      foodTrialChanges(onScreen, asSubmitted(onScreen, { allergyReactions: [] })),
+    );
+    const record = applyLastUpdate(onScreen);
+
+    expect(record.hasAllergy).toBe(true);
+    expect(record.allergyReactions).toBeUndefined();
+  });
+
   it('對方剛加的過敏反應，不會被一張沒動到清單的表單洗掉', async () => {
     const { result } = renderHook(() => useFirebaseChildren('u1'));
     const reaction = { type: 'rash' as const, severity: 'mild' as const, date: '2026-09-02' };
