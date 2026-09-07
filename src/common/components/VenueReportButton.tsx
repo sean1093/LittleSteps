@@ -69,15 +69,26 @@ export default function VenueReportButton({
   const { submitFeedback } = useFirebaseChildren(user?.uid ?? null);
   const toast = useToast();
 
-  const handleSubmit = async (title: string, content: string) => {
+  const handleSubmit = async (title: string, content: string, shareContact: boolean) => {
     if (!user) throw new Error('請先登入');
 
     await submitFeedback({
       title,
       content,
       userId: user.uid,
-      userEmail: user.email || '',
-      userName: user.displayName || '匿名用戶',
+      /*
+        Omitted entirely unless the parent ticked the reply box, rather than
+        sent as ''. The rules treat both fields as optional, but '' is a string
+        they accept and store, so a blank one is still a record of an account
+        that was never asked. A ticked box on an account that has no email or
+        no display name sends nothing for the missing one either: the blank and
+        the placeholder name this used to substitute are both unrepliable, and
+        an inbox column that looks filled in is worse than an empty one.
+        `userId` is what ties the report to an account; these two exist only so
+        a reply can be written.
+      */
+      ...(shareContact && user.email ? { userEmail: user.email } : {}),
+      ...(shareContact && user.displayName ? { userName: user.displayName } : {}),
     });
     toast.show('收到了，謝謝你。我們會逐筆確認再改資料。', 'success');
   };

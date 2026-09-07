@@ -293,6 +293,9 @@ childRecords/$childId      dailyLogs/$logId        type (feeding|sleep|diaper),
 childIndex/$childId        true — public existence index, so joining by code
                            never has to read a stranger's child node
 feedbacks/$feedbackId      title, content, userId, timestamp
+                           userName, userEmail     attached only when the
+                                                   parent ticks the reply box
+                                                   on the report form
 ```
 
 The child node holds who the child is, plus progress against fixed lists — 33

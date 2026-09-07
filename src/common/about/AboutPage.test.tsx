@@ -63,6 +63,16 @@ describe('AboutPage', () => {
     expect(screen.getByText(/存在瀏覽器裡的只有/)).toHaveTextContent('上次看的縣市');
   });
 
+  it('discloses contact details as something the parent has to ask for', () => {
+    // The page used to promise the opposite — that a report always carries the
+    // sender's Google name and email. The form asks now, so the only honest
+    // sentence here is the conditional one.
+    render(<AboutPage />);
+    expect(screen.getByText(/Google 帳號名稱與 email/).textContent).toMatch(
+      /只有.*勾.*才會/,
+    );
+  });
+
   it('keeps the medical disclaimer on the page', () => {
     render(<AboutPage />);
     expect(screen.getByRole('heading', { name: '這不是醫療建議' })).toBeInTheDocument();

@@ -158,7 +158,7 @@ export default function AboutPage() {
             <div className="space-y-1.5">
               <h3 className="text-ink">也要說的是</h3>
               <P>我們會收到匿名的使用統計：哪一頁被打開、哪一類功能被使用。裡面不會出現孩子的名字、生日，或任何一筆紀錄的內容。</P>
-              <P>你按下「回報問題」時，會一起送出你的 Google 帳號名稱與 email，這樣我們才回得了你。</P>
+              <P>只有你在「回報問題」的表單上勾了讓我們回覆你，才會一起送出你的 Google 帳號名稱與 email；沒勾就不會送。</P>
             </div>
           </div>
         </Section>

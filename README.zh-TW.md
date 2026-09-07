@@ -249,6 +249,8 @@ childRecords/$childId      dailyLogs/$logId        type (feeding|sleep|diaper),
 childIndex/$childId        true — 公開的存在索引，讓用代碼加入時
                            永遠不必去讀陌生人的孩子節點
 feedbacks/$feedbackId      title, content, userId, timestamp
+                           userName, userEmail     只有家長在回報表單上勾了
+                                                   讓我們回覆他，才會附上
 ```
 
 孩子節點放的是「這個孩子是誰」，再加上對固定清單的進度 — 33 個里程碑、36 劑

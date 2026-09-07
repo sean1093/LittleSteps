@@ -19,7 +19,11 @@ import {
 interface FeedbackModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (title: string, content: string) => Promise<void>;
+  /**
+   * `shareContact` 是家長在這張表單上勾的那一格：勾了才把 Google 帳號名稱與
+   * email 一起送出去。它跟著送出走，而不是由外面的元件自己決定。
+   */
+  onSubmit: (title: string, content: string, shareContact: boolean) => Promise<void>;
   userName: string;
   /**
    * 有值時這張表單是「場館資料回報」：家長勾一個原因就送得出去，名稱、編號、
@@ -63,6 +67,48 @@ function ReportContext({ target }: { target: VenueReportTarget }) {
         以上會跟著回報一起送出，你不用再打一次。
       </p>
     </div>
+  );
+}
+
+/**
+ * 要不要留下聯絡方式，家長自己決定。
+ *
+ * 場館回報早就把「一併送出的資料」攤在 ReportContext 裡給家長看過了，家長自己
+ * 的身分卻沒有——名稱與 email 一直是每一則回報自動附上的。在別的頁面寫一段
+ * 公告不等於在這一頁問過，所以問就問在送出鍵的上面。
+ *
+ * 預設不勾是刻意的：這樣一來有些回報就回不了信，但想要回信的家長會勾，而沒勾
+ * 的那些人本來也不預期一個副業專案會寄 email 給他。
+ *
+ * 整列都是這個 checkbox 的標籤：label 包著 input 又指名它的 id，所以在手機上
+ * 點到那一句話也算點到框，而不是只有那顆 20px 的方塊按得到。
+ */
+function ContactOptIn({
+  checked,
+  onChange,
+  disabled,
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  disabled: boolean;
+}) {
+  return (
+    <label
+      htmlFor="feedbackShareContact"
+      className="card flex items-center gap-3 min-h-tap cursor-pointer"
+    >
+      <input
+        id="feedbackShareContact"
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        disabled={disabled}
+        className="w-5 h-5 shrink-0 accent-primary-dark"
+      />
+      <span className="text-sm text-ink leading-relaxed">
+        讓我們可以回覆你（會附上你的 Google 帳號名稱與 email）
+      </span>
+    </label>
   );
 }
 
@@ -148,6 +194,8 @@ export default function FeedbackModal({
   // 家長打的那段自由文字：一般回報的必填內容，場館回報的選填補充。
   const [content, setContent] = useState('');
   const [reason, setReason] = useState<VenueReportReason | null>(null);
+  // 每次開表單都從「不勾」重新問一次，和其他欄位一樣。
+  const [shareContact, setShareContact] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -157,6 +205,7 @@ export default function FeedbackModal({
       setTitle('');
       setContent('');
       setReason(null);
+      setShareContact(false);
       setError(null);
       setIsSubmitting(false);
     }
@@ -201,7 +250,7 @@ export default function FeedbackModal({
               content: venueReportContent(venue.target, reason, content),
             }
           : { title: title.trim(), content: content.trim() };
-      await onSubmit(payload.title, payload.content);
+      await onSubmit(payload.title, payload.content, shareContact);
       onClose();
     } catch (err: unknown) {
       console.error('提交回報失敗:', err);
@@ -262,6 +311,12 @@ export default function FeedbackModal({
               </div>
 
               {errorBox}
+
+              <ContactOptIn
+                checked={shareContact}
+                onChange={setShareContact}
+                disabled={isSubmitting}
+              />
 
               <button
                 type="submit"
@@ -343,6 +398,12 @@ export default function FeedbackModal({
             </div>
 
             {errorBox}
+
+            <ContactOptIn
+              checked={shareContact}
+              onChange={setShareContact}
+              disabled={isSubmitting}
+            />
 
             <button
               type="submit"
