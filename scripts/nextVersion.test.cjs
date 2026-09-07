@@ -165,7 +165,19 @@ describe('nextVersion', () => {
  * repository and pipe real `git log` output through the script. Anything less
  * tests a shape git does not produce — which is exactly how the first version
  * of this file passed while the pipeline was broken.
+ *
+ * Every case here spawns six or more processes: `git init`, a `git commit` per
+ * message, sometimes `git tag`, then `git log` and `node`. Vitest allows a
+ * test 5 s, which is generous for a pure function and not always enough for
+ * that — on a machine that is also building, or running several suites at
+ * once, these time out one after another while the behaviour they check has
+ * not moved. A suite that goes red because the machine is busy is a suite
+ * people learn to ignore, so the limit here matches the work rather than the
+ * default. It applies to the whole file; the pure cases above finish in
+ * milliseconds and never come near it.
  */
+vi.setConfig({ testTimeout: 30_000 });
+
 describe('the CLI contract, against real git log output', () => {
   let repo;
 
