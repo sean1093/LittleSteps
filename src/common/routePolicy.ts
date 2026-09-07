@@ -43,6 +43,41 @@ export function requiresAuth(page: Page): boolean {
 }
 
 /**
+ * Pages that render their own chrome, so `App.tsx` keeps the LittleSteps
+ * header and sidebar hidden for them: the about page and five standalone
+ * sub-apps — LittleBloom, LittleExplorer, LittleOuting, BabyOasis and
+ * LittleGuard.
+ *
+ * The comment here used to name three of the five, which is why it is easy to
+ * believe the two shell-based services are on the other side of this line;
+ * they are not. Issue #65 was filed against that comment rather than the code.
+ *
+ * The about page is not a LittleSteps page either: it describes all six
+ * services and renders its own AppBar. Leaving it out would mount the
+ * LittleSteps sidebar on it with a `currentPage` that is not a LittleStepsPage
+ * — the cast in `App.tsx` would be a lie.
+ *
+ * Being on this list is a contract, not just a styling switch: `App.tsx` stops
+ * supplying a `<main>`, so every page reachable under these prefixes must
+ * render its own `<header>` and its own `<main>`. A11Y-01/02 check that in the
+ * browser, but only on the public ones — the E2E suite is signed out, and the
+ * five gated routes here early-return an intro page before the contract even
+ * applies. `standaloneLandmarks.test.tsx` derives its list from this function
+ * to cover the rest, which is why the predicate lives here rather than inside
+ * `App.tsx`.
+ */
+export function isStandaloneSubApp(page: Page): boolean {
+  return (
+    page === 'about' ||
+    page.startsWith('littlebloom') ||
+    page.startsWith('littleexplorer') ||
+    page === 'littleouting' ||
+    page === 'babyoasis' ||
+    page === 'littleguard'
+  );
+}
+
+/**
  * 頁面所屬的服務；`home` 與 `about` 不屬於任何服務，回傳 null。
  *
  * 最後一行是 fallthrough 到 babyoasis。一個不屬於任何服務的頁面要是沒有在

@@ -59,7 +59,18 @@ export default function ServiceLanding({ service, onSignIn }: ServiceLandingProp
 
   return (
     <div className={`min-h-dscreen ${theme.pageBg}`}>
-      <div className="screen-body">
+      {/*
+        同 StepsLanding：這一頁自己給 <main>，但刻意不給 <header>。
+
+        它在 App.tsx 的 isStandaloneLanding 那裡就先回傳了，外框的 <main> 走不
+        到，所以少了這一層，未登入的訪客在 LittleBloom 與 LittleExplorer 的需
+        登入路由上就拿到一頁沒有任何地標的畫面。
+
+        沒有 banner 是因為這一頁的 chrome 只有一顆回服務集合首頁的連結，服務
+        名稱與介紹本身就是內容；把那顆連結包成 <header>，等於多一個什麼都沒指
+        名的地標。
+      */}
+      <main className="screen-body">
         <div className="flex justify-end mb-2">
           <AppHomeButton />
         </div>
@@ -106,7 +117,7 @@ export default function ServiceLanding({ service, onSignIn }: ServiceLandingProp
             <ArrowRight className="w-4 h-4" />
           </motion.button>
         </motion.div>
-      </div>
+      </main>
     </div>
   );
 }

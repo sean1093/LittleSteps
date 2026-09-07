@@ -3,6 +3,7 @@ import { Menu, Home } from 'lucide-react';
 import { pageFromPath, type Page, type LittleStepsPage } from './types/routes';
 import { entryPageForChild, serviceForStage, stageOfChild } from './common/stageEntry';
 import { goTo, subscribeToNavigation } from './common/navigate';
+import { isStandaloneSubApp } from './common/routePolicy';
 import { useDocumentMeta } from './common/seo/useDocumentMeta';
 import { splitOverdueByProfileStart } from './common/utils/profileHistory';
 import { logPageView } from './lib/firebase';
@@ -180,36 +181,17 @@ function AppContent() {
     return title;
   };
 
-  // Everything below renders its own chrome, so the LittleSteps header/sidebar
-  // stays hidden for it: the about page and five standalone sub-apps —
-  // LittleBloom, LittleExplorer, LittleOuting, BabyOasis and LittleGuard.
-  //
-  // The comment here used to name three of the five, which is why it is easy to
-  // believe the two shell-based services are on the other side of this line;
-  // they are not. Issue #65 was filed against that comment rather than the code.
-  //
-  // The about page is not a LittleSteps page either: it describes all six
-  // services and renders its own AppBar. Leaving it out would mount the
-  // LittleSteps sidebar on it with a `currentPage` that is not a LittleStepsPage
-  // — the cast below would be a lie.
-  //
-  // Being on this list is a contract, not just a styling switch: `ContentLandmark`
-  // below stops supplying a `<main>`, so every page reachable under these
-  // prefixes must render its own `<header>` and its own `<main>`. A11Y-01/02
-  // check that on the public ones.
-  const isStandaloneSubApp =
-    currentPage === 'about' ||
-    currentPage.startsWith('littlebloom') ||
-    currentPage.startsWith('littleexplorer') ||
-    currentPage === 'littleouting' ||
-    currentPage === 'babyoasis' ||
-    currentPage === 'littleguard';
+  // Whether this page renders its own chrome — the about page and the five
+  // standalone sub-apps. The predicate and the landmark contract that comes
+  // with it live in `routePolicy.ts`, where a test can derive the list from it
+  // without importing this file's React tree.
+  const isStandalone = isStandaloneSubApp(currentPage);
   // Login is mandatory, so every LittleSteps route shows the header (and thus the
   // sidebar/menu) once we reach the authenticated tree below.
-  const showHeader = !(currentPage === 'home' || isStandaloneSubApp);
+  const showHeader = !(currentPage === 'home' || isStandalone);
   // 自帶 header 與 <main> 的服務由自己描述文件結構；其餘的由這個外框提供。
   // 理由寫在下面 render 的那段註解裡。
-  const ContentLandmark = isStandaloneSubApp ? 'div' : 'main';
+  const ContentLandmark = isStandalone ? 'div' : 'main';
 
 
   // RTDB 沒有磁碟快取。已安裝的 PWA 在離線時仍然開得起來（shell 有 precache），
@@ -286,7 +268,7 @@ function AppContent() {
   return (
     <div className="min-h-dscreen bg-warm-white">
       {/* Sidebar - Only show for LittleSteps routes */}
-      {!isStandaloneSubApp && (
+      {!isStandalone && (
         <Sidebar
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
@@ -343,11 +325,16 @@ function AppContent() {
         祖先。這兩件事是同一個錯誤的兩面——外框替自帶版面的頁面多包了一層。
 
         LittleSteps 的外框與入口頁沒有自己的地標，那一層仍然由這裡提供。
+
+        兩個 fallback 分開處理。下面 Suspense 的載入畫面刻意不給地標：那個狀態是
+        暫時的，role="status" 已經報過一次，而只活過一次 chunk 載入就被換掉的地標
+        對用地標跳轉的人沒有可以落腳的地方；ErrorBoundary 的錯誤畫面相反，它是終
+        局，就是那一刻整頁的內容，所以 standalone 路由上由它自己當 <main>。
       */}
       <ContentLandmark className={showHeader ? "pb-6" : ""}>
         {/* key 綁 currentPage：一頁壞掉之後換頁就會重掛，不會把家長困在
             錯誤畫面裡直到重新整理。 */}
-        <ErrorBoundary key={currentPage} scope={currentPage}>
+        <ErrorBoundary key={currentPage} scope={currentPage} ownsMain={isStandalone}>
         <Suspense
           fallback={
             <div className="min-h-[50vh] flex items-center justify-center">
@@ -541,8 +528,9 @@ function AppContent() {
 function App() {
   return (
     // 外層這道攔的是頁首、側邊欄、context provider 之類的外框錯誤——那些
-    // 在 <main> 之外，裡面那道 boundary 看不到。
-    <ErrorBoundary scope="app">
+    // 在 <main> 之外，裡面那道 boundary 看不到。上面沒有任何一層會給地標，
+    // 所以這道的錯誤畫面自己就是整頁的 <main>。
+    <ErrorBoundary scope="app" ownsMain>
       {/* Toast 在最外層：AuthProvider 自己也會回報登入失敗。 */}
       <ToastProvider>
         <AuthProvider>

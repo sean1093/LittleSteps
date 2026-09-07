@@ -28,6 +28,20 @@ describe('StepsLanding', () => {
     expect(screen.getByRole('button', { name: '所有服務' })).toBeInTheDocument();
   });
 
+  /**
+   * 這一頁在 App.tsx 的 isStandaloneLanding 那裡就先回傳了，外框的 <main> 走
+   * 不到，所以它自己不給地標的話，未登入訪客在任何需登入的 LittleSteps 路由
+   * 上拿到的第一頁就一個地標都沒有——沒有頁首可以跳、也沒有內容可以跳。
+   *
+   * banner 是零而不是一：整頁的 chrome 只有一顆回服務集合首頁的連結，包成
+   * <header> 只會多一個什麼都沒指名的地標。
+   */
+  it('恰好一個 main 地標，而且沒有 banner', () => {
+    renderPage();
+    expect(screen.getAllByRole('main')).toHaveLength(1);
+    expect(screen.queryAllByRole('banner')).toHaveLength(0);
+  });
+
   it('按下之後回到服務集合首頁，而不是停在 LittleSteps', async () => {
     const user = userEvent.setup();
     renderPage();

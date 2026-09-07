@@ -147,19 +147,23 @@ landmark structure for the reason below. Each runs at 390px and 320px.
 
 | ID | Pri | Assertion | Notes |
 |---|---|---|---|
-| A11Y-01 | P1 | Every public route exposes exactly one `banner` landmark, except the hub, which renders no page header at all | A `<header>` is a `banner` only when it is **not** inside `main`/`section`/`article`/`aside`/`nav`. The six pages that draw their own chrome — the about page and five standalone services — render their `AppBar` from inside a lazily-imported page, so a shell that wraps them in `<main>` silently demotes it. Counted, not asserted present: the failure is zero, and `toBeVisible()` on the first match passes through it. The hub is named as the one route expected to have none, so another page losing its header stays red |
-| A11Y-02 | P1 | Every public route exposes exactly one `main` landmark | The other half of the same seam, and the same counting reason: the failure is **two**, from a shell wrapping a page that already brings its own. `<main>` may not have a `main` ancestor |
+| A11Y-01 | P1 | Every route in `PUBLIC_ROUTES` exposes exactly one `banner` landmark, except the hub, which renders no page header at all; every route in `GATED_ROUTES` exposes **zero** while signed out, where an intro page renders | A `<header>` is a `banner` only when it is **not** inside `main`/`section`/`article`/`aside`/`nav`. The six pages that draw their own chrome — the about page and five standalone services — render their `AppBar` from inside a lazily-imported page, so a shell that wraps them in `<main>` silently demotes it. Counted, not asserted present: the failure is zero, and `toBeVisible()` on the first match passes through it. The hub is named as the one public route expected to have none, so another page losing its header stays red. An intro page has none because its whole chrome is one link back to the hub, and the wordmark below it is content, not a header |
+| A11Y-02 | P1 | Every route in `PUBLIC_ROUTES` and `GATED_ROUTES` exposes exactly one `main` landmark | The other half of the same seam, and the same counting reason: the failure is **two**, from a shell wrapping a page that already brings its own. `<main>` may not have a `main` ancestor. The gated half is one case per route asserting both counts, because they are two properties of a single page state and splitting them would navigate twice per viewport to assert nothing new |
 
 **Why E2E and not a unit test.** Both landmarks are properties of the whole
 document, produced by two files that never meet in a unit test: `App.tsx`
 supplies the shell, each standalone page supplies its own `AppBar` and `<main>`.
 Mounting either alone shows nothing wrong.
 
-**What it does not cover.** Gated standalone routes — `littlebloom`,
-`/prenatal`, `littleexplorer`, `/reminders`, `/diary` — render their intro page
-signed out, before the shell decides anything, so the suite never meets them.
-Adding a service to `isStandaloneSubApp` and forgetting its `<main>` stays green
-there. See #80 for the intro pages themselves, which have no landmarks at all.
+**What the browser cannot reach.** A gated route is visited signed out, which
+is the only state the suite has, so the page `isStandaloneSubApp` makes a
+promise about — `GATED_ROUTES` filtered through that predicate — is never the
+page on screen: the intro page returns first, before the shell decides
+anything. `src/common/standaloneLandmarks.test.tsx` covers that half instead.
+It derives its route list from the predicate rather than restating it, resolves
+what `App.tsx` renders for each one, and fails when a page reaches no `<main>`
+**or cannot be resolved at all** — a service added without one has to turn
+something red somewhere.
 
 ## SEO — the crawl boundary over gated routes
 

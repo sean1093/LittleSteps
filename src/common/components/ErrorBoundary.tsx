@@ -7,6 +7,15 @@ interface ErrorBoundaryProps {
   children: ReactNode;
   /** 記到 analytics 時用來分辨是哪一層攔到的。 */
   scope: string;
+  /**
+   * 這個 fallback 要不要當成整頁的 <main>。
+   *
+   * 錯誤畫面出現的那一刻，它就是整頁的內容，所以自帶版面的 standalone 路由
+   * 壞掉時由這裡補上地標——那些路由的 <main> 是頁面自己畫的，而壞掉的正是
+   * 那個頁面。反之外框已經提供 <main> 時必須維持 false：巢狀的兩個 main 和
+   * 一個都沒有一樣是錯的。
+   */
+  ownsMain?: boolean;
 }
 
 interface ErrorBoundaryState {
@@ -41,8 +50,10 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
   render() {
     if (this.state.message === null) return this.props.children;
 
+    const Frame = this.props.ownsMain ? 'main' : 'div';
+
     return (
-      <div className="screen">
+      <Frame className="screen">
         <div className="screen-body">
           <div className="card text-center">
             <h2 className="mb-2">這一頁出了點問題</h2>
@@ -75,7 +86,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
             </div>
           </div>
         </div>
-      </div>
+      </Frame>
     );
   }
 }
