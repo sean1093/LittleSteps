@@ -88,6 +88,16 @@ describe('AboutPage', () => {
     expect(screen.getByText(/整份紀錄可以一鍵匯出成檔案/)).toBeInTheDocument();
   });
 
+  it('promises that the account itself can go, and says what a shared child does', () => {
+    // The page may only promise what the product does. Before the account
+    // sheet had a 刪除帳號 action this sentence would have been a lie, and a
+    // parent reading it is deciding whether to hand over an account.
+    render(<AboutPage />);
+    const paragraph = screen.getByText(/帳號本身也刪得掉/);
+    expect(paragraph).toHaveTextContent('只有你一個人在用的孩子會整份消失');
+    expect(paragraph).toHaveTextContent('還有家人在用的則是把你從名單上移除');
+  });
+
   it('opens the technical details on demand and keeps them closed by default', async () => {
     const user = userEvent.setup();
     render(<AboutPage />);
