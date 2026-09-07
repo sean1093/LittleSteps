@@ -20,7 +20,7 @@ const mocks = vi.hoisted(() => ({
   setCurrentChild: vi.fn(),
   signOut: vi.fn().mockResolvedValue(undefined),
   readChildExport: vi.fn(),
-  deleteAccount: vi.fn().mockResolvedValue(undefined),
+  deleteAccount: vi.fn().mockResolvedValue(true),
   deleteAccountData: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -255,7 +255,7 @@ describe('刪除帳號', () => {
     expect(mocks.deleteAccount).not.toHaveBeenCalled();
   });
 
-  it('確認之後先刪資料，才刪 Auth 使用者', async () => {
+  it('確認之後先刪資料，才刪 Auth 使用者，然後收起視窗', async () => {
     window.confirm = vi.fn(() => true);
     const user = await openSheet('littlesteps');
 
@@ -265,6 +265,23 @@ describe('刪除帳號', () => {
     expect(mocks.deleteAccountData.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.deleteAccount.mock.invocationCallOrder[0],
     );
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: '帳號與寶寶' })).toBeNull(),
+    );
+  });
+
+  it('帳號沒刪掉時，視窗留著讓家長再試一次', async () => {
+    // WebView 那條路要家長重新登入，而登入按鈕就在這張表上；重新驗證被取消
+    // 時也一樣，刪除的入口只有這裡。
+    window.confirm = vi.fn(() => true);
+    mocks.deleteAccount.mockResolvedValueOnce(false);
+    const user = await openSheet('littlesteps');
+
+    await user.click(await screen.findByRole('button', { name: '刪除帳號' }));
+
+    await waitFor(() => expect(mocks.deleteAccount).toHaveBeenCalled());
+    expect(screen.getByRole('dialog', { name: '帳號與寶寶' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: '刪除帳號' })).toBeEnabled();
   });
 
   it('資料刪不掉時，Auth 使用者留著', async () => {

@@ -137,8 +137,9 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
       // 清那些節點——孩子的紀錄會留在資料庫裡，誰都讀不到也刪不掉。
       await store.deleteAccountData();
       // 重新驗證、登出與回到入口頁都在 deleteAccount 裡，失敗也由它出訊息。
-      await deleteAccount();
-      onClose();
+      // 沒刪成功就把這張表留著：刪除的入口在這裡，而 WebView 那條路要家長
+      // 重新登入——登入按鈕也在這張表上。
+      if (await deleteAccount()) onClose();
     } catch {
       // 資料那一步沒過，所以 Auth 使用者還在，家長可以再試一次。store 記過 log。
       toast.show('帳號還沒刪掉，請稍後再試');
