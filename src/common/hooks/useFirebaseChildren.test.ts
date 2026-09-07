@@ -68,6 +68,7 @@ vi.mock('firebase/database', () => ({
   },
   serverTimestamp: () => ({ '.sv': 'timestamp' }),
   remove: (target: FakeRef) => {
+    if (denied.has(target.path)) return Promise.reject(new Error('PERMISSION_DENIED'));
     removals.push(target.path);
     return Promise.resolve();
   },
@@ -310,6 +311,24 @@ describe('deleteChild', () => {
     });
   });
 
+  it('最後一位成員即使不是建立者，也要整份刪掉', async () => {
+    // 建立者現在走得掉（規則只要求成員數不歸零），所以名單上最後一位可能不是他。
+    // 這時只交回自己的成員資格的話，名單會歸零——留下一份沒有任何人是成員、
+    // 再也讀不到也刪不掉的健康紀錄。
+    storeChild(['u2'], 'u1');
+    const { result } = renderHook(() => useFirebaseChildren('u2'));
+
+    await result.current.deleteChild('c1', ['c1']);
+
+    expect(rootUpdate()).toEqual({
+      'children/c1': null,
+      'childRecords/c1': null,
+      'childIndex/c1': null,
+      'users/u2/childrenIds/c1': null,
+      'users/u2/currentChildId': null,
+    });
+  });
+
   it('讀不到本體時仍然清得掉自己的名單', async () => {
     // 成員資格被別人收回之後就讀不到本體了。這時候還不能清名單的話，
     // 那位家長會永遠卡著一個讀不到、又刪不掉的項目。
@@ -397,6 +416,107 @@ describe('readChildExport', () => {
 
     await expect(result.current.readChildExport('c1')).rejects.toThrow('User not authenticated');
     expect(reads).toEqual([]);
+  });
+});
+
+/**
+ * 刪帳號的資料端。三種孩子必須在同一筆 fan-out 裡處理完：規則驗的是寫入前的
+ * root，分成幾筆的話，先落地的那幾筆會把後面的授權抽掉。
+ */
+describe('deleteAccountData', () => {
+  const storeAccount = () => {
+    stored.set('users/u1/childrenIds', { c1: true, c2: true, c3: true });
+    // 只有我一個成員。
+    stored.set('children/c1', { id: 'c1', name: '小豆', createdBy: 'u1', members: { u1: true } });
+    // 別人建的、還有別人在用。
+    stored.set('children/c2', {
+      id: 'c2',
+      name: '小樹',
+      createdBy: 'u9',
+      members: { u9: true, u1: true },
+    });
+    // 我建的，但還有別人在用。
+    stored.set('children/c3', {
+      id: 'c3',
+      name: '小果',
+      createdBy: 'u1',
+      members: { u1: true, u2: true },
+    });
+  };
+
+  it('三種孩子一起處理，全部收在同一筆 root fan-out 裡', async () => {
+    storeAccount();
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+
+    await result.current.deleteAccountData();
+
+    expect(updates).toHaveLength(1);
+    expect(updates[0].path).toBe('');
+    expect(rootUpdate()).toEqual({
+      // 名單上只有我：整份消失，紀錄與索引跟著走。
+      'children/c1': null,
+      'childRecords/c1': null,
+      'childIndex/c1': null,
+      // 還有別人：只交回我的成員資格，孩子留給他們——我是不是建立者都一樣。
+      'children/c2/members/u1': null,
+      'children/c3/members/u1': null,
+      'users/u1/childrenIds': null,
+      'users/u1/currentChildId': null,
+    });
+  });
+
+  it('刪完之後 users/{uid} 底下什麼都不剩', async () => {
+    stored.set('users/u1/childrenIds', { c1: true });
+    stored.set('children/c1', { id: 'c1', name: '小豆', createdBy: 'u1', members: { u1: true } });
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+
+    await result.current.deleteAccountData();
+
+    // 節流戳記進不了上面那一筆（規則只在它過期之後才允許刪），所以它是第二步。
+    expect(removals).toEqual(['users/u1/lastFeedbackAt']);
+    const before = {
+      users: {
+        u1: { childrenIds: { c1: true }, currentChildId: 'c1', lastFeedbackAt: 1757000000000 },
+        u2: { currentChildId: 'c9' },
+      },
+    };
+    const after = applyUpdatePaths(before, {
+      ...rootUpdate(),
+      ...Object.fromEntries(removals.map((path) => [path, null])),
+    });
+    // 沒有子節點的節點就不存在了，所以整個 users/u1 消失；別人的帳號不動。
+    expect(after).toEqual({ users: { u2: { currentChildId: 'c9' } } });
+  });
+
+  it('清不掉節流戳記時，帳號還是刪得掉', async () => {
+    // 剛送出回饋的一分鐘內，規則不允許刪那個戳記。防灌水比清掉一個整數重要，
+    // 所以這一步失敗只記 log——不能讓整個刪帳號跟著失敗。
+    stored.set('users/u1/childrenIds', {});
+    denied.add('users/u1/lastFeedbackAt');
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+
+    await expect(result.current.deleteAccountData()).resolves.toBeUndefined();
+
+    expect(rootUpdate()).toEqual({
+      'users/u1/childrenIds': null,
+      'users/u1/currentChildId': null,
+    });
+    expect(console.error).toHaveBeenCalled();
+  });
+
+  it('讀不回來的孩子跳過，不會把整筆拖下水', async () => {
+    // 成員資格已經被別人收回了：那一端沒有東西要清，而名單上那個殘留的 id
+    // 反正整個 childrenIds 一起刪。混進去的話整筆會被規則拒絕，一個節點都清不掉。
+    stored.set('users/u1/childrenIds', { c1: true });
+    unreadable.add('children/c1');
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+
+    await result.current.deleteAccountData();
+
+    expect(rootUpdate()).toEqual({
+      'users/u1/childrenIds': null,
+      'users/u1/currentChildId': null,
+    });
   });
 });
 

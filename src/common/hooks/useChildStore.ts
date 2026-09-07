@@ -70,6 +70,13 @@ export interface ChildStore {
    */
   readChildExport: (childId: string) => Promise<ChildExportSource>;
   /**
+   * 刪除帳號的資料端：所有孩子、我的成員資格，以及自己的 users/{uid}。Auth
+   * 使用者本身由 AuthContext 的 deleteAccount 接手，順序不能反。失敗往上丟：
+   * 呼叫端必須知道資料還在，否則會接著把 Auth 使用者也刪掉，留下一份沒有人
+   * 碰得到的資料。
+   */
+  deleteAccountData: () => Promise<void>;
+  /**
    * 收回分享：把其他成員移出這個孩子的名單，並關掉加入。分享視窗自己出訊息，
    * 所以這兩個跟表單那一組一樣往上丟。
    */
@@ -272,6 +279,16 @@ export function useChildStore(user: User | null): ChildStore {
     }
   };
 
+  const deleteAccountData = async () => {
+    if (!user) return;
+    try {
+      await firebaseChildren.deleteAccountData();
+    } catch (error) {
+      console.error('刪除帳號的資料失敗:', error);
+      throw error;
+    }
+  };
+
   const revokeOtherMembers = async (childId: string) => {
     if (!user) return;
     try {
@@ -432,6 +449,7 @@ export function useChildStore(user: User | null): ChildStore {
     deleteChild,
     // 直接轉手，不包一層：這裡沒有什麼要加的，錯誤要原樣讓呼叫端看見。
     readChildExport: firebaseChildren.readChildExport,
+    deleteAccountData,
     revokeOtherMembers,
     setJoinOpen,
     setCurrentChild,

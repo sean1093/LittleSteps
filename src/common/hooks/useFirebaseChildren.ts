@@ -48,6 +48,22 @@ function collectionRows<T>(snapshot: { val: () => unknown }): T[] {
   return value ? Object.values(value as Record<string, T>) : [];
 }
 
+/**
+ * 一份檔案整份消失時要一起消失的三個節點。
+ *
+ * deleteChild 與 deleteAccountData 都要寫這一組，而漏掉其中任何一個都是同一種
+ * 後果：一份沒有任何人是成員、再也讀不到也刪不掉的資料。所以只寫一次。
+ */
+const fullChildDeletePaths = (childId: string): Record<string, null> => ({
+  [`children/${childId}`]: null,
+  // 紀錄搬出孩子本體之後，刪孩子不會再把它們一起帶走。少了這一筆，
+  // childRecords/{childId} 會留在資料庫裡，而且沒有人是成員、沒有任何人
+  // 讀得到或刪得掉——一份孩子的健康紀錄就這樣漏在那裡。
+  [`childRecords/${childId}`]: null,
+  // 索引跟著本體走，否則代碼還查得到、加入時卻只換到一則講不出原因的錯誤。
+  [`childIndex/${childId}`]: null,
+});
+
 export function useFirebaseChildren(userId: string | null) {
   /**
    * 新增一份檔案：孩子本體、自己的成員資格、（第一個孩子的）選取狀態，
@@ -238,10 +254,11 @@ export function useFirebaseChildren(userId: string | null) {
    * 查得到卻加入不了的殘留代碼。同一筆裡每個路徑都對寫入前的狀態驗證，
    * 順序問題就不存在了。
    *
-   * 只有建立者能整份刪除。其他成員刪掉的是自己的成員資格——那才是真的交回
-   * 讀寫權限，光清掉自己的 childrenIds 只是從自己的名單上藏起來。建立者的
-   * 成員資格規則上刪不掉（否則孩子本體會沒有人碰得到），所以建立者沒有
-   * 「離開」這條路，只有刪除。
+   * 整份刪除的條件是「建立者，或名單上最後一位成員」。其他成員刪掉的是自己的
+   * 成員資格——那才是真的交回讀寫權限，光清掉自己的 childrenIds 只是從自己的
+   * 名單上藏起來。建立者現在走得掉（規則只要求成員數不歸零，見
+   * database.rules.json），所以最後一位成員有可能不是建立者；那時照樣要整份
+   * 刪除，否則名單一空，這份健康紀錄就沒有任何人讀得到、也沒有任何人刪得掉。
    *
    * currentChildId 一起帶進同一筆。少了它，刪掉當下選取的檔案之後它仍然指著
    * 已經不存在的 id，currentChild 變成 undefined——即使還有另一個孩子，每一頁
@@ -259,19 +276,16 @@ export function useFirebaseChildren(userId: string | null) {
     const childSnapshot = await get(ref(database, `children/${childId}`)).catch(() => null);
     const childData = childSnapshot?.exists() ? (childSnapshot.val() as ChildProfile) : null;
 
+    // 名單上除了我還有誰。整份刪除的條件是「我是建立者」或「我是最後一位成員」。
+    const others = Object.keys(childData?.members ?? {}).filter((uid) => uid !== userId);
+
     const updates: Record<string, unknown> = {
       [`users/${userId}/childrenIds/${childId}`]: null,
       [`users/${userId}/currentChildId`]: remainingChildIds.find((id) => id !== childId) ?? null,
     };
 
-    if (childData?.createdBy === userId) {
-      updates[`children/${childId}`] = null;
-      // 紀錄搬出孩子本體之後，刪孩子不會再把它們一起帶走。少了這一筆，
-      // childRecords/{childId} 會留在資料庫裡，而且沒有人是成員、沒有任何人
-      // 讀得到或刪得掉——一份孩子的健康紀錄就這樣漏在那裡。
-      updates[`childRecords/${childId}`] = null;
-      // 索引跟著本體走，否則代碼還查得到、加入時卻只換到一則講不出原因的錯誤。
-      updates[`childIndex/${childId}`] = null;
+    if (childData && (childData.createdBy === userId || others.length === 0)) {
+      Object.assign(updates, fullChildDeletePaths(childId));
     } else if (childData) {
       updates[`children/${childId}/members/${userId}`] = null;
     }
@@ -321,14 +335,71 @@ export function useFirebaseChildren(userId: string | null) {
   };
 
   /**
+   * 刪除帳號的資料端。
+   *
+   * Auth 使用者本身由 AuthContext 的 deleteAccount 刪掉，而且一定排在這之後：
+   * Auth 使用者一消失，這個客戶端就沒有任何身分再回來清資料，剩下的節點誰都
+   * 碰不到。
+   *
+   * 一筆 root fan-out，理由與 deleteChild 相同——規則驗的是寫入前的 root。每個
+   * 孩子分兩種情況：
+   *
+   * - 名單上只有我 → 整份刪掉，連紀錄與索引。少了這一步，帳號刪完會留下一份
+   *   沒有任何成員、誰都讀不到也刪不掉的健康紀錄。
+   * - 還有別人 → 只交回我的成員資格，孩子留給還在用它的家人。即使那份檔案是
+   *   我建的也一樣：規則只要求成員數不歸零。
+   *
+   * 讀不回來的孩子跳過：成員資格早就被收回了，那一端沒有東西要清，而我自己的
+   * childrenIds 反正整個節點一起刪。
+   *
+   * lastFeedbackAt 排在授權之後，跟 addChild 的 childIndex 同一個理由：它進不了
+   * 上面那一筆。規則只在戳記過了節流窗口（60 秒）之後才允許刪除，因為「刪掉戳記
+   * 再送一則」正是灌爆 feedbacks 的走法。所以在剛送出回饋的一分鐘內刪帳號，會
+   * 留下這一個時間戳——防灌水比清掉一個整數重要，而那個整數除了「上次回饋的
+   * 時間」以外什麼都不是。刪不掉不算刪帳號失敗，只記一行 log。
+   */
+  const deleteAccountData = async () => {
+    if (!userId) throw new Error('User not authenticated');
+
+    const childIdsSnapshot = await get(ref(database, `users/${userId}/childrenIds`));
+    const childIds = Object.keys((childIdsSnapshot.val() as Record<string, true> | null) ?? {});
+
+    const children = await Promise.all(
+      childIds.map(async (childId) => {
+        const snapshot = await get(ref(database, `children/${childId}`)).catch(() => null);
+        return { childId, data: snapshot?.exists() ? (snapshot.val() as ChildProfile) : null };
+      }),
+    );
+
+    const updates: Record<string, unknown> = {
+      [`users/${userId}/childrenIds`]: null,
+      [`users/${userId}/currentChildId`]: null,
+    };
+
+    for (const { childId, data } of children) {
+      if (!data) continue;
+      const others = Object.keys(data.members ?? {}).filter((uid) => uid !== userId);
+      if (others.length === 0) Object.assign(updates, fullChildDeletePaths(childId));
+      else updates[`children/${childId}/members/${userId}`] = null;
+    }
+
+    await update(ref(database), updates);
+
+    await remove(ref(database, `users/${userId}/lastFeedbackAt`)).catch((error) => {
+      console.error('清掉回饋節流戳記失敗（還在節流窗口內，規則不允許刪除）:', error);
+    });
+  };
+
+  /**
    * 收回分享：把其他成員移出名單，並關掉加入。
    *
    * 代碼已經在對方手上，所以「收回」不是換一組代碼而是刪成員；joinOpen 要一起
    * 關掉，否則對方下一秒就用手上的同一組代碼加回來。同一筆 update，不會只成功
    * 一半。
    *
-   * 建立者留著。規則上他的成員資格刪不掉，混進同一筆會讓整筆被拒——共同照顧者
-   * 按下收回時，畫面上什麼都不會發生。
+   * 建立者留著。「收回分享」是把我分享出去的人請出去，不是把當初建檔的人趕走。
+   * 規則現在允許移除任何一位成員（只要名單不歸零），所以這是產品上的決定，
+   * 不再是規則替我們擋著。
    */
   const revokeOtherMembers = async (childId: string) => {
     if (!userId) throw new Error('User not authenticated');
@@ -622,6 +693,7 @@ export function useFirebaseChildren(userId: string | null) {
     updateChild,
     deleteChild,
     readChildExport,
+    deleteAccountData,
     revokeOtherMembers,
     setJoinOpen,
     setCurrentChild,
