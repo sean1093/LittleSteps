@@ -4,7 +4,7 @@ import { PublicRoutePage } from '../pages/publicRoutePage';
 import { ServiceIntroPage } from '../pages/serviceIntroPage';
 
 /**
- * A11Y-01/02 — one banner and one main on every public route.
+ * A11Y-01/02 — the banner and main counts of every route, public and gated.
  *
  * Why this is E2E and not a unit test. Both landmarks are properties of the
  * whole document, and both are produced by two files that never meet in a unit
@@ -33,20 +33,22 @@ import { ServiceIntroPage } from '../pages/serviceIntroPage';
  */
 
 /**
- * The routes that expose no `banner`, and why each one has none.
+ * The public routes that expose no `banner`, and why.
  *
- * The hub (`home`) is a service chooser and deliberately renders no `AppBar` —
- * see `HubLanding`, and `publicRoutePage.ts`'s note that its `h1` is the only
- * one on the page.
+ * Only the hub (`home`): it is a service chooser and deliberately renders no
+ * `AppBar` — see `HubLanding`, and `publicRoutePage.ts`'s note that its `h1` is
+ * the only one on the page. Naming it beats a `>= 0` assertion that would let
+ * any other page lose its header quietly.
  *
- * Every **gated** route joins it while signed out, because what renders there
- * is `StepsLanding` or `ServiceLanding`. Their whole chrome is one link back to
- * the hub; the wordmark below it is the page's content, not its header, so a
- * `<header>` there would be a landmark naming nothing. They do owe a `<main>`,
- * and they return before the shell can supply one, so they render their own.
- *
- * Both are named rather than left to a `>= 0` assertion that would let any
- * other page lose its header quietly.
+ * Gated routes are not listed here, because having no header is a property of
+ * the *state* rather than the route: signed out they render `StepsLanding` or
+ * `ServiceLanding`, and signed in they render a real page with an `AppBar`.
+ * The loop over `GATED_ROUTES` below therefore asserts zero for all of them
+ * directly. The reason is the same as the hub's, though: an intro page's whole
+ * chrome is one link back here, and the wordmark below it is the page's
+ * content, so a `<header>` there would be a landmark naming nothing. They do
+ * owe a `<main>`, and they return before the shell can supply one, so they
+ * render their own (#80).
  */
 const ROUTES_WITHOUT_A_HEADER = new Set<string>(['home']);
 
