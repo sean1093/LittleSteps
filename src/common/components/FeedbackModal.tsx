@@ -117,6 +117,11 @@ function ContactOptIn({
  *
  * 和被擋下的私人頁面同一個作法：留在原地把理由講出來，而不是讓入口消失或把
  * 家長帶去別的網址。
+ *
+ * 第二句要跟著 ContactOptIn 一起讀：那一格預設不勾，所以「登入」與「回報會
+ * 帶上你的名字」是兩件事。這裡原本寫「登入只會用到你的 Google 名稱與信箱」，
+ * 在還沒問過的時候聽起來就像回報一定會附上它們——而站在鎖著的哺乳室門口的
+ * 家長，看到的最後一句話就是這一句。
  */
 function SignInNotice({ onSignIn }: { onSignIn: () => void }) {
   return (
@@ -125,7 +130,7 @@ function SignInNotice({ onSignIn }: { onSignIn: () => void }) {
         回報會連同這一處的名稱與編號存進我們的收件匣，所以要先登入：我們才知道同一筆資料有幾個人回報過，也才擋得掉大量灌水的假回報。
       </p>
       <p className="text-sm text-ink-muted leading-relaxed mt-2">
-        登入只會用到你的 Google 名稱與信箱，不會建立寶寶檔案，也不會碰到任何孩子的資料。
+        登入只是用來認得這個帳號，不會建立寶寶檔案，也不會碰到任何孩子的資料。要不要一起送出你的 Google 帳號名稱與 email，登入後在送出前自己勾。
       </p>
       <button type="button" onClick={onSignIn} className="btn-primary w-full mt-4">
         用 Google 登入
