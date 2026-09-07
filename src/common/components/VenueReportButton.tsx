@@ -80,8 +80,12 @@ export default function VenueReportButton({
         Omitted entirely unless the parent ticked the reply box, rather than
         sent as ''. The rules treat both fields as optional, but '' is a string
         they accept and store, so a blank one is still a record of an account
-        that was never asked. `userId` is what ties the report to an account;
-        these two exist only so a reply can be written.
+        that was never asked. A ticked box on an account that has no email or
+        no display name sends nothing for the missing one either: the blank and
+        the placeholder name this used to substitute are both unrepliable, and
+        an inbox column that looks filled in is worse than an empty one.
+        `userId` is what ties the report to an account; these two exist only so
+        a reply can be written.
       */
       ...(shareContact && user.email ? { userEmail: user.email } : {}),
       ...(shareContact && user.displayName ? { userName: user.displayName } : {}),
