@@ -17,7 +17,7 @@ export default function FeedbackButton({ user }: FeedbackButtonProps) {
   // Only show for logged-in users
   if (!user) return null;
 
-  const handleSubmit = async (title: string, content: string) => {
+  const handleSubmit = async (title: string, content: string, shareContact: boolean) => {
     if (!user) {
       throw new Error('請先登入');
     }
@@ -26,8 +26,13 @@ export default function FeedbackButton({ user }: FeedbackButtonProps) {
       title,
       content,
       userId: user.uid,
-      userEmail: user.email || '',
-      userName: user.displayName || '匿名用戶',
+      /*
+        沒勾就連鍵都不出現，而不是送一個空字串：規則把這兩個欄位當選填，''
+        照樣是它收得下、也會存進收件匣的字串，那等於沒問就送。userId 才是回報
+        和帳號的關聯，這兩個欄位只為了「回得了信」而存在。
+      */
+      ...(shareContact && user.email ? { userEmail: user.email } : {}),
+      ...(shareContact && user.displayName ? { userName: user.displayName } : {}),
     });
   };
 

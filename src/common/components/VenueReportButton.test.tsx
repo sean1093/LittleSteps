@@ -67,7 +67,11 @@ const lastWrite = () => {
   const key = Object.keys(payload ?? {}).find((path) => path.startsWith('feedbacks/'));
   return key === undefined
     ? undefined
-    : (payload?.[key] as { title: string; content: string; userId: string });
+    : (payload?.[key] as Record<string, unknown> & {
+        title: string;
+        content: string;
+        userId: string;
+      });
 };
 
 beforeEach(() => {
@@ -126,6 +130,39 @@ describe('a signed-in parent', () => {
     const written = lastWrite();
     expect(written?.content).not.toContain('家長補充');
     expect(written?.userId).toBe('parent-1');
+  });
+
+  /*
+    A wrong address needs no reply address. The rules take `userEmail` and
+    `userName` as optional strings, so "not asked" has to be an absent key:
+    an empty string is a value they accept and the inbox keeps.
+  */
+  it('leaves the reporter out of the record unless they asked for a reply', async () => {
+    const user = await openReport();
+
+    await user.click(screen.getByRole('button', { name: VENUE_REPORT_REASON_LABEL.gone }));
+    await user.click(screen.getByRole('button', { name: '送出回報' }));
+
+    await waitFor(() => expect(update).toHaveBeenCalledTimes(1));
+    const written = lastWrite();
+    expect(written?.userId).toBe('parent-1');
+    expect(written).not.toHaveProperty('userEmail');
+    expect(written).not.toHaveProperty('userName');
+  });
+
+  it('attaches the account name and email when the reply box is ticked', async () => {
+    const user = await openReport();
+
+    await user.click(screen.getByRole('button', { name: VENUE_REPORT_REASON_LABEL.gone }));
+    await user.click(screen.getByRole('checkbox', { name: /讓我們可以回覆你/ }));
+    await user.click(screen.getByRole('button', { name: '送出回報' }));
+
+    await waitFor(() => expect(update).toHaveBeenCalledTimes(1));
+    expect(lastWrite()).toMatchObject({
+      userId: 'parent-1',
+      userEmail: 'parent@example.com',
+      userName: '媽媽',
+    });
   });
 
   it('attaches the venue id, name and the disputed claim by itself', async () => {

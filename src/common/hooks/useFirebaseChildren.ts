@@ -529,8 +529,13 @@ export function useFirebaseChildren(userId: string | null) {
     title: string;
     content: string;
     userId: string;
-    userEmail: string;
-    userName: string;
+    /**
+     * 聯絡方式是選填的：只有家長在表單上勾了「讓我們可以回覆你」才會帶上來。
+     * 沒勾就整個鍵都不出現——規則把這兩個欄位當選填，而空字串是它收得下、也
+     * 會照樣存起來的字串，那等於沒問就送。
+     */
+    userEmail?: string;
+    userName?: string;
   }) => {
     if (!userId) throw new Error('User not authenticated');
 
