@@ -163,7 +163,7 @@ describe('the venue report form', () => {
     expect(onSubmit.mock.calls[0][2]).toBe(true);
   });
 
-  it('has nothing to ask while the parent is still signed out', () => {
+  it('has nothing to ask while the parent is still signed out, but says the question is coming', () => {
     render(
       <FeedbackModal
         isOpen
@@ -175,5 +175,9 @@ describe('the venue report form', () => {
     );
 
     expect(screen.queryByRole('checkbox', { name: REPLY_BOX })).not.toBeInTheDocument();
+    // The box is one screen away, so the notice must not read as though signing
+    // in already hands over the name and email. This is the last sentence a
+    // parent standing at a locked door gets before deciding.
+    expect(screen.getByText(/登入只是用來認得這個帳號/)).toHaveTextContent('登入後在送出前自己勾');
   });
 });
