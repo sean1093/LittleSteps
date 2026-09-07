@@ -98,6 +98,22 @@ describe('AboutPage', () => {
     expect(paragraph).toHaveTextContent('還有家人在用的則是把你從名單上移除');
   });
 
+  it('reads in the order its own title promises: take it away, then delete it', () => {
+    // Four separate sentences arrived in that section from three different
+    // changes, and the order they landed in was delete, delete, take, take —
+    // the reverse of the heading, with the export answer split in two.
+    render(<AboutPage />);
+    const section = screen.getByRole('heading', { name: '隨時帶得走，也刪得掉' }).parentElement;
+    const paragraphs = [...(section?.querySelectorAll('p') ?? [])].map((p) => p.textContent ?? '');
+
+    expect(paragraphs.map((text) => text.slice(0, 8))).toEqual([
+      '整份紀錄可以一鍵',
+      '看診摘要、週報與',
+      '刪掉一個孩子是一',
+      '帳號本身也刪得掉',
+    ]);
+  });
+
   it('opens the technical details on demand and keeps them closed by default', async () => {
     const user = userEvent.setup();
     render(<AboutPage />);
