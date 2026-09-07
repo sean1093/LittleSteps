@@ -69,6 +69,15 @@ describe('AboutPage', () => {
     expect(screen.getByText(/不能取代醫師的判斷/)).toBeInTheDocument();
   });
 
+  it('promises the whole record leaves as a file, not only the summaries', () => {
+    // The section used to name the clinic summary, the weekly report and the
+    // calendar export and stop there: three digests, none of them the record.
+    // A parent reading "帶得走" is owed the whole thing (#94).
+    render(<AboutPage />);
+    expect(screen.getByRole('heading', { name: '隨時帶得走，也刪得掉' })).toBeInTheDocument();
+    expect(screen.getByText(/整份紀錄可以一鍵匯出成檔案/)).toBeInTheDocument();
+  });
+
   it('opens the technical details on demand and keeps them closed by default', async () => {
     const user = userEvent.setup();
     render(<AboutPage />);

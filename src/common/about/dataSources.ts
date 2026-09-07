@@ -151,4 +151,4 @@ export const DEVICE_STORE_DESCRIBED = {
 } as const satisfies Record<keyof ViewPreferences, string>;
 
 /** The day the copy on the about page was last read against the system it describes. */
-export const ABOUT_LAST_UPDATED = '2026-09-06';
+export const ABOUT_LAST_UPDATED = '2026-09-07';

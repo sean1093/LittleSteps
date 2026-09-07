@@ -216,6 +216,11 @@ were going.
 - **Sync**: real-time across devices
 - **Sharing**: a child profile is shared with family via a unique code, and the
   sharing is revocable — see below
+- **Export**: a child's whole record — the profile plus every daily log, diary entry
+  and growth measurement — downloads from the account sheet as one JSON file,
+  `littlesteps-<child>-<date>.json`, shaped like the database below so it needs no
+  schema of its own. The member list is the one thing left out: it is other
+  accounts' ids, not the parent's data
 - **Limit**: 2 children per account on the free tier
 
 The Firebase config in the bundle is public by design. Auth and the rules
