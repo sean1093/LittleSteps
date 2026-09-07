@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Edit, LogOut, Share2, X } from 'lucide-react';
+import { Download, Edit, LogOut, Share2, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useOptionalChildStore } from '../contexts/ChildStoreContext';
 import { isPregnancyProfile } from '../pregnancy';
@@ -14,6 +14,9 @@ import { CHILD_LIMIT_MESSAGE, MAX_CHILDREN } from '../childLimits';
 import AddChildModal from './AddChildModal';
 import ShareChildUuidModal from './ShareChildUuidModal';
 import { confirmDelete } from '../ui/confirmDelete';
+import { useToast } from '../ui/toast';
+import { CHILD_EXPORT_MIME, buildChildExport, childExportFilename } from '../utils/childExport';
+import { downloadFile } from '../utils/download';
 
 /**
  * 讀不讀某個孩子的資料，決定這個服務該不該顯示切換器。
@@ -38,6 +41,7 @@ interface AccountSheetProps {
 export default function AccountSheet({ service, onClose }: AccountSheetProps) {
   const { user, signInWithGoogle, signOut } = useAuth();
   const store = useOptionalChildStore();
+  const toast = useToast();
   // 只在開著的時候才掛載（AccountButton 用 AnimatePresence 包住），所以固定傳 true。
   const dialogRef = useDialogA11y(true, onClose);
   const childProfiles = store?.childProfiles ?? [];
@@ -77,6 +81,31 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
       store?.deleteChild(id);
       setShowChildModal(false);
       setEditingChild(null);
+    }
+  };
+
+  /**
+   * 匯出整份紀錄：孩子本體與三份紀錄讀回來，組成一個 JSON 檔下載。
+   *
+   * 讀完之後就不再 await。iOS Safari 只認得同一個手勢裡發生的 <a download>
+   * 點擊，四筆讀取已經花掉一輪；後面再插一個 await，等於把那個點擊推到更遠的
+   * 地方，家長按了匯出卻什麼都沒下載。
+   *
+   * 這個抽屜本來沒有任何出錯的地方可以講話，所以失敗走 toast——不出訊息的話，
+   * 按下去毫無反應與「檔案正在準備」在畫面上長得一模一樣。
+   */
+  const handleExportChild = async (childId: string) => {
+    if (!store) return;
+    try {
+      const source = await store.readChildExport(childId);
+      downloadFile(
+        JSON.stringify(buildChildExport(source), null, 2),
+        childExportFilename(source.child.name),
+        CHILD_EXPORT_MIME,
+      );
+    } catch (error) {
+      console.error('匯出寶寶資料失敗:', error);
+      toast.show('匯出失敗，請稍後再試');
     }
   };
 
@@ -209,6 +238,15 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
                       aria-label={`編輯 ${child.name} 的資料`}
                     >
                       <Edit className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleExportChild(child.id)}
+                      className="btn-icon"
+                      title="匯出寶寶的完整紀錄"
+                      aria-label={`匯出 ${child.name} 的資料`}
+                    >
+                      <Download className="w-5 h-5" />
                     </button>
                   </div>
                 ))}
