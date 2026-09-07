@@ -197,6 +197,17 @@ describe('匯出整份紀錄', () => {
     expect(exported.growthRecords).toEqual([]);
   });
 
+  it('下載開始之後說一聲，不然按了跟沒按一樣', async () => {
+    // 手機上的下載幾乎不出聲：Safari 只在頂端閃一下，Chrome 的下載列在分頁
+    // 底下。這張抽屜自己要講，否則「檔案好了」和「這顆鍵壞了」長得一模一樣。
+    mocks.readChildExport.mockResolvedValue(exportSource());
+    const user = await openSheet('littlesteps');
+
+    await user.click(await screen.findByRole('button', { name: '匯出 小豆 的資料' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('已匯出 小豆 的紀錄');
+  });
+
   it('讀取還沒回來時再按一次，不會多下載一份一模一樣的檔案', async () => {
     // 四筆讀取要一點時間，而按鍵在那段時間裡看起來跟沒按過一樣。
     // Promise.withResolvers needs lib es2024; this repo targets lower.
@@ -250,7 +261,11 @@ describe('刪除帳號', () => {
 
     await user.click(await screen.findByRole('button', { name: '刪除帳號' }));
 
-    expect(window.confirm).toHaveBeenCalled();
+    // 說出留下來的是什麼：共用的孩子留給對方。這是刪帳號唯一「不是全部刪掉」
+    // 的地方，而家長只有這一次機會知道。
+    expect(window.confirm).toHaveBeenCalledWith(
+      expect.stringContaining('和家人共用的寶寶會留給他們'),
+    );
     expect(mocks.deleteAccountData).not.toHaveBeenCalled();
     expect(mocks.deleteAccount).not.toHaveBeenCalled();
   });

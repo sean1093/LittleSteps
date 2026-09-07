@@ -110,6 +110,9 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
         childExportFilename(source.child.name),
         CHILD_EXPORT_MIME,
       );
+      // 下載在手機上不一定看得出來：Safari 只在螢幕頂端閃一下，Chrome 的下載列
+      // 在分頁底下。少了這一句，「按了沒反應」與「檔案已經好了」在畫面上一模一樣。
+      toast.show(`已匯出 ${source.child.name} 的紀錄，檔案在你的下載裡`, 'success');
     } catch (error) {
       console.error('匯出寶寶資料失敗:', error);
       toast.show('匯出失敗，請稍後再試');
@@ -129,7 +132,17 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
 
   const handleDeleteAccount = async () => {
     if (!store || deleting) return;
-    if (!confirmDelete('這個帳號', '你獨有的寶寶資料與所有紀錄')) return;
+    if (
+      !confirmDelete(
+        '這個帳號',
+        '只有你一個人在用的寶寶資料與所有紀錄',
+        // 共用的孩子留給對方，這句一定要在：少了它，唯一講得通的讀法是
+        // 「全部刪掉」，而那會讓另一半的紀錄看起來也要跟著消失。
+        '和家人共用的寶寶會留給他們，只把你從成員名單上移除。',
+      )
+    ) {
+      return;
+    }
 
     setDeleting(true);
     try {
