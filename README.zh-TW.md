@@ -191,6 +191,17 @@ bundle 裡的 Firebase 設定本來就是公開的。Auth 和規則管的是**�
 而在主控台打開強制執行之後，就會被拒絕。這是來源檢查，不是授權：
 `database.rules.json` 仍然是唯一決定登入的使用者能碰什麼的邊界。
 
+那個 token 來自 `www.google.com` 上的一支腳本，而這個 app 的家長裡有一部分
+載不到它：擋廣告的擴充套件會拒絕它，`AuthContext.tsx` 的 `isInAppBrowser()`
+本來就是為之存在的 LINE、Facebook、Instagram 內建瀏覽器也一樣。
+`@firebase/app-check` 0.11.2 對這件事沒有答案 — 它的載入函式只掛
+`script.onload`，載不進來時 token 的 promise 永遠不會 settle，而資料庫就等在
+那裡。所以 `src/lib/firebase.ts` 自己載那支腳本，掛上錯誤處理與 8 秒逾時，
+確定 `grecaptcha` 真的在了才初始化 App Check。載不到的家長就是這次沒有
+App Check token，其他什麼都不受影響。在 App Check 還是監控模式的階段，這是
+對的取捨；打開強制執行之前，要看的數字就是那幾種瀏覽器送出的未驗證請求佔
+多少，因為強制執行會把「未驗證」變成「被拒絕」。
+
 ### 分享，以及把它收回
 
 成員名單放在 `children/$childId/members`，是在孩子節點裡面，而不是在各個帳號
