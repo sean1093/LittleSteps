@@ -52,3 +52,13 @@ jobs:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LITTLESTEPS_C6AB6 }}'
           projectId: littlesteps-c6ab6
+          # A Hosting site holds at most 50 channels, and the action's default
+          # TTL is 7 days from the last push -- so the steady state is "merges in
+          # the last week", which crossed 50 once and refused every preview
+          # deploy with a 429 nobody could act on from the PR it landed on.
+          # Three days keeps an active PR's preview alive across a weekend; a
+          # PR untouched for longer loses it until the next push, and the URL
+          # in the bot comment goes stale, which is the right trade for a PR
+          # that old. firebase-hosting-pr-cleanup.yml deletes the channel when
+          # the PR closes, so this TTL only has to cover PRs that are still open.
+          expires: 3d
