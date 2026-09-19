@@ -20,6 +20,19 @@ jobs:
     if: '${{ github.event.pull_request.head.repo.full_name == github.repository }}'
     runs-on: ubuntu-latest
     steps:
+      # Both hosting:channel:* commands run `requireConfig` and refuse to start
+      # without a firebase.json in the working directory -- "Not in a Firebase
+      # app directory". The deploy job has one because it checks out the repo;
+      # this job needs the same one file. The ref is pinned because on a
+      # `closed` event GITHUB_REF is the base branch for a merged PR and
+      # refs/pull/N/merge for an unmerged one; the base branch is what we want
+      # either way.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          sparse-checkout: firebase.json
+          sparse-checkout-cone-mode: false
+
       - name: Work out the channel the deploy action created
         id: channel
         env:
@@ -38,9 +51,20 @@ jobs:
           # and plausible in this repo -- would come out three underscores
           # per character here and one in the action, and the names would
           # never match. `.slice(0, 20)` is the same UTF-16 cut the action does.
+          #
+          # Then the CLI's own rewrite, which the action's id goes through before
+          # anything is created: `hosting:channel:deploy` calls normalizeName()
+          # (firebase-tools src/hosting/api.ts), which turns every `/`, `:`, `_`
+          # and `#` into `-`. So the action derives `pr116-chore_preview-channe`
+          # and the site stores `pr116-chore-preview-channe`. The list below
+          # returns the stored form, and a comparison against the action's form
+          # matches nothing on every branch with a `/` in it -- which is every
+          # branch in this repo -- and the job would say "nothing to do", green,
+          # forever. Review of #116 caught it from this PR's own deploy log.
           id="$(node -e '
             const branch = process.env.HEAD_REF.slice(0, 20);
-            process.stdout.write(`pr${process.env.PR_NUMBER}-${branch}`.replace(/[^a-zA-Z0-9_\-\.]/g, "_"));
+            const fromAction = `pr${process.env.PR_NUMBER}-${branch}`.replace(/[^a-zA-Z0-9_\-\.]/g, "_");
+            process.stdout.write(fromAction.replace(/[/:_#]/g, "-"));
           ')"
           echo "id=$id" >> "$GITHUB_OUTPUT"
 
@@ -58,8 +82,18 @@ jobs:
           # broken credential or a CLI error must still turn this red, which
           # `|| true` around the delete would hide.
           channels="$(firebase hosting:channel:list --project littlesteps-c6ab6 --json)"
-          if printf '%s' "$channels" | node -e '
-            const out = JSON.parse(require("fs").readFileSync(0, "utf8"));
+          # Not inside `if ...; then`: an if-condition swallows every non-zero
+          # exit as "false", so the shape guard's exit 2 would have landed in
+          # the "nothing to do" branch and the step would have stayed green.
+          # 0 = present, 1 = absent, anything else = the guard itself failed.
+          rc=0
+          printf '%s' "$channels" | node -e '
+            // A CLI that crashed before printing anything must not read as
+            // "channel absent": an uncaught JSON.parse throw exits 1, which the
+            // case below treats as absent. Parse failure is a guard failure.
+            const raw = require("fs").readFileSync(0, "utf8");
+            let out;
+            try { out = JSON.parse(raw); } catch { console.error("channel list is not JSON:", JSON.stringify(raw.slice(0, 300))); process.exit(2); }
             // --json wraps the command result as { status, result }; accept the
             // bare shape too, so a CLI that stops wrapping does not turn this
             // into a permanent silent no-op.
@@ -67,9 +101,16 @@ jobs:
             if (!Array.isArray(channels)) { console.error("unexpected channel list shape:", JSON.stringify(out).slice(0, 300)); process.exit(2); }
             const ids = channels.map((c) => c.name.split("/").pop());
             process.exit(ids.includes(process.env.CHANNEL_ID) ? 0 : 1);
-          '; then
-            firebase hosting:channel:delete "$CHANNEL_ID" --project littlesteps-c6ab6 --force
-            echo "Deleted $CHANNEL_ID"
-          else
-            echo "$CHANNEL_ID is not on the site (already expired, or never deployed); nothing to do"
-          fi
+          ' || rc=$?
+          case "$rc" in
+            0)
+              firebase hosting:channel:delete "$CHANNEL_ID" --project littlesteps-c6ab6 --force
+              echo "Deleted $CHANNEL_ID"
+              ;;
+            1)
+              echo "$CHANNEL_ID is not on the site (already expired, or never deployed); nothing to do"
+              ;;
+            *)
+              exit "$rc"
+              ;;
+          esac
