@@ -32,8 +32,17 @@ jobs:
           # its first 20 characters, and every character outside
           # [a-zA-Z0-9_.-] replaced with an underscore. If that file changes,
           # this must change with it, or the delete silently finds nothing.
-          branch="$(printf '%s' "$HEAD_REF" | cut -c1-20 | sed 's/[^a-zA-Z0-9_.-]/_/g')"
-          echo "id=pr${PR_NUMBER}-${branch}" >> "$GITHUB_OUTPUT"
+          #
+          # In node, not cut/sed: `cut -c` counts bytes and sed's `.` matches a
+          # byte, so a branch with a CJK character in it -- legal on GitHub,
+          # and plausible in this repo -- would come out three underscores
+          # per character here and one in the action, and the names would
+          # never match. `.slice(0, 20)` is the same UTF-16 cut the action does.
+          id="$(node -e '
+            const branch = process.env.HEAD_REF.slice(0, 20);
+            process.stdout.write(`pr${process.env.PR_NUMBER}-${branch}`.replace(/[^a-zA-Z0-9_\-\.]/g, "_"));
+          ')"
+          echo "id=$id" >> "$GITHUB_OUTPUT"
 
       - name: Delete it if it still exists
         env:
@@ -51,7 +60,12 @@ jobs:
           channels="$(firebase hosting:channel:list --project littlesteps-c6ab6 --json)"
           if printf '%s' "$channels" | node -e '
             const out = JSON.parse(require("fs").readFileSync(0, "utf8"));
-            const ids = (out.result?.channels ?? []).map((c) => c.name.split("/").pop());
+            // --json wraps the command result as { status, result }; accept the
+            // bare shape too, so a CLI that stops wrapping does not turn this
+            // into a permanent silent no-op.
+            const channels = (out.result ?? out).channels;
+            if (!Array.isArray(channels)) { console.error("unexpected channel list shape:", JSON.stringify(out).slice(0, 300)); process.exit(2); }
+            const ids = channels.map((c) => c.name.split("/").pop());
             process.exit(ids.includes(process.env.CHANNEL_ID) ? 0 : 1);
           '; then
             firebase hosting:channel:delete "$CHANNEL_ID" --project littlesteps-c6ab6 --force
