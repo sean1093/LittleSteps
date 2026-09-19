@@ -1,0 +1,61 @@
+name: Delete the Firebase Hosting preview channel when a PR closes
+
+# The preview deploy runs on the default pull_request types, which do not
+# include `closed`, so a merged PR's channel used to wait out its TTL. With
+# sixty-odd merges a fortnight that put the site over Hosting's 50-channel
+# cap, and every open PR's preview then failed with a 429. This is its own
+# workflow rather than a `closed` type on the deploy one, so the deploy job
+# never has to reason about whether it is being asked to build a closed PR.
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+
+jobs:
+  delete_preview_channel:
+    # Same guard as the deploy: a fork's PR never got a channel, and the
+    # service-account secret is not exposed to fork workflows anyway.
+    if: '${{ github.event.pull_request.head.repo.full_name == github.repository }}'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Work out the channel the deploy action created
+        id: channel
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          # Mirrors FirebaseExtended/action-hosting-deploy's getChannelId.ts
+          # for a pull_request event: `pr<number>-<branch>`, the branch cut to
+          # its first 20 characters, and every character outside
+          # [a-zA-Z0-9_.-] replaced with an underscore. If that file changes,
+          # this must change with it, or the delete silently finds nothing.
+          branch="$(printf '%s' "$HEAD_REF" | cut -c1-20 | sed 's/[^a-zA-Z0-9_.-]/_/g')"
+          echo "id=pr${PR_NUMBER}-${branch}" >> "$GITHUB_OUTPUT"
+
+      - name: Delete it if it still exists
+        env:
+          CHANNEL_ID: ${{ steps.channel.outputs.id }}
+        run: |
+          set -euo pipefail
+          npm install -g firebase-tools
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LITTLESTEPS_C6AB6 }}' > "$HOME/firebase-service-account.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$HOME/firebase-service-account.json"
+
+          # List first, then delete only what is there. A channel that already
+          # expired, or a PR whose deploy never ran, is not a failure -- but a
+          # broken credential or a CLI error must still turn this red, which
+          # `|| true` around the delete would hide.
+          channels="$(firebase hosting:channel:list --project littlesteps-c6ab6 --json)"
+          if printf '%s' "$channels" | node -e '
+            const out = JSON.parse(require("fs").readFileSync(0, "utf8"));
+            const ids = (out.result?.channels ?? []).map((c) => c.name.split("/").pop());
+            process.exit(ids.includes(process.env.CHANNEL_ID) ? 0 : 1);
+          '; then
+            firebase hosting:channel:delete "$CHANNEL_ID" --project littlesteps-c6ab6 --force
+            echo "Deleted $CHANNEL_ID"
+          else
+            echo "$CHANNEL_ID is not on the site (already expired, or never deployed); nothing to do"
+          fi
