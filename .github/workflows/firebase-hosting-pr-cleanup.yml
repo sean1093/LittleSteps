@@ -83,7 +83,14 @@ jobs:
           # normalised, and they are two different CLI processes on two
           # different runners. Letting one of them float to `latest` is how a
           # cleanup job starts silently deleting nothing.
-          npm install -g "firebase-tools@$(node -p "require('./package-lock.json').packages['node_modules/firebase-tools'].version")"
+          # Two lines, not one: `set -e` aborts on a command substitution used as
+          # an assignment, but NOT on one used as an argument. Inline, a missing
+          # or restructured lockfile would make this `firebase-tools@`, npm reads
+          # an empty spec as `latest`, and the job installs whatever shipped this
+          # morning while staying green -- the #116 failure class, in the step
+          # whose comment invokes it. Assignment first, so the step dies instead.
+          version="$(node -p "require('./package-lock.json').packages['node_modules/firebase-tools'].version")"
+          npm install -g "firebase-tools@$version"
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LITTLESTEPS_C6AB6 }}' > "$HOME/firebase-service-account.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$HOME/firebase-service-account.json"
 
