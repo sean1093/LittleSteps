@@ -46,12 +46,29 @@ jobs:
       - name: Build
         run: npm run build
 
+      # One source of truth for which firebase-tools every job runs: the
+      # lockfile. Pinning each call site to a literal version would be four
+      # places to bump and four chances to disagree, and the versions must
+      # agree -- the deploy's CLI and the cleanup's CLI both normalise a
+      # channel id, and #116 shipped a cleanup job that looked for a name no
+      # CLI had ever stored. ci.yml resolves the same value the same way for
+      # its emulator cache key.
+      - name: Resolve the firebase-tools version
+        id: firebase-tools
+        run: |
+          version="$(node -p "require('./package-lock.json').packages['node_modules/firebase-tools'].version")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Deploy to Firebase Hosting Preview Channel
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LITTLESTEPS_C6AB6 }}'
           projectId: littlesteps-c6ab6
+          # Without this the action runs `npx firebase-tools@latest`, so the
+          # CLI that creates a preview channel is whatever npm published that
+          # morning.
+          firebaseToolsVersion: ${{ steps.firebase-tools.outputs.version }}
           # A Hosting site holds at most 50 channels, and the action's default
           # TTL is 7 days from the last push -- so the steady state is "merges in
           # the last week", which crossed 50 once and refused every preview
