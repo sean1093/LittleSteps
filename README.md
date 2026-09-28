@@ -592,6 +592,31 @@ get a preview URL. Environment variables come from GitHub Secrets.
 npm run build && firebase deploy --only hosting   # manual
 ```
 
+### A new project needs its Hosting site created first
+
+From **2026-10-15** Firebase stops creating a default Hosting site when a
+project is created; the site is provisioned on demand instead. Nothing in this
+repo creates one — the workflows only ever deploy to a site that already
+exists, and `.firebaserc` names the *project*, not the site. So the first
+deploy against a fresh project fails with `404 Site Not Found`, from CI, on a
+pull request that has nothing to do with Hosting. That is the same failure
+shape as the quota limits below: something nobody was told about, arriving as a
+broken build.
+
+Create it once, before the first deploy:
+
+```bash
+firebase hosting:sites:create littlesteps-c6ab6 --project littlesteps-c6ab6
+```
+
+Reuse the project id as the site id unless that subdomain is already taken — it
+is what the referrer patterns below, the preview channel URLs and
+`firebase-hosting-pr-cleanup.yml`'s channel names are all written against.
+
+**The existing `littlesteps-c6ab6` project is unaffected.** Its site predates
+the change, so deploys, preview channels and everything else carry on. This
+matters only if the project is ever recreated, or a second one is stood up.
+
 ### Console settings that are not in this repo
 
 Two settings live only in the Google Cloud console. Nothing in the repo, the

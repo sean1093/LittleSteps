@@ -528,6 +528,28 @@ src/
 npm run build && firebase deploy --only hosting   # 手動
 ```
 
+### 新專案要先自己建 Hosting 站台
+
+從 **2026-10-15** 起，Firebase 不再於建立專案時一併建立預設的 Hosting 站台，
+改成用到才開。這個 repo 不會建站台——workflow 只會部署到「已經存在」的站台，
+而 `.firebaserc` 寫的是*專案*、不是站台。所以對一個全新專案的第一次部署會以
+`404 Site Not Found` 失敗，發生在 CI 上、掛在一個跟 Hosting 毫無關係的 pull
+request 上。那跟下面那些配額限制是同一種壞法：沒有人被事先告知，最後以「build
+壞了」的樣子出現。
+
+第一次部署之前，建一次就好：
+
+```bash
+firebase hosting:sites:create littlesteps-c6ab6 --project littlesteps-c6ab6
+```
+
+站台 id 就沿用專案 id，除非那個子網域已經被別人佔走——下面的 referrer 清單、
+預覽頻道的網址，以及 `firebase-hosting-pr-cleanup.yml` 算出來的頻道名稱，都是
+照著它寫的。
+
+**現有的 `littlesteps-c6ab6` 專案不受影響。** 它的站台早於這次改動，部署、預覽
+頻道和其他一切照常。只有在專案被重建、或是要再開第二個專案時，這件事才用得上。
+
 ### 不在這個 repo 裡的主控台設定
 
 有兩項設定只存在於 Google Cloud 主控台。repo、workflow 和 `firebase deploy`
