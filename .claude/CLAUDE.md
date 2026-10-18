@@ -199,6 +199,28 @@ away from `lib` the day it was written. When `tsc` suggests raising `lib`,
 index the array instead; widening the ceiling repo-wide to compile one line is
 damage left for the next reader.
 
+`firebase-tools` is pinned to 15.11.0 in the lockfile, and that is a **ceiling,
+not a snapshot**. 15.11.0 builds its HTTP agent with `proxy-agent`, which
+honours `NO_PROXY`; 15.30.2 and 15.34.0 use undici's `ProxyAgent` instead,
+which takes one fixed proxy URI and consults nothing (the release in between
+that changed it is unbisected). So on a newer CLI the PUT that loads the rules
+into the emulator, `http://127.0.0.1:9000/.settings/rules.json`, is sent to the
+sandbox's egress proxy instead; the proxy refuses it, the CLI JSON-parses the
+refusal body, and `npm run test:rules` dies with
+
+```
+database.rules.json:Unable to parse JSON: SyntaxError: Unexpected token 'r',
+"request bl"... is not valid JSON
+```
+
+which is a message about the rules file that has nothing to do with the rules
+file. `"request bl"` is the start of `request blocked: no rule allows host
+"127.0.0.1"`. With the proxy variables cleared and the emulator jar already
+cached, the same tree passes 145/145 on 15.34.0 — so the product is fine and
+the fix is not ours to make. Bumping the pin would cost the only proof of the
+only authorisation boundary, in the environment most changes are now made in,
+and buy nothing this repo is known to need: #118 has the full trace.
+
 Before claiming a UI change works, **look at it** at 390px. Type-checking is not
 verification for visual work.
 
