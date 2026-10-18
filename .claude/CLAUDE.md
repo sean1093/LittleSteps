@@ -199,6 +199,28 @@ away from `lib` the day it was written. When `tsc` suggests raising `lib`,
 index the array instead; widening the ceiling repo-wide to compile one line is
 damage left for the next reader.
 
+`firebase-tools` sits at 15.11.0 in the lockfile, and **15.22.4 is the
+ceiling**. 15.23.0 swapped the HTTP agent from `proxy-agent`, which asks
+`proxy-from-env` per URL and so honours `no_proxy`, for undici's `ProxyAgent`,
+which takes one fixed proxy URI and consults nothing. From 15.23.0 the PUT that
+loads the rules into the emulator, `127.0.0.1:9000/.settings/rules.json`,
+therefore goes to a sandbox's egress proxy; the proxy answers `request blocked:
+no rule allows host "127.0.0.1"`, `apiv2` JSON-parses that body before it looks
+at the status, and `npm run test:rules` dies naming a file it never read:
+
+```
+database.rules.json:Unable to parse JSON: SyntaxError: Unexpected token 'r', "request bl"... is not valid JSON
+```
+
+It takes a proxy, so it cannot happen in CI — a red `test:rules` there is
+about the rules. Both sides of the boundary were run, not just read: 15.22.4
+passes 145/145 as the tree stands, 15.23.0 fails with exactly that line, and
+15.34.0 passes too once the proxy variables are cleared and the jar is cached.
+The manifest range stops below 15.23.0 so `npm update` cannot cross the
+ceiling in silence, and the pin reaches further than this suite — #117 points
+all four deploy call sites at the same lockfile version, so moving it moves
+production. #118 has the trace.
+
 Before claiming a UI change works, **look at it** at 390px. Type-checking is not
 verification for visual work.
 
