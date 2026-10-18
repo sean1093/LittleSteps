@@ -528,10 +528,12 @@ src/
 npm run build && ./node_modules/.bin/firebase deploy --only hosting   # 手動
 ```
 
-路徑是刻意的。`npm ci` 已經把 lockfile 釘住的那個 `firebase-tools` 版本裝好了，
-那就是 workflow 用來部署、也是 `npm run test:rules` 用來驗證規則的同一支 CLI。
-裸的 `firebase` 則是這台機器上剛好裝了什麼、什麼時候裝的。下面每一個 `firebase`
-指令都用同一個路徑，理由相同。
+路徑是刻意的。`npm install` 已經把 lockfile 釘住的那個 `firebase-tools` 版本
+放進 `node_modules` 了，而自動化的部分跑的也是這個版本：workflow 的 hosting
+部署會從 lockfile 解出版本號，`firebase-hosting-merge.yml` 更是直接用這支執行
+檔部署資料庫規則，`npm run test:rules` 也拿它驗證規則。裸的 `firebase` 則是這
+台機器上剛好裝了什麼、什麼時候裝的。下面每一個可執行的 `firebase` 指令都用同
+一個路徑，理由相同。
 
 ### 新專案要先自己建 Hosting 站台
 

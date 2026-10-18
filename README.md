@@ -592,12 +592,14 @@ get a preview URL. Environment variables come from GitHub Secrets.
 npm run build && ./node_modules/.bin/firebase deploy --only hosting   # manual
 ```
 
-The path is deliberate. `npm ci` has already installed the `firebase-tools`
-version the lockfile pins, and that is the CLI the workflows deploy with and
-the one `npm run test:rules` proves the rules against. A bare `firebase` is
-whatever global install the machine happens to have, from whenever it was
-installed. Every `firebase` command below uses the same path, for the same
-reason.
+The path is deliberate. `npm install` has already put the `firebase-tools`
+version the lockfile pins into `node_modules`, and that is the version
+everything automated runs: the workflows resolve it from the lockfile for the
+hosting deploy, `firebase-hosting-merge.yml` runs this very binary to deploy
+the database rules, and `npm run test:rules` proves the rules against it. A
+bare `firebase` is whatever global install the machine happens to have, from
+whenever it was installed. Every runnable `firebase` command below uses the
+same path, for the same reason.
 
 ### A new project needs its Hosting site created first
 
