@@ -525,8 +525,15 @@ src/
 拿到一個預覽 URL。環境變數來自 GitHub Secrets。
 
 ```bash
-npm run build && firebase deploy --only hosting   # 手動
+npm run build && ./node_modules/.bin/firebase deploy --only hosting   # 手動
 ```
+
+路徑是刻意的。`npm install` 已經把 lockfile 釘住的那個 `firebase-tools` 版本
+放進 `node_modules` 了，而自動化的部分跑的也是這個版本：workflow 的 hosting
+部署會從 lockfile 解出版本號，`firebase-hosting-merge.yml` 更是直接用這支執行
+檔部署資料庫規則，`npm run test:rules` 也拿它驗證規則。裸的 `firebase` 則是這
+台機器上剛好裝了什麼、什麼時候裝的。下面每一個可執行的 `firebase` 指令都用同
+一個路徑，理由相同。
 
 ### 新專案要先自己建 Hosting 站台
 
@@ -540,7 +547,8 @@ request 上。那跟下面那些配額限制是同一種壞法：沒有人被事
 第一次部署之前，建一次就好：
 
 ```bash
-firebase hosting:sites:create littlesteps-c6ab6 --project littlesteps-c6ab6
+./node_modules/.bin/firebase hosting:sites:create littlesteps-c6ab6 \
+  --project littlesteps-c6ab6
 ```
 
 站台 id 就沿用專案 id，除非那個子網域已經被別人佔走——下面的 referrer 清單、
@@ -644,10 +652,10 @@ node scripts/migrateChildRecords.cjs --apply   # 實際寫入
 順序很重要：
 
 ```bash
-node scripts/migrateChildRecords.cjs             # 0. dry run，把輸出讀過
-firebase deploy --only database                  # 1. 規則
-node scripts/migrateChildRecords.cjs --apply     # 2. 遷移
-npm run build && firebase deploy --only hosting  # 3. app
+node scripts/migrateChildRecords.cjs                                 # 0. dry run
+./node_modules/.bin/firebase deploy --only database                  # 1. 規則
+node scripts/migrateChildRecords.cjs --apply                         # 2. 遷移
+npm run build && ./node_modules/.bin/firebase deploy --only hosting  # 3. app
 ```
 
 在部署規則之前先把 dry run 讀過，因為第 1 步會開啟一段什麼都不能用的空窗：

@@ -589,8 +589,17 @@ Push to `master` deploys to Firebase Hosting via GitHub Actions; pull requests
 get a preview URL. Environment variables come from GitHub Secrets.
 
 ```bash
-npm run build && firebase deploy --only hosting   # manual
+npm run build && ./node_modules/.bin/firebase deploy --only hosting   # manual
 ```
+
+The path is deliberate. `npm install` has already put the `firebase-tools`
+version the lockfile pins into `node_modules`, and that is the version
+everything automated runs: the workflows resolve it from the lockfile for the
+hosting deploy, `firebase-hosting-merge.yml` runs this very binary to deploy
+the database rules, and `npm run test:rules` proves the rules against it. A
+bare `firebase` is whatever global install the machine happens to have, from
+whenever it was installed. Every runnable `firebase` command below uses the
+same path, for the same reason.
 
 ### A new project needs its Hosting site created first
 
@@ -606,7 +615,8 @@ broken build.
 Create it once, before the first deploy:
 
 ```bash
-firebase hosting:sites:create littlesteps-c6ab6 --project littlesteps-c6ab6
+./node_modules/.bin/firebase hosting:sites:create littlesteps-c6ab6 \
+  --project littlesteps-c6ab6
 ```
 
 Reuse the project id as the site id unless that subdomain is already taken — it
@@ -724,10 +734,10 @@ the same command again.
 The order matters:
 
 ```bash
-node scripts/migrateChildRecords.cjs             # 0. dry run, read the output
-firebase deploy --only database                  # 1. rules
-node scripts/migrateChildRecords.cjs --apply     # 2. migrate
-npm run build && firebase deploy --only hosting  # 3. app
+node scripts/migrateChildRecords.cjs                                 # 0. dry run
+./node_modules/.bin/firebase deploy --only database                  # 1. rules
+node scripts/migrateChildRecords.cjs --apply                         # 2. migrate
+npm run build && ./node_modules/.bin/firebase deploy --only hosting  # 3. app
 ```
 
 Read the dry run before deploying the rules, because step 1 starts a window in
