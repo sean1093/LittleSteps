@@ -16,8 +16,18 @@ name: Refresh disease radar data
 #
 # This workflow stays for the day a self-hosted runner with a Taiwan route
 # exists: dispatch it with `runner` set to that label and everything below works
-# unchanged. On ubuntu-latest each download now gives up after 20s with a stated
-# reason instead of hanging for over two minutes.
+# unchanged -- with one requirement that a GitHub-hosted runner satisfies for
+# free. Both actions below run on node24, which needs Actions Runner v2.327.1
+# or later. An older one fails in "Set up job", not at a step: the runner
+# validates every action's `using:` while it loads the manifests, so the job
+# dies before the first step exists, and dropping either action would not help.
+#
+# Nothing exercises those two automatically -- no cron, no push, dispatch only.
+# A dispatch on ubuntu-latest does run them: the two attempts recorded above
+# reached the download and failed there, 2m17s in.
+#
+# On ubuntu-latest each download now gives up after 20s with a stated reason
+# instead of hanging for over two minutes.
 on:
   workflow_dispatch:
     inputs:
@@ -39,7 +49,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
 
