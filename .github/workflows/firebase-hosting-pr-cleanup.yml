@@ -91,6 +91,22 @@ jobs:
           # whose comment invokes it. Assignment first, so the step dies instead.
           version="$(node -p "require('./package-lock.json').packages['node_modules/firebase-tools'].version")"
           npm install -g "firebase-tools@$version"
+          # `npm install -g` never names the version it installed, and nothing
+          # else here does either, so a pin that regressed would leave a log
+          # identical to a working one. Assert instead of echoing: the two
+          # ways this can still be the wrong CLI -- one preinstalled on the
+          # runner image ahead of the npm global bin on PATH, or a global
+          # prefix that is not on PATH at all -- both leave `npm install -g`
+          # green and resolve `firebase` to something else. `-x` matches a
+          # whole line, so an update banner on another line cannot break it.
+          if ! firebase --version | grep -qxF "$version"; then
+            echo "firebase on PATH is not the pinned $version:" >&2
+            # Diagnostic only, so it must not decide the exit code: if the
+            # CLI cannot even print its version, `exit 1` below is the verdict.
+            firebase --version >&2 || true
+            exit 1
+          fi
+          echo "firebase-tools $version, pinned from package-lock.json"
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LITTLESTEPS_C6AB6 }}' > "$HOME/firebase-service-account.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$HOME/firebase-service-account.json"
 
