@@ -34,7 +34,7 @@ jobs:
     name: Lint and unit tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -66,7 +66,7 @@ jobs:
       # shows up as a browser that dies mid-test.
       options: --ipc=host
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # No node-version: the image's Node is the one the browsers were
       # installed against. This is here only for the npm cache, without which
@@ -118,7 +118,7 @@ jobs:
     name: Database rules
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
