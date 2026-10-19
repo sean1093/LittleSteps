@@ -27,7 +27,7 @@ jobs:
       # `closed` event GITHUB_REF is the base branch for a merged PR and
       # refs/pull/N/merge for an unmerged one; the base branch is what we want
       # either way.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.base.ref }}
           # package-lock.json comes along for the version pin below; this job
