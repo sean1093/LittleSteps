@@ -91,19 +91,24 @@ jobs:
           # whose comment invokes it. Assignment first, so the step dies instead.
           version="$(node -p "require('./package-lock.json').packages['node_modules/firebase-tools'].version")"
           npm install -g "firebase-tools@$version"
-          # `npm install -g` never names the version it installed, and nothing
-          # else here does either, so a pin that regressed would leave a log
-          # identical to a working one. Assert instead of echoing: the two
-          # ways this can still be the wrong CLI -- one preinstalled on the
-          # runner image ahead of the npm global bin on PATH, or a global
-          # prefix that is not on PATH at all -- both leave `npm install -g`
-          # green and resolve `firebase` to something else. `-x` matches a
-          # whole line, so an update banner on another line cannot break it.
-          if ! firebase --version | grep -qxF "$version"; then
-            echo "firebase on PATH is not the pinned $version:" >&2
-            # Diagnostic only, so it must not decide the exit code: if the
-            # CLI cannot even print its version, `exit 1` below is the verdict.
-            firebase --version >&2 || true
+          # `npm install -g` names no version, and the Actions log echoes this
+          # block unexpanded, so a pin that had regressed would leave a log
+          # identical to a working one -- in a job that runs on a closed PR,
+          # where nobody reads it. So assert rather than echo: PATH can
+          # resolve `firebase` to something other than what was just installed
+          # (a global prefix off PATH, a setup-node toolcache bin ahead of it,
+          # a stray global), and nothing else here would notice.
+          #
+          # Assignment rather than `firebase --version | grep -qx`, for the
+          # same reason as the pin above: a CLI that cannot run dies on the
+          # assignment, instead of being reported as a version mismatch it
+          # never claimed. Comparing the whole output is safe because both of
+          # the CLI's other stdout writers are TTY-gated -- fetchMOTD's cached
+          # MOTD, and the update banner, which is stderr and off under
+          # is-ci() regardless -- so on a runner this is exactly `$version`.
+          installed="$(firebase --version)"
+          if [ "$installed" != "$version" ]; then
+            echo "firebase on PATH is $installed, not the pinned $version" >&2
             exit 1
           fi
           echo "firebase-tools $version, pinned from package-lock.json"
