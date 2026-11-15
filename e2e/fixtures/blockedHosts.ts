@@ -9,10 +9,18 @@ import type { Page } from '@playwright/test';
  *
  * - OpenStreetMap tiles: no outbound network in CI. Leaflet still mounts, and
  *   its markers and clusters are still asserted.
- * - `firebase.googleapis.com`: `logPageView()` runs on every in-app navigation
- *   and dynamically imports `firebase/analytics`, which fetches a web config.
+ * - `firebase.googleapis.com`: `logPageView()` runs for every page shown, the
+ *   one a visit lands on included, and dynamically imports
+ *   `firebase/analytics`, which fetches a web config.
  *   On the dummy credentials that request fails and retries with backoff.
  * - `*.google-analytics.com`: where the events themselves would go.
+ *
+ *   Neither request is made today: `playwright.config.ts` sets
+ *   `VITE_FIREBASE_ANALYTICS_DISABLED`, so Analytics never starts under the
+ *   suite. Blocking alone was not enough once the landing page sent a page
+ *   view — the installation request to `firebaseinstallations.googleapis.com`
+ *   fails on the dummy key and the SDK logs it without naming a host. The
+ *   entries stay for a build that loses the flag.
  * - `apis.google.com`: `getAuth()` in `src/lib/firebase.ts` runs at module load
  *   on every route, and `AuthImpl._initializeWithPersistence` then initialises
  *   the popup/redirect resolver up front whenever `_shouldInitProactively` is

@@ -425,10 +425,17 @@ VITE_FIREBASE_STORAGE_BUCKET=
 VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 VITE_FIREBASE_MEASUREMENT_ID=
+VITE_FIREBASE_ANALYTICS_DISABLED=
 VITE_FIREBASE_DATABASE_URL=
 VITE_FIREBASE_APPCHECK_SITE_KEY=
 VITE_FIREBASE_APPCHECK_DEBUG=
 ```
+
+`VITE_FIREBASE_ANALYTICS_DISABLED=true` builds the app without Analytics: no
+event is sent and the Analytics chunk is never fetched. Leave it empty anywhere
+a parent will use the build. It exists for the E2E build, whose dummy
+credentials would otherwise fail an installation request on the first load of
+every route.
 
 `VITE_FIREBASE_APPCHECK_SITE_KEY` is the reCAPTCHA v3 site key: created in the
 Google reCAPTCHA admin console, then registered under Firebase console → App
@@ -669,7 +676,7 @@ the key the variable points at:
    | Identity Toolkit API | sign-in, `identitytoolkit.googleapis.com` |
    | Token Service API | ID-token refresh, `securetoken.googleapis.com` |
    | Firebase Installations API | Analytics identifies the install through it |
-   | Firebase Management API | `getAnalytics()` fetches the app's web config from `firebase.googleapis.com` with the key before the first event — always, `measurementId` in the config only produces a mismatch warning |
+   | Firebase Management API | `initializeAnalytics()` fetches the app's web config from `firebase.googleapis.com` with the key before the first event — always, `measurementId` in the config only produces a mismatch warning |
    | Firebase App Check API | token exchange, once a site key is set |
 
    Check the console's list rather than trusting this one; an API missing here

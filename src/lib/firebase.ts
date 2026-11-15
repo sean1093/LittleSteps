@@ -2,6 +2,8 @@ import { initializeApp } from 'firebase/app';
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
+import { serviceOf } from '../common/routePolicy';
+import type { Page } from '../types/routes';
 
 // Firebase configuration from environment variables
 const firebaseConfig = {
@@ -160,8 +162,20 @@ export const database = getDatabase(app, import.meta.env.VITE_FIREBASE_DATABASE_
  * 綁進進入點的 chunk——等於每個家長都得先下載一份追蹤程式碼、等它向 Google
  * 發出第一個請求，才看得到 app。第一次真的要記事件時再載就夠了。
  *
- * isSupported() 是必要的：在無痕模式與部分 in-app 瀏覽器裡 getAnalytics()
+ * isSupported() 是必要的：在無痕模式與部分 in-app 瀏覽器裡初始化 Analytics
  * 會直接丟例外，而記不到事件不該讓呼叫點壞掉。
+ *
+ * 用 initializeAnalytics() 而不是 getAnalytics()，為的是 send_page_view: false。
+ * getAnalytics() 跑 gtag 的 config 時不帶這個選項，gtag 就會自己送一筆
+ * page_view——而 App 對每一頁都明確送一筆（logPageView），於是每次造訪的
+ * 第一頁被算兩次。關掉自動的那一筆，明確送的就是唯一的一筆。
+ *
+ * VITE_FIREBASE_ANALYTICS_DISABLED === 'true' 時整段跳過，連 chunk 都不載。
+ * 這個開關是給 E2E 的：每一頁（包含一進站的那一頁）都會送 page_view，所以
+ * Analytics 在任何路由的第一次載入就會啟動，而它用假的 API key 去註冊
+ * Installations 會拿到 400、在 console 印錯誤——那是測試環境自己造成的，
+ * 家長不會遇到，卻會讓 PWA-03（公開頁不得有 console 錯誤）紅掉。沒設就是
+ * 啟用，所以正式環境不需要為它做任何設定。
  */
 type SendEvent = (eventName: string, eventParams?: Record<string, unknown>) => void;
 
@@ -169,10 +183,11 @@ let analyticsReady: Promise<SendEvent | null> | null = null;
 
 const loadAnalytics = () => {
   if (typeof window === 'undefined') return Promise.resolve(null);
+  if (import.meta.env.VITE_FIREBASE_ANALYTICS_DISABLED === 'true') return Promise.resolve(null);
   analyticsReady ??= import('firebase/analytics')
-    .then(async ({ getAnalytics, isSupported, logEvent: send }) => {
+    .then(async ({ initializeAnalytics, isSupported, logEvent: send }) => {
       if (!(await isSupported())) return null;
-      const instance = getAnalytics(app);
+      const instance = initializeAnalytics(app, { config: { send_page_view: false } });
       return (eventName: string, eventParams?: Record<string, unknown>) =>
         send(instance, eventName, eventParams);
     })
@@ -186,30 +201,31 @@ export const logEvent = (eventName: string, eventParams?: Record<string, unknown
 };
 
 // Pre-defined event helpers
-export const logPageView = (pageName: string) => {
+export const logPageView = (pageName: Page) => {
   // Determine app category and page details
-  const getPageMetadata = (page: string) => {
-    // Determine which app
-    let app = 'main';
+  const getPageMetadata = (page: Page) => {
+    // Which app: serviceOf() is the one place that maps a page to its service.
+    // This function used to keep its own prefix list, and the list drifted:
+    // littleouting, babyoasis, littleguard and about were all reported as
+    // 'main' / 'home'.
+    const app: string = serviceOf(page) ?? 'main';
     let section = 'home';
-    let feature = page;
+    let feature: string = page;
 
     if (page === 'home') {
-      app = 'main';
       section = 'landing';
       feature = 'main-entry';
+    } else if (page === 'about') {
+      section = 'about';
     } else if (page.startsWith('littlebloom')) {
       // startsWith, not ===: an equality check dropped littlebloom/wiki into
       // the generic 'main' bucket, so its page views were never attributed.
-      app = 'littlebloom';
       section = 'wip';
       feature = 'pregnancy-companion';
     } else if (page.startsWith('littleexplorer')) {
-      app = 'littleexplorer';
       section = 'toddler';
       feature = page.split('/')[1] || 'development';
     } else if (page.startsWith('littlesteps')) {
-      app = 'littlesteps';
       const parts = page.split('/');
       feature = parts[1] || 'home';
 
@@ -225,6 +241,9 @@ export const logPageView = (pageName: string) => {
       } else {
         section = 'landing';
       }
+    } else if (page === 'littleouting' || page === 'babyoasis' || page === 'littleguard') {
+      // The three single-page services: public, no child data, one page each.
+      section = 'public';
     }
 
     return { app, section, feature };
@@ -238,8 +257,9 @@ export const logPageView = (pageName: string) => {
     page_location: window.location.href,
     page_title: document.title,
     // Custom dimensions for better segmentation
-    app_name: metadata.app,           // main | littlesteps | littlebloom | littleexplorer
-    app_section: metadata.section,    // landing | data-tracking | development | etc.
+    // main | littlesteps | littlebloom | littleexplorer | littleouting | babyoasis | littleguard
+    app_name: metadata.app,
+    app_section: metadata.section,    // landing | data-tracking | development | public | about | etc.
     app_feature: metadata.feature,    // specific feature name
   });
 };

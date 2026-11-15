@@ -60,6 +60,12 @@ const FIREBASE_E2E_ENV = {
   // merges the repo's `.env` under `process.env`, so a real site key in a
   // developer's `.env` would otherwise reach the E2E build.
   VITE_FIREBASE_APPCHECK_SITE_KEY: '',
+  // The suite runs without Analytics too. A page view is sent for every page
+  // shown, the landing page included, so Analytics would otherwise start on
+  // the first load of every route and register an installation with the dummy
+  // key above: a 400 and a console error that only this build produces, which
+  // is exactly what PWA-03 asserts against.
+  VITE_FIREBASE_ANALYTICS_DISABLED: 'true',
 };
 
 /**

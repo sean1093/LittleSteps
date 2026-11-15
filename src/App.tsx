@@ -122,13 +122,27 @@ function AppContent() {
 
   useDocumentMeta(currentPage);
 
+  // page_view 只在這裡送，全站就這一個呼叫點。
+  //
+  // 換頁有兩條路：經過 onNavigate 的 navigateToPage，以及元件自己呼叫的
+  // goTo()、瀏覽器的上一頁／下一頁與第一次載入。以前只有第一條會記，所以
+  // LittleExplorer 的分頁、返回鍵與每次造訪的第一頁都沒有 page_view。綁在
+  // currentPage 上，不管是誰換的頁都只記一次；重畫而沒換頁則不記。
+  //
+  // 必須宣告在 useDocumentMeta 之後：同一個元件的 effect 照宣告順序執行，而
+  // logPageView 讀的是 document.title。放在前面，或是像以前那樣在事件處理
+  // 函式裡同步呼叫，送出去的就是上一頁的標題。
+  useEffect(() => {
+    logPageView(currentPage);
+  }, [currentPage]);
+
   const navigateToPage = (page: Page) => {
+    // 畫面由上面訂閱的導覽事件來換，這裡不必自己 setCurrentPage。
     goTo(page);
-    setCurrentPage(page);
-    // Scroll to top when navigating
+    // 捲回頂端要留在這裡：goTo 遇到「已經在這一頁」會直接 return，連事件都
+    // 不發。少了這一行，在目前這一頁點側邊選單的同一項或頁首的首頁鍵就什麼
+    // 都不會發生。
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    // Log page view
-    logPageView(page);
   };
 
 

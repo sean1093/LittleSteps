@@ -108,11 +108,15 @@ ever attaches.
 Two calls do still leave for Google, and both must be handled explicitly rather
 than discovered as a console error.
 
-**Analytics.** `App.tsx` calls `logPageView()` on every in-app navigation, which
-dynamically imports `firebase/analytics` and fetches a web config from
-`firebase.googleapis.com`. With dummy credentials that request fails and retries
-with backoff, producing console errors — which is precisely what PWA-03 asserts
-against.
+**Analytics.** `App.tsx` calls `logPageView()` for every page shown, the one a
+visit lands on included, which dynamically imports `firebase/analytics`. With
+dummy credentials that fetches a web config from `firebase.googleapis.com`,
+which fails and retries with backoff, and registers an installation, which the
+dummy key gets a 400 for — console errors, which is precisely what PWA-03
+asserts against. The E2E build therefore sets
+`VITE_FIREBASE_ANALYTICS_DISABLED=true` and Analytics never starts; the two
+analytics hosts stay on the block list so a build without the flag fails with a
+named host rather than a timeout.
 
 **The sign-in iframe.** `getAuth()` runs at module load on every route, and
 `AuthImpl._initializeWithPersistence` then initialises the popup/redirect
