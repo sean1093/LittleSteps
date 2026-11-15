@@ -71,7 +71,8 @@ export function useFirebaseCollection<T>(
     return () => unsubscribe();
   }, [childId, user]);
 
-  const loading = childId !== null && user !== null && settledFor !== childId;
+  // 與上面 effect 的 `!childId || !user` 同一個判準：不訂閱的時候就不是載入中。
+  const loading = Boolean(childId && user) && settledFor !== childId;
 
   return { data, loading, error };
 }

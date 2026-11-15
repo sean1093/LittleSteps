@@ -19,6 +19,7 @@ import FoodTrackingSummaryCard from '../components/food/FoodTrackingSummaryCard'
 import AlertBanner from '../components/shared/AlertBanner';
 import PoopSummaryCard from '../components/dailylog/PoopSummaryCard';
 import EmptyState from '../../common/ui/EmptyState';
+import LoadingBar from '../../common/ui/LoadingBar';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem, tap, hoverLift } from '../../common/ui/motion';
 import { goTo } from '../../common/navigate';
@@ -26,6 +27,8 @@ import { goTo } from '../../common/navigate';
 interface DashboardPageProps {
   currentChild?: ChildProfile;
   dailyLogs: DailyLog[];
+  /** dailyLogs 的第一份快照還沒到。那時的空陣列是「還不知道」，不是「沒有紀錄」。 */
+  logsLoading?: boolean;
   user: User | null;
   onNavigate: (page: 'littlesteps/milestones' | 'littlesteps/vaccine-tracking' | 'littlesteps/daily-log' | 'littlesteps/care-guide' | 'littlesteps/complementary-food' | 'littlesteps/sleep-analysis' | 'littlesteps/clinic-summary') => void;
 }
@@ -72,6 +75,7 @@ const QUICK_NAV: { label: string; page: 'littlesteps/milestones' | 'littlesteps/
 export default function DashboardPage({
   currentChild,
   dailyLogs,
+  logsLoading = false,
   user,
   onNavigate,
 }: DashboardPageProps) {
@@ -125,6 +129,18 @@ export default function DashboardPage({
             </div>
           </motion.div>
         </motion.div>
+      </div>
+    );
+  }
+
+  // 今日摘要、警示、睡眠與便便卡片都是從日誌算出來的。快照到之前先不畫，
+  // 否則家長會先看到「今天餵奶 0 次」，下一瞬間才換成真的數字。
+  if (logsLoading) {
+    return (
+      <div className="screen">
+        <div className="screen-body-wide flex justify-center py-16">
+          <LoadingBar />
+        </div>
       </div>
     );
   }

@@ -21,6 +21,7 @@ import ErrorBoundary from './common/components/ErrorBoundary';
 import { ToastProvider } from './common/ui/toast';
 import AppBar from './common/ui/AppBar';
 import EmptyState from './common/ui/EmptyState';
+import LoadingBar from './common/ui/LoadingBar';
 import { SERVICE_THEME } from './common/ui/serviceTheme';
 const DashboardPage = lazy(() => import('./littlesteps/pages/DashboardPage'));
 const MilestonesPage = lazy(() => import('./littlesteps/pages/MilestonesPage'));
@@ -102,11 +103,13 @@ function AppContent() {
   );
   // 第一份快照回來之前，[] 是「還不知道」，不是「沒有紀錄」。listener 以前
   // 在入口頁就熱了，所以這段空窗只有直接開深連結才遇得到；現在從入口頁走進
-  // 服務就是冷的，每次都會遇到。讀 App 這一份的四頁在快照到之前先顯示載入條，
-  // 不拿空陣列去算——看診摘要寫「這七天沒有餵奶」是比轉一下更糟的答案。
-  // 沒有孩子時不擋：那時 hook 根本沒訂閱，頁面要顯示的是自己的空狀態。
-  const dailyLogsPending = recordsChildId !== null && dailyLogsLoading;
-  const diaryPending = recordsChildId !== null && diaryLoading;
+  // 服務就是冷的，每次都會遇到。所以 loading 跟著資料一起傳給讀這一份的四頁，
+  // 由頁面在自己的版面裡顯示載入條，不拿空陣列去算——看診摘要寫「這七天沒有
+  // 餵奶」是比轉一下更糟的答案。
+  //
+  // 不在這裡把整頁換成載入條：那樣頁面的 chunk 與它自己的 listener 要等快照
+  // 回來才開始載，三件本來同時進行的事變成排隊；而日記頁的頁首與分頁列是它
+  // 自己畫的，換掉就連離開的路都沒有。
   // 建檔之前就到期的項目不算逾期——app 只是沒有那段紀錄，不是家長漏掉了。
   // 把它們算進紅點，會讓新增一個既有的兩歲孩子立刻背上十幾筆「未完成」。
   const reminderBadge =
@@ -302,16 +305,6 @@ function AppContent() {
     return landing;
   }
 
-  // 頁面 chunk 還沒到、或頁面要讀的紀錄還沒到，都是同一個畫面。
-  const pageLoadingBar = (
-    <div className="min-h-[50vh] flex items-center justify-center">
-      <div className="w-40 h-1 rounded-full bg-primary-light overflow-hidden" role="status">
-        <div className="h-full w-1/3 rounded-full bg-primary-dark animate-[loading_1.2s_ease-in-out_infinite]" />
-        <span className="sr-only">載入中</span>
-      </div>
-    </div>
-  );
-
   return (
     <div className="min-h-dscreen bg-warm-white">
       {/* Sidebar - Only show for LittleSteps routes */}
@@ -382,27 +375,35 @@ function AppContent() {
         {/* key 綁 currentPage：一頁壞掉之後換頁就會重掛，不會把家長困在
             錯誤畫面裡直到重新整理。 */}
         <ErrorBoundary key={currentPage} scope={currentPage} ownsMain={isStandalone}>
-        <Suspense fallback={pageLoadingBar}>
+        <Suspense
+          fallback={
+            <div className="min-h-[50vh] flex items-center justify-center">
+              <LoadingBar />
+            </div>
+          }
+        >
         {/* 服務集合首頁與「先新增寶寶」都由 LandingPage 決定，這裡只負責放進版面 */}
         {landing}
 
         {/* LittleSteps Routes */}
-        {currentPage === 'littlesteps' && !landingKind && (dailyLogsPending ? pageLoadingBar : (
+        {currentPage === 'littlesteps' && !landingKind && (
           <DashboardPage
             currentChild={currentChild}
             dailyLogs={dailyLogs}
+            logsLoading={dailyLogsLoading}
             user={user}
             onNavigate={navigateToPage}
           />
-        ))}
-        {currentPage === 'littlesteps/dashboard' && (dailyLogsPending ? pageLoadingBar : (
+        )}
+        {currentPage === 'littlesteps/dashboard' && (
           <DashboardPage
             currentChild={currentChild}
             dailyLogs={dailyLogs}
+            logsLoading={dailyLogsLoading}
             user={user}
             onNavigate={navigateToPage}
           />
-        ))}
+        )}
         {currentPage === 'littlesteps/milestones' && (
           <PregnancyGate currentChild={currentChild}>
             <MilestonesPage
@@ -456,20 +457,22 @@ function AppContent() {
         {currentPage === 'littlesteps/baby-wiki' && (
           <BabyWikiPage />
         )}
-        {currentPage === 'littlesteps/clinic-summary' && (dailyLogsPending ? pageLoadingBar : (
+        {currentPage === 'littlesteps/clinic-summary' && (
           <ClinicSummaryPage
             currentChild={currentChild}
             dailyLogs={dailyLogs}
+            logsLoading={dailyLogsLoading}
             user={user}
           />
-        ))}
-        {currentPage === 'littlesteps/report' && (dailyLogsPending ? pageLoadingBar : (
+        )}
+        {currentPage === 'littlesteps/report' && (
           <ReportPage
             currentChild={currentChild}
             dailyLogs={dailyLogs}
+            logsLoading={dailyLogsLoading}
             user={user}
           />
-        ))}
+        )}
 
         {/* LittleBloom Route */}
         {currentPage === 'littlebloom' && (
@@ -527,10 +530,11 @@ function AppContent() {
             onJoinChild={joinChild}
           />
         )}
-        {currentPage === 'littleexplorer/diary' && (diaryPending ? pageLoadingBar : (
+        {currentPage === 'littleexplorer/diary' && (
           <DiaryPage
             currentChild={currentChild}
             entries={diaryEntries}
+            loading={diaryLoading}
             reminderBadge={reminderBadge}
             onAdd={addDiaryEntry}
             onUpdate={updateDiaryEntry}
@@ -540,7 +544,7 @@ function AppContent() {
             }
             onJoinChild={joinChild}
           />
-        ))}
+        )}
         {currentPage === 'littleexplorer/wiki' && (
           <ToddlerWikiPage currentChild={currentChild} reminderBadge={reminderBadge} />
         )}
