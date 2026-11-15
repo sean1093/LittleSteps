@@ -91,15 +91,22 @@ function AppContent() {
   // null，useFirebaseCollection 遇到 null 就什麼都不掛。理由與為什麼以服務而
   // 不是頁面為界，寫在 routePolicy 的 wantsDailyLogs 上。
   const recordsChildId = currentChild?.id ?? null;
-  const { logs: dailyLogs } = useDailyLogs(
+  const { logs: dailyLogs, loading: dailyLogsLoading } = useDailyLogs(
     wantsDailyLogs(currentPage) ? recordsChildId : null,
     user,
   );
   const { tasks: careTasks } = useCareTasks(currentChild);
-  const { entries: diaryEntries } = useDiary(
+  const { entries: diaryEntries, loading: diaryLoading } = useDiary(
     wantsDiaryEntries(currentPage) ? recordsChildId : null,
     user,
   );
+  // 第一份快照回來之前，[] 是「還不知道」，不是「沒有紀錄」。listener 以前
+  // 在入口頁就熱了，所以這段空窗只有直接開深連結才遇得到；現在從入口頁走進
+  // 服務就是冷的，每次都會遇到。讀 App 這一份的四頁在快照到之前先顯示載入條，
+  // 不拿空陣列去算——看診摘要寫「這七天沒有餵奶」是比轉一下更糟的答案。
+  // 沒有孩子時不擋：那時 hook 根本沒訂閱，頁面要顯示的是自己的空狀態。
+  const dailyLogsPending = recordsChildId !== null && dailyLogsLoading;
+  const diaryPending = recordsChildId !== null && diaryLoading;
   // 建檔之前就到期的項目不算逾期——app 只是沒有那段紀錄，不是家長漏掉了。
   // 把它們算進紅點，會讓新增一個既有的兩歲孩子立刻背上十幾筆「未完成」。
   const reminderBadge =
@@ -128,6 +135,11 @@ function AppContent() {
   // goTo()、瀏覽器的上一頁／下一頁與第一次載入。以前只有第一條會記，所以
   // LittleExplorer 的分頁、返回鍵與每次造訪的第一頁都沒有 page_view。綁在
   // currentPage 上，不管是誰換的頁都只記一次；重畫而沒換頁則不記。
+  //
+  // 記的單位是路由，不是畫面：只換 query 的導覽（同一個百科換關鍵字）不會
+  // 再記一筆；未登入而看到服務介紹頁、或還在載入時，記的仍是網址上那一頁，
+  // 登入後停在同一個網址也不會補記。要區分那些得加維度，而每個事件能帶哪些
+  // 欄位是 analytics.test.ts 釘死的。
   //
   // 必須宣告在 useDocumentMeta 之後：同一個元件的 effect 照宣告順序執行，而
   // logPageView 讀的是 document.title。放在前面，或是像以前那樣在事件處理
@@ -290,6 +302,16 @@ function AppContent() {
     return landing;
   }
 
+  // 頁面 chunk 還沒到、或頁面要讀的紀錄還沒到，都是同一個畫面。
+  const pageLoadingBar = (
+    <div className="min-h-[50vh] flex items-center justify-center">
+      <div className="w-40 h-1 rounded-full bg-primary-light overflow-hidden" role="status">
+        <div className="h-full w-1/3 rounded-full bg-primary-dark animate-[loading_1.2s_ease-in-out_infinite]" />
+        <span className="sr-only">載入中</span>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-dscreen bg-warm-white">
       {/* Sidebar - Only show for LittleSteps routes */}
@@ -360,39 +382,27 @@ function AppContent() {
         {/* key 綁 currentPage：一頁壞掉之後換頁就會重掛，不會把家長困在
             錯誤畫面裡直到重新整理。 */}
         <ErrorBoundary key={currentPage} scope={currentPage} ownsMain={isStandalone}>
-        <Suspense
-          fallback={
-            <div className="min-h-[50vh] flex items-center justify-center">
-              <div
-                className="w-40 h-1 rounded-full bg-primary-light overflow-hidden"
-                role="status"
-              >
-                <div className="h-full w-1/3 rounded-full bg-primary-dark animate-[loading_1.2s_ease-in-out_infinite]" />
-                <span className="sr-only">載入中</span>
-              </div>
-            </div>
-          }
-        >
+        <Suspense fallback={pageLoadingBar}>
         {/* 服務集合首頁與「先新增寶寶」都由 LandingPage 決定，這裡只負責放進版面 */}
         {landing}
 
         {/* LittleSteps Routes */}
-        {currentPage === 'littlesteps' && !landingKind && (
+        {currentPage === 'littlesteps' && !landingKind && (dailyLogsPending ? pageLoadingBar : (
           <DashboardPage
             currentChild={currentChild}
             dailyLogs={dailyLogs}
             user={user}
             onNavigate={navigateToPage}
           />
-        )}
-        {currentPage === 'littlesteps/dashboard' && (
+        ))}
+        {currentPage === 'littlesteps/dashboard' && (dailyLogsPending ? pageLoadingBar : (
           <DashboardPage
             currentChild={currentChild}
             dailyLogs={dailyLogs}
             user={user}
             onNavigate={navigateToPage}
           />
-        )}
+        ))}
         {currentPage === 'littlesteps/milestones' && (
           <PregnancyGate currentChild={currentChild}>
             <MilestonesPage
@@ -446,20 +456,20 @@ function AppContent() {
         {currentPage === 'littlesteps/baby-wiki' && (
           <BabyWikiPage />
         )}
-        {currentPage === 'littlesteps/clinic-summary' && (
+        {currentPage === 'littlesteps/clinic-summary' && (dailyLogsPending ? pageLoadingBar : (
           <ClinicSummaryPage
             currentChild={currentChild}
             dailyLogs={dailyLogs}
             user={user}
           />
-        )}
-        {currentPage === 'littlesteps/report' && (
+        ))}
+        {currentPage === 'littlesteps/report' && (dailyLogsPending ? pageLoadingBar : (
           <ReportPage
             currentChild={currentChild}
             dailyLogs={dailyLogs}
             user={user}
           />
-        )}
+        ))}
 
         {/* LittleBloom Route */}
         {currentPage === 'littlebloom' && (
@@ -517,7 +527,7 @@ function AppContent() {
             onJoinChild={joinChild}
           />
         )}
-        {currentPage === 'littleexplorer/diary' && (
+        {currentPage === 'littleexplorer/diary' && (diaryPending ? pageLoadingBar : (
           <DiaryPage
             currentChild={currentChild}
             entries={diaryEntries}
@@ -530,7 +540,7 @@ function AppContent() {
             }
             onJoinChild={joinChild}
           />
-        )}
+        ))}
         {currentPage === 'littleexplorer/wiki' && (
           <ToddlerWikiPage currentChild={currentChild} reminderBadge={reminderBadge} />
         )}

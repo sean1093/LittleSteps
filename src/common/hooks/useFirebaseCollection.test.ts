@@ -98,4 +98,27 @@ describe('useFirebaseCollection', () => {
     expect(result.current.error).toBe(false);
     expect(result.current.data).toEqual([]);
   });
+
+  it('從沒有孩子變成有孩子的那一次 render 就是載入中，不會先說「沒有紀錄」', () => {
+    // App 只在會讀紀錄的服務裡才傳 childId，所以 null → 孩子 每次走進服務
+    // 都會發生。記下每一次 render 的 loading：只要有一次是 false 而 data 還是
+    // 空的，頁面就會拿空陣列去畫。
+    const seen: { childId: string | null; loading: boolean }[] = [];
+    const { rerender } = renderHook(
+      ({ childId }: { childId: string | null }) => {
+        const state = useFirebaseCollection(childId, user, logsOf(childId));
+        seen.push({ childId, loading: state.loading });
+        return state;
+      },
+      { initialProps: { childId: null as string | null } },
+    );
+
+    rerender({ childId: 'A' });
+    const beforeSnapshot = seen.filter((render) => render.childId === 'A');
+    expect(beforeSnapshot.length).toBeGreaterThan(0);
+    expect(beforeSnapshot.every((render) => render.loading)).toBe(true);
+
+    act(() => subscription('A').next({ val: () => null }));
+    expect(seen[seen.length - 1]).toEqual({ childId: 'A', loading: false });
+  });
 });
