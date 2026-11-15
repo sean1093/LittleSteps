@@ -25,11 +25,15 @@ export function useStalled(pending: boolean): boolean {
       setStalled(false);
       return;
     }
+    const startTimer = () => window.setTimeout(() => setStalled(true), STALL_AFTER_MS);
+    // Already offline: say so at once. The listeners below are still attached,
+    // so the connection coming back withdraws the message here as well.
+    let timer: number | undefined;
     if (navigator.onLine === false) {
       setStalled(true);
-      return;
+    } else {
+      timer = startTimer();
     }
-    let timer = window.setTimeout(() => setStalled(true), STALL_AFTER_MS);
     const wentOffline = () => setStalled(true);
     // Coming back online withdraws the message and gives the wait a fresh
     // allowance: a handoff between wifi and mobile data is a blip, not an
@@ -37,7 +41,7 @@ export function useStalled(pending: boolean): boolean {
     const cameOnline = () => {
       setStalled(false);
       window.clearTimeout(timer);
-      timer = window.setTimeout(() => setStalled(true), STALL_AFTER_MS);
+      timer = startTimer();
     };
     window.addEventListener('offline', wentOffline);
     window.addEventListener('online', cameOnline);

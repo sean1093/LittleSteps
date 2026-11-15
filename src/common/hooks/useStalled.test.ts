@@ -148,4 +148,20 @@ describe('useStalled', () => {
     });
     expect(result.current).toBe(true);
   });
+
+  it('takes the message back for a wait that began offline, too', () => {
+    online(false);
+    const { result } = renderHook(() => useStalled(true));
+    expect(result.current).toBe(true);
+
+    act(() => {
+      window.dispatchEvent(new Event('online'));
+    });
+    expect(result.current).toBe(false);
+
+    act(() => {
+      vi.advanceTimersByTime(STALL_AFTER_MS);
+    });
+    expect(result.current).toBe(true);
+  });
 });
