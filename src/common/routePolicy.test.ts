@@ -1,7 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { ROUTE_PATH, pageFromPath, type Page } from '../types/routes';
 import type { ServiceId } from './routePolicy';
-import { SERVICE_HOME, isStandaloneSubApp, requiresAuth, serviceOf } from './routePolicy';
+import {
+  SERVICE_HOME,
+  isStandaloneSubApp,
+  requiresAuth,
+  serviceOf,
+  wantsDailyLogs,
+  wantsDiaryEntries,
+} from './routePolicy';
 
 /**
  * 執行期的 Page 清單，直接從路由表推導。
@@ -203,6 +210,41 @@ describe('serviceOf', () => {
   it('每個服務的首頁都歸屬於自己', () => {
     for (const [service, home] of Object.entries(SERVICE_HOME)) {
       expect(serviceOf(home), home).toBe(service);
+    }
+  });
+});
+
+describe('wantsDailyLogs／wantsDiaryEntries', () => {
+  // 期望值從路由的路徑前綴推導，不經過 serviceOf——拿實作自己的判斷來驗實作，
+  // 等於什麼都沒驗。
+  const under = (service: string) =>
+    ALL_PAGES.filter((page) => page === service || page.startsWith(`${service}/`));
+  const stepsPages = under('littlesteps');
+  const explorerPages = under('littleexplorer');
+  const neither = ALL_PAGES.filter(
+    (page) => !stepsPages.includes(page) && !explorerPages.includes(page),
+  );
+
+  it('三組都不是空的，下面的斷言才有東西可驗', () => {
+    expect(stepsPages.length).toBeGreaterThan(0);
+    expect(explorerPages.length).toBeGreaterThan(0);
+    expect(neither.length).toBeGreaterThan(0);
+  });
+
+  it('日誌恰好在 LittleSteps 的每一頁訂閱，其餘一頁都不訂', () => {
+    expect(ALL_PAGES.filter(wantsDailyLogs).sort()).toEqual([...stepsPages].sort());
+  });
+
+  it('日記恰好在 LittleExplorer 的每一頁訂閱，其餘一頁都不訂', () => {
+    expect(ALL_PAGES.filter(wantsDiaryEntries).sort()).toEqual([...explorerPages].sort());
+  });
+
+  it('兩個服務以外的頁面兩份都不訂閱', () => {
+    // 入口、關於頁、LittleBloom、三個單頁服務：登入的家長在這些頁面上不該
+    // 為了沒人讀的資料下載孩子的整份紀錄。
+    for (const page of neither) {
+      expect(wantsDailyLogs(page), page).toBe(false);
+      expect(wantsDiaryEntries(page), page).toBe(false);
     }
   });
 });

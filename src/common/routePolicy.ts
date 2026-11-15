@@ -94,6 +94,26 @@ export function serviceOf(page: Page): ServiceId | null {
   return 'babyoasis';
 }
 
+/**
+ * 這一頁所在的服務會不會讀 App 那份日誌／日記。
+ *
+ * App 的 useDailyLogs 與 useDiary 是對整個集合掛 onValue，沒有查詢條件。以前
+ * 它們不看頁面，所以登入的家長打開哺乳室地圖、疾病雷達或關於頁，也會把孩子
+ * 的整份日誌與日記下載下來並一直聽著——而那些頁面一個字都不讀。
+ *
+ * 範圍是「服務」而不是「頁面」：RTDB 在一條路徑上最後一個 listener 退訂時就
+ * 丟掉記憶體裡的快取。以頁面為界的話，總覽 → 里程碑 → 總覽會把整份日誌重新
+ * 下載一次，而總覽 → 快速日誌會在 lazy 頁面掛上自己的 listener 之前先把 App
+ * 這一個退掉。以服務為界，家長待在服務裡的期間 listener 一直是熱的。
+ */
+export function wantsDailyLogs(page: Page): boolean {
+  return serviceOf(page) === 'littlesteps';
+}
+
+export function wantsDiaryEntries(page: Page): boolean {
+  return serviceOf(page) === 'littleexplorer';
+}
+
 /** 各服務的首頁路由。未登入時被擋下的頁面會退回自己服務的首頁。 */
 export const SERVICE_HOME: Record<ServiceId, Page> = {
   littlesteps: 'littlesteps',
