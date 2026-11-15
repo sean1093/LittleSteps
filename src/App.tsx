@@ -3,7 +3,7 @@ import { Menu, Home } from 'lucide-react';
 import { pageFromPath, type Page, type LittleStepsPage } from './types/routes';
 import { entryPageForChild, serviceForStage, stageOfChild } from './common/stageEntry';
 import { goTo, subscribeToNavigation } from './common/navigate';
-import { isStandaloneSubApp } from './common/routePolicy';
+import { isStandaloneSubApp, wantsDailyLogs, wantsDiaryEntries } from './common/routePolicy';
 import { useDocumentMeta } from './common/seo/useDocumentMeta';
 import { splitOverdueByProfileStart } from './common/utils/profileHistory';
 import { logPageView } from './lib/firebase';
@@ -86,9 +86,20 @@ function AppContent() {
   // currentChild 不一定是 currentChildId 指的那一個：共享的孩子被建立者刪掉
   // 之後 currentChildId 會被清成 null，而畫面已經退到名單裡的第一個孩子。
   // 這裡若用 id，日誌與日記就會去讀一個 null，家長看到的是「這孩子沒有紀錄」。
-  const { logs: dailyLogs } = useDailyLogs(currentChild?.id ?? null, user);
+  //
+  // 兩份都是整個集合的 listener，所以只在會讀它的服務裡才訂閱；其餘頁面傳
+  // null，useFirebaseCollection 遇到 null 就什麼都不掛。理由與為什麼以服務而
+  // 不是頁面為界，寫在 routePolicy 的 wantsDailyLogs 上。
+  const recordsChildId = currentChild?.id ?? null;
+  const { logs: dailyLogs } = useDailyLogs(
+    wantsDailyLogs(currentPage) ? recordsChildId : null,
+    user,
+  );
   const { tasks: careTasks } = useCareTasks(currentChild);
-  const { entries: diaryEntries } = useDiary(currentChild?.id ?? null, user);
+  const { entries: diaryEntries } = useDiary(
+    wantsDiaryEntries(currentPage) ? recordsChildId : null,
+    user,
+  );
   // 建檔之前就到期的項目不算逾期——app 只是沒有那段紀錄，不是家長漏掉了。
   // 把它們算進紅點，會讓新增一個既有的兩歲孩子立刻背上十幾筆「未完成」。
   const reminderBadge =
