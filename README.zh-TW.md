@@ -372,10 +372,16 @@ VITE_FIREBASE_STORAGE_BUCKET=
 VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 VITE_FIREBASE_MEASUREMENT_ID=
+VITE_FIREBASE_ANALYTICS_DISABLED=
 VITE_FIREBASE_DATABASE_URL=
 VITE_FIREBASE_APPCHECK_SITE_KEY=
 VITE_FIREBASE_APPCHECK_DEBUG=
 ```
+
+`VITE_FIREBASE_ANALYTICS_DISABLED=true` 會建置出沒有 Analytics 的 app：不送任何
+事件，也不會去抓 Analytics 的 chunk。只要是家長會用到的建置就留空。它是為
+E2E 的建置而存在的——那份建置用的是假的憑證，否則每條路由第一次載入時的
+installation 請求都會失敗。
 
 `VITE_FIREBASE_APPCHECK_SITE_KEY` 是 reCAPTCHA v3 site key：在 Google
 reCAPTCHA 管理主控台建立，再連同它的 secret 註冊到 Firebase 主控台 → App
@@ -596,7 +602,7 @@ Identity Toolkit — 登入與 token 更新 — 所以一把不設限的 key，�
    | Identity Toolkit API | 登入，`identitytoolkit.googleapis.com` |
    | Token Service API | 更新 ID token，`securetoken.googleapis.com` |
    | Firebase Installations API | Analytics 用它辨識這個安裝 |
-   | Firebase Management API | `getAnalytics()` 在第一個事件之前會帶著 key 到 `firebase.googleapis.com` 抓 app 的 web 設定 — 一律會抓，設定裡的 `measurementId` 只會在不一致時印一則警告 |
+   | Firebase Management API | `initializeAnalytics()` 在第一個事件之前會帶著 key 到 `firebase.googleapis.com` 抓 app 的 web 設定 — 一律會抓，設定裡的 `measurementId` 只會在不一致時印一則警告 |
    | Firebase App Check API | 交換 token，設了 site key 之後才用得到 |
 
    以主控台的清單為準，不要照抄這份；這裡少放一個 API，在瀏覽器裡會變成一個
