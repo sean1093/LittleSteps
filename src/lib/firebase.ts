@@ -162,6 +162,11 @@ export const database = getDatabase(app, import.meta.env.VITE_FIREBASE_DATABASE_
  * 綁進進入點的 chunk——等於每個家長都得先下載一份追蹤程式碼、等它向 Google
  * 發出第一個請求，才看得到 app。第一次真的要記事件時再載就夠了。
  *
+ * 「第一次記事件」現在就是一進站：每一頁都送 page_view，進站的那一頁也算。
+ * 所以載入本身再往後讓一步，等瀏覽器閒下來（whenIdle）才開始——事件的內容
+ * 在呼叫當下就組好了，晚一點送不會少任何東西，而登入狀態與孩子的資料不必
+ * 跟追蹤程式碼搶同一段啟動時間。
+ *
  * isSupported() 是必要的：在無痕模式與部分 in-app 瀏覽器裡初始化 Analytics
  * 會直接丟例外，而記不到事件不該讓呼叫點壞掉。
  *
@@ -169,6 +174,12 @@ export const database = getDatabase(app, import.meta.env.VITE_FIREBASE_DATABASE_
  * getAnalytics() 跑 gtag 的 config 時不帶這個選項，gtag 就會自己送一筆
  * page_view——而 App 對每一頁都明確送一筆（logPageView），於是每次造訪的
  * 第一頁被算兩次。關掉自動的那一筆，明確送的就是唯一的一筆。
+ *
+ * initializeAnalytics() 對同一個 app 呼叫第二次會丟 already-initialized——
+ * SDK 會就地改寫第一次傳進去的 config，之後任何「一樣」的字面值都比對不過。
+ * 正式環境這個模組只執行一次；開發時 HMR 重新執行它就會踩到，而且錯誤被
+ * 下面的 catch 吞掉，Analytics 會安靜地停到整頁重新整理。所以丟了就退回
+ * getAnalytics()，拿已經存在的那一個。
  *
  * VITE_FIREBASE_ANALYTICS_DISABLED === 'true' 時整段跳過，連 chunk 都不載。
  * 這個開關是給 E2E 的：每一頁（包含一進站的那一頁）都會送 page_view，所以
@@ -181,13 +192,29 @@ type SendEvent = (eventName: string, eventParams?: Record<string, unknown>) => v
 
 let analyticsReady: Promise<SendEvent | null> | null = null;
 
+/** 瀏覽器閒下來才 resolve；沒有 requestIdleCallback（Safari）就讓出一個 tick。 */
+const whenIdle = () =>
+  new Promise<void>((resolve) => {
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(() => resolve(), { timeout: 3000 });
+    } else {
+      window.setTimeout(resolve, 1);
+    }
+  });
+
 const loadAnalytics = () => {
   if (typeof window === 'undefined') return Promise.resolve(null);
   if (import.meta.env.VITE_FIREBASE_ANALYTICS_DISABLED === 'true') return Promise.resolve(null);
-  analyticsReady ??= import('firebase/analytics')
-    .then(async ({ initializeAnalytics, isSupported, logEvent: send }) => {
+  analyticsReady ??= whenIdle()
+    .then(() => import('firebase/analytics'))
+    .then(async ({ getAnalytics, initializeAnalytics, isSupported, logEvent: send }) => {
       if (!(await isSupported())) return null;
-      const instance = initializeAnalytics(app, { config: { send_page_view: false } });
+      let instance;
+      try {
+        instance = initializeAnalytics(app, { config: { send_page_view: false } });
+      } catch {
+        instance = getAnalytics(app);
+      }
       return (eventName: string, eventParams?: Record<string, unknown>) =>
         send(instance, eventName, eventParams);
     })

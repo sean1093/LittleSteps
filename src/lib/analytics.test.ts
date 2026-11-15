@@ -200,6 +200,20 @@ describe('analytics payloads', () => {
     expect(initialised).toHaveBeenCalledWith({ config: { send_page_view: false } });
   });
 
+  it('still sends events when Analytics was already initialised for the app', async () => {
+    // A second initializeAnalytics() for the same app throws. The module only
+    // runs once in production, but HMR re-runs it in development, and the
+    // throw used to be swallowed, leaving Analytics dead until a reload.
+    initialised.mockImplementationOnce(() => {
+      throw new Error('analytics/already-initialized');
+    });
+    const fb = await loadRealFirebase();
+
+    fb.logPageView('home');
+
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(1));
+  });
+
   it('sends nothing and never initialises Analytics when the build disables it', async () => {
     // The E2E build sets this: its dummy credentials fail the installation
     // request, and with a page view on every first load that failure would
