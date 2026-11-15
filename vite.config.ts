@@ -48,6 +48,38 @@ function seoStaticFiles(): Plugin {
   }
 }
 
+/**
+ * 把三組不常變動的函式庫從進入點拆出來，各自擁有獨立的內容雜湊。
+ *
+ * 沒拆之前，函式庫與應用程式碼共用同一個 chunk：改一行文案，檔名就變，
+ * service worker 會讓每個已安裝的 PWA 重新下載約 595 kB 根本沒變的函式庫。
+ *
+ * 比對一定要錨定在 node_modules 的路徑區段上。兩種直覺的寫法都實際建置過，
+ * 也都是壞的：
+ *
+ * - `id.includes('react')` 會連 `lucide-react`、`react-leaflet`、
+ *   `react-leaflet-cluster` 一起吃進去，並把 `leaflet` 與它的 CSS 拖進每個
+ *   路由都要載入的 chunk——地圖不再是只有 BabyOasis 才付的成本。
+ * - `id.includes('firebase')` 會吃到 `@firebase/analytics` 與
+ *   `@firebase/installations`，`src/lib/firebase.ts` 裡動態 import 的
+ *   analytics 就此併入首屏 chunk，延遲載入形同作廢。
+ *
+ * 所以 analytics 與只有它才用到的 installations 明確排除在外，留給 Rollup
+ * 照動態 import 自行切出延遲載入的 chunk。
+ */
+const REACT_VENDOR = /[\\/]node_modules[\\/](?:react|react-dom|scheduler)[\\/]/
+const MOTION_VENDOR = /[\\/]node_modules[\\/]framer-motion[\\/]/
+const FIREBASE_VENDOR = /[\\/]node_modules[\\/](?:@firebase|firebase)[\\/]/
+const FIREBASE_LAZY =
+  /[\\/]node_modules[\\/](?:@firebase[\\/](?:analytics|installations)|firebase[\\/]analytics)[\\/]/
+
+function vendorChunk(id: string): string | undefined {
+  if (REACT_VENDOR.test(id)) return 'react'
+  if (MOTION_VENDOR.test(id)) return 'framer-motion'
+  if (FIREBASE_VENDOR.test(id) && !FIREBASE_LAZY.test(id)) return 'firebase'
+  return undefined
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
@@ -111,6 +143,13 @@ export default defineConfig({
     seoStaticFiles()
   ],
   base: '/',
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: vendorChunk,
+      },
+    },
+  },
   server: {
     port: 5173,
     strictPort: true
