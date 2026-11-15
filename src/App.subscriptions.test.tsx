@@ -128,29 +128,53 @@ describe('child-record listeners follow the service on screen', () => {
     expect(live).not.toContain(LOGS_PATH);
   }, 20000);
 
-  it('does not render a log-reading page from an empty array while the snapshot is in flight', async () => {
-    // Entering the service is a cold listener now, so "no snapshot yet" is the
-    // normal first render. The report must not answer it with its empty state.
-    //
-    // Visit once first so the lazy page chunk is resolved. Otherwise Suspense
-    // hides the page during the in-flight window and the assertion below
-    // passes whether or not App waits for the snapshot.
-    open('/littlesteps/report');
-    await screen.findByText(/還沒有足夠的記錄/, undefined, { timeout: 5000 });
-    cleanup();
+  /**
+   * Every page that reads App's copy of a collection, and something that is on
+   * screen once that page has rendered: App's header title for the LittleSteps
+   * pages, the service's own tab bar for the diary.
+   */
+  const READERS: { path: string; held: string; chrome: () => Promise<HTMLElement> }[] = [
+    { path: '/littlesteps', held: LOGS_PATH, chrome: () => heading(/LittleSteps/) },
+    { path: '/littlesteps/dashboard', held: LOGS_PATH, chrome: () => heading(/成長總覽/) },
+    { path: '/littlesteps/clinic-summary', held: LOGS_PATH, chrome: () => heading(/看診摘要/) },
+    { path: '/littlesteps/report', held: LOGS_PATH, chrome: () => heading(/週報月報/) },
+    {
+      path: '/littleexplorer/diary',
+      held: DIARY_PATH,
+      chrome: () => screen.findByRole('button', { name: '日記' }, { timeout: 5000 }),
+    },
+  ];
 
-    held.add(LOGS_PATH);
-    open('/littlesteps/report');
-    await vi.waitFor(() => expect(release.has(LOGS_PATH)).toBe(true));
-    // Let any render the page would do with an empty array happen.
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    });
-    expect(screen.queryByText(/還沒有足夠的記錄/)).toBeNull();
-    expect(screen.getByRole('status')).toBeInTheDocument();
+  it.each(READERS)(
+    '$path shows it is loading, inside its own chrome, until the first snapshot arrives',
+    async ({ path, held: heldPath, chrome }) => {
+      // Entering a service is a cold listener now, so "no snapshot yet" is the
+      // normal first render, and [] at that moment is not "no records".
+      //
+      // Visit once first so the lazy page chunk is resolved and the page has
+      // settled. Otherwise the Suspense fallback supplies a role="status" of
+      // its own and the assertions below pass whether or not the page waits.
+      open(path);
+      await chrome();
+      await vi.waitFor(() => expect(screen.queryByRole('status')).toBeNull(), { timeout: 5000 });
+      cleanup();
 
-    act(() => release.get(LOGS_PATH)?.());
-    // With the snapshot in and genuinely empty, the empty state is the truth.
-    expect(await screen.findByText(/還沒有足夠的記錄/, undefined, { timeout: 5000 })).toBeInTheDocument();
-  }, 20000);
+      held.add(heldPath);
+      open(path);
+      await vi.waitFor(() => expect(release.has(heldPath)).toBe(true));
+      // Let any render the page would do with an empty array happen.
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      });
+
+      expect(screen.getByRole('status')).toBeInTheDocument();
+      // The page is mounted in its normal chrome, not replaced by a bare bar:
+      // a parent can still leave while the snapshot is in flight.
+      await chrome();
+
+      act(() => release.get(heldPath)?.());
+      await vi.waitFor(() => expect(screen.queryByRole('status')).toBeNull(), { timeout: 5000 });
+    },
+    20000,
+  );
 });

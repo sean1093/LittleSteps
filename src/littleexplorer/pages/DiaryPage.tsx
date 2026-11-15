@@ -5,6 +5,7 @@ import type { ChildProfile, DiaryEntry, DiaryMood, Gender } from '../../types';
 import type { GestationalAge } from '../../common/correctedAge';
 import { calculateAgeDisplay } from '../../common/utils/summaryCalculator';
 import EmptyState from '../../common/ui/EmptyState';
+import LoadingBar from '../../common/ui/LoadingBar';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { listItem, stagger, tap } from '../../common/ui/motion';
 import { developmentCheckItems } from '../data/developmentChecks';
@@ -31,6 +32,8 @@ const today = () => toLocalDateKey();
 interface DiaryPageProps {
   currentChild?: ChildProfile | null;
   entries: DiaryEntry[];
+  /** entries 的第一份快照還沒到。那時的空陣列是「還不知道」，不是「還沒寫過」。 */
+  loading?: boolean;
   reminderBadge?: number;
   onAdd: (entry: Omit<DiaryEntry, 'id' | 'childId' | 'createdAt'>) => Promise<string | undefined>;
   onUpdate: (entryId: string, updates: Partial<DiaryEntry>) => Promise<void>;
@@ -61,6 +64,7 @@ interface DiaryPageProps {
 export default function DiaryPage({
   currentChild,
   entries,
+  loading = false,
   reminderBadge,
   onAdd,
   onUpdate,
@@ -215,6 +219,11 @@ export default function DiaryPage({
           onAddChild={onAddChild}
           onJoinChild={onJoinChild}
         />
+      ) : loading ? (
+        // 頁首與分頁列照常留著：等的只是內容，不是整個服務。
+        <div className="flex justify-center py-16">
+          <LoadingBar />
+        </div>
       ) : (
         <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-4">
           <motion.section variants={listItem} className="panel">

@@ -21,6 +21,8 @@ import { stagger, listItem } from '../../common/ui/motion';
 interface ClinicSummaryPageProps {
   currentChild?: ChildProfile;
   dailyLogs: DailyLog[];
+  /** dailyLogs 的第一份快照還沒到。那時的空陣列是「還不知道」，不是「沒有紀錄」。 */
+  logsLoading?: boolean;
   user: User | null;
 }
 
@@ -72,6 +74,7 @@ function PercentileBadge({ value }: { value?: number }) {
 export default function ClinicSummaryPage({
   currentChild,
   dailyLogs,
+  logsLoading = false,
   user,
 }: ClinicSummaryPageProps) {
   const { data, loading } = useClinicSummary(currentChild, dailyLogs, user);
@@ -111,7 +114,7 @@ export default function ClinicSummaryPage({
   }
 
   // --- Loading state ---
-  if (loading || !data) {
+  if (loading || logsLoading || !data) {
     return (
       <div className="screen">
         <div className="screen-body-wide flex justify-center py-16">

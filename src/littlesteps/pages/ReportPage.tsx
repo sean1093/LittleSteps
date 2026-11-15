@@ -15,6 +15,8 @@ import { stagger, listItem } from '../../common/ui/motion';
 interface ReportPageProps {
   currentChild?: ChildProfile;
   dailyLogs: DailyLog[];
+  /** dailyLogs 的第一份快照還沒到。那時的空陣列是「還不知道」，不是「沒有紀錄」。 */
+  logsLoading?: boolean;
   user: User | null;
 }
 
@@ -93,6 +95,7 @@ function consistencyLabel(key: string): string {
 export default function ReportPage({
   currentChild,
   dailyLogs,
+  logsLoading = false,
   user,
 }: ReportPageProps) {
   const { report, period, setPeriod, loading } = useReport(
@@ -120,7 +123,7 @@ export default function ReportPage({
   }
 
   // Loading state
-  if (loading) {
+  if (loading || logsLoading) {
     return (
       <div className="screen">
         <div className="screen-body-wide flex justify-center py-16">
