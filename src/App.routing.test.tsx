@@ -142,7 +142,7 @@ describe('點擊導覽寫回網址', () => {
 
   it('側邊選單切頁時網址跟著變，重新整理會回到同一頁', async () => {
     // 分頁列與側邊選單都走 goTo，但一個在元件內自己呼叫、一個經過 App 的
-    // navigateToPage；兩條寫入路徑都要驗。
+    // navigateToPage；兩個進入點都要驗。
     visit('/littlesteps/dashboard');
     render(<App />);
     await screen.findByRole('heading', { name: /成長總覽/ });
