@@ -192,13 +192,22 @@ type SendEvent = (eventName: string, eventParams?: Record<string, unknown>) => v
 
 let analyticsReady: Promise<SendEvent | null> | null = null;
 
-/** 瀏覽器閒下來才 resolve；沒有 requestIdleCallback（Safari）就讓出一個 tick。 */
+/**
+ * 瀏覽器閒下來才 resolve。
+ *
+ * Safari 沒有 requestIdleCallback，而 iPhone 上的每一個瀏覽器與 LINE 之類的
+ * 內建瀏覽器都是它——只讓出一個 tick 的話，延後對這群人等於沒有發生。所以
+ * 沒有的時候改等 load 事件：那代表頁面自己要的資源都到齊了。已經 load 完
+ * （之後才換頁的那些事件）就直接走。
+ */
 const whenIdle = () =>
   new Promise<void>((resolve) => {
     if (typeof window.requestIdleCallback === 'function') {
       window.requestIdleCallback(() => resolve(), { timeout: 3000 });
-    } else {
+    } else if (document.readyState === 'complete') {
       window.setTimeout(resolve, 1);
+    } else {
+      window.addEventListener('load', () => resolve(), { once: true });
     }
   });
 
@@ -212,7 +221,10 @@ const loadAnalytics = () => {
       let instance;
       try {
         instance = initializeAnalytics(app, { config: { send_page_view: false } });
-      } catch {
+      } catch (error) {
+        // 只接這一種。別的失敗若也退回 getAnalytics()，會在沒有
+        // send_page_view: false 的情況下初始化，自動的那一筆就回來了。
+        if ((error as { code?: string }).code !== 'analytics/already-initialized') throw error;
         instance = getAnalytics(app);
       }
       return (eventName: string, eventParams?: Record<string, unknown>) =>
