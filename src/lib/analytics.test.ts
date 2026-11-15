@@ -205,7 +205,9 @@ describe('analytics payloads', () => {
     // runs once in production, but HMR re-runs it in development, and the
     // throw used to be swallowed, leaving Analytics dead until a reload.
     initialised.mockImplementationOnce(() => {
-      throw new Error('analytics/already-initialized');
+      throw Object.assign(new Error('already initialised'), {
+        code: 'analytics/already-initialized',
+      });
     });
     const fb = await loadRealFirebase();
 
