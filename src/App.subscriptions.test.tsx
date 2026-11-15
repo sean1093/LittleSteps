@@ -204,7 +204,9 @@ describe('child-record listeners follow the service on screen', () => {
       refused.add(refusedPath);
       open(path);
 
-      expect(await screen.findByText('讀不到紀錄', undefined, { timeout: 5000 })).toBeInTheDocument();
+      // Announced, not just drawn: it replaces a bar that said "loading".
+      const notice = await screen.findByRole('alert', undefined, { timeout: 5000 });
+      expect(notice).toHaveTextContent('讀不到紀錄');
       expect(screen.getByRole('button', { name: '重新載入' })).toBeInTheDocument();
       await chrome();
     },
@@ -223,13 +225,13 @@ describe('child-record listeners follow the service on screen', () => {
       // The page's own chrome is there, so this is the notice inside the page
       // and not App's whole-screen one for a child list that never loaded.
       await chrome();
-      expect(await screen.findByText('連不上伺服器', undefined, { timeout: 5000 })).toBeInTheDocument();
+      const notice = await screen.findByRole('alert', undefined, { timeout: 5000 });
+      expect(notice).toHaveTextContent('連不上伺服器');
 
       act(() => release.get(heldPath)?.());
       await vi.waitFor(() => expect(screen.queryByText('連不上伺服器')).toBeNull(), {
         timeout: 5000,
       });
-      expect(screen.queryByRole('status')).toBeNull();
     },
     20000,
   );

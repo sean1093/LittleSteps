@@ -25,23 +25,33 @@ export default function RecordsNotice({ status, theme }: RecordsNoticeProps) {
     );
   }
 
+  // Both notices replace a `role="status"` bar that announced "loading". With
+  // no live region of their own, a screen-reader user would hear that and then
+  // nothing at all.
   if (status === 'stalled') {
     return (
-      <EmptyState
-        theme={theme}
-        title="連不上伺服器"
-        description="目前似乎沒有網路連線。寶寶的紀錄存在雲端，連上網路後就會出現。"
-        action={{ label: '重新載入', onClick: reload }}
-      />
+      <div role="alert">
+        <EmptyState
+          theme={theme}
+          title="連不上伺服器"
+          description="目前似乎沒有網路連線。寶寶的紀錄存在雲端，連上網路後就會出現。"
+          action={{ label: '重新載入', onClick: reload }}
+        />
+      </div>
     );
   }
 
+  // The copy does not mention the network: Realtime Database only cancels a
+  // listener when the read is refused, never on a disconnect, so the usual
+  // cause is a membership that was taken back.
   return (
-    <EmptyState
-      theme={theme}
-      title="讀不到紀錄"
-      description="這不代表沒有紀錄，只是這次沒有讀到。請確認網路後重新載入。"
-      action={{ label: '重新載入', onClick: reload }}
-    />
+    <div role="alert">
+      <EmptyState
+        theme={theme}
+        title="讀不到紀錄"
+        description="這不代表沒有紀錄，只是這次沒有讀到。請重新載入；如果還是讀不到，可能是這位寶寶的共享已經被取消。"
+        action={{ label: '重新載入', onClick: reload }}
+      />
+    </div>
   );
 }

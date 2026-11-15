@@ -89,4 +89,63 @@ describe('useStalled', () => {
     });
     expect(seen[seen.length - 1]).toBe(true);
   });
+
+  it('gives a wait that ended early no credit towards the next one', () => {
+    online(true);
+    const { result, rerender } = renderHook(
+      ({ pending }: { pending: boolean }) => useStalled(pending),
+      { initialProps: { pending: true } },
+    );
+    act(() => {
+      vi.advanceTimersByTime(STALL_AFTER_MS / 2);
+    });
+    rerender({ pending: false });
+    rerender({ pending: true });
+
+    // The first wait's timer would fire here if it had been left running.
+    act(() => {
+      vi.advanceTimersByTime(STALL_AFTER_MS / 2);
+    });
+    expect(result.current).toBe(false);
+  });
+
+  it('ignores a connection drop that happened between two waits', () => {
+    online(true);
+    const { result, rerender } = renderHook(
+      ({ pending }: { pending: boolean }) => useStalled(pending),
+      { initialProps: { pending: true } },
+    );
+    rerender({ pending: false });
+    act(() => {
+      window.dispatchEvent(new Event('offline'));
+    });
+    rerender({ pending: true });
+
+    expect(result.current).toBe(false);
+  });
+
+  it('takes the message back when the connection returns, and starts the allowance again', () => {
+    online(true);
+    const { result } = renderHook(() => useStalled(true));
+    act(() => {
+      vi.advanceTimersByTime(STALL_AFTER_MS - 1);
+      window.dispatchEvent(new Event('offline'));
+    });
+    expect(result.current).toBe(true);
+
+    act(() => {
+      window.dispatchEvent(new Event('online'));
+    });
+    expect(result.current).toBe(false);
+
+    // The original timer had 1 ms left; a fresh allowance means it is not due.
+    act(() => {
+      vi.advanceTimersByTime(STALL_AFTER_MS - 1);
+    });
+    expect(result.current).toBe(false);
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(result.current).toBe(true);
+  });
 });
