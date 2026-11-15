@@ -14,6 +14,8 @@ import { formatDuration } from '../utils/logHelpers';
 import { shareText } from '../utils/share';
 import { formatDate, formatTime } from '../../common/utils/dateHelpers';
 import EmptyState from '../../common/ui/EmptyState';
+import RecordsNotice from '../../common/ui/RecordsNotice';
+import type { RecordsStatus } from '../../common/recordsStatus';
 import { useToast } from '../../common/ui/toast';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem } from '../../common/ui/motion';
@@ -21,8 +23,11 @@ import { stagger, listItem } from '../../common/ui/motion';
 interface ClinicSummaryPageProps {
   currentChild?: ChildProfile;
   dailyLogs: DailyLog[];
-  /** dailyLogs 的第一份快照還沒到。那時的空陣列是「還不知道」，不是「沒有紀錄」。 */
-  logsLoading?: boolean;
+  /**
+   * dailyLogs 現在能不能拿來算。不是 ready 的時候空陣列是「還不知道」或
+   * 「讀不到」，不是「沒有紀錄」——見 common/recordsStatus。
+   */
+  logsStatus?: RecordsStatus;
   user: User | null;
 }
 
@@ -74,7 +79,7 @@ function PercentileBadge({ value }: { value?: number }) {
 export default function ClinicSummaryPage({
   currentChild,
   dailyLogs,
-  logsLoading = false,
+  logsStatus = 'ready',
   user,
 }: ClinicSummaryPageProps) {
   const { data, loading } = useClinicSummary(currentChild, dailyLogs, user);
@@ -113,8 +118,19 @@ export default function ClinicSummaryPage({
     );
   }
 
+  // 日誌還沒到、連不上或讀不到的時候，不拿空陣列去算。
+  if (logsStatus !== 'ready') {
+    return (
+      <div className="screen">
+        <div className="screen-body-wide">
+          <RecordsNotice status={logsStatus} theme={SERVICE_THEME.littlesteps} />
+        </div>
+      </div>
+    );
+  }
+
   // --- Loading state ---
-  if (loading || logsLoading || !data) {
+  if (loading || !data) {
     return (
       <div className="screen">
         <div className="screen-body-wide flex justify-center py-16">

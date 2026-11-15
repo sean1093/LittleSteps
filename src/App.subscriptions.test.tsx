@@ -57,16 +57,33 @@ const live = new Set<string>();
 /** Paths whose first snapshot is withheld until the test releases it. */
 const held = new Set<string>();
 const release = new Map<string, () => void>();
+/** Paths whose read the database refuses. */
+const refused = new Set<string>();
 
 beforeEach(() => {
   live.clear();
   held.clear();
   release.clear();
+  refused.clear();
+  vi.restoreAllMocks();
+  // The hook logs a refused read; that is expected here, not noise to print.
+  vi.spyOn(console, 'error').mockImplementation(() => {});
   // The global mock in test/setup.ts answers every path with null, which leaves
   // the account without a child. Answer from DATABASE instead, and track what
   // is attached so a detach is visible too.
-  vi.mocked(onValue).mockImplementation(((reference: Reference, next: (s: Snapshot) => void) => {
+  vi.mocked(onValue).mockImplementation(((
+    reference: Reference,
+    next: (s: Snapshot) => void,
+    cancel?: (error: Error) => void,
+  ) => {
     const path = reference.path ?? '';
+    if (refused.has(path)) {
+      live.add(path);
+      cancel?.(new Error('PERMISSION_DENIED'));
+      return () => {
+        live.delete(path);
+      };
+    }
     const value = DATABASE[path] ?? null;
     live.add(path);
     const answer = () => next({ exists: () => value !== null, val: () => value });
@@ -174,6 +191,45 @@ describe('child-record listeners follow the service on screen', () => {
 
       act(() => release.get(heldPath)?.());
       await vi.waitFor(() => expect(screen.queryByRole('status')).toBeNull(), { timeout: 5000 });
+    },
+    20000,
+  );
+
+  it.each(READERS)(
+    '$path says the records could not be read, not that there are none',
+    async ({ path, held: refusedPath, chrome }) => {
+      // A refused read leaves the collection empty too: a member removed from
+      // a shared child mid-session, for one. "No feeds this week" would be a
+      // statement about the child; this is a statement about the read.
+      refused.add(refusedPath);
+      open(path);
+
+      expect(await screen.findByText('讀不到紀錄', undefined, { timeout: 5000 })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '重新載入' })).toBeInTheDocument();
+      await chrome();
+    },
+    20000,
+  );
+
+  it.each(READERS)(
+    '$path explains a wait it cannot finish offline, and recovers when the snapshot arrives',
+    async ({ path, held: heldPath, chrome }) => {
+      // Realtime Database calls neither callback while disconnected, so a
+      // listener attached without a connection would turn the bar forever.
+      vi.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(false);
+      held.add(heldPath);
+      open(path);
+
+      // The page's own chrome is there, so this is the notice inside the page
+      // and not App's whole-screen one for a child list that never loaded.
+      await chrome();
+      expect(await screen.findByText('連不上伺服器', undefined, { timeout: 5000 })).toBeInTheDocument();
+
+      act(() => release.get(heldPath)?.());
+      await vi.waitFor(() => expect(screen.queryByText('連不上伺服器')).toBeNull(), {
+        timeout: 5000,
+      });
+      expect(screen.queryByRole('status')).toBeNull();
     },
     20000,
   );
