@@ -25,7 +25,12 @@ export function useFirebaseCollection<T>(
   options: FirebaseCollectionOptions<T>,
 ): { data: T; loading: boolean; error: boolean } {
   const [data, setData] = useState<T>(options.empty);
-  const [loading, setLoading] = useState(true);
+  // 哪一個孩子的第一份回應（快照或錯誤）已經到了。loading 由它推導而不是
+  // 另存一個布林：布林要等 effect 才會改，於是 childId 從 null 變成某個孩子
+  // 的那一次 render 會同時看到「不在載入」與空的 data——呼叫端分不出那是
+  // 「還沒讀到」還是「真的沒有紀錄」。App 只在會讀紀錄的服務裡才傳 childId，
+  // 所以這個轉換每次走進服務都會發生。
+  const [settledFor, setSettledFor] = useState<string | null>(null);
   const [error, setError] = useState(false);
 
   // Options are derived from childId each render; read the latest via a ref so
@@ -39,7 +44,7 @@ export function useFirebaseCollection<T>(
     if (!childId || !user) {
       setData(empty);
       setError(false);
-      setLoading(false);
+      setSettledFor(null);
       return;
     }
 
@@ -47,24 +52,26 @@ export function useFirebaseCollection<T>(
     // 畫面還掛著上一個孩子的餵奶、尿布與睡眠——標題已經是新孩子的名字了。
     setData(empty);
     setError(false);
-    setLoading(true);
+    setSettledFor(null);
     const dataRef = ref(database, firebasePath);
     const unsubscribe = onValue(
       dataRef,
       (snapshot) => {
         setData(fromFirebase(snapshot.val()));
-        setLoading(false);
+        setSettledFor(childId);
       },
       (err) => {
         // 讀取被拒或斷線不是「今天還沒有記錄」。data 維持上一個成功的值，
         // 由 error 讓頁面說得出實話。
         console.error(errorLabel || `Error fetching ${firebasePath}:`, err);
         setError(true);
-        setLoading(false);
+        setSettledFor(childId);
       },
     );
     return () => unsubscribe();
   }, [childId, user]);
+
+  const loading = childId !== null && user !== null && settledFor !== childId;
 
   return { data, loading, error };
 }

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { onValue } from 'firebase/database';
 import App from './App';
@@ -54,9 +54,14 @@ type Reference = { path?: string };
 
 /** Paths with a listener attached and not yet detached. */
 const live = new Set<string>();
+/** Paths whose first snapshot is withheld until the test releases it. */
+const held = new Set<string>();
+const release = new Map<string, () => void>();
 
 beforeEach(() => {
   live.clear();
+  held.clear();
+  release.clear();
   // The global mock in test/setup.ts answers every path with null, which leaves
   // the account without a child. Answer from DATABASE instead, and track what
   // is attached so a detach is visible too.
@@ -64,7 +69,12 @@ beforeEach(() => {
     const path = reference.path ?? '';
     const value = DATABASE[path] ?? null;
     live.add(path);
-    next({ exists: () => value !== null, val: () => value });
+    const answer = () => next({ exists: () => value !== null, val: () => value });
+    if (held.has(path)) {
+      release.set(path, answer);
+    } else {
+      answer();
+    }
     return () => {
       live.delete(path);
     };
@@ -116,5 +126,31 @@ describe('child-record listeners follow the service on screen', () => {
     await heading(/BabyOasis/);
 
     expect(live).not.toContain(LOGS_PATH);
+  }, 20000);
+
+  it('does not render a log-reading page from an empty array while the snapshot is in flight', async () => {
+    // Entering the service is a cold listener now, so "no snapshot yet" is the
+    // normal first render. The report must not answer it with its empty state.
+    //
+    // Visit once first so the lazy page chunk is resolved. Otherwise Suspense
+    // hides the page during the in-flight window and the assertion below
+    // passes whether or not App waits for the snapshot.
+    open('/littlesteps/report');
+    await screen.findByText(/還沒有足夠的記錄/, undefined, { timeout: 5000 });
+    cleanup();
+
+    held.add(LOGS_PATH);
+    open('/littlesteps/report');
+    await vi.waitFor(() => expect(release.has(LOGS_PATH)).toBe(true));
+    // Let any render the page would do with an empty array happen.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    expect(screen.queryByText(/還沒有足夠的記錄/)).toBeNull();
+    expect(screen.getByRole('status')).toBeInTheDocument();
+
+    act(() => release.get(LOGS_PATH)?.());
+    // With the snapshot in and genuinely empty, the empty state is the truth.
+    expect(await screen.findByText(/還沒有足夠的記錄/, undefined, { timeout: 5000 })).toBeInTheDocument();
   }, 20000);
 });
