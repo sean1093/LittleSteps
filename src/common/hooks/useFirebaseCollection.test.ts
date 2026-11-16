@@ -121,4 +121,25 @@ describe('useFirebaseCollection', () => {
     act(() => subscription('A').next({ val: () => null }));
     expect(seen[seen.length - 1]).toEqual({ childId: 'A', loading: false });
   });
+
+  it('換孩子時不會把上一個孩子的讀取失敗算在新孩子頭上', () => {
+    // error 若只在 effect 裡清，換孩子的那一次 render 還帶著上一個孩子的
+    // 失敗——畫面會替一個還沒開始讀的孩子說「讀不到紀錄」。
+    const seen: { childId: string; error: boolean }[] = [];
+    const { rerender } = renderHook(
+      ({ childId }: { childId: string }) => {
+        const state = useFirebaseCollection(childId, user, logsOf(childId));
+        seen.push({ childId, error: state.error });
+        return state;
+      },
+      { initialProps: { childId: 'A' } },
+    );
+    act(() => subscription('A').cancel(new Error('PERMISSION_DENIED')));
+    expect(seen[seen.length - 1]).toEqual({ childId: 'A', error: true });
+
+    rerender({ childId: 'B' });
+    const forB = seen.filter((render) => render.childId === 'B');
+    expect(forB.length).toBeGreaterThan(0);
+    expect(forB.every((render) => !render.error)).toBe(true);
+  });
 });

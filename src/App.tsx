@@ -5,6 +5,8 @@ import { entryPageForChild, serviceForStage, stageOfChild } from './common/stage
 import { goTo, subscribeToNavigation } from './common/navigate';
 import { isStandaloneSubApp, wantsDailyLogs, wantsDiaryEntries } from './common/routePolicy';
 import { useDocumentMeta } from './common/seo/useDocumentMeta';
+import { useStalled } from './common/hooks/useStalled';
+import { recordsStatusOf } from './common/recordsStatus';
 import { splitOverdueByProfileStart } from './common/utils/profileHistory';
 import { logPageView } from './lib/firebase';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -92,24 +94,36 @@ function AppContent() {
   // null，useFirebaseCollection 遇到 null 就什麼都不掛。理由與為什麼以服務而
   // 不是頁面為界，寫在 routePolicy 的 wantsDailyLogs 上。
   const recordsChildId = currentChild?.id ?? null;
-  const { logs: dailyLogs, loading: dailyLogsLoading } = useDailyLogs(
+  const { logs: dailyLogs, loading: dailyLogsLoading, error: dailyLogsError } = useDailyLogs(
     wantsDailyLogs(currentPage) ? recordsChildId : null,
     user,
   );
   const { tasks: careTasks } = useCareTasks(currentChild);
-  const { entries: diaryEntries, loading: diaryLoading } = useDiary(
+  const { entries: diaryEntries, loading: diaryLoading, error: diaryError } = useDiary(
     wantsDiaryEntries(currentPage) ? recordsChildId : null,
     user,
   );
-  // 第一份快照回來之前，[] 是「還不知道」，不是「沒有紀錄」。listener 以前
-  // 在入口頁就熱了，所以這段空窗只有直接開深連結才遇得到；現在從入口頁走進
-  // 服務就是冷的，每次都會遇到。所以 loading 跟著資料一起傳給讀這一份的四頁，
-  // 由頁面在自己的版面裡顯示載入條，不拿空陣列去算——看診摘要寫「這七天沒有
-  // 餵奶」是比轉一下更糟的答案。
+  // 空陣列有三種意思，只有一種是「沒有紀錄」：第一份快照還沒回來、讀取被拒
+  // （例如成員資格剛被收回），以及斷線——RTDB 斷線時兩個 callback 都不會來。
+  // listener 以前在入口頁就熱了，現在走進服務才訂閱，所以「還沒回來」每次
+  // 都會遇到。看診摘要寫「這七天沒有餵奶」是比轉一下更糟的答案，所以把這三種
+  // 合成一個狀態，跟著資料一起傳給讀這一份的四頁，不是 ready 就不拿去算。
   //
-  // 不在這裡把整頁換成載入條：那樣頁面的 chunk 與它自己的 listener 要等快照
-  // 回來才開始載，三件本來同時進行的事變成排隊；而日記頁的頁首與分頁列是它
-  // 自己畫的，換掉就連離開的路都沒有。
+  // 由頁面在自己的版面裡顯示，不在這裡把整頁換掉：那樣頁面的 chunk 與它自己
+  // 的 listener 要等快照回來才開始載，三件本來同時進行的事變成排隊；而日記頁
+  // 的頁首與分頁列是它自己畫的，換掉就連離開的路都沒有。
+  const dailyLogsStalled = useStalled(dailyLogsLoading);
+  const diaryStalled = useStalled(diaryLoading);
+  const dailyLogsStatus = recordsStatusOf({
+    loading: dailyLogsLoading,
+    error: dailyLogsError,
+    stalled: dailyLogsStalled,
+  });
+  const diaryStatus = recordsStatusOf({
+    loading: diaryLoading,
+    error: diaryError,
+    stalled: diaryStalled,
+  });
   // 建檔之前就到期的項目不算逾期——app 只是沒有那段紀錄，不是家長漏掉了。
   // 把它們算進紅點，會讓新增一個既有的兩歲孩子立刻背上十幾筆「未完成」。
   const reminderBadge =
@@ -237,20 +251,7 @@ function AppContent() {
   // RTDB 沒有磁碟快取。已安裝的 PWA 在離線時仍然開得起來（shell 有 precache），
   // 但 onValue 永遠不會回呼，於是載入條會一直轉下去，沒有任何說明。
   const dataPending = loading || (user !== null && childrenLoading);
-  const [loadStalled, setLoadStalled] = useState(false);
-  useEffect(() => {
-    if (!dataPending) {
-      setLoadStalled(false);
-      return;
-    }
-    // 已知離線就不必等：直接說實話。
-    if (navigator.onLine === false) {
-      setLoadStalled(true);
-      return;
-    }
-    const timer = window.setTimeout(() => setLoadStalled(true), 10000);
-    return () => window.clearTimeout(timer);
-  }, [dataPending]);
+  const loadStalled = useStalled(dataPending);
 
   // Show loading state while auth or children data is loading.
   // A pulsing 64px baby icon was the old treatment; a thin progress bar says
@@ -259,7 +260,9 @@ function AppContent() {
     if (loadStalled) {
       return (
         <div className="min-h-dscreen bg-warm-white flex items-center justify-center p-4">
-          <div className="w-full max-w-md">
+          {/* 取代的是一條 role="status" 的載入條；沒有自己的 live region，螢幕
+              閱讀器的使用者聽完「載入中」之後就什麼都聽不到了。 */}
+          <div className="w-full max-w-md" role="alert">
             <EmptyState
               theme={SERVICE_THEME.littlesteps}
               title="連不上伺服器"
@@ -390,7 +393,7 @@ function AppContent() {
           <DashboardPage
             currentChild={currentChild}
             dailyLogs={dailyLogs}
-            logsLoading={dailyLogsLoading}
+            logsStatus={dailyLogsStatus}
             user={user}
             onNavigate={navigateToPage}
           />
@@ -399,7 +402,7 @@ function AppContent() {
           <DashboardPage
             currentChild={currentChild}
             dailyLogs={dailyLogs}
-            logsLoading={dailyLogsLoading}
+            logsStatus={dailyLogsStatus}
             user={user}
             onNavigate={navigateToPage}
           />
@@ -461,7 +464,7 @@ function AppContent() {
           <ClinicSummaryPage
             currentChild={currentChild}
             dailyLogs={dailyLogs}
-            logsLoading={dailyLogsLoading}
+            logsStatus={dailyLogsStatus}
             user={user}
           />
         )}
@@ -469,7 +472,7 @@ function AppContent() {
           <ReportPage
             currentChild={currentChild}
             dailyLogs={dailyLogs}
-            logsLoading={dailyLogsLoading}
+            logsStatus={dailyLogsStatus}
             user={user}
           />
         )}
@@ -534,7 +537,7 @@ function AppContent() {
           <DiaryPage
             currentChild={currentChild}
             entries={diaryEntries}
-            loading={diaryLoading}
+            status={diaryStatus}
             reminderBadge={reminderBadge}
             onAdd={addDiaryEntry}
             onUpdate={updateDiaryEntry}
