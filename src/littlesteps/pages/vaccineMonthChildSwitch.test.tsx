@@ -6,9 +6,9 @@ import type { ChildProfile } from '../../types';
 import ChildSwitcher from '../../common/components/ChildSwitcher';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
 import {
-  ChildStoreProvider,
   useChildStoreContext,
 } from '../../common/contexts/ChildStoreContext';
+import { TestChildStoreProvider } from '../../test/TestChildStoreProvider';
 import VaccineTrackingPage from './VaccineTrackingPage';
 
 /**
@@ -128,9 +128,9 @@ function VaccineScreen() {
 const renderScreen = () => {
   const user = userEvent.setup();
   render(
-    <ChildStoreProvider>
+    <TestChildStoreProvider>
       <VaccineScreen />
-    </ChildStoreProvider>,
+    </TestChildStoreProvider>,
   );
   return user;
 };

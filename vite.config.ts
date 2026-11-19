@@ -66,16 +66,23 @@ function seoStaticFiles(): Plugin {
  *
  * 所以 analytics 與只有它才用到的 installations 明確排除在外，留給 Rollup
  * 照動態 import 自行切出延遲載入的 chunk。
+ *
+ * Realtime Database 是另一個 chunk，而且必須是：它是首屏最大的一塊，公開頁
+ * 一個位元組都用不到，進入點的 import 路徑已經不再碰它（見 src/lib/database.ts）。
+ * 留在 firebase 這個 chunk 裡的話，那個 chunk 是進入點靜態 import 的，前面
+ * 那些 lazy 就全部白做——資料庫照樣跟著 Auth 一起在每一頁載入。
  */
 const REACT_VENDOR = /[\\/]node_modules[\\/](?:react|react-dom|scheduler)[\\/]/
 const MOTION_VENDOR = /[\\/]node_modules[\\/]framer-motion[\\/]/
 const FIREBASE_VENDOR = /[\\/]node_modules[\\/](?:@firebase|firebase)[\\/]/
+const DATABASE_VENDOR = /[\\/]node_modules[\\/](?:@firebase[\\/]database|firebase[\\/]database)[\\/]/
 const FIREBASE_LAZY =
   /[\\/]node_modules[\\/](?:@firebase[\\/](?:analytics|installations)|firebase[\\/]analytics)[\\/]/
 
 function vendorChunk(id: string): string | undefined {
   if (REACT_VENDOR.test(id)) return 'react'
   if (MOTION_VENDOR.test(id)) return 'framer-motion'
+  if (DATABASE_VENDOR.test(id)) return 'firebase-database'
   if (FIREBASE_VENDOR.test(id) && !FIREBASE_LAZY.test(id)) return 'firebase'
   return undefined
 }

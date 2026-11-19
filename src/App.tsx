@@ -11,9 +11,8 @@ import { splitOverdueByProfileStart } from './common/utils/profileHistory';
 import { logPageView } from './lib/firebase';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useChildStoreContext, ChildStoreProvider } from './common/contexts/ChildStoreContext';
-import { useDailyLogs } from './littlesteps/hooks/useDailyLogs';
 import { useCareTasks } from './littleexplorer/hooks/useCareTasks';
-import { useDiary } from './littleexplorer/hooks/useDiary';
+import { NO_CHILD_RECORDS, sliceFor, type ChildRecords } from './common/childRecords';
 import Sidebar from './common/components/Sidebar';
 import AppHomeButton from './common/components/AppHomeButton';
 import AccountButton from './common/components/AccountButton';
@@ -48,7 +47,11 @@ const RemindersPage = lazy(() => import('./littleexplorer/pages/RemindersPage'))
 const DiaryPage = lazy(() => import('./littleexplorer/pages/DiaryPage'));
 const ToddlerWikiPage = lazy(() => import('./littleexplorer/pages/ToddlerWikiPage'));
 const AboutPage = lazy(() => import('./common/about/AboutPage'));
-import FeedbackButton from './common/components/FeedbackButton';
+// 這兩個都會碰到資料庫 SDK，而且都只有登入之後才用得到，所以不放在進入點的
+// import 路徑上：ChildRecordsBridge 替這個外框跑 useDailyLogs／useDiary，
+// FeedbackButton 的送出走 useFirebaseChildren。理由見 lib/database.ts。
+const ChildRecordsBridge = lazy(() => import('./common/ChildRecordsBridge'));
+const FeedbackButton = lazy(() => import('./common/components/FeedbackButton'));
 import { toLocalDateKey } from './common/utils/dateHelpers';
 
 function AppContent() {
@@ -94,15 +97,28 @@ function AppContent() {
   // null，useFirebaseCollection 遇到 null 就什麼都不掛。理由與為什麼以服務而
   // 不是頁面為界，寫在 routePolicy 的 wantsDailyLogs 上。
   const recordsChildId = currentChild?.id ?? null;
-  const { logs: dailyLogs, loading: dailyLogsLoading, error: dailyLogsError } = useDailyLogs(
-    wantsDailyLogs(currentPage) ? recordsChildId : null,
-    user,
-  );
+  const logsChildId = wantsDailyLogs(currentPage) ? recordsChildId : null;
+  const diaryChildId = wantsDiaryEntries(currentPage) ? recordsChildId : null;
+  // listener 本身在 ChildRecordsBridge 裡（lazy，見上面 import 處），這裡拿到的
+  // 是它回報的結果。回報一定比「想要誰的」晚一步——bridge 的 chunk 可能還在
+  // 路上，到了之後也是在 effect 裡回報——所以用 sliceFor 對一下是不是這個孩子
+  // 的：不是，就是「還不知道」，不是「沒有紀錄」。
+  const [records, setRecords] = useState<ChildRecords>(NO_CHILD_RECORDS);
+  // 登出之後 bridge 就卸載了，不會再回報；上一位家長的紀錄不該繼續留在這裡。
+  useEffect(() => {
+    if (!user) setRecords(NO_CHILD_RECORDS);
+  }, [user]);
+  const {
+    data: dailyLogs,
+    loading: dailyLogsLoading,
+    error: dailyLogsError,
+  } = sliceFor(records.dailyLogs, logsChildId);
+  const {
+    data: diaryEntries,
+    loading: diaryLoading,
+    error: diaryError,
+  } = sliceFor(records.diaryEntries, diaryChildId);
   const { tasks: careTasks } = useCareTasks(currentChild);
-  const { entries: diaryEntries, loading: diaryLoading, error: diaryError } = useDiary(
-    wantsDiaryEntries(currentPage) ? recordsChildId : null,
-    user,
-  );
   // 空陣列有三種意思，只有一種是「沒有紀錄」：第一份快照還沒回來、讀取被拒
   // （例如成員資格剛被收回），以及斷線——RTDB 斷線時兩個 callback 都不會來。
   // listener 以前在入口頁就熱了，現在走進服務才訂閱，所以「還沒回來」每次
@@ -562,7 +578,23 @@ function AppContent() {
       </ContentLandmark>
 
       {/* Feedback Button */}
-      <FeedbackButton user={user} />
+      {/* 各自一個 Suspense：回報鍵的 chunk 慢，不該拖住紀錄的 listener。 */}
+      {user && (
+        <Suspense fallback={null}>
+          <ChildRecordsBridge
+            user={user}
+            logsChildId={logsChildId}
+            diaryChildId={diaryChildId}
+            onRecords={setRecords}
+          />
+        </Suspense>
+      )}
+      {/* 只給登入的人：元件自己也會擋，但沒登入就連 chunk 都不必載。 */}
+      {user && (
+        <Suspense fallback={null}>
+          <FeedbackButton user={user} />
+        </Suspense>
+      )}
     </div>
   );
 }

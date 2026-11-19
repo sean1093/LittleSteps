@@ -1,7 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getDatabase } from 'firebase/database';
 import { serviceOf } from '../common/routePolicy';
 import type { Page } from '../types/routes';
 
@@ -17,7 +16,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+export const app = initializeApp(firebaseConfig);
 
 declare global {
   interface Window {
@@ -152,8 +151,9 @@ if (typeof appCheckSiteKey === 'string' && appCheckSiteKey !== '') {
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// Initialize Realtime Database
-export const database = getDatabase(app, import.meta.env.VITE_FIREBASE_DATABASE_URL);
+// Realtime Database 不在這裡：它在 lib/database.ts，只有登入之後才載入的
+// 程式碼會 import 那個檔案。這個檔案在每一條路由都會跑，公開的知識頁也算，
+// 而那些頁面一個位元組的資料庫都用不到——理由寫在 lib/database.ts。
 
 /**
  * Analytics 動態載入，而不是靜態 import。

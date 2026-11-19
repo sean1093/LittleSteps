@@ -38,6 +38,38 @@ There is no `src/pages/`, `src/components/` or `src/hooks/` at the root — code
 lives under the service that owns it, or in `common/` if two or more services
 need it. Put new shared UI in `common/ui/`.
 
+### The database SDK stays off the public pages
+
+`src/lib/firebase.ts` (Auth, App Check, Analytics) runs on every route.
+`src/lib/database.ts` holds the Realtime Database instance and must not: the
+SDK is 175 kB, and the wikis, the guides, LittleOuting, BabyOasis, LittleGuard
+and the about page never read a byte from it. Those are the pages search
+engines index and the first thing a parent without an account sees.
+
+So **nothing on a public page's static import path may import
+`lib/database`, `firebase/database`, or a hook that does** —
+`useFirebaseChildren`, `useUserChildren`, `useFirebaseCollection`,
+`useChildStore`, `useDailyLogs`, `useDiary`, `useGrowthTracking`,
+`useFoodTracking`. Importing a *type* from them is fine; `import type` is
+erased.
+
+- The shell reaches the store through `ChildStoreProvider`, which mounts the
+  lazy `ChildStoreBridge` only once someone is signed in, and reaches the two
+  record listeners through the lazy `ChildRecordsBridge`. Read the store with
+  `useChildStoreContext()`; do not call `useChildStore` yourself.
+- A gated page is lazy already, so it may import the hooks directly, as
+  `DailyLogPage` does.
+- Something on a public page that writes only on a click imports its writer at
+  that moment: `VenueReportButton` does `await import('../feedbackSubmit')`.
+- In a test that fakes `useChildStore`, wrap the tree in
+  `TestChildStoreProvider` (`src/test/`), not `ChildStoreProvider`: the bridge
+  republishes only when a data member changes identity, and a fake returning
+  fresh literals loops.
+
+BUNDLE-01/02 in `e2e/specs/bundle.spec.ts` ask the browser what each public
+route fetched and fail if the database chunk is among it. A unit test cannot
+see this, and the app works exactly the same with the import in place.
+
 ## Auth model
 
 **Signing in is required for anything reading or writing a child's records.**

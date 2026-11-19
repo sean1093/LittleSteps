@@ -191,6 +191,18 @@ This plan already builds and serves `dist/`, so the check is nearly free.
 | PWA-02 | P1 | Service worker registers on the built app | Registration resolves; no console error |
 | PWA-03 | P2 | No uncaught console errors on any public route | Collected per route and asserted empty, with a declared allowlist naming **every** host the harness route-blocks: map tiles, `firebase.googleapis.com`, `*.google-analytics.com` and `apis.google.com` (plan §5). An aborted route produces a console error, so a blocklist that outgrows this allowlist turns PWA-03 red for no product reason — which is why the spec imports `BLOCKED_HOSTS` rather than restating it, and why this row is the copy to distrust if the two ever disagree |
 
+## BUNDLE — what a signed-out visit downloads
+
+The public pages never read the database, and the database SDK is kept in a
+chunk only signed-in code imports (`src/lib/database.ts`). One static import of
+a data hook on a public page's path puts it back, and nothing else in the repo
+notices: the app behaves identically and every unit test stays green.
+
+| ID | Pri | Case | Expected |
+|---|---|---|---|
+| BUNDLE-01 | P0 | The build emits the database SDK as its own chunk | Exactly one `firebase-database-*.js` in the precache manifest. The non-vacuity half of BUNDLE-02: without it, a renamed or re-merged chunk would make "no page fetched it" true forever |
+| BUNDLE-02 | P0 | No public route, and no gated route's signed-out intro page, downloads that chunk | Read from the document's `performance` resource entries after network idle, not from request interception: the service worker precaches every chunk in its own scope and those fetches must not count against the page. Routes derived from `PUBLIC_ROUTES` |
+
 ---
 
 ## Phase 2 — authenticated journeys (not yet scheduled)
@@ -267,12 +279,12 @@ green while asserting nothing.
 | Routing and deep links | NAV-01…07, WIKI-05 |
 | The auth gate | AUTH-01…04, SEO-01/02, Phase 2 (A-ISO-01/02) |
 | Real data files | GUARD-01…04/08, OASIS-01/07, OUTING-03/04, WIKI-01 |
-| Lazy chunks and the PWA | NAV-01, NAV-07, WIKI-05, PWA-01…03, SEO-03 |
+| Lazy chunks and the PWA | NAV-01, NAV-07, WIKI-05, PWA-01…03, SEO-03, BUNDLE-01/02 |
 | Layout at 390px and 320px | RWD-01…04, GUARD-09, OASIS-08 |
 | Document structure across the shell seam | A11Y-01/02 |
 | Third-party rendering | OASIS-06 |
 
 ## Case count
 
-Phase 1: **51** cases — HARNESS 1, NAV 7, AUTH 4, GUARD 9, OASIS 8, OUTING 5,
-WIKI 5, RWD 4, A11Y 2, SEO 3, PWA 3. Phase 2: **12** reserved IDs.
+Phase 1: **53** cases — HARNESS 1, NAV 7, AUTH 4, GUARD 9, OASIS 8, OUTING 5,
+WIKI 5, RWD 4, A11Y 2, SEO 3, PWA 3, BUNDLE 2. Phase 2: **12** reserved IDs.

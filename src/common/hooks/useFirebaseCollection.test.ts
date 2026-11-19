@@ -25,7 +25,7 @@ vi.mock('firebase/database', () => ({
   },
 }));
 
-vi.mock('../../lib/firebase', () => ({ database: {} }));
+vi.mock('../../lib/database', () => ({ database: {} }));
 
 const user = { uid: 'u1' } as User;
 

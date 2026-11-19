@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ChildProfile } from '../../types';
-import { ChildStoreProvider } from '../contexts/ChildStoreContext';
+import { TestChildStoreProvider } from '../../test/TestChildStoreProvider';
 import ChildSwitcher from './ChildSwitcher';
 
 /**
@@ -28,8 +28,8 @@ vi.mock('../hooks/useChildStore', () => ({
   }),
 }));
 
-// ChildStoreProvider is the only thing in this tree that reads auth, and it
-// only reads `user`, so the module is replaced outright rather than spread.
+// Nothing in this tree needs more of auth than `user`, so the module is
+// replaced outright rather than spread.
 vi.mock('../../contexts/AuthContext', () => {
   const value = {
     user: { uid: 'u1', displayName: '測試家長', email: 'test@example.com', photoURL: null },
@@ -60,9 +60,9 @@ const renderSwitcher = (profiles: ChildProfile[], currentChildId: string) => {
 
   const user = userEvent.setup();
   const { container } = render(
-    <ChildStoreProvider>
+    <TestChildStoreProvider>
       <ChildSwitcher service="littlesteps" />
-    </ChildStoreProvider>,
+    </TestChildStoreProvider>,
   );
 
   return { user, container };

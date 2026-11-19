@@ -4,9 +4,9 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ChildProfile, DailyLog } from '../../types';
 import {
-  ChildStoreProvider,
   useChildStoreContext,
 } from '../../common/contexts/ChildStoreContext';
+import { TestChildStoreProvider } from '../../test/TestChildStoreProvider';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
 import DailyLogPage from './DailyLogPage';
 
@@ -113,9 +113,9 @@ function DailyLogScreen() {
 const renderScreen = () => {
   const user = userEvent.setup();
   render(
-    <ChildStoreProvider>
+    <TestChildStoreProvider>
       <DailyLogScreen />
-    </ChildStoreProvider>,
+    </TestChildStoreProvider>,
   );
   return user;
 };

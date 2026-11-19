@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import ModalFrame from './ModalFrame';
 import { tap } from '../ui/motion';
 import { SERVICE_THEME } from '../ui/serviceTheme';
-import { FEEDBACK_FAILED_MESSAGE } from '../hooks/useFirebaseChildren';
+import { FEEDBACK_FAILED_MESSAGE } from '../feedbackMessages';
 import { FEEDBACK_CONTENT_LIMIT } from '../feedbackLimits';
 import {
   CLAIM_NOT_PUBLISHED,
