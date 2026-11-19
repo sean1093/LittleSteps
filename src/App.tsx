@@ -47,11 +47,11 @@ const RemindersPage = lazy(() => import('./littleexplorer/pages/RemindersPage'))
 const DiaryPage = lazy(() => import('./littleexplorer/pages/DiaryPage'));
 const ToddlerWikiPage = lazy(() => import('./littleexplorer/pages/ToddlerWikiPage'));
 const AboutPage = lazy(() => import('./common/about/AboutPage'));
-// 這兩個都會碰到資料庫 SDK，而且都只有登入之後才用得到，所以不放在進入點的
-// import 路徑上：ChildRecordsBridge 替這個外框跑 useDailyLogs／useDiary，
-// FeedbackButton 的送出走 useFirebaseChildren。理由見 lib/database.ts。
+import FeedbackButton from './common/components/FeedbackButton';
+import QuietBoundary from './common/components/QuietBoundary';
+// 會碰到資料庫 SDK，而且只有登入之後才用得到，所以不放在進入點的 import
+// 路徑上：它替這個外框跑 useDailyLogs／useDiary。理由見 lib/database.ts。
 const ChildRecordsBridge = lazy(() => import('./common/ChildRecordsBridge'));
-const FeedbackButton = lazy(() => import('./common/components/FeedbackButton'));
 import { toLocalDateKey } from './common/utils/dateHelpers';
 
 function AppContent() {
@@ -269,13 +269,35 @@ function AppContent() {
   const dataPending = loading || (user !== null && childrenLoading);
   const loadStalled = useStalled(dataPending);
 
+  // 下面每一個 return 都把它放在同一個位置（外框的兄弟、同一個 key），而不是
+  // 只放在最後那個 return 裡面。新增、加入或刪除一個孩子時 childrenLoading 會
+  // 短暫變回 true，畫面退回載入條；bridge 跟著卸載的話 listener 會退訂，RTDB
+  // 把快取丟掉，整份日誌重新下載一次——正是 wantsDailyLogs 那段說要避免的事。
+  //
+  // 外面那層 QuietBoundary：chunk 載不進來時不讓整個 app 換成錯誤畫面。那時
+  // 回報永遠不會來，sliceFor 一直回「載入中」，頁面自己的「連不上伺服器」
+  // 會在平常的等待之後出現。
+  const recordsBridge = user && (
+    <QuietBoundary key="records-bridge" scope="child records">
+      <Suspense fallback={null}>
+        <ChildRecordsBridge
+          user={user}
+          logsChildId={logsChildId}
+          diaryChildId={diaryChildId}
+          onRecords={setRecords}
+        />
+      </Suspense>
+    </QuietBoundary>
+  );
+
   // Show loading state while auth or children data is loading.
   // A pulsing 64px baby icon was the old treatment; a thin progress bar says
   // the same thing without an illustration and without a layout jump.
   if (dataPending) {
     if (loadStalled) {
       return (
-        <div className="min-h-dscreen bg-warm-white flex items-center justify-center p-4">
+        <>
+        <div key="screen" className="min-h-dscreen bg-warm-white flex items-center justify-center p-4">
           {/* 取代的是一條 role="status" 的載入條；沒有自己的 live region，螢幕
               閱讀器的使用者聽完「載入中」之後就什麼都聽不到了。 */}
           <div className="w-full max-w-md" role="alert">
@@ -287,15 +309,17 @@ function AppContent() {
             />
           </div>
         </div>
+        {recordsBridge}
+        </>
       );
     }
     return (
-      <div className="min-h-dscreen flex items-center justify-center bg-warm-white">
-        <div className="w-40 h-1 rounded-full bg-primary-light overflow-hidden" role="status">
-          <div className="h-full w-1/3 rounded-full bg-primary-dark animate-[loading_1.2s_ease-in-out_infinite]" />
-          <span className="sr-only">載入中</span>
+      <>
+        <div key="screen" className="min-h-dscreen flex items-center justify-center bg-warm-white">
+          <LoadingBar />
         </div>
-      </div>
+        {recordsBridge}
+      </>
     );
   }
 
@@ -325,7 +349,8 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-dscreen bg-warm-white">
+    <>
+    <div key="screen" className="min-h-dscreen bg-warm-white">
       {/* Sidebar - Only show for LittleSteps routes */}
       {!isStandalone && (
         <Sidebar
@@ -578,24 +603,10 @@ function AppContent() {
       </ContentLandmark>
 
       {/* Feedback Button */}
-      {/* 各自一個 Suspense：回報鍵的 chunk 慢，不該拖住紀錄的 listener。 */}
-      {user && (
-        <Suspense fallback={null}>
-          <ChildRecordsBridge
-            user={user}
-            logsChildId={logsChildId}
-            diaryChildId={diaryChildId}
-            onRecords={setRecords}
-          />
-        </Suspense>
-      )}
-      {/* 只給登入的人：元件自己也會擋，但沒登入就連 chunk 都不必載。 */}
-      {user && (
-        <Suspense fallback={null}>
-          <FeedbackButton user={user} />
-        </Suspense>
-      )}
+      <FeedbackButton user={user} />
     </div>
+    {recordsBridge}
+    </>
   );
 }
 

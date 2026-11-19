@@ -10,6 +10,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 // 只 import 型別：值的 import 會把 hook 連同資料庫 SDK 一起拉進進入點。
 import type { ChildStore } from '../hooks/useChildStore';
+import QuietBoundary from '../components/QuietBoundary';
 import { LOADING_CHILD_STORE, SIGNED_OUT_CHILD_STORE } from './signedOutChildStore';
 
 const ChildStoreBridge = lazy(() => import('./ChildStoreBridge'));
@@ -63,9 +64,14 @@ export function ChildStoreProvider({ children }: { children: ReactNode }) {
     <>
       <ChildStoreContext.Provider value={store}>{children}</ChildStoreContext.Provider>
       {user && (
-        <Suspense fallback={null}>
-          <ChildStoreBridge key={user.uid} user={user} onStore={onStore} />
-        </Suspense>
+        // bridge 的 chunk 載不進來時不能讓整個 app 換成錯誤畫面：這一層在每一頁
+        // 的外面，公開頁也算。接住之後 store 就停在「載入中」，App 既有的
+        // 「連不上伺服器／重新載入」會在它平常的等待之後接手。
+        <QuietBoundary key={user.uid} scope="child store">
+          <Suspense fallback={null}>
+            <ChildStoreBridge user={user} onStore={onStore} />
+          </Suspense>
+        </QuietBoundary>
       )}
     </>
   );

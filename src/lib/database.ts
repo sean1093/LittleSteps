@@ -15,9 +15,9 @@ import { app } from './firebase';
  * So nothing on the entry's static import path may import this file, directly
  * or through a hook that does. The data hooks are reached through the lazy
  * bridges in `common/contexts/ChildStoreBridge` and `common/ChildRecordsBridge`,
- * which mount only once someone is signed in. `e2e/specs/bundle.spec.ts` walks
- * the built output and fails if the database chunk becomes reachable from
- * `index.html` without a dynamic import.
+ * which mount only once someone is signed in. `e2e/specs/bundle.spec.ts` asks
+ * the browser what each public route fetched and fails if the database chunk
+ * is among it.
  *
  * App Check stays in `lib/firebase`. It is initialised for the app, not for the
  * database, and Auth requests carry its token too; the database picks the token

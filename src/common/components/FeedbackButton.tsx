@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { MessageSquare } from 'lucide-react';
 import { User } from 'firebase/auth';
 import FeedbackModal from './FeedbackModal';
-import { useFirebaseChildren } from '../hooks/useFirebaseChildren';
+import { FEEDBACK_FAILED_MESSAGE } from '../feedbackMessages';
 import { fadeInUp, hoverLift, tap } from '../ui/motion';
 
 interface FeedbackButtonProps {
@@ -12,7 +12,6 @@ interface FeedbackButtonProps {
 
 export default function FeedbackButton({ user }: FeedbackButtonProps) {
   const [showModal, setShowModal] = useState(false);
-  const firebaseChildren = useFirebaseChildren(user?.uid || null);
 
   // Only show for logged-in users
   if (!user) return null;
@@ -22,7 +21,13 @@ export default function FeedbackButton({ user }: FeedbackButtonProps) {
       throw new Error('請先登入');
     }
 
-    await firebaseChildren.submitFeedback({
+    // 送出的那一刻才載入：這顆按鈕在每一頁都有，靜態 import 會把資料庫 SDK
+    // 放回進入點。載不進來（部署換掉了檔案、剛好斷線）就說表單自己的那一句，
+    // 不是瀏覽器那串英文。
+    const { submitFeedbackAs } = await import('../feedbackSubmit').catch(() => {
+      throw new Error(FEEDBACK_FAILED_MESSAGE);
+    });
+    await submitFeedbackAs(user.uid, {
       title,
       content,
       userId: user.uid,

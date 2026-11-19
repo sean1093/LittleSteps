@@ -70,11 +70,18 @@ test('BUNDLE-02 @p0 a gated route shows its intro signed out without the databas
   for (const route of ['littlesteps/daily-log', 'littlebloom/prenatal', 'littleexplorer/diary']) {
     expect(GATED_ROUTES, `${route} is no longer a gated route`).toContain(route);
     await page.goto(pathOf(route as (typeof GATED_ROUTES)[number]));
+    // The intro page really rendered: a blank page fetches no database chunk
+    // either, and would pass for the wrong reason.
+    await expect(page.getByRole('button', { name: /Google/ }).first()).toBeVisible();
     await page.waitForLoadState('networkidle');
 
     const scripts = await page.evaluate(() =>
-      performance.getEntriesByType('resource').map((entry) => new URL(entry.name).pathname),
+      performance
+        .getEntriesByType('resource')
+        .map((entry) => new URL(entry.name).pathname)
+        .filter((path) => path.endsWith('.js')),
     );
+    expect(scripts.length).toBeGreaterThan(0);
     expect(scripts.filter((path) => DATABASE_CHUNK.test(path))).toEqual([]);
   }
 });

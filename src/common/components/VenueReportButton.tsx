@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { useOptionalAuth } from '../../contexts/AuthContext';
+import { FEEDBACK_FAILED_MESSAGE } from '../feedbackMessages';
 import { useToast } from '../ui/toast';
 import { tap } from '../ui/motion';
 import FeedbackModal from './FeedbackModal';
@@ -73,7 +74,11 @@ export default function VenueReportButton({
     // Imported here, not at the top of the file: this button sits on public
     // pages, and a static import would put the database SDK on every signed-out
     // visit for a form most parents never send.
-    const { submitFeedbackAs } = await import('../feedbackSubmit');
+    // A chunk that will not load (a deploy replaced it, or the connection
+    // dropped) gets the form's own sentence, not the browser's English one.
+    const { submitFeedbackAs } = await import('../feedbackSubmit').catch(() => {
+      throw new Error(FEEDBACK_FAILED_MESSAGE);
+    });
     await submitFeedbackAs(user.uid, {
       title,
       content,

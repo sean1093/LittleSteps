@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { StrictMode, useEffect } from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChildProfile } from '../../types';
@@ -197,5 +197,29 @@ describe('ChildStoreProvider', () => {
     expect(seen.length).toBeGreaterThan(0);
     expect(seen.every((entry) => entry.names.length === 0 && !entry.loading)).toBe(true);
     await waitFor(() => expect(screen.getByText('none')).toBeInTheDocument());
+  });
+
+  it('reaches the real store under StrictMode, which runs every effect twice', async () => {
+    // main.tsx renders under StrictMode. The bridge reports from one effect
+    // and withdraws from another's cleanup; run in the wrong order, the
+    // withdrawal lands last and the app waits on a store that already came.
+    h.user = { uid: 'u1' };
+    render(<StrictMode>{tree()}</StrictMode>);
+
+    expect(await screen.findByText('Momo')).toBeInTheDocument();
+  });
+
+  it('comes back for the same account after signing out and in again', async () => {
+    h.user = { uid: 'u1' };
+    const { rerender } = render(tree());
+    await screen.findByText('Momo');
+
+    h.user = null;
+    rerender(tree());
+    expect(screen.getByText('none')).toBeInTheDocument();
+
+    h.user = { uid: 'u1' };
+    rerender(tree());
+    expect(await screen.findByText('Momo')).toBeInTheDocument();
   });
 });

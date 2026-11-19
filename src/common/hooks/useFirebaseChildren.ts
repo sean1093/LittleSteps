@@ -24,11 +24,6 @@ function newRecordRef(path: string): { recordRef: DatabaseReference; id: string 
   return { recordRef, id: recordRef.key };
 }
 
-// 這兩句原本定義在這裡。表單（公開頁上也有）要用它們，而從這個檔案 import 會
-// 把資料庫 SDK 一起帶上去，所以搬到 feedbackMessages；這裡照樣轉出，既有的
-// import 不必改。
-export { FEEDBACK_FAILED_MESSAGE, FEEDBACK_THROTTLED_MESSAGE } from '../feedbackMessages';
-
 /**
  * 一份集合快照攤成陣列。
  *
