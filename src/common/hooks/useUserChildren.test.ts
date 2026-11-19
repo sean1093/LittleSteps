@@ -62,7 +62,7 @@ vi.mock('firebase/database', () => ({
   set: setMock,
 }));
 
-vi.mock('../../lib/firebase', () => ({ database: {} }));
+vi.mock('../../lib/database', () => ({ database: {} }));
 
 const user = { uid: 'u1' } as User;
 const child = (id: string, name: string) => ({ id, name, birthday: '2025-01-01' });

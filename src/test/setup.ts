@@ -40,8 +40,12 @@ const mockPush = vi.fn((parent) => {
  * 這份 mock 必須蓋滿 lib/firebase 的真實匯出面。少一個匯出，
  * 載入它的元件會在測試裡爆掉，而不是安靜地少做一件事。
  */
-vi.mock('../lib/firebase', () => ({
+vi.mock('../lib/database', () => ({
   database: { _checkNotDeleted: vi.fn() },
+}));
+
+vi.mock('../lib/firebase', () => ({
+  app: { name: '[DEFAULT]' },
   auth: { currentUser: null },
   googleProvider: {},
   logEvent: vi.fn(),

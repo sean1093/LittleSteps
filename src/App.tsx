@@ -11,9 +11,8 @@ import { splitOverdueByProfileStart } from './common/utils/profileHistory';
 import { logPageView } from './lib/firebase';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useChildStoreContext, ChildStoreProvider } from './common/contexts/ChildStoreContext';
-import { useDailyLogs } from './littlesteps/hooks/useDailyLogs';
 import { useCareTasks } from './littleexplorer/hooks/useCareTasks';
-import { useDiary } from './littleexplorer/hooks/useDiary';
+import { NO_CHILD_RECORDS, sliceFor, type ChildRecords } from './common/childRecords';
 import Sidebar from './common/components/Sidebar';
 import AppHomeButton from './common/components/AppHomeButton';
 import AccountButton from './common/components/AccountButton';
@@ -49,6 +48,10 @@ const DiaryPage = lazy(() => import('./littleexplorer/pages/DiaryPage'));
 const ToddlerWikiPage = lazy(() => import('./littleexplorer/pages/ToddlerWikiPage'));
 const AboutPage = lazy(() => import('./common/about/AboutPage'));
 import FeedbackButton from './common/components/FeedbackButton';
+import QuietBoundary from './common/components/QuietBoundary';
+// 會碰到資料庫 SDK，而且只有登入之後才用得到，所以不放在進入點的 import
+// 路徑上：它替這個外框跑 useDailyLogs／useDiary。理由見 lib/database.ts。
+const ChildRecordsBridge = lazy(() => import('./common/ChildRecordsBridge'));
 import { toLocalDateKey } from './common/utils/dateHelpers';
 
 function AppContent() {
@@ -94,15 +97,28 @@ function AppContent() {
   // null，useFirebaseCollection 遇到 null 就什麼都不掛。理由與為什麼以服務而
   // 不是頁面為界，寫在 routePolicy 的 wantsDailyLogs 上。
   const recordsChildId = currentChild?.id ?? null;
-  const { logs: dailyLogs, loading: dailyLogsLoading, error: dailyLogsError } = useDailyLogs(
-    wantsDailyLogs(currentPage) ? recordsChildId : null,
-    user,
-  );
+  const logsChildId = wantsDailyLogs(currentPage) ? recordsChildId : null;
+  const diaryChildId = wantsDiaryEntries(currentPage) ? recordsChildId : null;
+  // listener 本身在 ChildRecordsBridge 裡（lazy，見上面 import 處），這裡拿到的
+  // 是它回報的結果。回報一定比「想要誰的」晚一步——bridge 的 chunk 可能還在
+  // 路上，到了之後也是在 effect 裡回報——所以用 sliceFor 對一下是不是這個孩子
+  // 的：不是，就是「還不知道」，不是「沒有紀錄」。
+  const [records, setRecords] = useState<ChildRecords>(NO_CHILD_RECORDS);
+  // 登出之後 bridge 就卸載了，不會再回報；上一位家長的紀錄不該繼續留在這裡。
+  useEffect(() => {
+    if (!user) setRecords(NO_CHILD_RECORDS);
+  }, [user]);
+  const {
+    data: dailyLogs,
+    loading: dailyLogsLoading,
+    error: dailyLogsError,
+  } = sliceFor(records.dailyLogs, logsChildId);
+  const {
+    data: diaryEntries,
+    loading: diaryLoading,
+    error: diaryError,
+  } = sliceFor(records.diaryEntries, diaryChildId);
   const { tasks: careTasks } = useCareTasks(currentChild);
-  const { entries: diaryEntries, loading: diaryLoading, error: diaryError } = useDiary(
-    wantsDiaryEntries(currentPage) ? recordsChildId : null,
-    user,
-  );
   // 空陣列有三種意思，只有一種是「沒有紀錄」：第一份快照還沒回來、讀取被拒
   // （例如成員資格剛被收回），以及斷線——RTDB 斷線時兩個 callback 都不會來。
   // listener 以前在入口頁就熱了，現在走進服務才訂閱，所以「還沒回來」每次
@@ -253,13 +269,35 @@ function AppContent() {
   const dataPending = loading || (user !== null && childrenLoading);
   const loadStalled = useStalled(dataPending);
 
+  // 下面每一個 return 都把它放在同一個位置（外框的兄弟、同一個 key），而不是
+  // 只放在最後那個 return 裡面。新增、加入或刪除一個孩子時 childrenLoading 會
+  // 短暫變回 true，畫面退回載入條；bridge 跟著卸載的話 listener 會退訂，RTDB
+  // 把快取丟掉，整份日誌重新下載一次——正是 wantsDailyLogs 那段說要避免的事。
+  //
+  // 外面那層 QuietBoundary：chunk 載不進來時不讓整個 app 換成錯誤畫面。那時
+  // 回報永遠不會來，sliceFor 一直回「載入中」，頁面自己的「連不上伺服器」
+  // 會在平常的等待之後出現。
+  const recordsBridge = user && (
+    <QuietBoundary key="records-bridge" scope="child records">
+      <Suspense fallback={null}>
+        <ChildRecordsBridge
+          user={user}
+          logsChildId={logsChildId}
+          diaryChildId={diaryChildId}
+          onRecords={setRecords}
+        />
+      </Suspense>
+    </QuietBoundary>
+  );
+
   // Show loading state while auth or children data is loading.
   // A pulsing 64px baby icon was the old treatment; a thin progress bar says
   // the same thing without an illustration and without a layout jump.
   if (dataPending) {
     if (loadStalled) {
       return (
-        <div className="min-h-dscreen bg-warm-white flex items-center justify-center p-4">
+        <>
+        <div key="screen" className="min-h-dscreen bg-warm-white flex items-center justify-center p-4">
           {/* 取代的是一條 role="status" 的載入條；沒有自己的 live region，螢幕
               閱讀器的使用者聽完「載入中」之後就什麼都聽不到了。 */}
           <div className="w-full max-w-md" role="alert">
@@ -271,15 +309,17 @@ function AppContent() {
             />
           </div>
         </div>
+        {recordsBridge}
+        </>
       );
     }
     return (
-      <div className="min-h-dscreen flex items-center justify-center bg-warm-white">
-        <div className="w-40 h-1 rounded-full bg-primary-light overflow-hidden" role="status">
-          <div className="h-full w-1/3 rounded-full bg-primary-dark animate-[loading_1.2s_ease-in-out_infinite]" />
-          <span className="sr-only">載入中</span>
+      <>
+        <div key="screen" className="min-h-dscreen flex items-center justify-center bg-warm-white">
+          <LoadingBar />
         </div>
-      </div>
+        {recordsBridge}
+      </>
     );
   }
 
@@ -309,7 +349,8 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-dscreen bg-warm-white">
+    <>
+    <div key="screen" className="min-h-dscreen bg-warm-white">
       {/* Sidebar - Only show for LittleSteps routes */}
       {!isStandalone && (
         <Sidebar
@@ -564,6 +605,8 @@ function AppContent() {
       {/* Feedback Button */}
       <FeedbackButton user={user} />
     </div>
+    {recordsBridge}
+    </>
   );
 }
 

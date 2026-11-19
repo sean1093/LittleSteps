@@ -80,7 +80,7 @@ vi.mock('firebase/database', () => ({
   },
 }));
 
-vi.mock('../../lib/firebase', () => ({ database: {} }));
+vi.mock('../../lib/database', () => ({ database: {} }));
 
 const feeding = (): Omit<DailyLog, 'id'> => ({
   childId: 'c1',

@@ -4,6 +4,7 @@ import type { User } from 'firebase/auth';
 import type { ChildProfile } from '../../types';
 import { CHILD_LIMIT_MESSAGE } from '../childLimits';
 import { useChildStore } from './useChildStore';
+import { SIGNED_OUT_CHILD_STORE } from '../contexts/signedOutChildStore';
 
 // Login is mandatory, so the store is Firebase-only. Mock the Firebase-backed
 // hooks it composes and assert it delegates to them correctly.
@@ -610,5 +611,49 @@ describe('useChildStore 寫入失敗', () => {
 
     expect(alertSpy).not.toHaveBeenCalled();
     expect(errorSpy).toHaveBeenCalledTimes(11);
+  });
+
+  /**
+   * 兩件 ChildStoreBridge 靠著的事。bridge 是登入之後才 lazy 載入的那一層，
+   * 它用物件識別判斷「資料有沒有變」，並在沒登入時改給一份寫死的空 store。
+   */
+  describe('給 ChildStoreBridge 的保證', () => {
+    const dataOf = (store: object) =>
+      Object.fromEntries(
+        Object.entries(store).filter(([, member]) => typeof member !== 'function'),
+      );
+
+    it('資料沒變時，每個資料成員在重畫之後都還是同一個物件', () => {
+      // 少了這一條，bridge 每次重畫都會以為資料變了而重新發佈，provider 跟著
+      // 重畫，bridge 又重畫——一個不會停的迴圈，在正式環境就是整頁卡死。
+      h.userChildren = listing([child(), bump()], 'c1');
+      const { result, rerender } = renderHook(() => useChildStore(user));
+      const before = dataOf(result.current);
+
+      rerender();
+      const after = dataOf(result.current);
+
+      expect(Object.keys(after)).toEqual(Object.keys(before));
+      for (const key of Object.keys(before)) {
+        expect(after[key], `${key} 換了一個物件`).toBe(before[key]);
+      }
+    });
+
+    it('沒登入時回傳的資料，與寫死的那一份空 store 一模一樣', () => {
+      // 沒登入的人拿到的是 SIGNED_OUT_CHILD_STORE，不會載入這個 hook。那一份是
+      // 手寫的，所以要有東西盯著它不跟這個 hook 走散。
+      h.userChildren = listing([]);
+      const { result } = renderHook(() => useChildStore(null));
+
+      expect(Object.keys(SIGNED_OUT_CHILD_STORE).sort()).toEqual(
+        Object.keys(result.current).sort(),
+      );
+      const real = dataOf(result.current);
+      const written = dataOf(SIGNED_OUT_CHILD_STORE) as Record<string, unknown>;
+      // 這份測試的假 useFirebaseChildren 沒有 readChildExport，那一格在這裡是
+      // undefined 而不是函式；它不是資料，不比。
+      delete real.readChildExport;
+      expect(written).toEqual(real);
+    });
   });
 });

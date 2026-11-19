@@ -4,9 +4,9 @@ import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ChildProfile } from '../../types';
 import {
-  ChildStoreProvider,
   useChildStoreContext,
 } from '../../common/contexts/ChildStoreContext';
+import { TestChildStoreProvider } from '../../test/TestChildStoreProvider';
 import MilestonesPage from './MilestonesPage';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
@@ -110,9 +110,9 @@ function MilestonesScreen() {
 const renderScreen = () => {
   const user = userEvent.setup();
   render(
-    <ChildStoreProvider>
+    <TestChildStoreProvider>
       <MilestonesScreen />
-    </ChildStoreProvider>,
+    </TestChildStoreProvider>,
   );
   return user;
 };

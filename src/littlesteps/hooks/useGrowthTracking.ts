@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ref, set, update, onValue, remove } from 'firebase/database';
-import { database } from '../../lib/firebase';
+import { database } from '../../lib/database';
 import type { ChildProfile, GrowthRecord, Gender } from '../../types';
 import { calculateZScore, calculatePercentile } from '../utils/growthCalculator';
 import { growthAgeMonths } from '../../common/correctedAge';

@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type { ChildExportSource } from '../utils/childExport';
 import { downloadFile } from '../utils/download';
 import { ToastProvider } from '../ui/toast';
-import { ChildStoreProvider } from '../contexts/ChildStoreContext';
+import { TestChildStoreProvider } from '../../test/TestChildStoreProvider';
 import AccountButton from './AccountButton';
 
 /**
@@ -77,9 +77,9 @@ const openSheet = async (service: 'littlesteps' | 'littleexplorer' | 'babyoasis'
   const user = userEvent.setup();
   render(
     <ToastProvider>
-      <ChildStoreProvider>
+      <TestChildStoreProvider>
         <AccountButton service={service} />
-      </ChildStoreProvider>
+      </TestChildStoreProvider>
     </ToastProvider>,
   );
   await user.click(screen.getByRole('button', { name: '帳號與寶寶' }));

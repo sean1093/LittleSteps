@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { useOptionalAuth } from '../../contexts/AuthContext';
-import { useFirebaseChildren } from '../hooks/useFirebaseChildren';
+import { FEEDBACK_FAILED_MESSAGE } from '../feedbackMessages';
 import { useToast } from '../ui/toast';
 import { tap } from '../ui/motion';
 import FeedbackModal from './FeedbackModal';
@@ -66,13 +66,20 @@ export default function VenueReportButton({
   const [hasOpened, setHasOpened] = useState(false);
   const auth = useOptionalAuth();
   const user = auth?.user ?? null;
-  const { submitFeedback } = useFirebaseChildren(user?.uid ?? null);
   const toast = useToast();
 
   const handleSubmit = async (title: string, content: string, shareContact: boolean) => {
     if (!user) throw new Error('請先登入');
 
-    await submitFeedback({
+    // Imported here, not at the top of the file: this button sits on public
+    // pages, and a static import would put the database SDK on every signed-out
+    // visit for a form most parents never send.
+    // A chunk that will not load (a deploy replaced it, or the connection
+    // dropped) gets the form's own sentence, not the browser's English one.
+    const { submitFeedbackAs } = await import('../feedbackSubmit').catch(() => {
+      throw new Error(FEEDBACK_FAILED_MESSAGE);
+    });
+    await submitFeedbackAs(user.uid, {
       title,
       content,
       userId: user.uid,

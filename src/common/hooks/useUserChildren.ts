@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ref, onValue, remove, set } from 'firebase/database';
-import { database } from '../../lib/firebase';
+import { database } from '../../lib/database';
 import { ChildProfile } from '../../types';
 import { User } from 'firebase/auth';
 

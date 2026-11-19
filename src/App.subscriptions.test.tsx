@@ -59,12 +59,18 @@ const held = new Set<string>();
 const release = new Map<string, () => void>();
 /** Paths whose read the database refuses. */
 const refused = new Set<string>();
+/** Every attach, in order, so a detach followed by a re-attach is visible. */
+const attaches: string[] = [];
+/** Push a new snapshot to whoever is listening on a path. */
+const emit = new Map<string, (value: unknown) => void>();
 
 beforeEach(() => {
   live.clear();
   held.clear();
   release.clear();
   refused.clear();
+  attaches.length = 0;
+  emit.clear();
   vi.restoreAllMocks();
   // The hook logs a refused read; that is expected here, not noise to print.
   vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -77,6 +83,8 @@ beforeEach(() => {
     cancel?: (error: Error) => void,
   ) => {
     const path = reference.path ?? '';
+    attaches.push(path);
+    emit.set(path, (value) => next({ exists: () => value !== null, val: () => value }));
     if (refused.has(path)) {
       live.add(path);
       cancel?.(new Error('PERMISSION_DENIED'));
@@ -235,4 +243,32 @@ describe('child-record listeners follow the service on screen', () => {
     },
     20000,
   );
+
+  it('keeps the daily-log listener attached while the child list reloads', async () => {
+    // Adding, joining or deleting a child puts the child list back into
+    // "loading" until the new one reports, and App falls back to its loading
+    // bar. If the listener went with the page, Realtime Database would drop
+    // its cache and the whole log would be downloaded again.
+    open('/littlesteps/dashboard');
+    await heading(/成長總覽/);
+    const attachesBefore = attaches.filter((path) => path === LOGS_PATH).length;
+    expect(attachesBefore).toBeGreaterThan(0);
+
+    // A second child appears on the account, and has not reported yet.
+    held.add('children/kid-2');
+    act(() =>
+      emit.get('users/test-uid')?.({
+        currentChildId: CHILD_ID,
+        childrenIds: { [CHILD_ID]: true, 'kid-2': true },
+      }),
+    );
+    // The app really is back on the whole-screen bar: the page is gone.
+    await vi.waitFor(() => expect(screen.queryByRole('heading', { name: /成長總覽/ })).toBeNull());
+    expect(live).toContain(LOGS_PATH);
+
+    act(() => release.get('children/kid-2')?.());
+    await heading(/成長總覽/);
+
+    expect(attaches.filter((path) => path === LOGS_PATH).length).toBe(attachesBefore);
+  }, 20000);
 });

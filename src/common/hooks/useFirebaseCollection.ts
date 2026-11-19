@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ref, onValue } from 'firebase/database';
 import type { User } from 'firebase/auth';
-import { database } from '../../lib/firebase';
+import { database } from '../../lib/database';
 
 export interface FirebaseCollectionOptions<T> {
   /** Realtime Database path, e.g. `childRecords/${childId}/dailyLogs`. */
