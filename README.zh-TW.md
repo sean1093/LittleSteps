@@ -302,6 +302,14 @@ feedbacks/$feedbackId      title, content, userId, timestamp
 孩子的監聽器訂閱的是整個 `children/$childId` 節點，日誌放在裡面的時候，換一次
 尿布就會把這個孩子的全部歷史重新下載給每一位家人。
 
+搬出去限制住的是扇出，不是讀取。日誌是長得最快的那一份，一天大約十列，所以
+它的監聽器只涵蓋一個視窗：`timestamp` 落在最近 90 天內的那些列，是任何畫面
+用到的最長回溯（月報的 30 天）的三倍。家長在日誌頁往回翻過那條線時，那一頁
+會要求更早的起點；匯出則照舊把全部讀一次。視窗是對 `timestamp` 做字串比較，
+這就是規則替那個欄位建索引、並且只收 `toISOString()` 產生的那種固定寬度 UTC
+格式的原因：只有那一種寫法，字串順序才等於時間順序。理由寫在
+`src/littlesteps/logWindow.ts`。
+
 存取權限由 `database.rules.json` 落實 — `childRecords/$childId` 和
 `childIndex/$childId` 兩者都是透過 `children/$childId/members` 判斷。權威的
 規則看那個檔案，而這些規則被斷言要做到什麼，看 `scripts/testRules.cjs`。

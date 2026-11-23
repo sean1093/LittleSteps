@@ -56,6 +56,10 @@ vi.mock('firebase/database', () => ({
     subscriptions.push(target.path);
     return () => {};
   },
+  // 日誌的 listener 帶著時間視窗；查詢留著原本的路徑，這裡驗的是路徑。
+  query: (target: FakeRef) => ({ path: target.path }),
+  orderByChild: () => ({}),
+  startAt: () => ({}),
   set: (target: FakeRef, value: unknown) => {
     if (denied.has(target.path)) return Promise.reject(new Error('PERMISSION_DENIED'));
     writes.push({ path: target.path, value });

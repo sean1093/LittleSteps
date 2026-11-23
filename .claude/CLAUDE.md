@@ -100,6 +100,12 @@ a page *shows*, not what the database *gives out*. Two rules govern everything:
   with the logs inside it, every diaper entry re-sent the child's entire history
   to every family member.
 
+The daily log's listener covers a window, the last 90 days by `timestamp`, not
+the whole collection (`src/littlesteps/logWindow.ts`). That is a string
+comparison, so the rules index `timestamp` and accept only what
+`toISOString()` produces. Write a log's `timestamp` any other way and the
+rules refuse it; read the log with a new listener and pass it a window too.
+
 Two consequences worth knowing before you touch the data layer:
 
 - **Deleting is one root fan-out**, never a sequence. `root` in a rules
@@ -116,7 +122,7 @@ Two consequences worth knowing before you touch the data layer:
   an account by a child they created for somebody else.
 
 `npm run test:rules` proves all of it against the real Database emulator
-(`scripts/testRules.cjs`, 145 assertions). It needs a JDK. Change
+(`scripts/testRules.cjs`, 152 assertions). It needs a JDK. Change
 `database.rules.json` without running it and you are guessing.
 
 ---
@@ -246,7 +252,7 @@ database.rules.json:Unable to parse JSON: SyntaxError: Unexpected token 'r', "re
 
 It takes a proxy, so it cannot happen in CI — a red `test:rules` there is
 about the rules. Both sides of the boundary were run, not just read: 15.22.4
-passes 145/145 as the tree stands, 15.23.0 fails with exactly that line, and
+passed 145/145 when the boundary was traced, 15.23.0 fails with exactly that line, and
 15.34.0 passes too once the proxy variables are cleared and the jar is cached.
 The manifest range stops below 15.23.0 so `npm update` cannot cross the
 ceiling in silence, and the pin reaches further than this suite — #117 points

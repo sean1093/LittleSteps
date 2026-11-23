@@ -3,6 +3,9 @@ import { motion } from 'framer-motion';
 import { User } from 'firebase/auth';
 import { ChildProfile, DailyLog, SleepData } from '../../types';
 import { useDailyLogs } from '../hooks/useDailyLogs';
+import { defaultLogWindowStart, widenLogWindow } from '../logWindow';
+import { useStalled } from '../../common/hooks/useStalled';
+import RecordsNotice from '../../common/ui/RecordsNotice';
 import { useFirebaseChildren } from '../../common/hooks/useFirebaseChildren';
 import { calculateDuration, isSameDay } from '../../common/utils/dateHelpers';
 import {
@@ -47,7 +50,23 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
   const [justClosedSleep, setJustClosedSleep] = useState<DailyLog | null>(null);
 
   // Load data
-  const { logs, loading, error } = useDailyLogs(currentChild?.id || null, user);
+  /*
+    日誌只聽最近一段（見 logWindow.ts）。翻到那之前的某一天時把起點往前挪，
+    只會越挪越早：挪回來的話，剛剛才看過的那幾天會從畫面上消失。
+  */
+  const [logsSince, setLogsSince] = useState(() => defaultLogWindowStart());
+  const { logs, loading, error } = useDailyLogs(currentChild?.id || null, user, logsSince);
+  // RTDB 斷線時不會回呼；重讀卡住的時候要說得出話，不是一直轉。
+  const rewindowStalled = useStalled(loading);
+  /*
+    換日一律走這裡，不直接 setSelectedDate：日期可以從三個地方變——日期列、
+    補記一筆更早的紀錄之後跳過去、一鍵睡眠——漏掉任何一個，畫面就會停在一個
+    listener 沒涵蓋到的日子上，然後說「這天沒有記錄」。
+  */
+  const showDay = (date: Date) => {
+    setSelectedDate(date);
+    setLogsSince((since) => widenLogWindow(since, date));
+  };
   const firebaseChildren = useFirebaseChildren(user?.uid || null);
 
   const isToday = isSameDay(selectedDate, new Date());
@@ -129,7 +148,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
         createdByName: user?.displayName ?? undefined,
       });
       setJustClosedSleep(null);
-      setSelectedDate(new Date(startedAt));
+      showDay(new Date(startedAt));
     } catch (error) {
       reportWriteFailure(error, '開始睡眠記錄失敗，請稍後再試');
     }
@@ -151,7 +170,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
         createdBy: user?.uid,
         createdByName: user?.displayName ?? undefined,
       });
-      setSelectedDate(new Date(now));
+      showDay(new Date(now));
     } catch (error) {
       reportWriteFailure(error, '記錄失敗，請稍後再試');
     }
@@ -242,7 +261,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
 
     // 補記昨天的餵奶時，紀錄不會落在目前這一天。跳到它真正落在的日子，
     // 不然使用者剛存的東西會憑空消失。
-    setSelectedDate(new Date(completeLogData.timestamp));
+    showDay(new Date(completeLogData.timestamp));
   };
 
   const handleEdit = (log: DailyLog) => {
@@ -279,8 +298,19 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
     );
   }
 
+  /*
+    視窗往前挪之後的那一次重讀，不能像第一次載入那樣把整頁換成載入條：日期列
+    會跟著不見，鍵盤焦點掉了，而離線時 RTDB 不會回呼，家長就被留在一條轉不完
+    的載入條上，連翻回今天的路都沒有。所以這時候外框與日期列留著，只把內容換
+    成「載入中／連不上伺服器」。
+
+    內容整段不畫，不只是時間軸：這段空窗裡 logs 是空的，一鍵睡眠看不到還沒關
+    的那一段，會讓人再開一段新的。
+  */
+  const rewindowing = loading && logsSince !== defaultLogWindowStart();
+
   // Loading state
-  if (loading) {
+  if (loading && !rewindowing) {
     return (
       <div className="screen">
         <div className="screen-body flex justify-center py-16">
@@ -314,11 +344,20 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
             value={selectedDate}
             onChange={(date) => {
               setJustClosedSleep(null);
-              setSelectedDate(date);
+              showDay(date);
             }}
           />
         </motion.div>
 
+        {rewindowing && (
+          <RecordsNotice
+            status={rewindowStalled ? 'stalled' : 'loading'}
+            theme={SERVICE_THEME.littlesteps}
+          />
+        )}
+
+        {!rewindowing && (
+          <>
         {showOpenSleep && openSleep && (
           <motion.div variants={listItem} className="mb-4">
             <OpenSleepCard log={openSleep} onWake={handleWake} onFixEndTime={handleEdit} />
@@ -395,6 +434,11 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
           )}
         </motion.div>
 
+          </>
+        )}
+
+        {/* 表單留在空窗之外：補記一筆更早的紀錄會觸發重讀，而那時表單還在
+            等寫入回來，不能跟著內容一起被卸載。 */}
         {modalType && (
           <LogEntryModal
             isOpen={showModal}
