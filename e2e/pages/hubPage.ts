@@ -14,8 +14,8 @@ import { SERVICE_THEME, type ServiceId } from '../../src/common/ui/serviceTheme'
  */
 export class HubPage {
   /**
-   * The hub's own headline, and the only `h1` on the page: the hub is the one
-   * route that renders no `AppBar`.
+   * The landing page's headline, and the only `h1` on the page: its brand bar
+   * shows the wordmark as plain text, not as a heading.
    */
   readonly title: Locator;
 
@@ -40,13 +40,14 @@ export class HubPage {
 
   /**
    * One service's card. The whole row is the tap target (`pressable` gives it
-   * `role="button"`), so its accessible name is the wordmark followed by the
-   * role label and the feature line — anchored to the wordmark here because
-   * that is the part a parent is choosing by.
+   * `role="button"`), so its accessible name is the role label followed by the
+   * wordmark and the description — anchored to the role here because the
+   * card leads with it: the suite and the 0-12 month service share the
+   * wordmark LittleSteps, and the role is what tells the six apart.
    */
   card(service: ServiceId): Locator {
     return this.page.getByRole('button', {
-      name: new RegExp(`^${SERVICE_THEME[service].name}\\b`),
+      name: new RegExp(`^${SERVICE_THEME[service].role}`),
     });
   }
 }

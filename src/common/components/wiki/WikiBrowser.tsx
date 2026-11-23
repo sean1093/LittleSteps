@@ -11,6 +11,7 @@ import CrossWikiResults from './CrossWikiResults';
 import { matchesKeyword } from '../../wiki/matchesKeyword';
 import { queryFromLocation } from '../../wiki/crossWikiSearch';
 import type { ServiceId } from '../../ui/serviceTheme';
+import SuiteNote from '../../landing/SuiteNote';
 
 /**
  * 三個知識庫的瀏覽介面：搜尋、分類篩選、篇數、空狀態、展開卡片。
@@ -179,6 +180,8 @@ export default function WikiBrowser<
       {crossSearchService && (
         <CrossWikiResults query={query} service={crossSearchService} theme={theme} />
       )}
+
+      <SuiteNote />
     </div>
   );
 }

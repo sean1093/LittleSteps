@@ -833,8 +833,8 @@ const BabyOasisPage = () => {
           subtitle={
             loadState === 'ready'
               ? isFiltered
-                ? `篩選後 ${filteredRooms.length} 處`
-                : `全台 ${nursingRooms.length} 處哺乳室`
+                ? `篩選後 ${filteredRooms.length.toLocaleString('en-US')} 處`
+                : `全台 ${nursingRooms.length.toLocaleString('en-US')} 處哺乳室`
               : loadState === 'failed'
                 ? '資料載入失敗'
                 : '正在載入資料…'

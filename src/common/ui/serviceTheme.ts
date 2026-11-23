@@ -10,7 +10,7 @@ import { Baby, Flower2, MapPin, Shield, Sun, Trees } from 'lucide-react';
  * (see `Screen`, `PageHeader`, `EmptyState`) and the *only* thing a sub-app
  * varies is the palette below.
  *
- * `ServiceLanding` already proved this pattern with a local `theme` object; this
+ * The intro page (now `ServiceIntro`) already proved this pattern with a local `theme` object; this
  * is that idea promoted to the one place every surface can read it.
  *
  * Contrast rule, inherited from `tailwind.config.js`: `accent` is a fill and

@@ -95,9 +95,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'favicon-32x32.png', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'LittleSteps - 孕期到幼兒的育兒陪伴',
+        name: 'LittleSteps｜懷孕到三歲的育兒工具',
         short_name: 'LittleSteps',
-        description: '從懷孕、新生兒到 1-3 歲幼兒，五個服務陪台灣爸媽走過每個階段',
+        description: '給台灣爸媽的育兒工具：產檢、疫苗與成長記錄，加上哺乳室地圖、親子館與兒童傳染病門診統計',
         lang: 'zh-TW',
         theme_color: '#FDFBF7',
         background_color: '#FDFBF7',

@@ -182,7 +182,7 @@ describe('色彩 class 解析', () => {
 describe('SERVICE_THEME 對比度', () => {
   it('每個服務的 ink 在白色表面上 ≥4.5:1', () => {
     // 白色是 ink 真正的底：`.card`/`.panel` 是 bg-white，AppBar 是 bg-white/90，
-    // ServiceLanding 的標題在 `.panel` 裡。改壞 `-dark`/`-ink` 色階這裡先紅。
+    // ServiceIntro 的標題在 `.panel` 裡。改壞 `-dark`/`-ink` 色階這裡先紅。
     for (const [id, theme] of SERVICES) {
       const value = contrast(theme.ink, 'bg-white');
       expect(value, `${id} ink ${theme.ink} 在白色上只有 ${value.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);

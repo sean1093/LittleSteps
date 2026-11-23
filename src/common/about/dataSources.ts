@@ -52,7 +52,7 @@ export const DATA_SOURCES: DataSource[] = [
   {
     agency: '衛生福利部疾病管制署',
     dataset: '健保門診就診人次統計（政府資料開放平臺）',
-    what: '疫情雷達的每週門診人次，依縣市與年齡層，每週更新',
+    what: '疫情雷達的每週門診人次，依縣市與年齡層，疾管署每週公布',
     sourceUrl: 'https://od.cdc.gov.tw/eic/',
     // public/data/diseaseRadar.json carries its own verifiedOn.
     verifiedOn: '2026-09-04',

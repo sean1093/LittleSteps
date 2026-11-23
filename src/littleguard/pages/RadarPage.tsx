@@ -17,6 +17,7 @@ import CountyPicker from '../components/CountyPicker';
 import DiseaseDrawer from '../components/DiseaseDrawer';
 import DiseaseRow from '../components/DiseaseRow';
 import { AGE_LABEL, formatWeekRange, freshnessOf, summariseBoard } from '../utils/radar';
+import SuiteNote from '../../common/landing/SuiteNote';
 
 /** 沒記到上次選的縣市時的起點；台北市是最多人一眼認得的那個。 */
 const DEFAULT_COUNTY = '台北市';
@@ -280,6 +281,8 @@ export default function RadarPage() {
             </p>
           </>
         )}
+
+        <SuiteNote />
       </main>
       {open && cells && data && (
         <DiseaseDrawer

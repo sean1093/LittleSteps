@@ -22,9 +22,9 @@ interface PageMeta {
  */
 const PAGE_META: Record<Page, PageMeta> = {
   home: {
-    title: 'LittleSteps｜從孕期到 3 歲的台灣育兒陪伴',
+    title: 'LittleSteps｜懷孕到三歲的育兒工具：產檢、疫苗、哺乳室地圖',
     description:
-      '孕期產檢、寶寶里程碑與疫苗、幼兒發展檢核、親子好去處、全台哺乳室地圖與每週兒童傳染病。六個服務，陪台灣爸媽走過每個階段。',
+      '給台灣爸媽的育兒工具：公費產檢與疫苗時程、每日餵奶睡眠記錄、WHO 生長曲線與幼兒發展檢核；全台哺乳室地圖、親子館與兒童傳染病門診統計不用登入就能查。',
   },
   about: {
     title: '關於資料與來源｜LittleSteps',
@@ -128,9 +128,9 @@ const PAGE_META: Record<Page, PageMeta> = {
       '全台 3,852 處哺乳室的地圖查詢，依所在位置找出最近的哺乳室，資料來源為政府公開資料。',
   },
   littleguard: {
-    title: '兒童傳染病這週多不多｜疫情雷達｜LittleGuard',
+    title: '兒童傳染病門診就診統計｜各縣市疫情雷達｜LittleGuard',
     description:
-      '腸病毒、手足口病、疱疹性咽峽炎、類流感、COVID-19、腹瀉、水痘的每週門診就診情況，可依縣市與孩子年齡查看，資料來自衛福部疾管署開放資料。',
+      '腸病毒、手足口病、疱疹性咽峽炎、類流感、COVID-19、腹瀉、水痘的門診就診人次，可依縣市與孩子年齡查看，資料來自衛福部疾管署開放資料。',
   },
 };
 

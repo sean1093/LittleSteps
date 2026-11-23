@@ -63,7 +63,7 @@ export function organizationJsonLd(): JsonLd {
     name: SITE_NAME,
     url: SITE_ORIGIN,
     inLanguage: LANGUAGE,
-    description: '從懷孕、新生兒到 1-3 歲幼兒，六個服務陪台灣爸媽走過每個階段',
+    description: '給台灣爸媽的育兒工具：從懷孕到三歲的產檢、疫苗與成長記錄，加上哺乳室地圖、親子館與兒童傳染病門診統計',
     publisher: publisher(),
   };
 }
