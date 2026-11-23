@@ -201,14 +201,18 @@ function AppContent() {
       return 'LittleExplorer';
     }
 
-    let title = 'LittleSteps';
+    // 服務首頁就叫 LittleSteps；其餘每一頁的標題是頁名本身，有孩子時前面加
+    // 「誰的」。這裡原本沒有孩子時把頁名直接接在 wordmark 後面，於是未登入的
+    // 訪客——也就是從搜尋進到百科的每一個人——看到的是「LittleSteps寶寶…」，
+    // 在 390px 上頁名幾乎整個被截掉。
+    let title = currentPage === 'littlesteps' ? 'LittleSteps' : '';
     if (currentChild && currentPage !== 'littlesteps') {
       title = `${currentChild.name} 的 `;
     }
 
     switch (currentPage) {
       case 'littlesteps':
-        break; // Use default 'LittleSteps'
+        break;
       case 'littlesteps/dashboard':
         title += '成長總覽';
         break;
