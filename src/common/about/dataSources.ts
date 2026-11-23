@@ -130,6 +130,7 @@ export const DEVICE_STORE_DESCRIBED = {
   guardCounty: '上次看的縣市',
   guardAgeBand: '孩子的年齡層',
   outingTab: '上次停在哪一個分頁',
+  outingStage: '親子好去處選的動作階段',
   outingCity: '上次看的縣市',
   oasisCity: '上次看的縣市',
   oasisDistrict: '上次看的行政區',

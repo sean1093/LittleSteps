@@ -14,6 +14,10 @@ import { CENTRE_ACCESS, CENTRE_ACCESS_UNVERIFIED, CENTRE_DATA_ATTRIBUTION } from
 import { restaurants } from '../data/restaurants';
 import { outingChecklist } from '../data/outingChecklist';
 import VenueCard from '../components/VenueCard';
+import StageGuide from '../components/StageGuide';
+import { OUTING_STAGES, type OutingStageId } from '../data/outingStages';
+import { stageForChild } from '../stageForChild';
+import { useOptionalChildStore } from '../../common/contexts/ChildStoreContext';
 import SuiteNote from '../../common/landing/SuiteNote';
 
 /** 縣市排序：六都在前，其餘依館數多寡，離島最後——和家長心裡的順序一致。 */
@@ -30,9 +34,10 @@ const CITY_ORDER = [
  */
 const MAX_RENDERED = 30;
 
-type View = VenueKind | 'checklist';
+type View = 'guide' | VenueKind | 'checklist';
 
 const VIEWS: { id: View; label: string }[] = [
+  { id: 'guide', label: '推薦' },
   { id: 'centre', label: '親子館' },
   { id: 'restaurant', label: '親子餐廳' },
   { id: 'checklist', label: '出發前' },
@@ -44,7 +49,12 @@ const ALL_CITIES = 'all';
 /**
  * 親子好去處：找地方帶孩子出門。
  *
- * 兩種資料刻意分開呈現，因為來源的可信度差很多：
+ * 第一頁是「推薦」：先問孩子現在會什麼（還不會坐、會爬、剛會走、走得穩、
+ * 會跑跳），再依那個階段列出適合去的場地類型。適合去哪裡看的是孩子怎麼移動，
+ * 不是場館清單——三個月大和三歲看同一份名冊，等於沒有回答。分類與每一句健康
+ * 說法的出處在 data/outingStages.ts。
+ *
+ * 後面兩頁是名冊。兩種資料刻意分開呈現，因為來源的可信度差很多：
  *
  *   親子館是衛福部社家署的全國名冊，234 間齊全、可重新產生、有授權可標示。
  *   親子餐廳沒有任何官方名單，也沒有任何認證制度——觀光署的全國餐廳資料裡
@@ -55,7 +65,7 @@ const ALL_CITIES = 'all';
  * 早先實測過免費地理編碼服務對台灣門牌的準確度（中位數誤差 830 公尺、p75
  * 7.2 公里），結論是不可用。與其畫一張位置錯的地圖，不如老實用縣市瀏覽。
  *
- * 第三頁是出發前檢查清單。它不會過期，而清單上每一項都對應一種「白跑一趟」。
+ * 最後一頁是出發前檢查清單。它不會過期，而清單上每一項都對應一種「白跑一趟」。
  */
 export default function OutingPage() {
   const theme = SERVICE_THEME.littleouting;
@@ -63,8 +73,18 @@ export default function OutingPage() {
      問句，不是「我家在哪」。分頁 id 對不上今天的 VIEWS 就當沒存過。 */
   const [stored] = useState(readPreferences);
   const [view, setView] = useState<View>(
-    () => VIEWS.find((entry) => entry.id === stored.outingTab)?.id ?? 'centre',
+    () => VIEWS.find((entry) => entry.id === stored.outingTab)?.id ?? 'guide',
   );
+  /* 家長自己選過的那一格。沒選過（或存的 id 今天已經不存在）就是 null，下面
+     會改用孩子的紀錄去猜。 */
+  const [pickedStage, setPickedStage] = useState<OutingStageId | null>(
+    () => OUTING_STAGES.find((entry) => entry.id === stored.outingStage)?.id ?? null,
+  );
+  /* 這一頁是公開的，所以只能透過 context 讀孩子，不能自己掛資料庫的 hook
+     （見 CLAUDE.md）。未登入時 currentChild 是 undefined，guess 就是 null。 */
+  const currentChild = useOptionalChildStore()?.currentChild;
+  const guess = useMemo(() => stageForChild(currentChild), [currentChild]);
+  const stage = pickedStage ?? guess?.stage ?? null;
   const [pickedCity, setPickedCity] = useState<string>(stored.outingCity ?? ALL_CITIES);
   const [query, setQuery] = useState('');
   const [centres, setCentres] = useState<Venue[]>([]);
@@ -143,6 +163,11 @@ export default function OutingPage() {
     savePreferences({ outingTab: next, outingCity: ALL_CITIES });
   };
 
+  const chooseStage = (next: OutingStageId) => {
+    setPickedStage(next);
+    savePreferences({ outingStage: next });
+  };
+
   const chooseCity = (next: string) => {
     setPickedCity(next);
     savePreferences({ outingCity: next });
@@ -163,8 +188,9 @@ export default function OutingPage() {
       />
 
       <main className="screen-body space-y-4">
-        {/* 三個分頁：兩種場地 + 不會過期的檢查清單 */}
-        <div className="flex gap-2">
+        {/* 四個分頁：依孩子狀態的推薦、兩份名冊、不會過期的檢查清單。
+            不用 flex-1：四顆裡「親子餐廳」最長，等寬會在 320px 把它擠出框。 */}
+        <div className="flex flex-wrap gap-2">
           {VIEWS.map(({ id, label }) => (
             <motion.button
               key={id}
@@ -172,7 +198,7 @@ export default function OutingPage() {
               whileTap={tap}
               onClick={() => chooseView(id)}
               aria-pressed={view === id}
-              className={`chip flex-1 justify-center ${
+              className={`chip ${
                 view === id ? `chip-on ${theme.fill} ${theme.fillText} border-transparent` : ''
               }`}
             >
@@ -182,7 +208,20 @@ export default function OutingPage() {
         </div>
 
         <AnimatePresence mode="wait">
-          {view === 'checklist' ? (
+          {view === 'guide' ? (
+            <motion.div key="guide" variants={fadeInUp} initial="hidden" animate="visible">
+              <StageGuide
+                stage={stage}
+                onChooseStage={chooseStage}
+                onOpenRegister={chooseView}
+                guess={
+                  pickedStage === null && guess && currentChild
+                    ? { childName: currentChild.name, basis: guess.basis }
+                    : undefined
+                }
+              />
+            </motion.div>
+          ) : view === 'checklist' ? (
             <motion.div key="checklist" variants={fadeInUp} initial="hidden" animate="visible" className="space-y-3">
               <p className="text-sm text-ink-muted leading-relaxed">
                 帶孩子出門白跑一趟，多半不是因為運氣差，而是其中一項沒先問。

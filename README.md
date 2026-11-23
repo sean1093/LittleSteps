@@ -49,7 +49,7 @@ they used to give no hint that a product existed around them.
 | 🌸 | **LittleBloom** | Pregnancy · weeks 0-40 | hub + back button |
 | 🍼 | **LittleSteps** | Newborn · 0-12 months | sidebar, 12 routes |
 | ☀️ | **LittleExplorer** | Toddler · 1-3 years | 4 bottom tabs |
-| 🌳 | **LittleOuting** | any | 3 in-page tabs |
+| 🌳 | **LittleOuting** | any | 4 in-page tabs |
 | 📍 | **BabyOasis** | any | full-screen map |
 | 🛡️ | **LittleGuard** | any | single board + drawer |
 
@@ -120,6 +120,23 @@ they used to give no hint that a product existed around them.
   and what to keep in the medicine cabinet, filtered by the child's age stage
 
 ### LittleOuting — places to take a child
+- **Recommendations by what the child can do** — the page opens on one question,
+  "what can your child do now", with five answers by gross-motor ability (not yet
+  sitting, sitting and crawling, cruising and first steps, walking steadily,
+  running and jumping). Each answers with venue types in priority order, how long
+  to stay, and what to watch for. Stages are abilities rather than ages because two
+  fourteen-month-olds can be a crawler and a walker and need different places; age
+  is only the fallback. A signed-in parent's stage is preselected from the gross-motor
+  milestones they have ticked, or from corrected age, and the page says which
+- **Every health statement in it is sourced** — WHO's activity guidance for
+  under-fives, the HPA on drowning and falls, the CDC on enterovirus, the AAP on sun
+  and playgrounds — with the date each page was read and the wording it rests on kept
+  beside the URL. A test fails on a safety line with no source. The frame is daily
+  activity need, not "burning off energy"
+- **Types, not venues, where no register exists** — family centres and restaurants
+  open this app's own lists; parks, playgrounds and libraries have no national
+  register with coordinates, so they link to a map search and the page says the
+  results are not a verified list
 - **234 public family centres across all 22 counties**, built by a committed
   script from the national list published by the MOHW Social and Family Affairs
   Administration, plus Taipei's 13 parenting-friendly rooms kept separate

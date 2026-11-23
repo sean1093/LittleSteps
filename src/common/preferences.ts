@@ -52,8 +52,10 @@ export interface ViewPreferences {
   guardCounty: string | null;
   /** LittleGuard: the age band chip, in the upstream `0~2` form. */
   guardAgeBand: string | null;
-  /** LittleOuting: which of the three tabs. */
+  /** LittleOuting: which tab. */
   outingTab: string | null;
+  /** LittleOuting: the chosen stage chip — what the child can do, as the parent picked it. */
+  outingStage: string | null;
   /** LittleOuting: the county chip, or the all-counties value. */
   outingCity: string | null;
   /** BabyOasis: the area filter. */
@@ -76,6 +78,7 @@ const OWNED_KEYS: readonly string[] = [
   'guardCounty',
   'guardAgeBand',
   'outingTab',
+  'outingStage',
   'outingCity',
   'oasisCity',
   'oasisDistrict',
@@ -135,6 +138,7 @@ function normalise(source: Record<string, unknown>): ViewPreferences {
     guardCounty: text(source.guardCounty),
     guardAgeBand: text(source.guardAgeBand),
     outingTab: text(source.outingTab),
+    outingStage: text(source.outingStage),
     outingCity: text(source.outingCity),
     oasisCity: text(source.oasisCity),
     oasisDistrict: text(source.oasisDistrict),

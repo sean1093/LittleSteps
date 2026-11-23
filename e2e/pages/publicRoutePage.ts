@@ -76,7 +76,7 @@ const CONTENT: Partial<Record<Page, (page: BrowserPage) => Locator>> = {
   // `BloomShell` puts the page's own title in the `AppBar`, not the wordmark.
   'littlebloom/wiki': (page) => page.getByRole('heading', { name: '孕期知識庫' }),
   'littleexplorer/wiki': (page) => page.getByRole('heading', { name: '依年齡看' }),
-  littleouting: (page) => new OutingPage(page).centreSearch,
+  littleouting: (page) => new OutingPage(page).stageQuestion,
   babyoasis: (page) => new BabyOasisPage(page).search,
   // The age-band picker's heading, which renders only once the radar's own
   // data file has arrived — so this also says the page reached its content,
@@ -102,7 +102,7 @@ const READY: Partial<Record<Page, (page: BrowserPage) => Locator>> = {
   'littleexplorer/wiki': (page) =>
     new WikiBrowserPage(page, 'littleexplorer/wiki').articles.first(),
   // Renders on a family-centre card, so it waits for `familyCentres.json`.
-  littleouting: (page) => new OutingPage(page).reportButtons.first(),
+  littleouting: (page) => new OutingPage(page).firstStageChip,
   // The search input renders once the 1.1 MB nursing-room dataset has arrived.
   babyoasis: (page) => new BabyOasisPage(page).search,
   // The chip row lives inside the `data && cells` branch, so it exists only
