@@ -18,7 +18,7 @@ export interface FirebaseCollectionOptions<T> {
    * The path needs an `.indexOn` for `orderBy` in `database.rules.json`;
    * without one the server sends everything and the client filters.
    */
-  window?: { orderBy: string; startAt: string };
+  range?: { orderBy: string; startAt: string };
 }
 
 /**
@@ -43,18 +43,19 @@ export function useFirebaseCollection<T>(
   const [erroredFor, setErroredFor] = useState<string | null>(null);
 
   // Options are derived from childId each render; read the latest via a ref so
-  // the effect only re-subscribes on childId/user changes.
+  // the effect re-subscribes only when what is being asked for changes: the
+  // child, the user, or the range (see listenKey below).
   const optionsRef = useRef(options);
   optionsRef.current = options;
 
   // 「哪一份」不只是哪個孩子：視窗的起點變了，就是另一個查詢，上一份回應不能
   // 算在它頭上。少了這個，往回翻到視窗之前的那一天時，畫面會先拿較窄的那一份
   // 說「這天沒有記錄」，下一瞬間才換成載入中。
-  const windowKey = options.window ? `${options.window.orderBy}>=${options.window.startAt}` : '';
+  const windowKey = options.range ? `${options.range.orderBy}>=${options.range.startAt}` : '';
   const listenKey = childId ? `${childId}|${windowKey}` : null;
 
   useEffect(() => {
-    const { firebasePath, empty, fromFirebase, errorLabel, window: range } = optionsRef.current;
+    const { firebasePath, empty, fromFirebase, errorLabel, range } = optionsRef.current;
 
     if (!childId || !user) {
       setData(empty);

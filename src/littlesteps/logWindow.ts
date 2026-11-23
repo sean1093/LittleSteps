@@ -20,6 +20,16 @@
  *
  * Exporting a child's records does not go through this: it reads the whole
  * collection once, on purpose.
+ *
+ * What the window changes on screen, all at the far edge:
+ * - "Latest ever" lookups see the window, not all time: the last feed and
+ *   nappy that pre-fill the form and feed "repeat last", the "no poop for N
+ *   hours" and "no feed for N hours" alerts, the sleep analysis's "no sleep
+ *   recorded yet". A family with no log of that kind in 90 days gets the same
+ *   answer as a family that never logged one.
+ * - A sleep left open more than 90 days ago is not found, so its card does not
+ *   show and it does not block starting a new one. It was already flagged as
+ *   stale after 14 hours and excluded from every total.
  */
 export const LOG_WINDOW_DAYS = 90;
 
@@ -48,6 +58,22 @@ const daysBefore = (day: Date, days: number): Date => {
  */
 export function logWindowStart(now: Date = new Date()): string {
   return daysBefore(now, LOG_WINDOW_DAYS).toISOString();
+}
+
+let pageLoadStart: string | null = null;
+
+/**
+ * The default start, worked out once per page load and then reused.
+ *
+ * Each listener asking for "90 days before today" on its own would agree only
+ * until midnight: a PWA left open overnight would have the shell on
+ * yesterday's start and a newly opened day view on today's, two different
+ * queries and two downloads of nearly the same rows. A day of extra window
+ * costs nothing; a second listen costs the whole window again.
+ */
+export function defaultLogWindowStart(): string {
+  pageLoadStart ??= logWindowStart();
+  return pageLoadStart;
 }
 
 /**

@@ -162,7 +162,7 @@ describe('useFirebaseCollection', () => {
   describe('只聽一段的時候', () => {
     const windowed = (childId: string, since: string) => ({
       ...logsOf(childId),
-      window: { orderBy: 'timestamp', startAt: since },
+      range: { orderBy: 'timestamp', startAt: since },
     });
 
     it('問資料庫的就是那一段，不是整個集合', () => {

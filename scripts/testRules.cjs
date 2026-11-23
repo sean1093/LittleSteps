@@ -503,7 +503,7 @@ async function main() {
   );
   await expectAllowed(
     '舊格式 timestamp 的紀錄，不動時間就還改得了別的欄位',
-    alice.patch('childRecords/c1/dailyLogs/log-legacy/data', { notes: '補一句' }),
+    alice.patch('childRecords/c1/dailyLogs/log-legacy', { 'data/notes': '補一句', updatedAt: ISO }),
   );
   await admin.del('childRecords/c1/dailyLogs/log-legacy');
 

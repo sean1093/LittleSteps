@@ -98,7 +98,8 @@ export function serviceOf(page: Page): ServiceId | null {
  * 這一頁所在的服務會不會讀 App 那份日誌／日記。
  *
  * 外框那兩個 listener（useDailyLogs 與 useDiary，跑在 ChildRecordsBridge 裡，
- * 要聽誰由 App 用這兩個函式決定）是對整個集合掛 onValue，沒有查詢條件。以前
+ * 要聽誰由 App 用這兩個函式決定）讀的量都不小：日記是整個集合，日誌是最近
+ * 90 天（見 littlesteps/logWindow.ts）。以前
  * 它們不看頁面，所以登入的家長打開哺乳室地圖、疾病雷達或關於頁，也會把孩子
  * 的整份日誌與日記下載下來並一直聽著——而那些頁面一個字都不讀。
  *
