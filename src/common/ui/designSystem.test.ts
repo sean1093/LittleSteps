@@ -273,7 +273,7 @@ describe('版面高度', () => {
  *   ⇒ AppBar 的 h1 ≥ 它底下畫出來的每一顆標題
  *
  * h1 不在上界那條規則裡：它是一頁最外層的標題，放大不會反轉任何東西——
- * StepsLanding 與 ServiceLanding 的 `sm:text-3xl` 就是這種刻意的放大。
+ * ServiceIntro 的 `sm:text-3xl` 就是這種刻意的放大。
  * 反過來把 h2 縮小（CountyPicker、RadarPage 的 text-sm 眉標）也一樣安全。
  */
 describe('字級層級', () => {

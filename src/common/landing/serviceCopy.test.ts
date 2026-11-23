@@ -4,6 +4,11 @@ import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 import type { Venue, NursingRoom, RadarData } from '../../types';
 import { toddlerWikiArticles } from '../../littleexplorer/data/toddlerWiki';
+import { developmentCheckItems } from '../../littleexplorer/data/developmentChecks';
+import { babyWikiArticles } from '../../littlesteps/data/babyWiki';
+import { milestones } from '../../littlesteps/data/milestones';
+import { vaccineSchedules } from '../../littlesteps/data/vaccines';
+import { pregnancyWikiArticles } from '../../littlebloom/data/wiki';
 import { prenatalCheckupSchedule } from '../../littlebloom/data/prenatalCheckups';
 
 /**
@@ -31,9 +36,9 @@ import { prenatalCheckupSchedule } from '../../littlebloom/data/prenatalCheckups
  *   src/littlebloom/data/prenatalCheckups.test.ts。這支只管文案與那些資料
  *   之間的那一步。
  *
- *   檔案位置選在 src/common/landing/：文案的兩個來源
- *   （ServiceLanding.tsx、HubLanding.tsx）就住在這裡，但這條規則橫跨兩支元件，
- *   塞進其中任何一支的 render 測試都會變成放錯地方。
+ *   檔案位置選在 src/common/landing/：文案現在集中在 serviceCopy.ts，入口頁
+ *   （HubLanding.tsx）與介紹頁（ServiceIntro.tsx）都讀它。兩支元件自己的字串
+ *   也一起掃，所以哪天有人把數字直接寫進元件，窮舉那一條照樣會紅。
  */
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -58,16 +63,6 @@ const radar = readJson<RadarData>('public', 'data', 'diseaseRadar.json');
 const centres = venues.filter((venue) => venue.id.startsWith('centre-'));
 const roomCities = new Set(rooms.map((room) => room.city));
 const publicCheckups = prenatalCheckupSchedule.filter((item) => item.kind === 'checkup');
-
-/**
- * 迷你走勢圖回顧幾週。每個 cell 都一樣長，收成 Set 是為了在長度不齊時
- * 讓下面那條直接紅——拿第一個 cell 當代表的話，不齊會被靜靜吃掉。
- */
-const radarSparkWeeks = new Set(
-  Object.values(radar.counties).flatMap((bands) =>
-    Object.values(bands).flatMap((cells) => Object.values(cells).map((cell) => cell.spark.length)),
-  ),
-);
 
 /** 中文數字寫的量詞，`六種` 的 `六`。文案只會用到個位數。 */
 const CHINESE_DIGITS = [...'零一二三四五六七八九'];
@@ -98,8 +93,15 @@ function copyOf(file: string): CopyLine[] {
   });
 }
 
-const SERVICE_LANDING = copyOf('src/common/landing/ServiceLanding.tsx');
-const HUB_LANDING = copyOf('src/common/landing/HubLanding.tsx');
+const SERVICE_COPY = copyOf('src/common/landing/serviceCopy.ts');
+/** 兩支元件自己的字串。數字應該都在 serviceCopy.ts，這裡照理一個都沒有。 */
+const COMPONENTS = [
+  ...copyOf('src/common/landing/HubLanding.tsx'),
+  ...copyOf('src/common/landing/HubHeader.tsx'),
+  ...copyOf('src/common/landing/ServiceIntro.tsx'),
+  ...copyOf('src/common/landing/SuiteNote.tsx'),
+];
+const ALL_COPY = [...SERVICE_COPY, ...COMPONENTS];
 
 /**
  * 文案裡「數字 + 單位」寫的那個數字，`3,852 處` 的千分位一起吃掉。
@@ -117,44 +119,62 @@ function claimed(copy: CopyLine[], unit: string): number[] {
 describe('首頁文案的數字', () => {
   it('掃得到文案，而且抓得出裡面的數字', () => {
     // 抽取器安靜地回空陣列時，下面每一條都會變成永遠通過。
-    expect(SERVICE_LANDING.length, '讀不到 ServiceLanding 的文案').toBeGreaterThan(5);
-    expect(HUB_LANDING.length, '讀不到 HubLanding 的文案').toBeGreaterThan(10);
+    expect(SERVICE_COPY.length, '讀不到 serviceCopy 的文案').toBeGreaterThan(20);
+    expect(COMPONENTS.length, '讀不到元件的文案').toBeGreaterThan(5);
     expect(
-      [...SERVICE_LANDING, ...HUB_LANDING].filter((entry) => /\d/.test(entry.text)).length,
+      SERVICE_COPY.filter((entry) => /\d/.test(entry.text)).length,
       '一句帶數字的文案都沒抓到，抽取器壞了',
     ).toBeGreaterThanOrEqual(9);
   });
 
-  it('幼兒百科的篇數就是真的篇數', () => {
-    // 這裡曾經是 44，資料已經是 45。
-    expect(claimed(SERVICE_LANDING, '篇')).toEqual([toddlerWikiArticles.length]);
+  it('三個百科的篇數就是真的篇數', () => {
+    // 幼兒百科這裡曾經是 44，資料已經是 45。三個數字各出現一次，所以排序後比。
+    const byNumber = (a: number, b: number) => a - b;
+    expect(claimed(SERVICE_COPY, '篇').sort(byNumber)).toEqual(
+      [babyWikiArticles.length, pregnancyWikiArticles.length, toddlerWikiArticles.length].sort(
+        byNumber,
+      ),
+    );
   });
 
   it('親子館的間數就是 centre- 那一批的筆數', () => {
-    expect(claimed(HUB_LANDING, '間親子館')).toEqual([centres.length]);
+    expect(claimed(SERVICE_COPY, '間親子館')).toEqual([centres.length]);
   });
 
   it('哺乳室的處數與縣市數就是 nursingRooms.json 裡的數字', () => {
-    expect(claimed(HUB_LANDING, '處')).toEqual([rooms.length]);
-    expect(claimed(HUB_LANDING, '縣市')).toEqual([roomCities.size]);
+    expect(claimed(SERVICE_COPY, '處')).toEqual([rooms.length]);
+    expect(claimed(SERVICE_COPY, '縣市')).toEqual([roomCities.size]);
   });
 
   it('公費產檢的次數就是排程裡 checkup 的筆數', () => {
-    expect(claimed(HUB_LANDING, '次公費產檢')).toEqual([publicCheckups.length]);
+    // 入口頁的卡片與介紹頁的承諾各講一次，兩處都要對。
+    const counts = claimed(SERVICE_COPY, '次公費產檢');
+    expect(counts.length).toBeGreaterThan(0);
+    for (const count of counts) expect(count).toBe(publicCheckups.length);
   });
 
-  it('疫情雷達的病種數與回顧週數就是 diseaseRadar.json 裡的數字', () => {
-    // 「六種」是中文數字，claimed() 的阿拉伯數字比對抓不到，這裡自己轉一次；
-    // 六個病種是 spec 訂死的清單，改資料卻沒改文案時要在這裡紅。
-    const diseaseCounts = HUB_LANDING.flatMap((entry) =>
+  it('疫苗的劑數、里程碑與發展檢核的項數就是資料的筆數', () => {
+    expect(claimed(SERVICE_COPY, '劑疫苗')).toEqual([vaccineSchedules.length]);
+    expect(claimed(SERVICE_COPY, '項里程碑')).toEqual([milestones.length]);
+    expect(claimed(SERVICE_COPY, '項發展檢核')).toEqual([developmentCheckItems.length]);
+  });
+
+  it('疫情雷達的病種數就是 diseaseRadar.json 裡的數字', () => {
+    // 「七種」是中文數字，claimed() 的阿拉伯數字比對抓不到，這裡自己轉一次。
+    const diseaseCounts = SERVICE_COPY.flatMap((entry) =>
       [...entry.text.matchAll(/([零一二三四五六七八九])種/g)].map((match) =>
         CHINESE_DIGITS.indexOf(match[1]),
       ),
     );
     expect(diseaseCounts).toEqual([radar.diseases.length]);
+  });
 
-    expect([...radarSparkWeeks], '各 cell 的 spark 長度不一致').toHaveLength(1);
-    expect(claimed(HUB_LANDING, '週比')).toEqual([...radarSparkWeeks]);
+  it('雷達那一行不承諾「這週」，也不承諾比平常多還是少', () => {
+    // 資料集超過一個月沒更新時，板子自己會收起每一句判斷（radar.ts 的
+    // expired）。入口頁那一行在那一天也必須是真的，所以它只能描述資料本身。
+    const line = SERVICE_COPY.find((entry) => entry.text.includes('種兒童常見傳染病'));
+    expect(line, '找不到雷達的那一行').toBeDefined();
+    expect(line?.text).not.toMatch(/這週|本週|每週|多還是少|變多/);
   });
 });
 
@@ -169,11 +189,15 @@ describe('文案裡沒有第三種數字', () => {
   /** 上面已經逐條對過資料的說法。 */
   const CHECKED_ABOVE = [
     '45 篇',
+    '25 篇',
+    '15 篇',
     '234 間親子館',
     '3,852 處',
     '22 縣市',
     '14 次公費產檢',
-    '8 週',
+    '36 劑疫苗',
+    '33 項里程碑',
+    '30 項發展檢核',
   ];
 
   /**
@@ -181,18 +205,17 @@ describe('文案裡沒有第三種數字', () => {
    * 寫不出來就表示它其實是個數量，該加一條規則而不是加進這裡。
    */
   const NOT_A_COUNT: Record<string, string> = {
-    '1 到 3 歲': '服務年齡範圍，是產品定義不是資料筆數',
-    '1-3 歲': '同上，卡片與旅程時間軸的短寫法',
+    '1-3 歲': '服務年齡範圍，是產品定義不是資料筆數',
     '12-36 個月':
       'LittleExplorer 的方案邊界（ageBands 的 TODDLER_MIN_MONTHS / TODDLER_MAX_MONTHS），' +
       '是常數不是可以數的資料列；拿它去對任何 JSON 都只會是重寫一次同一個常數',
     '0-40 週': '孕期長度，是生理事實',
-    '0-12 月': '新生兒期的範圍定義',
+    '0-12 個月': '新生兒期的範圍定義',
   };
 
   it('每個數字不是對過資料，就是寫明了為什麼不能對', () => {
     const accounted = [...CHECKED_ABOVE, ...Object.keys(NOT_A_COUNT)];
-    const unaccounted = [...SERVICE_LANDING, ...HUB_LANDING].flatMap((entry) => {
+    const unaccounted = ALL_COPY.flatMap((entry) => {
       const rest = accounted.reduce((text, phrase) => text.split(phrase).join(''), entry.text);
       return [...rest.matchAll(/\d[\d,]*/g)].map(
         (match) =>
@@ -205,7 +228,7 @@ describe('文案裡沒有第三種數字', () => {
 
   it('交代清單本身沒有過期的條目', () => {
     // 文案改寫之後留在清單裡的死條目，會讓上面那條窮舉少擋一個數字。
-    const allCopy = [...SERVICE_LANDING, ...HUB_LANDING].map((entry) => entry.text).join('\n');
+    const allCopy = ALL_COPY.map((entry) => entry.text).join('\n');
     const stale = [...CHECKED_ABOVE, ...Object.keys(NOT_A_COUNT)].filter(
       (phrase) => !allCopy.includes(phrase),
     );

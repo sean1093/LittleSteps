@@ -1,31 +1,34 @@
 import { motion } from 'framer-motion';
 import type { User } from 'firebase/auth';
-import { fadeInUp, hoverLift, listItem, stagger, tap } from '../ui/motion';
-import { pressable } from '../ui/pressable';
+import { COVERAGE } from '../about/coverage';
+import { MAX_CHILDREN } from '../childLimits';
 import { goTo } from '../navigate';
-import { SERVICE_ORDER, SERVICE_THEME } from '../ui/serviceTheme';
+import { fadeInUp, listItem, stagger } from '../ui/motion';
+import { pressable } from '../ui/pressable';
+import { SERVICE_THEME } from '../ui/serviceTheme';
 import type { ServiceId } from '../ui/serviceTheme';
+import { SERVICE_GROUPS, SERVICE_PITCH, STAGE_RANGE } from './serviceCopy';
 
 /**
- * HubLanding - Entry point for all six services
+ * The landing page: the one place that says what the whole product is.
  *
- * Public: reachable without signing in, so a first-time visitor can see what
- * the collection offers before deciding to hand over an account.
+ * It used to be a chooser — six cards under a headline — which answered
+ * "which service" for someone who already knew what the services were, and
+ * gave a first-time visitor no wordmark, no proof and no action above the
+ * fold. It now reads in the order a stranger needs: what this is, one thing
+ * to do about it, why the numbers can be believed, then the six services,
+ * then who can see a child's records.
  *
- * 這一頁是選擇器，不是六份疊起來的產品首頁。一張卡就是一列：圖示、名稱與
- * 角色、一行「做得到什麼」。整列自己就是點擊區（pressable 讓鍵盤也進得去），
- * 所以卡片裡不需要任何按鈕。名稱、角色與配色全部來自 SERVICE_THEME。
+ * Three rules the page keeps:
  *
- * 但選擇器也得先讓人知道自己在選什麼。這一頁原本開頭三行是「用愛陪伴，溫柔
- * 守護／每個階段都值得被用心記錄／為台灣新手爸媽量身打造」——讀完不知道這個
- * app 做什麼，而全站其他每一頁都是照著「這頁實際上有什麼」寫的。標題現在說
- * 得出這件事，六張卡也分成兩組：三個服務是跟著孩子年齡走的，一次只用一個；
- * 另外三個不分年齡，出門前打開就好。原本頁尾那條「孕期 → 新生兒 → 幼兒期」
- * 時間軸講的正是第一組，它唯一多給的資訊（年齡範圍）現在寫在卡片上，所以
- * 同一組服務不再在一頁裡出現三次。
- *
- * 登入從標題底下移到頁尾：先看得到值，再決定要不要交出帳號。回頭的訪客不必
- * 滑到底才找得到入口，右上角留一顆安靜的登入。
+ * - One primary action per state. Signed out it is sign-in, with the nursing
+ *   room map as the way in for someone not ready to hand over an account.
+ *   Signed in it is the child's own service, and the pitch below it is gone:
+ *   a returning parent came to record something, not to be sold to.
+ * - Every service has exactly one card, and the whole card is the tap target.
+ *   This page is the only route to the sibling services.
+ * - No number is typed here. The proof strip reads `COVERAGE`, the card lines
+ *   read `serviceCopy.ts`, and both are held against the data by tests.
  */
 
 interface HubLandingProps {
@@ -33,129 +36,135 @@ interface HubLandingProps {
   user?: User | null;
   onSignIn?: () => Promise<void>;
   /**
-   * 目前孩子所在階段對應的服務。沒有孩子（含未登入）時省略，這一頁就和以前
-   * 完全一樣——入口頁是公開的，不能因為新增了這個標記而對訪客改變。
+   * The service matching the current child's stage. Omitted when there is no
+   * child, signed in or not.
    */
   currentService?: ServiceId;
+  /** The current child's name; with `onContinue`, turns the hero into "carry on". */
+  childName?: string;
+  /** Opens the current child's own service. */
+  onContinue?: () => void;
+  /** Opens the add-child form. The modal belongs to `LandingPage`. */
+  onAddChild?: () => void;
 }
 
 /**
- * 每個服務做得到什麼。
- *
- * 這幾條是整頁唯一回答「這個服務跟另外四個差在哪」的文字，所以原字不動，
- * 只從項目符號清單改成一行併排——清單的行距與縮排是卡片高度的大宗，而讀者
- * 在選服務時要的是一眼掃過去，不是逐條讀完。想看完整說明的人按進去就有：
- * 每個服務自己的首頁本來就會把同樣的能力再展開講一次。
- *
- * 數字都對得上真實資料，serviceCopy.test.ts 會逐條比對，不要憑印象改。
+ * The radar's count is left out of the strip. Its dataset is refreshed by a
+ * job that needs a Taiwan-routed runner, and when that job falls behind the
+ * board says so itself; a headline number here would promise more than the
+ * board below it can show.
  */
-const SERVICE_FEATURES: Record<ServiceId, string[]> = {
-  littlebloom: [
-    '孕期追蹤與產檢規劃',
-    '專業孕期知識與營養指南',
-    '14 次公費產檢時程與完成紀錄',
-  ],
-  littlesteps: ['里程碑追蹤與發展紀錄', '疫苗接種時程管理', '快速日誌與睡眠分析'],
-  littleexplorer: ['12-36 個月成長檢核', '健檢、疫苗與塗氟提醒', '幼兒百科與成長日記'],
-  littleouting: [
-    '全台 234 間親子館，依縣市與年齡查',
-    '免費、需不需要預約、幾歲能去',
-    '精選親子餐廳與出發前檢查清單',
-  ],
-  babyoasis: ['定位最近哺乳室', '詳細設施資訊', '一鍵導航', '全台 22 縣市、3,852 處'],
-  littleguard: [
-    '七種兒童常見傳染病，看你所在縣市',
-    '跟前 8 週比，這週有沒有變多',
-    '資料來自疾管署健保門診統計，每週更新',
-  ],
-};
+const PROOF = COVERAGE.filter((item) => item.unit !== '種傳染病');
 
-/**
- * 六個服務不是同一種東西。
- *
- * 前三個跟著孩子的年齡走，一次只用得到一個，孩子長大就換下一個；後三個不分
- * 年齡，而且完全公開（見 routePolicy 的公開允許清單）。六列並排時這個差別
- * 看不出來，家長只能逐列讀完再自己歸類。分組之後，第一個問題「哪一個是我
- * 的」由組標題回答，不必替每個訪客再猜一次。
- *
- * 兩組加起來必須正好是 SERVICE_ORDER：漏掉一個服務就等於那個服務沒有入口，
- * 沒有任何子應用會連到自己的手足。第二組的「都不需要登入」也是一句對得起
- * routePolicy 的承諾，不是修飾語。兩件事都由 HubLanding.test.tsx 對著來源
- * 比，所以這份常數要匯出。
- */
-export const SERVICE_GROUPS: { title: string; note: string; ids: ServiceId[] }[] = [
-  {
-    title: '依孩子的階段',
-    note: '一次看一個。孩子長大就換到下一個，紀錄留在同一個檔案裡。',
-    ids: ['littlebloom', 'littlesteps', 'littleexplorer'],
-  },
-  {
-    title: '不分年齡，隨時用得上',
-    note: '都不需要登入，出門前打開就好。',
-    ids: ['littleouting', 'babyoasis', 'littleguard'],
-  },
+const TRUST_POINTS = [
+  '要讀寫孩子的紀錄一定要登入，沒有訪客模式。',
+  '用分享代碼把另一半加進來，之後隨時可以關掉代碼、移除成員。',
+  '紀錄不販售、不交換、不用於廣告，也不拿來訓練任何模型。',
+  '整份紀錄可以匯出成一個檔案，孩子和帳號都刪得掉。',
 ];
-
-/**
- * 三個階段服務各自的年齡範圍。
- *
- * 「寶寶成長」和「幼兒期陪伴」這兩個角色名分不出一歲三個月的孩子該進哪一個，
- * 而這正是入口頁要回答的問題。這三行原本掛在頁尾的旅程時間軸上——那條時間軸
- * 其餘的內容（三個階段名、三個服務）卡片已經講過了，所以只留這裡。
- */
-const STAGE_RANGE: Partial<Record<ServiceId, string>> = {
-  littlebloom: '0-40 週',
-  littlesteps: '0-12 月',
-  littleexplorer: '1-3 歲',
-};
 
 export default function HubLanding({
   onNavigate,
   user,
   onSignIn,
   currentService,
+  childName,
+  onContinue,
+  onAddChild,
 }: HubLandingProps) {
+  const signedIn = Boolean(user);
+
   return (
     <div className="screen-body-wide space-y-10">
-      {/* 回頭的訪客不必為了登入滑到頁尾；安靜到不跟標題搶。 */}
-      {!user && onSignIn && (
-        <div className="flex justify-end">
-          <button type="button" onClick={onSignIn} className="btn-ghost">
-            登入
-          </button>
-        </div>
-      )}
-
-      {/* Hero */}
-      <motion.div
+      <motion.section
         initial="hidden"
         animate="visible"
         variants={stagger}
-        className="text-center pt-2 sm:pt-6"
+        className="pt-4 sm:pt-10 sm:text-center"
       >
-        {/* 中文不斷字，所以窄螢幕上一行標題會斷在「把」跟「每」之間。每個
-            意義段落各包一個 inline-block，換行就只會發生在段落之間；寬度夠時
-            仍然是一行。text-wrap: balance 幫不上忙——它平均行寬，不看標點。 */}
-        <motion.h1
-          variants={listItem}
-          className="text-3xl sm:text-4xl md:text-5xl text-ink mb-4"
-        >
-          <span className="inline-block">從懷孕到三歲，</span>
-          <span className="inline-block">陪你把每一步記下來</span>
-        </motion.h1>
+        {signedIn ? (
+          <SignedInHero
+            childName={childName}
+            currentService={currentService}
+            onContinue={onContinue}
+            onAddChild={onAddChild}
+          />
+        ) : (
+          <>
+            {/* Chinese has no word breaks, so a narrow screen would split the
+                headline mid-phrase. Each phrase is its own inline-block and
+                the line can only break between them. */}
+            <motion.h1 variants={listItem} className="text-3xl sm:text-4xl text-ink">
+              <span className="inline-block">從懷孕到三歲，</span>
+              <span className="inline-block">該記的都在這裡</span>
+            </motion.h1>
+            <motion.p
+              variants={listItem}
+              className="mt-3 text-base text-ink-muted leading-relaxed max-w-xl sm:mx-auto"
+            >
+              產檢、疫苗、里程碑照時程排好，每天的餵奶和睡眠記在同一份檔案。
+            </motion.p>
 
-        <motion.p
-          variants={listItem}
-          className="text-base sm:text-lg text-ink-muted leading-relaxed max-w-2xl mx-auto"
-        >
-          <span className="inline-block">六個服務、一個帳號。</span>
-          <span className="inline-block">
-            孕期到幼兒期的成長追蹤，加上出門在外用得到的哺乳室、親子館與這週的疫情。
-          </span>
-        </motion.p>
-      </motion.div>
+            {onSignIn && (
+              <motion.div
+                variants={listItem}
+                className="mt-6 flex flex-col gap-3 sm:max-w-sm sm:mx-auto"
+              >
+                <button type="button" onClick={onSignIn} className="btn-primary w-full">
+                  使用 Google 帳號開始記錄
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('babyoasis')}
+                  className="btn-secondary w-full"
+                >
+                  先不登入，找最近的哺乳室
+                </button>
+                <p className="text-xs text-ink-muted">
+                  目前免費，一個帳號最多記錄 {MAX_CHILDREN} 個寶寶。知識內容與地圖不需要帳號。
+                </p>
+              </motion.div>
+            )}
+          </>
+        )}
+      </motion.section>
 
-      {/* Service cards：一列一個服務，兩組 */}
+      {!signedIn && (
+        <motion.section
+          initial="hidden"
+          animate="visible"
+          variants={fadeInUp}
+          aria-label="資料涵蓋範圍"
+          className="space-y-1 sm:text-center"
+        >
+          <dl className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-4">
+            {PROOF.map((item) => (
+              // Number first on screen, label first in the markup: a `dt`
+              // must precede its `dd`, and the number is what the eye wants.
+              <div key={item.unit} className="flex flex-col-reverse">
+                <dt className="text-xs text-ink-muted">{item.unit}</dt>
+                <dd className="text-2xl font-bold text-ink tabular-nums">
+                  {item.value.toLocaleString('en-US')}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <p className="text-sm text-ink-muted">來自國健署、社家署、疾管署與 WHO 的公開資料。</p>
+          <p>
+            <a
+              href="/about"
+              onClick={(event) => {
+                event.preventDefault();
+                goTo('about');
+              }}
+              className="inline-flex items-center min-h-tap text-sm font-medium text-primary-dark"
+            >
+              看每個數字的出處
+            </a>
+          </p>
+        </motion.section>
+      )}
+
       {SERVICE_GROUPS.map((group) => (
         <section key={group.title} className="space-y-3">
           <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
@@ -171,37 +180,31 @@ export default function HubLanding({
           >
             {group.ids.map((id) => {
               const theme = SERVICE_THEME[id];
-              const Icon = theme.icon;
+              const range = (STAGE_RANGE as Partial<Record<ServiceId, string>>)[id];
 
               return (
                 <motion.div
                   key={id}
                   variants={listItem}
                   {...pressable(() => onNavigate(id))}
-                  className="card-tap flex items-start gap-3"
+                  className="card-tap"
                 >
-                  <Icon className={`w-5 h-5 shrink-0 mt-0.5 ${theme.ink}`} aria-hidden="true" />
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline gap-2 flex-wrap">
-                      {/* 角色標籤放在 h3 外面：標題的可及名稱要正好是服務名。 */}
-                      <h3 className={theme.ink}>{theme.name}</h3>
-                      <span className={`text-xs ${theme.muted}`}>{theme.role}</span>
-                      {STAGE_RANGE[id] && (
-                        <span className="text-xs text-ink-faint">{STAGE_RANGE[id]}</span>
-                      )}
-                      {/* 家長第一個問題是「哪一個是我的」。組標題回答一半，這個
-                          標記回答另一半；順序刻意不動，見 serviceForStage。
-                          `.tag` 只給形狀不給顏色，配色要自己帶——不帶的話它就
-                          只是一段有 padding 的小字，看不出是標記。 */}
-                      {id === currentService && (
-                        <span className={`tag ${theme.tint} ${theme.ink}`}>目前階段</span>
-                      )}
-                    </div>
-                    <p className={`text-sm ${theme.body} leading-snug mt-1`}>
-                      {SERVICE_FEATURES[id].join(' · ')}
-                    </p>
+                  {/* The role leads, not the wordmark: the suite and the
+                      0-12 month service are both called LittleSteps, and
+                      「寶寶成長」 is the name that tells them apart. The
+                      labels stay outside the h3 so its accessible name is
+                      exactly the role. */}
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <h3 className={theme.ink}>{theme.role}</h3>
+                    {range && <span className="text-xs text-ink-muted">{range}</span>}
+                    {id === currentService && (
+                      <span className={`tag ${theme.tint} ${theme.ink}`}>目前階段</span>
+                    )}
                   </div>
+                  <p className="text-xs text-ink-faint">{theme.name}</p>
+                  <p className={`text-sm ${theme.body} leading-relaxed mt-2`}>
+                    {SERVICE_PITCH[id]}
+                  </p>
                 </motion.div>
               );
             })}
@@ -209,61 +212,100 @@ export default function HubLanding({
         </section>
       ))}
 
-      {/* 這一頁最有說服力的一段，而它原本只寫在各服務自己的頁面裡。整塊就是
-          進關於頁的入口——那一頁把「誰看得到孩子的紀錄」和「每個數字從哪來」
-          講完整；這裡不另加一顆按鈕，也不再開第二個區塊。 */}
-      <motion.section
-        initial="hidden"
-        animate="visible"
-        variants={fadeInUp}
-        {...pressable(() => goTo('about'))}
-        aria-label="資料從哪裡來，以及孩子的紀錄怎麼保護"
-        className="panel-tap space-y-2"
-      >
-        <h2 className="text-ink">資料從哪裡來</h2>
-        <p className="text-sm text-ink-muted leading-relaxed">
-          哺乳室與親子館的名單來自國健署與社家署的開放資料，每週的疫情數字來自疾管署的健保門診統計，生長曲線用的是
-          WHO 的標準。
-        </p>
-        <p className="text-sm text-ink-faint">每一頁都寫得出自己的來源與查證日期。</p>
-        <p className={`text-sm font-medium ${SERVICE_THEME.littlesteps.ink}`}>
-          看完整說明：孩子的紀錄存在哪裡、誰看得到
-        </p>
-      </motion.section>
-
-      {/* 登入放在頁尾而不是標題底下：先看得到值，再決定要不要交出帳號。
-          那句「不登入能看什麼」全站只有這一份，就放在按鈕旁邊。 */}
-      {!user && onSignIn && (
+      {/* The whole panel is the way into the about page, which says all of
+          this in full. A signed-in parent has already decided; they keep the
+          footer link. */}
+      {!signedIn && (
         <motion.section
           initial="hidden"
           animate="visible"
           variants={fadeInUp}
-          className="panel text-center space-y-3"
+          {...pressable(() => goTo('about'))}
+          aria-label="孩子的紀錄誰看得到，以及資料從哪裡來"
+          className="panel-tap space-y-3"
         >
-          <h2 className="text-ink">要記錄孩子的資料，才需要帳號</h2>
-          <p className="text-sm text-ink-muted">
-            知識內容不需登入即可閱讀；記錄功能登入後才能跨裝置同步
+          <h2 className="text-ink">孩子的紀錄，只有你和你邀請的人看得到</h2>
+          <ul className="space-y-1.5 text-sm text-ink-muted leading-relaxed">
+            {TRUST_POINTS.map((point) => (
+              <li key={point}>{point}</li>
+            ))}
+          </ul>
+          <p className="text-sm text-ink-faint">
+            內容整理自政府與 WHO 的公開資料，不是醫療建議，不能取代醫師的判斷。
           </p>
-          <motion.button
-            type="button"
-            whileHover={hoverLift}
-            whileTap={tap}
-            onClick={onSignIn}
-            className="btn-primary"
-          >
-            使用 Google 登入
-          </motion.button>
+          <p className="text-sm font-medium text-primary-dark">
+            看完整說明：資料存在哪裡、每個數字從哪來
+          </p>
         </motion.section>
       )}
 
-      <motion.p
-        initial="hidden"
-        animate="visible"
-        variants={fadeInUp}
-        className="text-center text-xs text-ink-faint"
-      >
-        © {new Date().getFullYear()} {SERVICE_ORDER.map((id) => SERVICE_THEME[id].name).join(' · ')}
-      </motion.p>
+      <footer className="text-center text-xs text-ink-faint space-y-1">
+        <p>
+          <a
+            href="/about"
+            onClick={(event) => {
+              event.preventDefault();
+              goTo('about');
+            }}
+            className="inline-flex items-center min-h-tap px-2 text-ink-muted underline underline-offset-2"
+          >
+            關於資料與來源
+          </a>
+        </p>
+        <p>本站內容為參考資料，不能取代醫師的判斷。</p>
+        <p>© {new Date().getFullYear()} LittleSteps</p>
+      </footer>
     </div>
+  );
+}
+
+function SignedInHero({
+  childName,
+  currentService,
+  onContinue,
+  onAddChild,
+}: Pick<HubLandingProps, 'childName' | 'currentService' | 'onContinue' | 'onAddChild'>) {
+  if (childName && onContinue) {
+    const theme = currentService ? SERVICE_THEME[currentService] : undefined;
+    return (
+      <>
+        <motion.h1 variants={listItem} className="text-3xl sm:text-4xl text-ink">
+          <span className="inline-block">繼續記錄</span>
+          <span className="inline-block max-w-full truncate align-bottom">{childName}</span>
+        </motion.h1>
+        {theme && (
+          <motion.p variants={listItem} className="mt-2 text-sm text-ink-muted">
+            目前階段：{theme.role}
+          </motion.p>
+        )}
+        <motion.div variants={listItem} className="mt-5 sm:max-w-sm sm:mx-auto">
+          <button
+            type="button"
+            onClick={onContinue}
+            className={`btn-primary w-full ${theme ? `${theme.fill} ${theme.fillText}` : ''}`}
+          >
+            打開紀錄
+          </button>
+        </motion.div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <motion.h1 variants={listItem} className="text-3xl sm:text-4xl text-ink">
+        先新增一個寶寶
+      </motion.h1>
+      <motion.p variants={listItem} className="mt-3 text-base text-ink-muted leading-relaxed">
+        懷孕中也可以：填預產期，就從孕期開始記。
+      </motion.p>
+      {onAddChild && (
+        <motion.div variants={listItem} className="mt-5 sm:max-w-sm sm:mx-auto">
+          <button type="button" onClick={onAddChild} className="btn-primary w-full">
+            新增寶寶
+          </button>
+        </motion.div>
+      )}
+    </>
   );
 }

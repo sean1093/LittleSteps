@@ -7,7 +7,7 @@ import { SERVICE_THEME } from '../../src/common/ui/serviceTheme';
  * What a signed-out visitor gets on a route that requires signing in: that
  * service's own intro page, rendered **at the same URL**.
  *
- * `landingKindFor` picks `steps-intro` or `service-intro` for exactly these
+ * `landingKindFor` picks `service-intro` for exactly these
  * routes, so this one page object covers all fifteen of them.
  *
  * Selectors and navigation only; the assertions live in the specs (plan §9).
@@ -17,10 +17,10 @@ export class ServiceIntroPage {
    * The sign-in call to action, and the marker that says a visitor was
    * blocked.
    *
-   * `StepsLanding` says 使用 Google 登入開始記錄 and `ServiceLanding` says
-   * 使用 Google 登入開始使用, so the prefix has to reach as far as 開始: the
-   * public hub also offers sign-in, as plain 使用 Google 登入, and a shorter
-   * prefix would match it and call the entry point a blocked route.
+   * All three intro pages share `ServiceIntro` and one label, 使用 Google
+   * 登入，開始記錄. The landing page also offers sign-in, and words its button
+   * differently on purpose (使用 Google 帳號開始記錄): AUTH-03 asserts this
+   * locator matches nothing on a public route, and the landing page is one.
    */
   readonly signIn: Locator;
 
@@ -40,7 +40,7 @@ export class ServiceIntroPage {
   readonly gatedContent: Locator[];
 
   constructor(private readonly page: BrowserPage) {
-    this.signIn = page.getByRole('button', { name: /^使用 Google 登入開始/ });
+    this.signIn = page.getByRole('button', { name: /^使用 Google 登入/ });
     this.gatedContent = [
       page.getByRole('button', { name: '餵奶' }),
       page.getByRole('heading', { name: /成長曲線圖/ }),
@@ -63,6 +63,6 @@ export class ServiceIntroPage {
   heading(route: Page): Locator {
     const service = serviceOf(route);
     if (!service) throw new Error(`no service owns ${route}, so it has no intro page`);
-    return this.page.getByRole('heading', { name: SERVICE_THEME[service].name, exact: true });
+    return this.page.getByRole('heading', { name: SERVICE_THEME[service].role, exact: true });
   }
 }

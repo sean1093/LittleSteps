@@ -18,6 +18,7 @@ import AppHomeButton from './common/components/AppHomeButton';
 import AccountButton from './common/components/AccountButton';
 import PregnancyGate from './littlesteps/components/PregnancyGate';
 import LandingPage, { landingKindFor, isStandaloneLanding } from './common/landing/LandingPage';
+import HubHeader from './common/landing/HubHeader';
 import ErrorBoundary from './common/components/ErrorBoundary';
 import { ToastProvider } from './common/ui/toast';
 import AppBar from './common/ui/AppBar';
@@ -201,14 +202,18 @@ function AppContent() {
       return 'LittleExplorer';
     }
 
-    let title = 'LittleSteps';
+    // 服務首頁就叫 LittleSteps；其餘每一頁的標題是頁名本身，有孩子時前面加
+    // 「誰的」。這裡原本沒有孩子時把頁名直接接在 wordmark 後面，於是未登入的
+    // 訪客——也就是從搜尋進到百科的每一個人——看到的是「LittleSteps寶寶…」，
+    // 在 390px 上頁名幾乎整個被截掉。
+    let title = currentPage === 'littlesteps' ? 'LittleSteps' : '';
     if (currentChild && currentPage !== 'littlesteps') {
       title = `${currentChild.name} 的 `;
     }
 
     switch (currentPage) {
       case 'littlesteps':
-        break; // Use default 'LittleSteps'
+        break;
       case 'littlesteps/dashboard':
         title += '成長總覽';
         break;
@@ -338,6 +343,7 @@ function AppContent() {
       hasChildren={childProfiles.length > 0}
       entryPage={entryPageForChild(currentChild)}
       currentService={serviceForStage(stageOfChild(currentChild))}
+      childName={currentChild?.name}
       onSignIn={signInWithGoogle}
       onNavigate={navigateToPage}
     />
@@ -361,6 +367,10 @@ function AppContent() {
           user={user}
         />
       )}
+
+      {/* 入口頁的品牌列。放在下面那個 <main> 外面：<header> 包在 main 裡就不是
+          banner 地標，而入口頁原本是唯一一個沒有 banner 的公開路由。 */}
+      {currentPage === 'home' && <HubHeader user={user} onSignIn={signInWithGoogle} />}
 
       {/* Header */}
       {showHeader && (

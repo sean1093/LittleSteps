@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getLucideIcon } from '../../common/lucideIcons';
 import { generalSafetyItems, monthlyCareGuides, careCategories } from '../data/careGuides';
 import { stagger, listItem, tap } from '../../common/ui/motion';
+import SuiteNote from '../../common/landing/SuiteNote';
 
 export default function CareGuidePage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -131,6 +132,8 @@ export default function CareGuidePage() {
             ))}
           </motion.div>
         </AnimatePresence>
+
+        <SuiteNote />
       </div>
     </div>
   );

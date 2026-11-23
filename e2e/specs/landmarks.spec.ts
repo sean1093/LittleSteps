@@ -33,24 +33,20 @@ import { ServiceIntroPage } from '../pages/serviceIntroPage';
  */
 
 /**
- * The public routes that expose no `banner`, and why.
+ * The public routes that expose no `banner`. None today.
  *
- * Only the hub (`home`): it is a service chooser and deliberately renders no
- * `AppBar` — see `HubLanding`, and `publicRoutePage.ts`'s note that its `h1` is
- * the only one on the page. Naming it beats a `>= 0` assertion that would let
- * any other page lose its header quietly.
+ * The landing page used to be the one entry: a chooser with no `AppBar`. It
+ * now has a brand bar, which `App.tsx` renders outside the shell's `<main>`
+ * precisely so that it counts. The set stays so that a route that
+ * legitimately has no header has to be named here, rather than weakening the
+ * assertion to `>= 0` and letting any other page lose its header quietly.
  *
- * Gated routes are not listed here, because having no header is a property of
- * the *state* rather than the route: signed out they render `StepsLanding` or
- * `ServiceLanding`, and signed in they render a real page with an `AppBar`.
- * The loop over `GATED_ROUTES` below therefore asserts zero for all of them
- * directly. The reason is the same as the hub's, though: an intro page's whole
- * chrome is one link back here, and the wordmark below it is the page's
- * content, so a `<header>` there would be a landmark naming nothing. They do
- * owe a `<main>`, and they return before the shell can supply one, so they
- * render their own (#80).
+ * Gated routes are a different state, not a different route: signed out they
+ * render `ServiceIntro`, which returns before the shell can supply any
+ * landmark and so renders its own `<header>` and `<main>` (#80). Its header
+ * holds a labelled link back to the landing page.
  */
-const ROUTES_WITHOUT_A_HEADER = new Set<string>(['home']);
+const ROUTES_WITHOUT_A_HEADER = new Set<string>();
 
 for (const route of PUBLIC_ROUTES) {
   const expected = ROUTES_WITHOUT_A_HEADER.has(route) ? 0 : 1;
@@ -90,7 +86,7 @@ for (const route of GATED_ROUTES) {
   // Both counts in one case: they are two properties of a single page state,
   // and splitting them would navigate to every gated route twice per viewport
   // to assert nothing new.
-  test(`A11Y-01/02 @p1 ${route} signed out exposes one main and no banner`, async ({ page }) => {
+  test(`A11Y-01/02 @p1 ${route} signed out exposes one main and one banner`, async ({ page }) => {
     const intro = new ServiceIntroPage(page);
 
     await intro.goto(route);
@@ -105,7 +101,7 @@ for (const route of GATED_ROUTES) {
 
     await expect(
       page.getByRole('banner'),
-      'an intro page has no page header to expose — one link back to the hub is not a banner',
-    ).toHaveCount(0);
+      'the intro page lost its header: the link back to the landing page is the only route to the other services',
+    ).toHaveCount(1);
   });
 }

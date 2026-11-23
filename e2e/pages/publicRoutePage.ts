@@ -1,6 +1,7 @@
 import type { Locator, Page as BrowserPage } from '@playwright/test';
 import { ROUTE_PATH, type Page } from '../../src/types/routes';
 import { PUBLIC_ROUTES } from '../fixtures/routes';
+import { SERVICE_GROUPS } from '../../src/common/landing/serviceCopy';
 import { BabyOasisPage } from './babyOasisPage';
 import { CareGuidePage } from './careGuidePage';
 import { HubPage } from './hubPage';
@@ -62,7 +63,7 @@ const CONTENT: Partial<Record<Page, (page: BrowserPage) => Locator>> = {
   // The hub's first group heading. It answers the question the page exists to
   // answer — which of the six services is mine — so it is the last thing that
   // would survive the page being replaced by something else.
-  home: (page) => page.getByRole('heading', { name: '依孩子的階段' }),
+  home: (page) => page.getByRole('heading', { name: SERVICE_GROUPS[0].title }),
   // The medical disclaimer's heading: the one section of the about page that
   // must never be cut, so the last thing to survive the page being replaced.
   about: (page) => page.getByRole('heading', { name: '這不是醫療建議' }),

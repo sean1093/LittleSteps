@@ -52,7 +52,7 @@ export const DATA_SOURCES: DataSource[] = [
   {
     agency: '衛生福利部疾病管制署',
     dataset: '健保門診就診人次統計（政府資料開放平臺）',
-    what: '疫情雷達的每週門診人次，依縣市與年齡層，每週更新',
+    what: '疫情雷達的每週門診人次，依縣市與年齡層，疾管署每週公布',
     sourceUrl: 'https://od.cdc.gov.tw/eic/',
     // public/data/diseaseRadar.json carries its own verifiedOn.
     verifiedOn: '2026-09-04',
@@ -102,23 +102,10 @@ export const DATA_SOURCES: DataSource[] = [
   },
 ];
 
-/**
- * How much of the country the datasets cover, as the number strip prints it.
- *
- * Typed literals, on purpose: the nursing-room and family-centre files are
- * fetched at runtime and must not be imported into this chunk, and the wiki
- * arrays are large enough that pulling all three in here for a `.length` would
- * more than double the page's weight. Each value is asserted against the real
- * data in `dataSources.test.ts`, so a regenerated dataset turns the test red
- * rather than leaving a stale number on the page.
- */
-export const COVERAGE = [
-  { value: 3852, unit: '處哺乳室' },
-  { value: 234, unit: '間親子館' },
-  { value: 36, unit: '劑疫苗' },
-  { value: 85, unit: '篇百科文章' },
-  { value: 7, unit: '種傳染病' },
-] as const;
+// The number strip lives in its own module because the landing page prints it
+// too, and importing it from here would pull this whole file — every source
+// card on the about page — into the entry chunk.
+export { COVERAGE } from './coverage';
 
 /**
  * The gaps the app names instead of papering over. Each number is asserted in

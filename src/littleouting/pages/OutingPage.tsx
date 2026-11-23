@@ -14,6 +14,7 @@ import { CENTRE_ACCESS, CENTRE_ACCESS_UNVERIFIED, CENTRE_DATA_ATTRIBUTION } from
 import { restaurants } from '../data/restaurants';
 import { outingChecklist } from '../data/outingChecklist';
 import VenueCard from '../components/VenueCard';
+import SuiteNote from '../../common/landing/SuiteNote';
 
 /** 縣市排序：六都在前，其餘依館數多寡，離島最後——和家長心裡的順序一致。 */
 const CITY_ORDER = [
@@ -321,6 +322,8 @@ export default function OutingPage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        <SuiteNote />
       </main>
     </div>
   );

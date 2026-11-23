@@ -7,8 +7,7 @@ import AddChildModal from '../components/AddChildModal';
 import EmptyState from '../ui/EmptyState';
 import { SERVICE_THEME, type ServiceId } from '../ui/serviceTheme';
 import HubLanding from './HubLanding';
-import StepsLanding from './StepsLanding';
-import ServiceLanding from './ServiceLanding';
+import ServiceIntro from './ServiceIntro';
 
 /**
  * 「還沒有內容可看」的所有畫面，集中在這一支。
@@ -20,7 +19,7 @@ import ServiceLanding from './ServiceLanding';
  * 規則收在這裡，就只有一個地方描述「什麼都還沒有的時候看到什麼」。
  */
 
-export type LandingKind = 'hub' | 'steps-intro' | 'service-intro' | 'first-child';
+export type LandingKind = 'hub' | 'service-intro' | 'first-child';
 
 /** 這一頁該顯示哪一種首頁；有實際內容可看時回傳 null，交還給 App 渲染真正的頁面。 */
 export function landingKindFor(
@@ -32,17 +31,11 @@ export function landingKindFor(
 
   // 未登入又需要登入的頁面：顯示該服務的自我介紹，網址保持不變，
   // 登入後同一個路由就會渲染出使用者原本要去的地方。
-  if (!user && requiresAuth(page)) {
-    const service = serviceOf(page);
-    return service === 'littlebloom' || service === 'littleexplorer'
-      ? 'service-intro'
-      : 'steps-intro';
-  }
+  // 三個階段服務共用同一張介紹頁（ServiceIntro）。另外三個服務整個公開，
+  // requiresAuth 對它們永遠是 false，走不到這裡。
+  if (!user && requiresAuth(page)) return 'service-intro';
 
-  if (page === 'littlesteps') {
-    if (!user) return 'steps-intro';
-    if (!hasChildren) return 'first-child';
-  }
+  if (page === 'littlesteps' && !hasChildren) return 'first-child';
 
   return null;
 }
@@ -52,7 +45,7 @@ export function landingKindFor(
  * 服務集合首頁與「先新增寶寶」則要留在既有版面裡（後者還得開側邊欄）。
  */
 export function isStandaloneLanding(kind: LandingKind): boolean {
-  return kind === 'steps-intro' || kind === 'service-intro';
+  return kind === 'service-intro';
 }
 
 interface LandingPageProps {
@@ -64,6 +57,8 @@ interface LandingPageProps {
   entryPage: Page;
   /** 入口頁用來標出「目前階段」的服務；沒有孩子時省略 */
   currentService?: ServiceId;
+  /** 目前這個孩子的名字，入口頁的「繼續記錄」用 */
+  childName?: string;
   onSignIn: () => Promise<void>;
   onNavigate: (page: Page) => void;
 }
@@ -75,6 +70,7 @@ export default function LandingPage({
   hasChildren,
   entryPage,
   currentService,
+  childName,
   onSignIn,
   onNavigate,
 }: LandingPageProps) {
@@ -95,25 +91,44 @@ export default function LandingPage({
     wasSignedIn.current = user !== null;
   }, [user, hasChildren, entryPage, onNavigate]);
 
+  const addChildModal = (
+    <AddChildModal
+      isOpen={addingChild}
+      onClose={() => setAddingChild(false)}
+      onSave={(name, birthday, gender, _isPregnancy, dueDate, gestationalAge) =>
+        store?.addChild(name, birthday, gender, dueDate, gestationalAge)
+      }
+      onJoin={store?.joinChild}
+    />
+  );
+
   if (kind === 'service-intro') {
     const service = serviceOf(page);
-    // landingKindFor 只在這兩個服務回傳 service-intro。
-    if (service === 'littlebloom' || service === 'littleexplorer') {
-      return <ServiceLanding service={service} onSignIn={onSignIn} />;
+    // landingKindFor 只在需登入的頁面回傳 service-intro，而需登入的頁面都屬於
+    // 這三個階段服務；型別不知道這件事，所以明講。
+    if (service === 'littlebloom' || service === 'littlesteps' || service === 'littleexplorer') {
+      return <ServiceIntro service={service} onSignIn={onSignIn} />;
     }
   }
 
-  if (kind === 'steps-intro') {
-    return <StepsLanding onNavigate={onNavigate} onSignIn={onSignIn} />;
-  }
-
   if (kind === 'hub') {
-    return <HubLanding
-        onNavigate={onNavigate}
-        user={user}
-        onSignIn={onSignIn}
-        currentService={currentService}
-      />;
+    // 已登入的家長回到入口頁是來記東西的：第一個畫面就是「打開紀錄」，直接
+    // 進這個孩子該去的那一頁。還沒有孩子時 entryPage 是 home，那顆按鈕就換成
+    // 新增寶寶——表單只有這裡這一份。
+    return (
+      <>
+        <HubLanding
+          onNavigate={onNavigate}
+          user={user}
+          onSignIn={onSignIn}
+          currentService={currentService}
+          childName={hasChildren ? childName : undefined}
+          onContinue={hasChildren ? () => onNavigate(entryPage) : undefined}
+          onAddChild={() => setAddingChild(true)}
+        />
+        {addChildModal}
+      </>
+    );
   }
 
   return (
@@ -128,14 +143,7 @@ export default function LandingPage({
       {/* 這顆按鈕原本只是打開側邊欄，而寶寶管理早就從側邊欄搬到每個 AppBar 的
           帳號按鈕底下了——於是剛註冊的家長按下引導流程唯一的那顆按鈕，得到
           一份導覽選單，裡面沒有任何地方可以新增寶寶。 */}
-      <AddChildModal
-        isOpen={addingChild}
-        onClose={() => setAddingChild(false)}
-        onSave={(name, birthday, gender, _isPregnancy, dueDate, gestationalAge) =>
-          store?.addChild(name, birthday, gender, dueDate, gestationalAge)
-        }
-        onJoin={store?.joinChild}
-      />
+      {addChildModal}
     </div>
   );
 }

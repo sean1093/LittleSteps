@@ -1,226 +1,243 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import HubLanding, { SERVICE_GROUPS } from './HubLanding';
+import HubLanding from './HubLanding';
+import { SERVICE_GROUPS, SERVICE_PITCH, STAGE_RANGE, STAGED_SERVICES } from './serviceCopy';
+import { COVERAGE } from '../about/coverage';
+import { MAX_CHILDREN } from '../childLimits';
 import { requiresAuth } from '../routePolicy';
 import { SERVICE_ORDER, SERVICE_THEME } from '../ui/serviceTheme';
-import type { ServiceId } from '../ui/serviceTheme';
 
 /**
- * The main landing page is the only place a parent can discover the other
- * sub-apps: no sub-app links to any sibling, and the LittleSteps sidebar is
- * scoped to LittleSteps routes by type. If a card goes missing here, that
- * sub-app becomes unreachable without hand-editing the URL.
+ * The landing page is the only place a parent can discover the other
+ * services: no sub-app links to a sibling, and the LittleSteps sidebar is
+ * scoped to LittleSteps routes by type. A card that goes missing here makes
+ * that service unreachable without hand-editing the URL.
  */
-describe('HubLanding', () => {
-  /**
-   * 每張卡片上「做得到什麼」那一行裡，只屬於這個服務的一句。
-   *
-   * 打成完整的 `Record<ServiceId, …>`，所以第六個服務不列進來就編譯不過，而
-   * 底下每一條也就自動涵蓋它。一個手寫的四元素陣列，正是 LittleOuting 當初
-   * 一條卡片斷言都沒有就上線的原因，`routePolicy.test.ts` 也同樣悄悄漏掉它。
-   *
-   * 這裡原本對的是進入按鈕的說法。按鈕已經拿掉——它只是把卡片標題重講一遍
-   * ——所以改對這一行：它現在是卡片除了名稱與角色以外唯一的內容，也是「這個
-   * 服務跟另外四個差在哪」真正的答案。
-   */
-  const DOES: Record<ServiceId, string> = {
-    littlebloom: '14 次公費產檢時程與完成紀錄',
-    littlesteps: '快速日誌與睡眠分析',
-    littleexplorer: '12-36 個月成長檢核',
-    littleouting: '全台 234 間親子館',
-    babyoasis: '全台 22 縣市、3,852 處',
-    littleguard: '七種兒童常見傳染病',
-  };
 
-  /** Derived from the same list the page maps over. */
-  const SUB_APPS = SERVICE_ORDER.map((id) => ({
-    id,
-    name: SERVICE_THEME[id].name,
-    role: SERVICE_THEME[id].role,
-    does: DOES[id],
-  }));
+const SIGNED_IN = { uid: 'u1' } as never;
 
-  /**
-   * 整張卡自己就是點擊區，所以入口是包住標題的那個 `role="button"`，不是卡片
-   * 裡的某顆按鈕。取不到就直接紅：那表示卡片又變回一塊點不動的區域。
-   */
-  function cardOf(name: string): HTMLElement {
-    const card = screen.getByRole('heading', { name }).closest('[role="button"]');
-    expect(card, `${name} 的卡片不是點擊區`).not.toBeNull();
-    return card as HTMLElement;
-  }
+/**
+ * The whole card is the tap target, so the way in is the `role="button"`
+ * around the heading and not a button inside the card.
+ */
+function cardOf(role: string): HTMLElement {
+  const card = screen.getByRole('heading', { name: role }).closest('[role="button"]');
+  expect(card, `the ${role} card is not a tap target`).not.toBeNull();
+  return card as HTMLElement;
+}
 
-  it('清單涵蓋每一個服務', () => {
-    // 沒有這條，SUB_APPS 少一個服務時底下兩條就只是「少測一張卡」，不會紅。
-    expect([...SERVICE_ORDER].sort()).toEqual(Object.keys(SERVICE_THEME).sort());
-    for (const app of SUB_APPS) {
-      expect(app.name, `${app.id} 沒有 name`).toBeTruthy();
-      expect(app.does, `${app.id} 沒有列出它做得到什麼`).toBeTruthy();
-    }
+describe('HubLanding: the six services', () => {
+  it('groups cover every service exactly once', () => {
+    const grouped = SERVICE_GROUPS.flatMap((group) => group.ids);
+    expect([...grouped].sort()).toEqual([...SERVICE_ORDER].sort());
+    expect(new Set(grouped).size, 'a service is listed in two groups').toBe(grouped.length);
   });
 
-  it('每個子應用都有一張卡片，卡片也說得出它做什麼', () => {
+  it('gives every service a card that names it and says what it does', () => {
     render(<HubLanding onNavigate={vi.fn()} />);
-    for (const app of SUB_APPS) {
-      expect(screen.getByRole('heading', { name: app.name })).toBeInTheDocument();
-      // 卡片縮短了，但不能縮到只剩五個英文名：角色與能力都要還在。
-      expect(cardOf(app.name), app.name).toHaveTextContent(app.role);
-      expect(cardOf(app.name), app.name).toHaveTextContent(app.does);
+    for (const id of SERVICE_ORDER) {
+      const theme = SERVICE_THEME[id];
+      const card = cardOf(theme.role);
+      // The role leads, but the wordmark a parent may have heard of is there too.
+      expect(card, id).toHaveTextContent(theme.name);
+      expect(card, id).toHaveTextContent(SERVICE_PITCH[id]);
     }
   });
 
-  it('點卡片上任何一處都導向自己的子應用', async () => {
+  it('opens the service wherever on the card the tap lands', async () => {
     const user = userEvent.setup();
-
-    for (const app of SUB_APPS) {
+    for (const id of SERVICE_ORDER) {
       const onNavigate = vi.fn();
       const { unmount } = render(<HubLanding onNavigate={onNavigate} />);
 
-      // 點的是「做得到什麼」那一行，也就是離原本那顆按鈕最遠的地方：
-      // 確認入口是整張卡，不是卡片裡某個特定元素。
-      await user.click(screen.getByText(app.does, { exact: false }));
-      expect(onNavigate, app.name).toHaveBeenCalledWith(app.id);
+      // The description line: the part of the card furthest from its heading.
+      await user.click(screen.getByText(SERVICE_PITCH[id]));
+      expect(onNavigate, id).toHaveBeenCalledWith(id);
 
       unmount();
     }
   });
 
-  it('卡片用鍵盤也進得去', () => {
-    render(<HubLanding onNavigate={vi.fn()} />);
-    // 沒有按鈕代打之後，鍵盤路徑只剩卡片自己的 pressable；焦點停不下來，
-    // 五個服務就全部只剩滑鼠進得去。
-    for (const app of SUB_APPS) {
-      expect(cardOf(app.name), app.name).toHaveAttribute('tabindex', '0');
-    }
-  });
-
-  it('聚焦在卡片上按 Enter 或空白鍵就會進去', async () => {
+  it('lets the keyboard into a card with Enter or Space', async () => {
     const user = userEvent.setup();
     const onNavigate = vi.fn();
     render(<HubLanding onNavigate={onNavigate} />);
 
-    const card = cardOf('BabyOasis');
+    for (const id of SERVICE_ORDER) {
+      expect(cardOf(SERVICE_THEME[id].role), id).toHaveAttribute('tabindex', '0');
+    }
+
+    const card = cardOf(SERVICE_THEME.babyoasis.role);
     card.focus();
-    expect(card).toHaveFocus();
-
     await user.keyboard('{Enter}');
-    expect(onNavigate).toHaveBeenCalledWith('babyoasis');
-
     await user.keyboard(' ');
-    expect(onNavigate, '空白鍵沒有作用').toHaveBeenCalledTimes(2);
+    expect(onNavigate.mock.calls).toEqual([['babyoasis'], ['babyoasis']]);
   });
 
-  it('卡片裡沒有第二個入口', () => {
+  it('puts no second way in inside a card', () => {
     render(<HubLanding onNavigate={vi.fn()} />);
-    for (const app of SUB_APPS) {
-      // 原本每張卡底下有一顆把標題重講一遍的全寬按鈕，吃掉近 60px 高度，
-      // 又在 tab 順序裡多一個停留點，做的還是外層卡片同一件事。
-      expect(
-        cardOf(app.name).querySelectorAll('button').length,
-        `${app.name} 卡片裡又多了一顆按鈕`,
-      ).toBe(0);
+    for (const id of SERVICE_ORDER) {
+      expect(cardOf(SERVICE_THEME[id].role).querySelectorAll('button, a').length, id).toBe(0);
     }
   });
 
-  it('LittleExplorer 卡片點出 1-3 歲的三項能力', () => {
+  it('tells the three staged services apart by age range', () => {
+    // 「寶寶成長」 and 「幼兒期陪伴」 alone cannot place a fifteen-month-old.
     render(<HubLanding onNavigate={vi.fn()} />);
-
-    // 三條功能現在併成一行，所以對的是這張卡的內容，而不是三個獨立節點。
-    const card = cardOf('LittleExplorer');
-    expect(card).toHaveTextContent('幼兒期陪伴');
-    expect(card).toHaveTextContent('12-36 個月成長檢核');
-    expect(card).toHaveTextContent('健檢、疫苗與塗氟提醒');
-    expect(card).toHaveTextContent('幼兒百科與成長日記');
-  });
-
-  it('兩組加起來正好是每一個服務，一個不多一個不少', () => {
-    // 分組之後，「漏掉一個服務」多了一條新途徑：不是少一張卡，而是整組不見。
-    // 對的是 SERVICE_ORDER 而不是渲染結果，因為重複列一個服務也要擋下來。
-    const grouped = SERVICE_GROUPS.flatMap((group) => group.ids);
-    expect([...grouped].sort()).toEqual([...SERVICE_ORDER].sort());
-    expect(new Set(grouped).size, '有服務被列進兩組').toBe(grouped.length);
-  });
-
-  it('組標題渲染得出來——它是「哪一個是我的」的答案', () => {
-    render(<HubLanding onNavigate={vi.fn()} />);
-    for (const group of SERVICE_GROUPS) {
-      expect(screen.getByRole('heading', { name: group.title })).toBeInTheDocument();
+    for (const id of STAGED_SERVICES) {
+      expect(cardOf(SERVICE_THEME[id].role), id).toHaveTextContent(STAGE_RANGE[id]);
     }
   });
 
-  it('三個階段服務都說得出自己的年齡範圍', () => {
-    render(<HubLanding onNavigate={vi.fn()} />);
-
-    // 「寶寶成長」與「幼兒期陪伴」分不出一歲三個月的孩子該進哪一個。這三行
-    // 原本在頁尾的旅程時間軸上，時間軸拿掉之後資訊必須留在卡片上。
-    expect(cardOf('LittleBloom')).toHaveTextContent('0-40 週');
-    expect(cardOf('LittleSteps')).toHaveTextContent('0-12 月');
-    expect(cardOf('LittleExplorer')).toHaveTextContent('1-3 歲');
-  });
-
-  it('說「不需要登入」的那一組，routePolicy 確實這麼認定', () => {
-    // 這句話是承諾，不是修飾語：哪天有服務被移到需登入，入口頁就在騙人。
-    // 用註記去找那一組而不是寫死索引：組的順序是版面決定的，這條規則不是。
-    const promising = SERVICE_GROUPS.filter((group) => group.note.includes('不需要登入'));
-    expect(promising.length, '沒有任何一組說不需要登入了，這條規則要跟著改').toBe(1);
+  it('only promises "no sign-in" for services routePolicy really leaves public', () => {
+    // The heading is a promise. The day a service in that group moves behind
+    // sign-in, the landing page would be lying.
+    const promising = SERVICE_GROUPS.filter((group) => group.title.includes('不用登入'));
+    expect(promising, 'no group promises this any more; update the rule').toHaveLength(1);
     for (const id of promising[0].ids) {
-      expect(requiresAuth(id), `${id} 需要登入，組標題卻說不用`).toBe(false);
+      expect(requiresAuth(id), `${id} needs sign-in but its group says it does not`).toBe(false);
     }
   });
 
-  it('有孩子時只標出目前階段那一張卡', () => {
-    render(<HubLanding onNavigate={vi.fn()} currentService="littlesteps" />);
-
-    // 六個服務並排時家長第一個問題是「哪一個是我的」。標記回答它，而標兩張
-    // 就等於沒答。未登入或還沒有孩子時 currentService 是 undefined，這一頁
-    // 對訪客與以前完全一樣。
-    expect(cardOf('LittleSteps')).toHaveTextContent('目前階段');
+  it('marks the current stage on one card only, and on none without a child', () => {
+    const { unmount } = render(<HubLanding onNavigate={vi.fn()} currentService="littlesteps" />);
+    expect(cardOf(SERVICE_THEME.littlesteps.role)).toHaveTextContent('目前階段');
     expect(screen.getAllByText('目前階段')).toHaveLength(1);
-  });
+    unmount();
 
-  it('沒有孩子時不標任何一張卡', () => {
     render(<HubLanding onNavigate={vi.fn()} />);
     expect(screen.queryByText('目前階段')).not.toBeInTheDocument();
   });
+});
 
-  it('未登入時進入點自己就給得出登入，也說清楚登入換到什麼', async () => {
+describe('HubLanding: signed out', () => {
+  it('has exactly one h1', () => {
+    render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={vi.fn()} />);
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+  });
+
+  it('offers sign-in as the primary action', async () => {
     const user = userEvent.setup();
     const onSignIn = vi.fn(async () => {});
     render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={onSignIn} />);
 
-    await user.click(screen.getByRole('button', { name: /使用 Google 登入/ }));
-    expect(onSignIn).toHaveBeenCalled();
-
-    // 全站唯一交代「不登入能看什麼、登入才能做什麼」的一句話。
-    expect(
-      screen.getByText('知識內容不需登入即可閱讀；記錄功能登入後才能跨裝置同步'),
-    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /使用 Google 帳號開始記錄/ }));
+    expect(onSignIn).toHaveBeenCalledTimes(1);
   });
 
-  it('已登入時不再顯示登入按鈕', () => {
+  it('offers a way in that needs no account, and it really needs none', async () => {
+    const user = userEvent.setup();
+    const onNavigate = vi.fn();
+    render(<HubLanding onNavigate={onNavigate} user={null} onSignIn={vi.fn()} />);
+
+    await user.click(screen.getByRole('button', { name: /先不登入/ }));
+
+    expect(onNavigate).toHaveBeenCalledTimes(1);
+    const [destination] = onNavigate.mock.calls[0];
+    expect(requiresAuth(destination), `${destination} would bounce to an intro page`).toBe(false);
+  });
+
+  it('never says "free" without the child limit beside it', () => {
+    render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={vi.fn()} />);
+    const mentions = screen.getAllByText(/免費/);
+    expect(mentions.length).toBeGreaterThan(0);
+    for (const mention of mentions) {
+      expect(mention.textContent).toContain(`${MAX_CHILDREN} 個寶寶`);
+    }
+  });
+
+  it('shows coverage numbers that come from the checked list, not typed ones', () => {
+    render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={vi.fn()} />);
+    const strip = screen.getByRole('region', { name: '資料涵蓋範圍' });
+
+    const shown = within(strip)
+      .getAllByRole('definition')
+      .map((node) => Number(node.textContent?.replace(/,/g, '')));
+    expect(shown.length).toBeGreaterThanOrEqual(4);
+    // `dataSources.test.ts` holds every COVERAGE value against its dataset.
+    const checked = COVERAGE.map((item) => item.value as number);
+    for (const value of shown) expect(checked).toContain(value);
+  });
+
+  it('does not headline the radar, whose dataset can be weeks behind', () => {
+    render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={vi.fn()} />);
+    const strip = screen.getByRole('region', { name: '資料涵蓋範圍' });
+    expect(strip).not.toHaveTextContent('傳染病');
+  });
+
+  it('makes the whole trust panel the way into the about page', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', '/');
+    render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={vi.fn()} />);
+
+    const panel = screen.getByRole('button', { name: /孩子的紀錄誰看得到/ });
+    expect(panel).toHaveAttribute('tabindex', '0');
+    // What the database rules actually grant: the family, not one person.
+    expect(panel).toHaveTextContent('你邀請的人');
+    expect(panel.textContent).not.toMatch(/僅限本人|永久免費|企業級加密/);
+
+    await user.click(panel);
+    expect(window.location.pathname).toBe('/about');
+  });
+});
+
+describe('HubLanding: signed in', () => {
+  it('leads with the child and opens their records in one tap', async () => {
+    const user = userEvent.setup();
+    const onContinue = vi.fn();
     render(
       <HubLanding
         onNavigate={vi.fn()}
-        user={{ uid: 'u1' } as never}
+        user={SIGNED_IN}
         onSignIn={vi.fn()}
+        currentService="littleexplorer"
+        childName="小米"
+        onContinue={onContinue}
       />,
     );
-    expect(screen.queryByRole('button', { name: /使用 Google 登入/ })).not.toBeInTheDocument();
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('小米');
+    await user.click(screen.getByRole('button', { name: '打開紀錄' }));
+    expect(onContinue).toHaveBeenCalledTimes(1);
   });
 
-  it('「資料從哪裡來」整塊就是進關於頁的入口，鍵盤也進得去', async () => {
-    // 這一段是入口頁最有說服力的文字，而關於頁把它講完整。它原本是一塊點不
-    // 動的區域；現在整塊可按，而且不靠 onNavigate——那個 prop 只認服務。
+  it('asks for a first child instead when there is none', async () => {
+    const user = userEvent.setup();
+    const onAddChild = vi.fn();
+    render(
+      <HubLanding onNavigate={vi.fn()} user={SIGNED_IN} onSignIn={vi.fn()} onAddChild={onAddChild} />,
+    );
+
+    expect(screen.queryByRole('button', { name: '打開紀錄' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '新增寶寶' }));
+    expect(onAddChild).toHaveBeenCalledTimes(1);
+  });
+
+  it('drops the pitch: no sign-in, no proof strip, no trust panel', () => {
+    render(
+      <HubLanding
+        onNavigate={vi.fn()}
+        user={SIGNED_IN}
+        onSignIn={vi.fn()}
+        childName="小米"
+        onContinue={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: /使用 Google 帳號開始記錄/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: '資料涵蓋範圍' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /孩子的紀錄誰看得到/ })).not.toBeInTheDocument();
+    // The six services are still all there.
+    for (const id of SERVICE_ORDER) cardOf(SERVICE_THEME[id].role);
+  });
+
+  it('keeps the about page reachable from the footer', async () => {
     const user = userEvent.setup();
     window.history.replaceState(null, '', '/');
-    render(<HubLanding onNavigate={vi.fn()} />);
+    render(<HubLanding onNavigate={vi.fn()} user={SIGNED_IN} childName="小米" onContinue={vi.fn()} />);
 
-    const panel = screen.getByRole('button', { name: /資料從哪裡來/ });
-    expect(panel).toHaveAttribute('tabindex', '0');
-    expect(panel).toHaveTextContent('誰看得到');
-
-    await user.click(panel);
+    await user.click(screen.getByRole('link', { name: '關於資料與來源' }));
     expect(window.location.pathname).toBe('/about');
   });
 });

@@ -16,12 +16,10 @@ describe('landingKindFor', () => {
     expect(landingKindFor('home', signedIn, true)).toBe('hub');
   });
 
-  it('未登入進到需登入的 LittleSteps 頁，顯示 LittleSteps 介紹頁', () => {
-    expect(landingKindFor('littlesteps/dashboard', null, false)).toBe('steps-intro');
-    expect(landingKindFor('littlesteps', null, false)).toBe('steps-intro');
-  });
-
-  it('未登入進到需登入的孕期或幼兒頁，顯示該服務的介紹頁', () => {
+  it('未登入進到任何需登入的頁面，都顯示該服務的介紹頁', () => {
+    // 三個階段服務共用同一張介紹頁；以前 LittleSteps 自己一種、另外兩個一種。
+    expect(landingKindFor('littlesteps/dashboard', null, false)).toBe('service-intro');
+    expect(landingKindFor('littlesteps', null, false)).toBe('service-intro');
     expect(landingKindFor('littlebloom', null, false)).toBe('service-intro');
     expect(landingKindFor('littleexplorer/reminders', null, false)).toBe('service-intro');
   });
@@ -45,7 +43,6 @@ describe('landingKindFor', () => {
 
 describe('isStandaloneLanding', () => {
   it('只有服務介紹頁自帶版面', () => {
-    expect(isStandaloneLanding('steps-intro')).toBe(true);
     expect(isStandaloneLanding('service-intro')).toBe(true);
     // hub 需要側邊欄切換孩子，first-child 需要側邊欄新增孩子。
     expect(isStandaloneLanding('hub')).toBe(false);
@@ -62,7 +59,7 @@ describe('登入後的去向', () => {
   ) => {
     const view = render(
       <LandingPage
-        kind="steps-intro"
+        kind="service-intro"
         page="littlesteps"
         user={user}
         hasChildren={hasChildren}
@@ -78,7 +75,7 @@ describe('登入後的去向', () => {
     const { view, onNavigate } = renderAt(null, true);
     view.rerender(
       <LandingPage
-        kind="steps-intro"
+        kind="service-intro"
         page="littlesteps"
         user={signedIn}
         hasChildren
@@ -95,7 +92,7 @@ describe('登入後的去向', () => {
     const { view, onNavigate } = renderAt(null, true, vi.fn(), 'littlebloom');
     view.rerender(
       <LandingPage
-        kind="steps-intro"
+        kind="service-intro"
         page="littlesteps"
         user={signedIn}
         hasChildren
@@ -111,7 +108,7 @@ describe('登入後的去向', () => {
     const { view, onNavigate } = renderAt(null, false);
     view.rerender(
       <LandingPage
-        kind="steps-intro"
+        kind="service-intro"
         page="littlesteps"
         user={signedIn}
         hasChildren={false}
@@ -150,5 +147,42 @@ describe('還沒有寶寶時的引導', () => {
     // 已經從側邊欄搬走，於是新註冊的家長按下去什麼也做不了。
     expect(screen.getByLabelText('寶寶姓名')).toBeInTheDocument();
     expect(screen.getByLabelText('寶寶生日')).toBeInTheDocument();
+  });
+});
+
+describe('入口頁上已登入的家長', () => {
+  const renderHub = (hasChildren: boolean, onNavigate = vi.fn()) =>
+    render(
+      <LandingPage
+        kind="hub"
+        page="home"
+        user={signedIn}
+        hasChildren={hasChildren}
+        entryPage={hasChildren ? 'littleexplorer' : 'home'}
+        currentService={hasChildren ? 'littleexplorer' : undefined}
+        childName={hasChildren ? '小米' : undefined}
+        onSignIn={vi.fn()}
+        onNavigate={onNavigate}
+      />,
+    );
+
+  it('一按就到這個孩子該去的那一頁，不是服務的預設首頁', async () => {
+    // 兩歲孩子的家長要去的是幼兒期，不是嬰兒儀表板；目的地是 App 算好傳進來的。
+    const user = userEvent.setup();
+    const onNavigate = vi.fn();
+    renderHub(true, onNavigate);
+
+    await user.click(screen.getByRole('button', { name: '打開紀錄' }));
+    expect(onNavigate).toHaveBeenCalledWith('littleexplorer');
+  });
+
+  it('還沒有孩子時，同一個位置是新增寶寶，而且真的打開表單', async () => {
+    const user = userEvent.setup();
+    const onNavigate = vi.fn();
+    renderHub(false, onNavigate);
+
+    await user.click(screen.getByRole('button', { name: '新增寶寶' }));
+    expect(screen.getByLabelText('寶寶姓名')).toBeInTheDocument();
+    expect(onNavigate).not.toHaveBeenCalled();
   });
 });

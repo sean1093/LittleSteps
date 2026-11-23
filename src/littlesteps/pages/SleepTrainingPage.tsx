@@ -12,6 +12,7 @@ import {
 } from '../data/sleep';
 import { stagger, listItem, collapse, tap } from '../../common/ui/motion';
 import { pressable } from '../../common/ui/pressable';
+import SuiteNote from '../../common/landing/SuiteNote';
 
 export default function SleepTrainingPage() {
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
@@ -284,6 +285,8 @@ export default function SleepTrainingPage() {
             </motion.div>
           ))}
         </motion.div>
+
+        <SuiteNote />
       </div>
     </div>
   );

@@ -19,15 +19,30 @@
 
 ## The six services
 
-One entry point at `/#/` lists six services. They share a design system, an
+The landing page at `/` is the one place that says what the whole product is,
+and the only route between the six services. They share a design system, an
 auth model and a data layer; each keeps its own palette and its own navigation
 shape.
 
-The entry page groups them the way the `Stage` column below does, because the
-two halves are not the same kind of thing: three services follow the child's
-age and a family uses one at a time, and three are usable at any age and are
-fully public. A parent's first question there is "which one is mine", so the
-group headings answer it rather than leaving six equal rows to be read through.
+The page reads in the order a stranger needs: what this is and one thing to do
+about it, how much data stands behind it, the six services, and who can see a
+child's records. A signed-in parent gets a shorter page — the hero becomes
+"carry on recording", one tap from their child's current service, and the pitch
+below it is gone.
+
+The six cards are grouped the way the `Stage` column below is, because the two
+halves are not the same kind of thing: three services follow the child's age
+and a family uses one at a time, and three are usable at any age and are fully
+public. Each card leads with the Chinese role name rather than the wordmark,
+since the suite and the 0-12 month service are both called LittleSteps.
+
+Every sentence a service says about itself lives in
+`src/common/landing/serviceCopy.ts`, read by the landing page and by the intro
+page a signed-out visitor sees at a private URL. Each number in it is compared
+with the dataset it describes by `serviceCopy.test.ts`. The public pages — the
+wikis, the two guides, LittleOuting and LittleGuard — end with one line linking
+back to the landing page, because those are the pages search engines index and
+they used to give no hint that a product existed around them.
 
 | | Service | Stage | Navigation |
 |---|---|---|---|
@@ -209,7 +224,9 @@ the entry page, the account sheet and the share sheet.
 
 A signed-out visitor hitting a private route gets that service's intro page at
 the same URL — the path is preserved, so after signing in they land where they
-were going.
+were going. The three gated services share one template (`ServiceIntro`): the
+promise and the sign-in button first, then what signing in unlocks, then what
+can be read with no account.
 
 - **Auth**: Firebase Authentication, Google sign-in
 - **Database**: Firebase Realtime Database (asia-southeast1)
