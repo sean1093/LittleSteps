@@ -7,6 +7,7 @@ import { outingChecklist } from '../data/outingChecklist';
 import { restaurants } from '../data/restaurants';
 import { savePreferences } from '../../common/preferences';
 import { ChildStoreValueProvider } from '../../common/contexts/ChildStoreContext';
+import { ToastProvider } from '../../common/ui/toast';
 import type { ChildStore } from '../../common/hooks/useChildStore';
 import { OUTING_STAGES, PLACE_TYPES } from '../data/outingStages';
 import OutingPage from './OutingPage';
@@ -557,13 +558,47 @@ describe('依孩子的狀態推薦', () => {
     expect(await screen.findByRole('heading', { name: '芝山親子館' })).toBeInTheDocument();
   });
 
-  it('沒有名冊的場地連到地圖搜尋，並且說清楚那不是查證過的名單', async () => {
-    const user = renderFresh();
-    await user.click(stageChip('會跑會跳'));
+  it('公園類的場地帶到公園那一頁，而且已經篩成這個階段要的條件', async () => {
+    // 兩份資料各走各的網址；公園那一份是 { venues } 而不是陣列。
+    fetchMock.mockImplementation(async (url: string) => ({
+      ok: true,
+      status: 200,
+      json: async () =>
+        String(url).includes('outingParks')
+          ? {
+              attribution: '© OpenStreetMap 貢獻者，依 ODbL 授權',
+              builtOn: '2026-11-23',
+              venues: [
+                { id: 'w1', kind: 'park', name: '有遊戲場的那一座', city: '臺北市', lat: 25, lng: 121.5, areaM2: 5000, playgrounds: 1 },
+                { id: 'w2', kind: 'park', name: '沒有標遊戲場的那一座', city: '臺北市', lat: 25, lng: 121.5, areaM2: 5000, playgrounds: 0 },
+              ],
+            }
+          : CENTRES,
+    }));
+    localStorage.clear();
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <OutingPage />
+      </ToastProvider>,
+    );
 
-    const link = screen.getByRole('link', { name: '在地圖上找共融遊戲場' });
+    await user.click(stageChip('會跑會跳'));
+    await user.click(screen.getByRole('button', { name: '看有遊戲場的公園' }));
+
+    expect(screen.getByRole('button', { name: '公園' })).toHaveAttribute('aria-pressed', 'true');
+    expect(await screen.findByRole('heading', { name: '有遊戲場的那一座' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '有遊戲場' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('heading', { name: '沒有標遊戲場的那一座' })).not.toBeInTheDocument();
+  });
+
+  it('沒有資料的場地連到地圖搜尋，並且說清楚那不是查證過的名單', async () => {
+    const user = renderFresh();
+    await user.click(stageChip('還不會坐'));
+
+    const link = screen.getByRole('link', { name: '在地圖上找附近的圖書館' });
     expect(link).toHaveAttribute('href', expect.stringContaining('google.com/maps/search'));
-    expect(decodeURIComponent(link.getAttribute('href') ?? '')).toContain('共融遊戲場');
+    expect(decodeURIComponent(link.getAttribute('href') ?? '')).toContain('圖書館');
     expect(link).toHaveAttribute('target', '_blank');
     expect(screen.getByText(/不是我們查證過的名單/)).toBeInTheDocument();
   });

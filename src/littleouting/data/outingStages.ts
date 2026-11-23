@@ -15,12 +15,13 @@
  *   for a preterm baby, a correction. The month ranges below are only the
  *   fallback for a child with nothing ticked.
  *
- * Why the recommendations are types, not venues
- *   This app has a register for two types only: family centres (the SFAA
- *   national list) and a verified sample of restaurants. There is no official
- *   register of parks, playgrounds or library children's rooms with
- *   coordinates, and the app does not invent one. Those types link out to a
- *   map search and the page says so.
+ * Where a recommendation leads
+ *   Family centres (the SFAA national list) and restaurants (a verified
+ *   sample) open this page's own registers. Parks and playgrounds open the
+ *   park list, built from OpenStreetMap, narrowed to what the stage asks of a
+ *   park: any park, a large one, or one with a playground mapped. Libraries
+ *   and zoos have no dataset behind them and link out to a map search; the
+ *   page says so.
  *
  * What may be written here
  *   Every health or safety statement carries the ids of the sources it rests
@@ -39,6 +40,7 @@
  */
 
 import type { Page } from '../../types/routes';
+import type { ParkFilter } from './parks';
 
 export type OutingSourceId =
   | 'whoActivity'
@@ -130,12 +132,14 @@ export const OUTING_SOURCES: Record<OutingSourceId, OutingSource> = {
 /**
  * How a recommendation is acted on.
  *
- * `register` opens one of this page's own lists. `service` leaves for another
- * public service of the app. `map` leaves the app for a map search, for the
- * types this app keeps no register of.
+ * `register` opens one of this page's own verified lists. `parks` opens the
+ * park list, narrowed to what the stage asks of a park. `service` leaves for
+ * another public service of the app. `map` leaves the app for a map search,
+ * for the types this app has no data for.
  */
 export type PlaceAction =
   | { kind: 'register'; view: 'centre' | 'restaurant'; label: string }
+  | { kind: 'parks'; filter: ParkFilter; label: string }
   | { kind: 'service'; page: Page; label: string }
   | { kind: 'map'; query: string; label: string };
 
@@ -157,15 +161,15 @@ export const PLACE_TYPES: Record<PlaceTypeId, { label: string; action: PlaceActi
   },
   shadedPark: {
     label: '有樹蔭的公園或步道',
-    action: { kind: 'map', query: '公園', label: '在地圖上找附近的公園' },
+    action: { kind: 'parks', filter: 'any', label: '看附近的公園' },
   },
   lawn: {
     label: '公園草地',
-    action: { kind: 'map', query: '公園', label: '在地圖上找附近的公園' },
+    action: { kind: 'parks', filter: 'large', label: '看 1 公頃以上的公園' },
   },
   playground: {
-    label: '共融遊戲場',
-    action: { kind: 'map', query: '共融遊戲場', label: '在地圖上找共融遊戲場' },
+    label: '有遊戲場的公園',
+    action: { kind: 'parks', filter: 'playground', label: '看有遊戲場的公園' },
   },
   library: {
     label: '圖書館親子區',
@@ -185,7 +189,7 @@ export const PLACE_TYPES: Record<PlaceTypeId, { label: string; action: PlaceActi
   },
   riverside: {
     label: '河濱、大草地',
-    action: { kind: 'map', query: '河濱公園', label: '在地圖上找河濱公園' },
+    action: { kind: 'parks', filter: 'large', label: '看 1 公頃以上的公園' },
   },
 };
 

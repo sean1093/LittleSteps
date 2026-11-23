@@ -15,6 +15,8 @@ import { restaurants } from '../data/restaurants';
 import { outingChecklist } from '../data/outingChecklist';
 import VenueCard from '../components/VenueCard';
 import StageGuide from '../components/StageGuide';
+import ParkList from '../components/ParkList';
+import type { ParkFilter } from '../data/parks';
 import { OUTING_STAGES, type OutingStageId } from '../data/outingStages';
 import { stageForChild } from '../stageForChild';
 import { useOptionalChildStore } from '../../common/contexts/ChildStoreContext';
@@ -34,10 +36,11 @@ const CITY_ORDER = [
  */
 const MAX_RENDERED = 30;
 
-type View = 'guide' | VenueKind | 'checklist';
+type View = 'guide' | 'park' | VenueKind | 'checklist';
 
 const VIEWS: { id: View; label: string }[] = [
   { id: 'guide', label: '推薦' },
+  { id: 'park', label: '公園' },
   { id: 'centre', label: '親子館' },
   { id: 'restaurant', label: '親子餐廳' },
   { id: 'checklist', label: '出發前' },
@@ -85,6 +88,9 @@ export default function OutingPage() {
   const currentChild = useOptionalChildStore()?.currentChild;
   const guess = useMemo(() => stageForChild(currentChild), [currentChild]);
   const stage = pickedStage ?? guess?.stage ?? null;
+  /* 公園那一頁的條件。從推薦點進來時由那個階段決定；不記在裝置上——它是
+     「這一次要找什麼」，不是「我家在哪」。 */
+  const [parkFilter, setParkFilter] = useState<ParkFilter>('any');
   const [pickedCity, setPickedCity] = useState<string>(stored.outingCity ?? ALL_CITIES);
   const [query, setQuery] = useState('');
   const [centres, setCentres] = useState<Venue[]>([]);
@@ -163,6 +169,15 @@ export default function OutingPage() {
     savePreferences({ outingTab: next, outingCity: ALL_CITIES });
   };
 
+  /* 從推薦進公園：帶著那個階段要的條件過去，縣市保留——家長在親子館那邊
+     選過的縣市，公園這邊一樣有（22 縣市都有公園）。 */
+  const openParks = (filter: ParkFilter) => {
+    setParkFilter(filter);
+    setView('park');
+    savePreferences({ outingTab: 'park' });
+    window.scrollTo({ top: 0 });
+  };
+
   const chooseStage = (next: OutingStageId) => {
     setPickedStage(next);
     savePreferences({ outingStage: next });
@@ -188,8 +203,8 @@ export default function OutingPage() {
       />
 
       <main className="screen-body space-y-4">
-        {/* 四個分頁：依孩子狀態的推薦、兩份名冊、不會過期的檢查清單。
-            不用 flex-1：四顆裡「親子餐廳」最長，等寬會在 320px 把它擠出框。 */}
+        {/* 五個分頁：依孩子狀態的推薦、公園、兩份名冊、不會過期的檢查清單。
+            不用 flex-1：五顆裡「親子餐廳」最長，等寬會在 320px 把它擠出框。 */}
         <div className="flex flex-wrap gap-2">
           {VIEWS.map(({ id, label }) => (
             <motion.button
@@ -214,11 +229,23 @@ export default function OutingPage() {
                 stage={stage}
                 onChooseStage={chooseStage}
                 onOpenRegister={chooseView}
+                onOpenParks={openParks}
                 guess={
                   pickedStage === null && guess && currentChild
                     ? { childName: currentChild.name, basis: guess.basis }
                     : undefined
                 }
+              />
+            </motion.div>
+          ) : view === 'park' ? (
+            <motion.div key="park" variants={fadeInUp} initial="hidden" animate="visible">
+              <ParkList
+                cityOrder={CITY_ORDER}
+                pickedCity={pickedCity}
+                allCities={ALL_CITIES}
+                onChooseCity={chooseCity}
+                filter={parkFilter}
+                onChooseFilter={setParkFilter}
               />
             </motion.div>
           ) : view === 'checklist' ? (

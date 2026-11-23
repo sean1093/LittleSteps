@@ -13,6 +13,7 @@ import {
   type OutingStageId,
   type PlaceAction,
 } from '../data/outingStages';
+import type { ParkFilter } from '../data/parks';
 import type { StageGuess } from '../stageForChild';
 
 interface StageGuideProps {
@@ -20,6 +21,8 @@ interface StageGuideProps {
   onChooseStage: (stage: OutingStageId) => void;
   /** Opens one of the page's own registers. */
   onOpenRegister: (view: 'centre' | 'restaurant') => void;
+  /** Opens the park list, narrowed to what the stage asks of a park. */
+  onOpenParks: (filter: ParkFilter) => void;
   /**
    * Set when the stage on screen was preselected from a child's records and
    * the parent has not chosen one themselves. The page says which it was.
@@ -40,7 +43,13 @@ interface StageGuideProps {
  * the end with the date each was read, and each health sentence names the one
  * it rests on.
  */
-export default function StageGuide({ stage, onChooseStage, onOpenRegister, guess }: StageGuideProps) {
+export default function StageGuide({
+  stage,
+  onChooseStage,
+  onOpenRegister,
+  onOpenParks,
+  guess,
+}: StageGuideProps) {
   const theme = SERVICE_THEME.littleouting;
   const current = OUTING_STAGES.find((entry) => entry.id === stage);
 
@@ -80,7 +89,12 @@ export default function StageGuide({ stage, onChooseStage, onOpenRegister, guess
       </section>
 
       {current ? (
-        <StageAnswer key={current.id} stage={current} onOpenRegister={onOpenRegister} />
+        <StageAnswer
+          key={current.id}
+          stage={current}
+          onOpenRegister={onOpenRegister}
+          onOpenParks={onOpenParks}
+        />
       ) : (
         <p className="text-sm text-ink-muted leading-relaxed px-1">
           選一格，下面會列出這個階段適合去的地方、可以待多久，以及要注意什麼。
@@ -113,9 +127,11 @@ export default function StageGuide({ stage, onChooseStage, onOpenRegister, guess
 function StageAnswer({
   stage,
   onOpenRegister,
+  onOpenParks,
 }: {
   stage: OutingStage;
   onOpenRegister: (view: 'centre' | 'restaurant') => void;
+  onOpenParks: (filter: ParkFilter) => void;
 }) {
   const theme = SERVICE_THEME.littleouting;
   const leavesApp = stage.places.some((place) => PLACE_TYPES[place.type].action.kind === 'map');
@@ -148,14 +164,18 @@ function StageAnswer({
               <li key={place.type} className="card">
                 <h3 className="text-ink">{type.label}</h3>
                 <p className="text-sm text-ink-muted leading-relaxed mt-1">{place.why}</p>
-                <PlaceLink action={type.action} onOpenRegister={onOpenRegister} />
+                <PlaceLink
+                  action={type.action}
+                  onOpenRegister={onOpenRegister}
+                  onOpenParks={onOpenParks}
+                />
               </li>
             );
           })}
         </ol>
         {leavesApp && (
           <p className="text-xs text-ink-faint leading-relaxed">
-            公園、遊戲場和圖書館沒有全國性的官方名冊，所以連到地圖搜尋。搜到的結果不是我們查證過的名單。
+            圖書館和動物園這裡沒有資料，所以連到地圖搜尋。搜到的結果不是我們查證過的名單。
           </p>
         )}
       </section>
@@ -229,9 +249,11 @@ function Cited({ sources }: { sources: OutingSourceId[] }) {
 function PlaceLink({
   action,
   onOpenRegister,
+  onOpenParks,
 }: {
   action: PlaceAction;
   onOpenRegister: (view: 'centre' | 'restaurant') => void;
+  onOpenParks: (filter: ParkFilter) => void;
 }) {
   const className = 'btn-secondary w-full mt-3 text-sm';
 
@@ -255,6 +277,7 @@ function PlaceLink({
       whileTap={tap}
       onClick={() => {
         if (action.kind === 'register') onOpenRegister(action.view);
+        else if (action.kind === 'parks') onOpenParks(action.filter);
         else goTo(action.page);
       }}
       className={className}
