@@ -10,8 +10,10 @@ import type { Transition, Variants } from 'framer-motion';
  * per-item stagger delay used four different multipliers.
  *
  * Motion here is meant to be felt, not watched: entrances are short, offsets
- * are small, and nothing loops. `prefers-reduced-motion` is honoured globally
- * in `index.css`.
+ * are small, and nothing loops. `prefers-reduced-motion` is honoured in two
+ * places, because there are two kinds of motion: `index.css` shortens CSS
+ * transitions, and `<MotionConfig reducedMotion="user">` in `main.tsx` covers
+ * everything animated from here.
  */
 
 /** Wrap a list or page section; children with `listItem` reveal in sequence. */

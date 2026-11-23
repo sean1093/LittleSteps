@@ -83,6 +83,22 @@ export default function WikiBrowser<
 
   const categories = categoryOrder ?? (Object.keys(categoryLabels) as Category[]);
 
+  const titleById = useMemo(
+    () => new Map(articles.map((article) => [article.id, article.title])),
+    [articles],
+  );
+
+  /* 打開另一篇：先把搜尋與分類清掉——那一篇多半不在目前篩出來的清單裡——再
+     展開它並捲到它。捲動要等清單重新排好之後。 */
+  const openRelated = (id: string) => {
+    setQuery('');
+    setCategory('all');
+    setExpandedId(id);
+    window.requestAnimationFrame(() => {
+      document.getElementById(`wiki-article-${id}`)?.scrollIntoView({ block: 'start' });
+    });
+  };
+
   const filtered = useMemo(() => {
     const keyword = query.trim().toLowerCase();
     return articles.filter(
@@ -148,7 +164,7 @@ export default function WikiBrowser<
         <EmptyState
           theme={theme}
           title="找不到相關文章"
-          description="請嘗試其他關鍵字或清除篩選條件"
+          description="換個字試試，或按「全部」看所有文章。"
         />
       ) : (
         <motion.div
@@ -159,7 +175,15 @@ export default function WikiBrowser<
         >
           <AnimatePresence mode="popLayout">
             {filtered.map((article) => (
-              <motion.div key={article.id} layout variants={listItem} exit="hidden">
+              <motion.div
+                key={article.id}
+                id={`wiki-article-${article.id}`}
+                // 讓捲過來的文章停在黏住的頁首下面，而不是被它蓋住。
+                className="scroll-mt-20"
+                layout
+                variants={listItem}
+                exit="hidden"
+              >
                 <WikiArticleCard
                   article={article}
                   isExpanded={expandedId === article.id}
@@ -170,6 +194,11 @@ export default function WikiBrowser<
                   categoryColors={categoryColors[article.category]}
                   tag={articleTag?.(article)}
                   theme={theme}
+                  related={article.relatedArticleIds.flatMap((id) => {
+                    const title = titleById.get(id);
+                    return title ? [{ id, title }] : [];
+                  })}
+                  onOpenRelated={openRelated}
                 />
               </motion.div>
             ))}

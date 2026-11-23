@@ -31,7 +31,8 @@ vi.mock('react-leaflet', async () => {
   return {
     MapContainer: ({ children }: { children?: ReactNode }) => createElement('div', null, children),
     TileLayer: () => null,
-    // title 只有捷運站那顆標記會帶，測試靠它把「定位點」和哺乳室分開數。
+    // 每顆標記都帶 title（螢幕閱讀器靠它唸出名稱）：哺乳室的是場所名稱，
+    // 捷運站那顆是「捷運○○站」。測試靠這個把「定位點」和哺乳室分開數。
     Marker: ({
       eventHandlers,
       title,
@@ -134,6 +135,10 @@ async function renderReady(rooms: NursingRoom[] = ROOMS) {
   await screen.findByRole('searchbox', { name: '搜尋哺乳室' });
   return user;
 }
+
+/** 標的是一筆哺乳室，而不是選定的捷運站。 */
+const isRoomMarker = (marker: HTMLElement) =>
+  ROOMS.some((room) => room.name === marker.dataset.title);
 
 const locateButton = () => screen.getByRole('button', { name: '定位我的位置' });
 
@@ -276,7 +281,7 @@ describe('捷運站定位', () => {
     await pickStation(user, '忠孝復興');
 
     const markers = screen.getAllByTestId('marker');
-    expect(markers.filter((marker) => !marker.dataset.title)).toHaveLength(ROOMS.length);
+    expect(markers.filter(isRoomMarker)).toHaveLength(ROOMS.length);
     expect(markers.filter((marker) => marker.dataset.title === '捷運忠孝復興站')).toHaveLength(1);
     // 副標題還是全台筆數：選站沒有篩掉任何一筆。
     expect(screen.getByText(`全台 ${ROOMS.length} 處哺乳室`)).toBeInTheDocument();
@@ -511,7 +516,16 @@ describe('記住上次的篩選條件', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(
-      screen.getAllByTestId('marker').filter((marker) => marker.dataset.title),
+      screen.getAllByTestId('marker').filter((marker) => !isRoomMarker(marker)),
     ).toEqual([]);
+  });
+});
+
+describe('地圖標記的名稱', () => {
+  it('每一筆哺乳室的標記都帶著場所名稱，螢幕閱讀器唸得出是哪一間', async () => {
+    // Leaflet 把標記畫成 role="button"。沒有名稱時，三千多顆唸出來都只是「按鈕」。
+    await renderReady();
+    const titles = screen.getAllByTestId('marker').map((marker) => marker.dataset.title);
+    expect(titles.sort()).toEqual(ROOMS.map((room) => room.name).sort());
   });
 });

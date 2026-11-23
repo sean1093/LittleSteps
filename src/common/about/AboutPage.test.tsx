@@ -111,6 +111,9 @@ describe('AboutPage', () => {
       '看診摘要、週報與',
       '刪掉一個孩子是一',
       '帳號本身也刪得掉',
+      // What deletion leaves behind comes last: it qualifies the sentence
+      // above it, and a parent should read the promise before its limit.
+      '有兩樣東西刪帳號',
     ]);
   });
 

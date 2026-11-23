@@ -293,7 +293,10 @@ export const logPageView = (pageName: Page) => {
   logEvent('page_view', {
     page_name: pageName,
     page_path: window.location.pathname,
-    page_location: window.location.href,
+    // 不帶 query string。百科的搜尋字詞放在 ?q= 裡，而家長搜的是「發燒」
+    // 「妊娠糖尿病」這種字——整串 href 送出去，等於把健康方面的搜尋交給分析
+    // 工具，關於頁卻說我們只知道「哪一頁被打開」。
+    page_location: window.location.origin + window.location.pathname,
     page_title: document.title,
     // Custom dimensions for better segmentation
     // main | littlesteps | littlebloom | littleexplorer | littleouting | babyoasis | littleguard

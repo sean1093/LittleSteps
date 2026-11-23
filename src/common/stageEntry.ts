@@ -1,7 +1,7 @@
 import type { ChildProfile } from '../types';
 import type { Page } from '../types/routes';
 import { isPregnancyProfile } from './pregnancy';
-import { calculateAge } from './utils/dateHelpers';
+import { correctedAgeMonths } from './correctedAge';
 import { TODDLER_MAX_MONTHS, TODDLER_MIN_MONTHS } from '../littleexplorer/utils/ageBands';
 import type { ServiceId } from './ui/serviceTheme';
 
@@ -22,9 +22,14 @@ export function stageOfChild(child: ChildProfile | undefined): Stage | undefined
   if (!child) return undefined;
   if (isPregnancyProfile(child)) return 'pregnancy';
 
-  const months = calculateAge(child.birthday);
+  // 矯正年齡，而且上界不含 36 個月——這兩件事都要跟 LittleExplorer 自己的
+  // 門檻（DevelopmentPage）一致。這裡原本用實際年齡、上界含 36：一個實際
+  // 13 個月、矯正 10 個月的早產寶寶會被送進 LittleExplorer，那一頁說「矯正
+  // 年齡還不到 1 歲，請回 LittleSteps」，而儀表板又叫他過去；剛滿三歲的
+  // 孩子則是被送進去看「已經滿 3 歲了」。同一個孩子，兩個服務各說各話。
+  const months = correctedAgeMonths(child);
   if (months < TODDLER_MIN_MONTHS) return 'baby';
-  if (months <= TODDLER_MAX_MONTHS) return 'toddler';
+  if (months < TODDLER_MAX_MONTHS) return 'toddler';
 
   return 'beyond';
 }

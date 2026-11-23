@@ -245,25 +245,31 @@ function ParkCard({ venue, km }: { venue: ParkVenue; km: number | null }) {
     venue.playgrounds > 0 ? `地圖上標了 ${venue.playgrounds} 處遊戲場` : null,
   ].filter(Boolean);
 
+  // The whole card is the link. Each card used to end in a full-width
+  // 地圖與導航 button, which made thirty identical buttons and left room for
+  // four parks on a screen. The card has one thing to do, so it does it.
   return (
-    <motion.li variants={listItem} className="card">
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-ink min-w-0">{venue.name}</h3>
-        {km !== null && (
-          <span className={`text-sm font-medium shrink-0 ${theme.ink}`}>{formatDistance(km)}</span>
-        )}
-      </div>
-      <p className="text-sm text-ink-muted mt-0.5">
-        {[`${venue.city}${venue.district ?? ''}`, ...facts].join(' · ')}
-      </p>
+    <motion.li variants={listItem}>
       <motion.a
         whileTap={tap}
         href={`https://www.google.com/maps/search/?api=1&query=${venue.lat},${venue.lng}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="btn-secondary w-full mt-3 text-sm"
+        // Named by the park, and says it leaves: a whole-card link would
+        // otherwise read out every fact on the card as its name.
+        aria-label={`${venue.name}，在地圖上開啟（另開分頁）`}
+        className="card-tap block"
       >
-        地圖與導航
+        <span className="flex items-baseline justify-between gap-3">
+          <h3 className="text-ink min-w-0">{venue.name}</h3>
+          {km !== null && (
+            <span className={`text-sm font-medium shrink-0 ${theme.ink}`}>{formatDistance(km)}</span>
+          )}
+        </span>
+        <span className="block text-sm text-ink-muted mt-0.5">
+          {[`${venue.city}${venue.district ?? ''}`, ...facts].join(' · ')}
+        </span>
+        <span className={`block text-sm font-medium mt-1 ${theme.ink}`}>在地圖上開啟</span>
       </motion.a>
     </motion.li>
   );

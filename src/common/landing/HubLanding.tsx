@@ -46,6 +46,8 @@ interface HubLandingProps {
   onContinue?: () => void;
   /** Opens the add-child form. The modal belongs to `LandingPage`. */
   onAddChild?: () => void;
+  /** Opens the same form on its join tab, for a second carer holding a code. */
+  onJoinChild?: () => void;
 }
 
 /**
@@ -71,6 +73,7 @@ export default function HubLanding({
   childName,
   onContinue,
   onAddChild,
+  onJoinChild,
 }: HubLandingProps) {
   const signedIn = Boolean(user);
 
@@ -88,6 +91,7 @@ export default function HubLanding({
             currentService={currentService}
             onContinue={onContinue}
             onAddChild={onAddChild}
+            onJoinChild={onJoinChild}
           />
         ) : (
           <>
@@ -264,7 +268,11 @@ function SignedInHero({
   currentService,
   onContinue,
   onAddChild,
-}: Pick<HubLandingProps, 'childName' | 'currentService' | 'onContinue' | 'onAddChild'>) {
+  onJoinChild,
+}: Pick<
+  HubLandingProps,
+  'childName' | 'currentService' | 'onContinue' | 'onAddChild' | 'onJoinChild'
+>) {
   if (childName && onContinue) {
     const theme = currentService ? SERVICE_THEME[currentService] : undefined;
     return (
@@ -304,6 +312,13 @@ function SignedInHero({
           <button type="button" onClick={onAddChild} className="btn-primary w-full">
             新增寶寶
           </button>
+          {/* A second carer signs in to an account with no child and would
+              otherwise create a duplicate of the one the family already keeps. */}
+          {onJoinChild && (
+            <button type="button" onClick={onJoinChild} className="btn-ghost w-full mt-2 text-sm">
+              家人已經在記了？用代碼加入
+            </button>
+          )}
         </motion.div>
       )}
     </>

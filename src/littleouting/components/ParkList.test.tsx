@@ -165,12 +165,15 @@ describe('ParkList: what a card says', () => {
     expect(small.textContent).not.toMatch(/遊戲場/);
   });
 
-  it('links each card to its own coordinates', async () => {
+  it('makes each card one link to its own coordinates, with no second button', async () => {
     await renderLoaded();
     const card = screen.getByRole('heading', { name: '板橋河濱公園' }).closest('li') as HTMLElement;
-    const link = within(card).getByRole('link', { name: '地圖與導航' });
+    // The whole card is the link, named by the park and saying it leaves.
+    const link = within(card).getByRole('link', { name: '板橋河濱公園，在地圖上開啟（另開分頁）' });
     expect(link).toHaveAttribute('href', expect.stringContaining('query=25.02,121.47'));
     expect(link).toHaveAttribute('target', '_blank');
+    expect(within(card).queryAllByRole('button')).toEqual([]);
+    expect(within(card).getAllByRole('link')).toHaveLength(1);
   });
 
   it('credits OpenStreetMap, dates the data and says what the map does not know', async () => {

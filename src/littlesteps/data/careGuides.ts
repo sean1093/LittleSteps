@@ -11,7 +11,7 @@ export const generalSafetyItems: GeneralSafetyItem[] = [
   {
     id: "safety-feeding",
     title: "飲食習慣",
-    description: "6個月後逐步添加副食品，培養自主進食",
+    description: "約 6 個月開始添加副食品（不早於滿 4 個月），培養自主進食",
     icon: "UtensilsCrossed"
   },
   {
@@ -68,7 +68,7 @@ export const monthlyCareGuides: MonthlyCareGuide[] = [
     title: "抬頭與感官發展",
     category: "physiological",
     highlights: [
-      "練習 Tummy Time（趴睡抬頭），每天數次、每次 1-2 分鐘",
+      "清醒時趴著練抬頭（Tummy Time），大人全程在旁，每天數次、每次 1-2 分鐘；睡覺一律仰睡",
       "加強頸部肌肉發展",
       "白天拉開窗簾、晚上關燈，建立晝夜節律"
     ]
@@ -80,7 +80,7 @@ export const monthlyCareGuides: MonthlyCareGuide[] = [
     title: "副食品與口水疹",
     category: "feeding",
     highlights: [
-      "準備開始餵副食品（從十倍粥或果菜泥開始）",
+      "看準備訊號：頭頸穩、扶著坐得住、對食物有興趣，再開始副食品（不早於滿 4 個月，從十倍粥或果菜泥開始）",
       "唾腺發育旺盛，需勤換圍兜",
       "用「按壓」方式擦乾口水，避免口水疹"
     ]

@@ -7,6 +7,7 @@ import type { GestationalAge } from '../correctedAge';
 import { lmpFromDueDate, toLocalDateKey } from '../utils/dateHelpers';
 import { CHILD_LIMIT_MESSAGE, MAX_CHILDREN } from '../childLimits';
 import { submitFeedbackAs, type FeedbackInput } from '../feedbackSubmit';
+import { ChildJoinError } from '../childJoinError';
 
 /**
  * 新紀錄的 key 一律交給 push()。
@@ -156,7 +157,7 @@ export function useFirebaseChildren(userId: string | null) {
     const indexSnapshot = await get(ref(database, `childIndex/${childUuid}`));
 
     if (!indexSnapshot.exists()) {
-      throw new Error('找不到此寶寶代碼，請確認代碼是否正確');
+      throw new ChildJoinError('找不到此寶寶代碼，請確認代碼有沒有少貼或多貼字');
     }
 
     // Check if already joined
@@ -164,7 +165,7 @@ export function useFirebaseChildren(userId: string | null) {
     const existingSnapshot = await get(userChildRef);
 
     if (existingSnapshot.exists()) {
-      throw new Error('您已經加入此寶寶');
+      throw new ChildJoinError('你已經加入過這個寶寶了');
     }
 
     try {
@@ -174,7 +175,9 @@ export function useFirebaseChildren(userId: string | null) {
       // 這跟「代碼打錯」是兩件事；講成同一句話，家長會一直去核對一組沒有錯的
       // 代碼，而真正該做的是請對方把共享打開。
       console.error('加入寶寶失敗（成員資格被拒）:', error);
-      throw new Error('這個寶寶目前未開放加入，請對方在分享視窗中開啟共享後再試');
+      throw new ChildJoinError(
+        '這個寶寶目前未開放加入。請對方在分享視窗打開「開放用代碼加入」，再試一次',
+      );
     }
 
     await set(userChildRef, true);

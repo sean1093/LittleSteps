@@ -36,6 +36,19 @@
  */
 
 import type { PregnancyWikiArticle, PregnancyWikiCategory, WikiCategoryColors } from '../../types';
+import { prenatalCheckupSchedule } from './prenatalCheckups';
+
+/**
+ * 14 次公費產檢各在第幾週，從排程資料算出來，不手抄。
+ *
+ * 這是孕婦搜「公費產檢 第幾週」要的那一行。它原本只存在於登入後的產檢時程
+ * 頁；公開的那篇文章只寫「每 4 週、每 2 週、每週」，32 週的人得自己算。排程
+ * 改了，這一行跟著改。
+ */
+const PUBLIC_CHECKUP_WEEKS = prenatalCheckupSchedule
+  .filter((item) => item.kind === 'checkup')
+  .map((item) => item.dueWeek)
+  .join('、');
 
 export const pregnancyWikiCategoryLabels: Record<PregnancyWikiCategory, string> = {
   nutrition: '孕期營養',
@@ -647,6 +660,7 @@ export const pregnancyWikiArticles: PregnancyWikiArticle[] = [
       '公費項目與自費項目混在一起，容易分不清哪些不用付錢',
     ],
     solutions: [
+      { step: '14 次各在第幾週', detail: `第 ${PUBLIC_CHECKUP_WEEKS} 週。前後幾天都可以，以醫師約的時間為準。` },
       { step: '記住三段頻率', detail: '第 8 週起每 4 週一次、28 週起每 2 週一次、36 週起每週一次，總共 14 次。' },
       { step: '把新增的四次標出來', detail: '110 年 7 月起新增的是妊娠第 8、24、30、37 週各 1 次，排班或請假時特別留意這四個時間點。' },
       { step: '對照 3 次公費超音波', detail: '公費超音波分別安排在懷孕 8-16 週、第 20 週前後與 32 週後各 1 次，用來看心跳、生長、胎盤位置與羊水量。' },

@@ -85,7 +85,7 @@ const MENU_SECTIONS = [
       },
       {
         id: 'littlesteps/sleep-training' as const,
-        label: '睡眠訓練',
+        label: '睡眠指南',
         icon: Moon,
         description: '睡眠需求與訓練技巧'
       },

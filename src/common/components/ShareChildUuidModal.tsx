@@ -3,6 +3,7 @@ import { ChildProfile } from '../../types';
 import ModalFrame from './ModalFrame';
 import { confirmDelete } from '../ui/confirmDelete';
 import { goTo } from '../navigate';
+import { useOptionalAuth } from '../../contexts/AuthContext';
 
 interface ShareChildUuidModalProps {
   isOpen: boolean;
@@ -28,10 +29,18 @@ export default function ShareChildUuidModal({
   const [pending, setPending] = useState<'copy' | 'join' | 'revoke' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const user = useOptionalAuth()?.user ?? null;
 
   if (!child) return null;
 
   const memberCount = Object.keys(child.members).length;
+  // 「收回」動得到的人：不含自己，也不含建立這份紀錄的人——資料層刻意留著
+  // 建立者（見 useFirebaseChildren 的 revokeOtherMembers）。按鈕原本寫的是
+  // memberCount - 1，所以加入另一半建立的檔案的人會看到「移除其他 1 個帳號」，
+  // 按下去、確認、沒有錯誤，名單上還是兩個人。
+  const removableCount = Object.keys(child.members).filter(
+    (uid) => uid !== user?.uid && uid !== child.createdBy,
+  ).length;
   // 開關直接讀資料庫來的值，不留一份本地狀態：寫入失敗時它就不會停在
   // 資料庫沒有的位置上。
   const joinOpen = child.joinOpen === true;
@@ -76,7 +85,7 @@ export default function ShareChildUuidModal({
 
   const handleRevoke = async () => {
     // 走共用的刪除確認：全 app 只有這一種攔阻的說法，收回存取權不該長出第二種。
-    if (!confirmDelete(`其他 ${memberCount - 1} 個帳號的存取權`)) return;
+    if (!confirmDelete(`其他 ${removableCount} 個帳號的存取權`)) return;
 
     setError(null);
     setPending('revoke');
@@ -188,14 +197,22 @@ export default function ShareChildUuidModal({
         看看孩子的紀錄怎麼被保護
       </button>
 
-      {memberCount > 1 && (
+      {/* 名單上還有別人、卻一個都動不了，只有一種情況：剩下的那一位是建立
+          這份紀錄的人。說出來，否則這裡看起來只是少了一顆按鈕。 */}
+      {memberCount > 1 && removableCount === 0 && (
+        <p className="text-sm text-ink-muted mt-3">
+          另一個帳號是建立這份紀錄的人，不能從這裡移除。
+        </p>
+      )}
+
+      {removableCount > 0 && (
         <button
           type="button"
           onClick={handleRevoke}
           disabled={busy}
           className="btn-ghost w-full mt-2 text-primary-dark hover:bg-primary-light disabled:opacity-50"
         >
-          {pending === 'revoke' ? '移除中…' : `移除其他 ${memberCount - 1} 個帳號的存取權`}
+          {pending === 'revoke' ? '移除中…' : `移除其他 ${removableCount} 個帳號的存取權`}
         </button>
       )}
     </ModalFrame>

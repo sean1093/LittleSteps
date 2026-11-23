@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { isPregnancyProfile } from '../../common/pregnancy';
+import { stageOfChild } from '../../common/stageEntry';
 import ToddlerHandoff from '../components/ToddlerHandoff';
 import VaccineDueCard from '../components/vaccine/VaccineDueCard';
 import { ChildProfile, DailyLog } from '../../types';
@@ -212,7 +213,9 @@ export default function DashboardPage({
 
         {/* 滿一歲之後，LittleSteps 的里程碑資料就到頂了；幼兒期的檢核與
             健檢提醒在 LittleExplorer，而這裡從來沒提過它存在。 */}
-        {ageMonths >= 12 && !isPregnancyProfile(currentChild) && (
+        {/* 用 stageOfChild 而不是自己比月齡：它原本是 ageMonths >= 12，沒有上界，
+            滿三歲的孩子每次打開都被叫去 LittleExplorer，而那一頁會把他送回來。 */}
+        {stageOfChild(currentChild) === 'toddler' && (
           <ToddlerHandoff childName={currentChild.name} />
         )}
 

@@ -17,6 +17,12 @@ interface WikiArticleCardProps {
   /** Optional situational label, e.g. whether this applies at the child's age. */
   tag?: string;
   theme: ServiceTheme;
+  /**
+   * 這一篇指向的其他文章，已經由擁有資料的那一層解析成標題。這裡原本只印
+   * 「有 N 篇相關文章」，沒有標題也點不動。
+   */
+  related?: { id: string; title: string }[];
+  onOpenRelated?: (id: string) => void;
 }
 
 /**
@@ -33,6 +39,8 @@ export default function WikiArticleCard({
   categoryColors,
   tag,
   theme,
+  related = [],
+  onOpenRelated,
 }: WikiArticleCardProps) {
   // 每篇文章的圖示都不一樣，在三十幾篇的長清單裡是用來重新找回某一列的記號，
   // 所以留著；但原本包在外面那層著色圓角方塊只是裝飾，而且分類已經有文字 pill。
@@ -73,6 +81,22 @@ export default function WikiArticleCard({
         {isExpanded && (
           <motion.div {...collapse} className="overflow-hidden">
             <div className="mt-4 pt-4 space-y-4 border-t border-ink/5">
+              {/* 就醫警訊放最前面：半夜打開這篇的家長要先知道的是「現在該不該去
+                  醫院」，而它原本排在成因與五個處理步驟之後，要滑好幾下才看得到。 */}
+              {article.warningSignals.length > 0 && (
+                <div className="bg-primary-soft rounded-2xl p-3 border border-primary/30">
+                  <h4 className="text-primary-dark mb-2">就醫警訊</h4>
+                  <ul className="space-y-1.5">
+                    {article.warningSignals.map((signal, idx) => (
+                      <li key={idx} className="flex gap-2 text-sm text-primary-dark">
+                        <span className="flex-shrink-0">•</span>
+                        <span>{signal}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {article.causes.length > 0 && (
                 <div>
                   <h4 className="text-ink mb-2">可能原因</h4>
@@ -106,24 +130,27 @@ export default function WikiArticleCard({
                 </ol>
               </div>
 
-              {article.warningSignals.length > 0 && (
-                <div className="bg-primary-soft rounded-2xl p-3 border border-primary/30">
-                  <h4 className="text-primary-dark mb-2">就醫警訊</h4>
-                  <ul className="space-y-1.5">
-                    {article.warningSignals.map((signal, idx) => (
-                      <li key={idx} className="flex gap-2 text-sm text-primary-dark">
-                        <span className="flex-shrink-0">•</span>
-                        <span>{signal}</span>
+              {related.length > 0 && onOpenRelated && (
+                <div>
+                  <h4 className="text-ink mb-1">相關文章</h4>
+                  <ul>
+                    {related.map((entry) => (
+                      <li key={entry.id}>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            // 卡片本身是點擊區；不擋下來的話，這一下會先把自己收起來。
+                            event.stopPropagation();
+                            onOpenRelated(entry.id);
+                          }}
+                          className={`inline-flex items-center min-h-tap text-sm font-medium underline underline-offset-2 text-left ${theme.ink}`}
+                        >
+                          {entry.title}
+                        </button>
                       </li>
                     ))}
                   </ul>
                 </div>
-              )}
-
-              {article.relatedArticleIds.length > 0 && (
-                <p className="text-xs text-ink-faint">
-                  有 {article.relatedArticleIds.length} 篇相關文章
-                </p>
               )}
             </div>
           </motion.div>

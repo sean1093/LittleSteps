@@ -321,6 +321,7 @@ export default function LogEntryModal({
                     <input
                       id="feeding-duration"
                       type="number"
+                      inputMode="numeric"
                       value={duration}
                       onChange={(e) => setDuration(e.target.value)}
                       className={FIELD}
@@ -336,6 +337,7 @@ export default function LogEntryModal({
                     <input
                       id="feeding-amount"
                       type="number"
+                      inputMode="numeric"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       className={FIELD}

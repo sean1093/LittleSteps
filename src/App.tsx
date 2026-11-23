@@ -237,7 +237,7 @@ function AppContent() {
         title += '成長曲線圖';
         break;
       case 'littlesteps/sleep-training':
-        title += '睡眠訓練';
+        title += '睡眠指南';
         break;
       case 'littlesteps/sleep-analysis':
         title += '睡眠分析';
@@ -440,8 +440,13 @@ function AppContent() {
         {/* 服務集合首頁與「先新增寶寶」都由 LandingPage 決定，這裡只負責放進版面 */}
         {landing}
 
+        {/* landingKind 有值時不畫任何頁面：入口頁本來就沒有對應的路由，而「先
+            新增寶寶」現在涵蓋 LittleSteps 每一個需要孩子的頁面——不擋下來的話，
+            那張引導會和一整頁按了沒反應的里程碑疊在一起。 */}
+        {!landingKind && (
+          <>
         {/* LittleSteps Routes */}
-        {currentPage === 'littlesteps' && !landingKind && (
+        {currentPage === 'littlesteps' && (
           <DashboardPage
             currentChild={currentChild}
             dailyLogs={dailyLogs}
@@ -609,6 +614,8 @@ function AppContent() {
         {currentPage === 'littleouting' && <OutingPage />}
         {currentPage === 'babyoasis' && <BabyOasisPage />}
         {currentPage === 'littleguard' && <RadarPage />}
+          </>
+        )}
         </Suspense>
         </ErrorBoundary>
       </ContentLandmark>

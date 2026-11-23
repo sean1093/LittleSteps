@@ -35,7 +35,13 @@ export function landingKindFor(
   // requiresAuth 對它們永遠是 false，走不到這裡。
   if (!user && requiresAuth(page)) return 'service-intro';
 
-  if (page === 'littlesteps' && !hasChildren) return 'first-child';
+  // 已登入但還沒有孩子：LittleSteps 每一個需要孩子的頁面都先請他新增或加入。
+  // 這裡原本只管服務首頁，其餘頁面各自處理——有的叫家長去「左上角選單」或
+  // 「側邊欄」新增（那裡早就沒有這個功能了），里程碑與疫苗則整頁照畫，按了
+  // 沒有任何反應。免登入的內容頁不受影響：它們不需要孩子。
+  if (user && !hasChildren && serviceOf(page) === 'littlesteps' && requiresAuth(page)) {
+    return 'first-child';
+  }
 
   return null;
 }
@@ -75,7 +81,8 @@ export default function LandingPage({
   onNavigate,
 }: LandingPageProps) {
   const store = useOptionalChildStore();
-  const [addingChild, setAddingChild] = useState(false);
+  /* 表單開在哪一個分頁；null 是沒開。拿著家人給的代碼來的人直接開在「加入」。 */
+  const [addingChild, setAddingChild] = useState<'create' | 'join' | null>(null);
 
   // 登入完成的瞬間帶去這個孩子該去的那一頁，但只在真的有孩子時——否則會落在
   // 一個沒有資料的頁面上，而不是「先新增寶寶」。用 ref 比對前一次的 user 才能
@@ -93,8 +100,9 @@ export default function LandingPage({
 
   const addChildModal = (
     <AddChildModal
-      isOpen={addingChild}
-      onClose={() => setAddingChild(false)}
+      isOpen={addingChild !== null}
+      initialMode={addingChild ?? undefined}
+      onClose={() => setAddingChild(null)}
       onSave={(name, birthday, gender, _isPregnancy, dueDate, gestationalAge) =>
         store?.addChild(name, birthday, gender, dueDate, gestationalAge)
       }
@@ -124,7 +132,8 @@ export default function LandingPage({
           currentService={currentService}
           childName={hasChildren ? childName : undefined}
           onContinue={hasChildren ? () => onNavigate(entryPage) : undefined}
-          onAddChild={() => setAddingChild(true)}
+          onAddChild={() => setAddingChild('create')}
+          onJoinChild={() => setAddingChild('join')}
         />
         {addChildModal}
       </>
@@ -137,8 +146,16 @@ export default function LandingPage({
         theme={SERVICE_THEME.littlesteps}
         title="開始記錄寶寶的成長"
         description="先新增一個寶寶，即可開始追蹤里程碑、疫苗與日常照顧。"
-        action={{ label: '新增寶寶', onClick: () => setAddingChild(true) }}
+        action={{ label: '新增寶寶', onClick: () => setAddingChild('create') }}
       />
+      {/* 第二位照顧者——另一半、阿公阿嬤——登入後看到的也是這一頁。只給「新增
+          寶寶」的話，他會再建一個同名的孩子，而家人已經記了好幾個月的那一份
+          他永遠看不到。 */}
+      <div className="text-center mt-2">
+        <button type="button" onClick={() => setAddingChild('join')} className="btn-ghost text-sm">
+          家人已經在記了？用代碼加入
+        </button>
+      </div>
 
       {/* 這顆按鈕原本只是打開側邊欄，而寶寶管理早就從側邊欄搬到每個 AppBar 的
           帳號按鈕底下了——於是剛註冊的家長按下引導流程唯一的那顆按鈕，得到

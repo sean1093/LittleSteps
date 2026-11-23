@@ -3,6 +3,7 @@ import { ChildProfile, Gender } from '../../types';
 import { GESTATIONAL_AGE_RANGE, type GestationalAge } from '../correctedAge';
 import { CHILD_NAME_LIMIT } from '../recordLimits';
 import ModalFrame from './ModalFrame';
+import { ChildJoinError } from '../childJoinError';
 
 export type ChildModalMode = 'create' | 'join' | 'pregnancy';
 
@@ -35,6 +36,11 @@ interface AddChildModalProps {
    */
   modes?: readonly ChildModalMode[];
   /**
+   * 打開時停在哪一個分頁；省略就是 `modes` 的第一個。拿著家人給的代碼來的人
+   * 要的是「加入」，不該先看到一張新增寶寶的表單。
+   */
+  initialMode?: ChildModalMode;
+  /**
    * 選取中的分頁與送出鍵的顏色。預設是 LittleSteps 的主色；其他服務傳入
    * 自己的 `ServiceTheme.fill` + `fillText`，這樣視窗看起來就屬於當下的服務。
    */
@@ -55,10 +61,11 @@ export default function AddChildModal({
   editingChild,
   onDelete,
   modes = ['create', 'join'],
+  initialMode,
   accent = 'bg-primary-dark',
   accentText = 'text-white',
 }: AddChildModalProps) {
-  const [mode, setMode] = useState<ChildModalMode>(modes[0]);
+  const [mode, setMode] = useState<ChildModalMode>(initialMode ?? modes[0]);
   const [name, setName] = useState('');
   const [birthday, setBirthday] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -81,7 +88,7 @@ export default function AddChildModal({
     } else {
       // 回到這個入口提供的第一個分頁，而不是硬回 'create'——只提供
       // 孕期的入口沒有 'create' 可回。
-      setMode(modes[0]);
+      setMode(initialMode ?? modes[0]);
       setName('');
       setBirthday('');
       setDueDate('');
@@ -91,7 +98,7 @@ export default function AddChildModal({
       setChildUuid('');
     }
     setError('');
-  }, [editingChild, isOpen]);
+  }, [editingChild, isOpen, initialMode]);
 
   const runWrite = async (write: () => void | Promise<void>) => {
     setSaving(true);
@@ -99,9 +106,16 @@ export default function AddChildModal({
     try {
       await write();
       onClose();
-    } catch {
-      // 呼叫端已經跳過提示，這裡只解釋視窗為什麼還開著。
-      setError('儲存失敗，請確認網路後再試一次。');
+    } catch (failure) {
+      // 加入失敗時，資料層知道確切原因（代碼不存在、對方沒開放、已經加入過），
+      // 那句話就是寫給家長看的，照樣顯示。這裡原本一律說「請確認網路」，於是
+      // 女兒把分享關掉之後，阿嬤被叫去檢查 Wi-Fi。其他失敗沒有可以給人看的
+      // 原因，才用通用的那一句。
+      setError(
+        failure instanceof ChildJoinError
+          ? failure.message
+          : '儲存失敗，請確認網路後再試一次。',
+      );
     } finally {
       setSaving(false);
     }
@@ -154,7 +168,7 @@ export default function AddChildModal({
   const MODE_LABELS: Record<ChildModalMode, string> = {
     create: '寶寶',
     pregnancy: '懷孕中',
-    join: '加入',
+    join: '加入寶寶',
   };
 
   // 只有一種選擇時不畫分頁——LittleBloom 只建孕期檔案，一顆孤零零的
@@ -334,6 +348,10 @@ export default function AddChildModal({
               onChange={(e) => setChildUuid(e.target.value)}
               className={`${FIELD} font-mono text-sm`}
               placeholder="例如: 1234abcd-..."
+              // 代碼是一串英數字：自動大寫、自動修正與拼字檢查只會把它改壞。
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               required
             />
           </div>
@@ -350,7 +368,7 @@ export default function AddChildModal({
           disabled={saving}
           className={`btn-primary w-full disabled:opacity-60 ${accent} ${accentText}`}
         >
-          {saving ? '儲存中…' : submitLabel}
+          {saving ? (mode === 'join' ? '加入中…' : '儲存中…') : submitLabel}
         </button>
       </form>
 

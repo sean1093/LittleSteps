@@ -98,6 +98,24 @@ describe('analytics payloads', () => {
     }
   });
 
+  it('reports the page without its query string', async () => {
+    // A wiki search lives in `?q=`, and what a parent searches for is 發燒 or
+    // 妊娠糖尿病. The about page says the statistics know which page was
+    // opened; with the whole href they also knew what was searched.
+    window.history.replaceState(null, '', '/littlesteps/baby-wiki?q=%E7%99%BC%E7%87%92');
+    const fb = await loadRealFirebase();
+
+    fb.logPageView('littlesteps/baby-wiki');
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(1));
+
+    const [, params] = sent()[0];
+    expect(String(params?.page_location)).toMatch(/\/littlesteps\/baby-wiki$/);
+    for (const value of Object.values(params ?? {})) {
+      expect(String(value)).not.toMatch(/[?]|%E7|發燒/);
+    }
+    window.history.replaceState(null, '', '/');
+  });
+
   it('carries no key that could name something about a child', async () => {
     const fb = await loadRealFirebase();
 
