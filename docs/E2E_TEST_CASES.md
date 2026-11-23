@@ -147,7 +147,7 @@ landmark structure for the reason below. Each runs at 390px and 320px.
 
 | ID | Pri | Assertion | Notes |
 |---|---|---|---|
-| A11Y-01 | P1 | Every route in `PUBLIC_ROUTES` exposes exactly one `banner` landmark, except the hub, which renders no page header at all; every route in `GATED_ROUTES` exposes **zero** while signed out, where an intro page renders | A `<header>` is a `banner` only when it is **not** inside `main`/`section`/`article`/`aside`/`nav`. The six pages that draw their own chrome — the about page and five standalone services — render their `AppBar` from inside a lazily-imported page, so a shell that wraps them in `<main>` silently demotes it. Counted, not asserted present: the failure is zero, and `toBeVisible()` on the first match passes through it. The hub is named as the one public route expected to have none, so another page losing its header stays red. An intro page has none because its whole chrome is one link back to the hub, and the wordmark below it is content, not a header |
+| A11Y-01 | P1 | Every route in `PUBLIC_ROUTES` exposes exactly one `banner` landmark, the landing page included; every route in `GATED_ROUTES` also exposes exactly **one** while signed out, where an intro page renders | A `<header>` is a `banner` only when it is **not** inside `main`/`section`/`article`/`aside`/`nav`. The six pages that draw their own chrome — the about page and five standalone services — render their `AppBar` from inside a lazily-imported page, so a shell that wraps them in `<main>` silently demotes it. Counted, not asserted present: the failure is zero, and `toBeVisible()` on the first match passes through it. The landing page's brand bar is rendered by the shell outside `<main>` for exactly this reason. An intro page returns before the shell supplies any landmark, so it renders its own `<header>`, holding a labelled link back to the landing page |
 | A11Y-02 | P1 | Every route in `PUBLIC_ROUTES` and `GATED_ROUTES` exposes exactly one `main` landmark | The other half of the same seam, and the same counting reason: the failure is **two**, from a shell wrapping a page that already brings its own. `<main>` may not have a `main` ancestor. The gated half is one case per route asserting both counts, because they are two properties of a single page state and splitting them would navigate twice per viewport to assert nothing new |
 
 **Why E2E and not a unit test.** Both landmarks are properties of the whole
@@ -234,12 +234,13 @@ Each of these cost real debugging while Phase 1 was written. They are recorded
 here because none of them is visible from the code you are testing — you find
 them by watching a locator match the wrong thing.
 
-- **The hub's sign-in label is a strict prefix of both intro CTAs.**
-  `使用 Google 登入` on the hub versus `使用 Google 登入開始記錄` /
-  `…開始使用` on the intro pages. Playwright matches accessible names as
-  substrings by default, so a locator for the short form matches the intro
-  pages too — and classifies the public entry point as gated. Match through
-  `開始`, or use `exact: true`.
+- **The landing page and the intro pages both offer sign-in, worded apart on
+  purpose.** `使用 Google 帳號開始記錄` on the landing page versus
+  `使用 Google 登入，開始記錄` on the intro pages. Playwright matches
+  accessible names as substrings by default, so if the two ever share a
+  prefix, the locator that marks a visitor as blocked matches the public
+  entry point too — and AUTH-03 classifies it as gated. Keep them distinct,
+  and anchor the intro locator at `^使用 Google 登入`.
 - **`/littleexplorer/wiki` renders the same wordmark string as the
   LittleExplorer intro page's `h1`.** The header cannot distinguish the real
   page from the intro page on that route, so an identity marker has to come
