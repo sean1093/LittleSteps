@@ -52,6 +52,21 @@ describe('stageOfChild', () => {
     expect(stageOfChild(child({ birthday: monthsAgo(37) }))).toBe('beyond');
   });
 
+  it('剛滿三歲就算三歲以後——LittleExplorer 在 36 個月就說「已經滿 3 歲了」', () => {
+    // 上界原本含 36 個月：入口把孩子送進 LittleExplorer，那一頁第一句卻是畢業。
+    expect(stageOfChild(child({ birthday: monthsAgo(36) }))).toBe('beyond');
+  });
+
+  it('早產兒用矯正年齡分階段，跟 LittleExplorer 自己的門檻一致', () => {
+    // 28 週出生，約早 3 個月。實際 13 個月時矯正年齡才 10 個月：LittleExplorer
+    // 會說「矯正年齡還不到 1 歲」，所以入口不能把他送過去。
+    const preterm = child({ birthday: monthsAgo(13), gestationalAgeWeeks: 28 });
+    expect(stageOfChild(preterm)).toBe('baby');
+    expect(entryPageForChild(preterm)).toBe('littlesteps/dashboard');
+    // 再大一點、矯正年齡過了一歲，就是幼兒期。
+    expect(stageOfChild(child({ birthday: monthsAgo(16), gestationalAgeWeeks: 28 }))).toBe('toddler');
+  });
+
   it('沒有孩子就沒有階段', () => {
     expect(stageOfChild(undefined)).toBeUndefined();
   });

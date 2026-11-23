@@ -57,7 +57,7 @@ const ROUTES: Probe[] = [
   { path: '/littlesteps/complementary-food', page: 'littlesteps/complementary-food', expect: heading('副食品指南') },
   { path: '/littlesteps/daily-log', page: 'littlesteps/daily-log', expect: heading('快速日誌') },
   { path: '/littlesteps/growth-charts', page: 'littlesteps/growth-charts', expect: heading('成長曲線圖') },
-  { path: '/littlesteps/sleep-training', page: 'littlesteps/sleep-training', expect: heading('睡眠訓練') },
+  { path: '/littlesteps/sleep-training', page: 'littlesteps/sleep-training', expect: heading('睡眠指南') },
   { path: '/littlesteps/sleep-analysis', page: 'littlesteps/sleep-analysis', expect: heading('睡眠分析') },
   { path: '/littlesteps/baby-wiki', page: 'littlesteps/baby-wiki', expect: heading('寶寶百科') },
   { path: '/littlesteps/clinic-summary', page: 'littlesteps/clinic-summary', expect: heading('看診摘要') },

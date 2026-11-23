@@ -134,7 +134,8 @@ export function useUserChildren(user: User | null) {
           // childrenIds 與 currentChildId，走錯邊就是一次斷線把孩子退掉；而共享
           // 真的被收回時，家長只會看到孩子無聲消失，連問對方都不知道要問什麼。
           // 這裡只回報「問過了」讓載入狀態走完，並記下是哪一個。
-          console.error(`讀取寶寶資料失敗 (${childId}):`, error);
+          // 不印 childId：它同時就是分享代碼，不該躺在主控台的紀錄裡。
+          console.error('讀取寶寶資料失敗:', error);
           setFailedIds((prev) => (prev.includes(childId) ? prev : [...prev, childId]));
           setReportedIds((prev) => (prev.includes(childId) ? prev : [...prev, childId]));
         },

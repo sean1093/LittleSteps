@@ -185,7 +185,7 @@ export const sleepSafetyRules: SleepSafetyRule[] = [
   {
     id: 'safety-no-blanket',
     title: '不要放棉被',
-    description: '改用防踢被或包巾',
+    description: '改用防踢被。包巾只用到寶寶出現想翻身的跡象為止（約 3-4 個月，可能更早）',
     type: 'dont'
   },
   {
@@ -295,7 +295,7 @@ export const sleepTrainingMethods: SleepTrainingMethod[] = [
     title: '4R 儀式',
     description: '建立固定且一致的睡前儀式，幫助寶寶放鬆並準備入睡',
     steps: [
-      'Resources (安撫資源)：準備安撫巾、小被被等',
+      'Resources (安撫資源)：用固定的歌或一句話當安撫訊號。滿 1 歲前床上不放安撫巾、小被被',
       'Reduce Stimulate (減少刺激)：降低環境光線與聲音',
       'Rest Activities (靜態活動)：進行輕柔的睡前活動',
       'Ritualized (固定一致)：每天固定時間與順序'

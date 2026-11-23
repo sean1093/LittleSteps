@@ -46,7 +46,7 @@ const PAGE_META: Record<Page, PageMeta> = {
   'littlesteps/care-guide': {
     title: '0-1 歲寶寶照顧重點｜各月齡注意事項｜LittleSteps',
     description:
-      '依月齡整理新生兒到 1 歲的照顧重點：餵食、睡眠、安全與常見狀況，內容標註資料來源與查證日期。',
+      '依月齡整理新生兒到 1 歲的照顧重點：餵食、睡眠、安全與常見狀況。',
   },
   'littlesteps/vaccine-tracking': {
     title: '寶寶疫苗接種時程追蹤｜公費、健保給付與自費｜LittleSteps',
@@ -68,7 +68,7 @@ const PAGE_META: Record<Page, PageMeta> = {
   },
   'littlesteps/sleep-training': {
     title: '寶寶睡眠訓練指南｜各月齡睡眠需求｜LittleSteps',
-    description: '各月齡的睡眠需求時數、常見睡眠訓練方法與作息安排建議，內容標註資料來源。',
+    description: '各月齡的睡眠需求時數、常見睡眠訓練方法與作息安排建議。',
   },
   'littlesteps/sleep-analysis': {
     title: '寶寶睡眠分析｜LittleSteps',
@@ -77,7 +77,7 @@ const PAGE_META: Record<Page, PageMeta> = {
   'littlesteps/baby-wiki': {
     title: '寶寶百科｜0-1 歲常見狀況與處理方式｜LittleSteps',
     description:
-      '新生兒到 1 歲常見狀況的成因、處理方式與就醫時機，每篇標註衛福部或醫院來源與查證日期。',
+      '新生兒到 1 歲常見狀況的成因、處理方式與就醫時機。',
   },
   'littlesteps/clinic-summary': {
     title: '看診摘要｜一鍵整理寶寶就醫資料｜LittleSteps',
@@ -98,7 +98,7 @@ const PAGE_META: Record<Page, PageMeta> = {
   'littlebloom/wiki': {
     title: '孕期知識庫｜常見孕期狀況與就醫時機｜LittleBloom',
     description:
-      '孕吐、妊娠糖尿病、產兆判斷等常見孕期狀況的成因與處理方式，每篇標註來源與查證日期。',
+      '孕吐、妊娠糖尿病、產兆判斷等常見孕期狀況的成因與處理方式。',
   },
   littleexplorer: {
     title: 'LittleExplorer 幼兒陪伴｜1-3 歲發展檢核',
@@ -115,7 +115,7 @@ const PAGE_META: Record<Page, PageMeta> = {
   'littleexplorer/wiki': {
     title: '幼兒百科｜1-3 歲照顧問題｜LittleExplorer',
     description:
-      '如廁訓練、語言發展、入園準備、睡眠轉換等 1-3 歲常見照顧問題，依年齡篩選，每篇標註來源與查證日期。',
+      '如廁訓練、語言發展、入園準備、睡眠轉換等 1-3 歲常見照顧問題，依年齡篩選。',
   },
   littleouting: {
     title: '帶孩子去哪裡｜依會不會走推薦場地，全台親子館名冊｜LittleOuting',

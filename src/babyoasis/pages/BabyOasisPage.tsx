@@ -757,6 +757,10 @@ const BabyOasisPage = () => {
           key={room.id}
           position={[room.latitude, room.longitude]}
           icon={ROOM_ICON}
+          // Leaflet 把每個圖釘畫成 role="button"；沒有名稱的話，螢幕閱讀器對
+          // 三千多個圖釘唸的都是「按鈕」。
+          title={room.name}
+          alt={room.name}
           eventHandlers={{ click: () => setSelectedRoom(room) }}
         />
       )),

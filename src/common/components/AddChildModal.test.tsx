@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import AddChildModal from './AddChildModal';
 import { CHILD_NAME_LIMIT } from '../recordLimits';
+import { ChildJoinError } from '../childJoinError';
 
 describe('AddChildModal', () => {
   it('submits the create form with name, birthday and gender, then closes', async () => {
@@ -132,5 +133,67 @@ describe('欄位上限', () => {
     );
     await userEvent.click(screen.getByRole('button', { name: '懷孕中' }));
     expect(screen.getByLabelText(/寶寶小名/)).toHaveAttribute('maxlength', String(CHILD_NAME_LIMIT));
+  });
+});
+
+/**
+ * Joining a family's record. The data layer knows exactly why a join failed,
+ * and that reason is what the parent has to see.
+ */
+describe('用代碼加入', () => {
+  const openJoin = async (onJoin: (uuid: string) => Promise<void>) => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    render(<AddChildModal isOpen onClose={onClose} onSave={vi.fn()} onJoin={onJoin} initialMode="join" />);
+    await user.type(screen.getByLabelText('寶寶代碼'), 'abc-123');
+    return { user, onClose };
+  };
+
+  it('initialMode="join" 直接開在加入那一頁，拿著代碼來的人不必先找分頁', () => {
+    render(<AddChildModal isOpen onClose={vi.fn()} onSave={vi.fn()} onJoin={vi.fn()} initialMode="join" />);
+    expect(screen.getByLabelText('寶寶代碼')).toBeInTheDocument();
+    expect(screen.queryByLabelText('寶寶姓名')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '加入寶寶', pressed: true })).toBeInTheDocument();
+  });
+
+  it('沒給 initialMode 時照舊開在新增寶寶', () => {
+    render(<AddChildModal isOpen onClose={vi.fn()} onSave={vi.fn()} onJoin={vi.fn()} />);
+    expect(screen.getByLabelText('寶寶姓名')).toBeInTheDocument();
+  });
+
+  it('加入失敗時說出真正的原因，而不是叫人檢查網路', async () => {
+    // 女兒把分享關掉了。阿嬤該看到的是「請對方打開」，不是 Wi-Fi。
+    const reason = '這個寶寶目前未開放加入。請對方在分享視窗打開「開放用代碼加入」，再試一次';
+    const { user, onClose } = await openJoin(async () => {
+      throw new ChildJoinError(reason);
+    });
+    await user.click(document.querySelector('button[type="submit"]')!);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(reason);
+    expect(screen.getByRole('alert')).not.toHaveTextContent('網路');
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('不是寫給家長看的錯誤，仍然用通用的那一句，不把 SDK 的訊息貼出來', async () => {
+    const { user } = await openJoin(async () => {
+      throw new Error('PERMISSION_DENIED: Permission denied');
+    });
+    await user.click(document.querySelector('button[type="submit"]')!);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('儲存失敗，請確認網路後再試一次。');
+    expect(alert).not.toHaveTextContent('PERMISSION_DENIED');
+  });
+
+  it('加入成功就關掉視窗，並把去掉前後空白的代碼交出去', async () => {
+    const onJoin = vi.fn(async () => {});
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    render(<AddChildModal isOpen onClose={onClose} onSave={vi.fn()} onJoin={onJoin} initialMode="join" />);
+    await user.type(screen.getByLabelText('寶寶代碼'), '  abc-123  ');
+    await user.click(document.querySelector('button[type="submit"]')!);
+
+    await vi.waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(onJoin).toHaveBeenCalledWith('abc-123');
   });
 });

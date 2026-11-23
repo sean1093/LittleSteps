@@ -35,6 +35,36 @@ describe('landingKindFor', () => {
     expect(landingKindFor('littlesteps', signedIn, false)).toBe('first-child');
   });
 
+  it('已登入但沒有孩子時，LittleSteps 每一個需要孩子的頁面都先請他新增或加入', () => {
+    // 這裡原本只管服務首頁。其餘頁面各說各話：有的叫人去「左上角選單」新增
+    // （那裡早就沒有了），里程碑與疫苗整頁照畫、按了沒反應。
+    for (const page of [
+      'littlesteps/dashboard',
+      'littlesteps/milestones',
+      'littlesteps/vaccine-tracking',
+      'littlesteps/daily-log',
+      'littlesteps/growth-charts',
+      'littlesteps/clinic-summary',
+    ] as const) {
+      expect(landingKindFor(page, signedIn, false), page).toBe('first-child');
+    }
+  });
+
+  it('免登入的內容頁不擋——讀百科不需要先有孩子', () => {
+    for (const page of [
+      'littlesteps/baby-wiki',
+      'littlesteps/care-guide',
+      'littlesteps/sleep-training',
+    ] as const) {
+      expect(landingKindFor(page, signedIn, false), page).toBeNull();
+    }
+  });
+
+  it('另外兩個階段服務有自己的空狀態，不套 LittleSteps 的這一張', () => {
+    expect(landingKindFor('littlebloom', signedIn, false)).toBeNull();
+    expect(landingKindFor('littleexplorer/diary', signedIn, false)).toBeNull();
+  });
+
   it('已登入且有孩子時交還給實際頁面', () => {
     expect(landingKindFor('littlesteps', signedIn, true)).toBeNull();
     expect(landingKindFor('littlesteps/dashboard', signedIn, true)).toBeNull();
@@ -184,5 +214,50 @@ describe('入口頁上已登入的家長', () => {
     await user.click(screen.getByRole('button', { name: '新增寶寶' }));
     expect(screen.getByLabelText('寶寶姓名')).toBeInTheDocument();
     expect(onNavigate).not.toHaveBeenCalled();
+  });
+});
+
+describe('第二位照顧者', () => {
+  // 另一半或阿公阿嬤登入的是一個沒有孩子的帳號。只給「新增寶寶」的話，他會
+  // 再建一個同名的孩子，而家人已經記了幾個月的那一份他永遠看不到。
+  it.each([
+    ['入口頁', 'hub', 'home'],
+    ['LittleSteps 的引導頁', 'first-child', 'littlesteps/milestones'],
+  ] as const)('%s 給得出「用代碼加入」，而且直接開在加入那一頁', async (_name, kind, page) => {
+    const user = userEvent.setup();
+    render(
+      <LandingPage
+        kind={kind}
+        page={page}
+        user={signedIn}
+        hasChildren={false}
+        entryPage="home"
+        onSignIn={vi.fn()}
+        onNavigate={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /用代碼加入/ }));
+
+    expect(screen.getByLabelText('寶寶代碼')).toBeInTheDocument();
+    expect(screen.queryByLabelText('寶寶姓名')).not.toBeInTheDocument();
+  });
+
+  it('按「新增寶寶」仍然開在新增那一頁', async () => {
+    const user = userEvent.setup();
+    render(
+      <LandingPage
+        kind="first-child"
+        page="littlesteps/daily-log"
+        user={signedIn}
+        hasChildren={false}
+        entryPage="home"
+        onSignIn={vi.fn()}
+        onNavigate={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: '新增寶寶' }));
+    expect(screen.getByLabelText('寶寶姓名')).toBeInTheDocument();
   });
 });

@@ -40,9 +40,12 @@
   /*
     Keyboard users had no focus indicator anywhere. Scoped to :focus-visible so
     pointer taps stay clean.
+
+    Full opacity: at /50 the ring was 2.09:1 against the page, under the 3:1 a
+    focus indicator needs, so the indicator existed and could not be seen.
   */
   :focus-visible {
-    @apply outline-none ring-2 ring-primary-dark/50 ring-offset-2 ring-offset-warm-white;
+    @apply outline-none ring-2 ring-primary-dark ring-offset-2 ring-offset-warm-white;
   }
 }
 

@@ -56,7 +56,7 @@ describe('Sidebar', () => {
       />,
     );
 
-    for (const label of ['睡眠訓練', '照顧重點', '寶寶百科']) {
+    for (const label of ['睡眠指南', '照顧重點', '寶寶百科']) {
       expect(screen.getByRole('button', { name: new RegExp(label) })).toBeInTheDocument();
     }
 

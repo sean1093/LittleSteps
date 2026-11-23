@@ -69,7 +69,6 @@ export const foodStages: FoodStage[] = [
       "可替換成麵線、義大利麵、吐司、饅頭、煎餅",
       "蔬菜以切碎取代打泥",
       "肉類若牙齒長較多可打碎",
-      "若寶寶開始挑嘴，可添加少量鹽巴",
       "可使用蔥、薑、蒜、香菜、芹菜、九層塔調味",
       "把主導權還給孩子，不強迫餵食"
     ],
@@ -290,8 +289,8 @@ export const fingerFoodGuidelines: FingerFoodGuideline[] = [
 export const foodPrinciples: FoodPrinciple[] = [
   {
     id: "early-start",
-    title: "四個月就可以開始吃副食品",
-    description: "把握4-9個月免疫耐受性黃金時期，及早接觸反而能降低過敏機率",
+    title: "約 6 個月開始，不早於滿 4 個月",
+    description: "看寶寶的準備訊號：頭頸穩、扶著坐得住、對食物有興趣。常見過敏原不需要刻意延後，少量、單獨試",
     icon: "Calendar"
   },
   {
@@ -368,7 +367,7 @@ export const allergyTestingMethod = {
       description: "停止新食材，觀察是否有延遲性過敏"
     }
   ],
-  principle: "每次只試「一種」新食材，若發生過敏，記錄並暫停該食材1-2個月再試"
+  principle: "每次只試「一種」新食材。若出現嘴唇或臉腫、呼吸困難、聲音沙啞、反覆嘔吐或全身起疹，立刻撥 119，之後要不要再試由醫師決定；輕微的反應先記錄下來並暫停該食材，回診時問醫師"
 };
 
 // 手指食物挑選3大原則
@@ -481,8 +480,8 @@ export const cookingTips: CookingTipCategory[] = [
     category: "肉泥製作",
     tips: [
       {
-        title: "熟肉泥 vs 生肉泥",
-        description: "熟肉泥是蒸熟後打泥，口感較乾柴；生肉泥是將生肉剁碎分裝，要吃時加水調勻，淋入熱粥裡悶熟，口感較滑嫩"
+        title: "肉泥一律煮到全熟",
+        description: "肉類務必煮到全熟再打泥。蒸熟後打泥口感較乾柴，可以加一點蒸出來的湯汁或粥一起打，會比較滑順"
       }
     ]
   }
@@ -573,11 +572,6 @@ export const infantFoodRestrictions: FoodRestrictionCategory[] = [
     category: "需注意事項",
     items: [
       {
-        food: "葡萄",
-        ageLimit: "任何年齡",
-        reason: "吃完葡萄後不要立刻喝水或牛奶，以免與葡萄發酵引發腹瀉"
-      },
-      {
         food: "鹽巴調味",
         ageLimit: "1歲前不建議",
         reason: "10個月前若厭食，可先調整粥的濃稠度或添加蔥、薑、蒜等天然辛香料提味"
@@ -590,7 +584,7 @@ export const infantFoodRestrictions: FoodRestrictionCategory[] = [
 export const foodQA: FoodQAItem[] = [
   {
     question: "什麼時候開始給副食品？",
-    answer: "除非厭奶嚴重經醫師指示，否則皆應從4個月大開始給予副食品。打預防針後或正在換奶時，應避免測試新食材"
+    answer: "約 6 個月開始，不早於滿 4 個月。等寶寶頭頸穩、扶著坐得住、對食物有興趣再開始；純母乳的寶寶可以到 6 個月。打預防針後或正在換奶時，應避免測試新食材"
   },
   {
     question: "餵食方式與順序？",
@@ -606,7 +600,7 @@ export const foodQA: FoodQAItem[] = [
   },
   {
     question: "便便變得很奇怪是正常的嗎？",
-    answer: "吃副食後便便次數增加1-2次且呈糊泥狀屬正常腸胃適應；若一天排出「水便」超過6次，且伴隨排氣水聲，則可能是腸胃型病毒感染，需帶尿布就醫。紅蘿蔔、金針菇等富含纖維的食材，隔天隨便便原封不動排出是正常的"
+    answer: "吃副食後便便次數增加1-2次且呈糊泥狀屬正常腸胃適應；若一天排出「水便」超過6次，且伴隨排氣水聲，則可能是腸胃型病毒感染，需帶尿布就醫。出現血便、尿量明顯減少、哭沒有眼淚或精神很差，當天就醫。紅蘿蔔、金針菇等富含纖維的食材，隔天隨便便原封不動排出是正常的"
   },
   {
     question: "豆腐如何保存？",

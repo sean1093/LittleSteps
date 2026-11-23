@@ -49,7 +49,10 @@ export default {
         ink: {
           DEFAULT: '#3F3A38', // 10.8:1 on warm.white
           muted: '#6B6360',   // 5.4:1  — secondary copy
-          faint: '#938A86',   // 3.2:1  — captions, never body text
+          // 4.85:1 on white, 4.69:1 on warm.white. It was #938A86 (3.38:1), and
+          // it carries real sentences at text-xs — result counts, the caveat
+          // under the park list — so the 3:1 floor for large text never applied.
+          faint: '#78706C',   // captions and small print
         },
         // LittleOuting（親子好去處）palette. Teal is the one hue none of the
         // other four services use, so a card in the hub reads as a different

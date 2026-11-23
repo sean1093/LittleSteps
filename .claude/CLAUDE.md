@@ -211,8 +211,9 @@ Hierarchy comes from type, spacing and one accent colour.
 ### Motion
 
 Short entrances, small offsets, nothing looping. Import from `common/ui/motion`
-— never define local variants. `prefers-reduced-motion` is handled globally in
-`index.css`.
+— never define local variants. `prefers-reduced-motion` is handled globally:
+`index.css` covers CSS transitions and `<MotionConfig reducedMotion="user">` in
+`main.tsx` covers everything Framer Motion animates.
 
 ---
 
