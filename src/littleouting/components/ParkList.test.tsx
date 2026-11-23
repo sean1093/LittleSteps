@@ -21,12 +21,12 @@ const DATA: ParkData = {
   builtOn: '2026-11-23',
   venues: [
     // Taipei: one large with playgrounds, one small without.
-    { id: 'w1', kind: 'park', name: '大安森林公園', city: '臺北市', lat: 25.03, lng: 121.535, areaM2: 260000, playgrounds: 2 },
-    { id: 'w2', kind: 'park', name: '巷口小公園', city: '臺北市', lat: 25.04, lng: 121.55, areaM2: 800, playgrounds: 0 },
+    { id: 'w1', name: '大安森林公園', city: '臺北市', district: '大安區', lat: 25.03, lng: 121.535, areaM2: 260000, playgrounds: 2 },
+    { id: 'w2', name: '巷口小公園', city: '臺北市', lat: 25.04, lng: 121.55, areaM2: 800, playgrounds: 0 },
     // New Taipei, just across the river from the Taipei test position.
-    { id: 'w3', kind: 'park', name: '板橋河濱公園', city: '新北市', lat: 25.02, lng: 121.47, areaM2: 9000, playgrounds: 0 },
-    { id: 'n4', kind: 'playground', name: '中和兒童遊戲場', city: '新北市', lat: 24.99, lng: 121.5 },
-    { id: 'w5', kind: 'park', name: '臺中中央公園', city: '臺中市', lat: 24.18, lng: 120.65, areaM2: 670000, playgrounds: 1 },
+    { id: 'w3', name: '板橋河濱公園', city: '新北市', lat: 25.02, lng: 121.47, areaM2: 9000, playgrounds: 0 },
+    { id: 'w4', name: '中和四號公園', city: '新北市', district: '中和區', lat: 24.99, lng: 121.5, areaM2: 3000, playgrounds: 3 },
+    { id: 'w5', name: '臺中中央公園', city: '臺中市', lat: 24.18, lng: 120.65, areaM2: 670000, playgrounds: 1 },
   ],
 };
 
@@ -89,8 +89,8 @@ describe('ParkList: by county', () => {
       '臺中中央公園',
       '大安森林公園',
       '板橋河濱公園',
+      '中和四號公園',
       '巷口小公園',
-      '中和兒童遊戲場',
     ]);
   });
 
@@ -98,7 +98,7 @@ describe('ParkList: by county', () => {
     const user = await renderLoaded();
 
     await user.click(screen.getByRole('button', { name: '新北市' }));
-    expect(names()).toEqual(['板橋河濱公園', '中和兒童遊戲場']);
+    expect(names()).toEqual(['板橋河濱公園', '中和四號公園']);
 
     await user.click(screen.getByRole('button', { name: '全部縣市' }));
     expect(names()).toHaveLength(DATA.venues.length);
@@ -123,9 +123,9 @@ describe('ParkList: by county', () => {
 });
 
 describe('ParkList: what a stage asks of a park', () => {
-  it('"有遊戲場" keeps parks with one mapped, and playgrounds themselves', async () => {
+  it('"有遊戲場" keeps only parks with one mapped', async () => {
     await renderLoaded({ filter: 'playground' });
-    expect(names()).toEqual(['臺中中央公園', '大安森林公園', '中和兒童遊戲場']);
+    expect(names()).toEqual(['臺中中央公園', '大安森林公園', '中和四號公園']);
   });
 
   it('"1 公頃以上" keeps only parks that large', async () => {
@@ -155,6 +155,7 @@ describe('ParkList: what a card says', () => {
     await renderLoaded();
 
     const big = screen.getByRole('heading', { name: '大安森林公園' }).closest('li') as HTMLElement;
+    expect(big).toHaveTextContent('臺北市大安區');
     expect(big).toHaveTextContent('約 26 公頃');
     expect(big).toHaveTextContent('地圖上標了 2 處遊戲場');
 
@@ -203,7 +204,7 @@ describe('ParkList: nearest to me', () => {
     standAt({ lat: 25.025, lng: 121.48 });
     const user = await renderLoaded({ filter: 'playground' });
     await user.click(screen.getByRole('button', { name: '用我的位置找最近的' }));
-    expect(names()).toEqual(['中和兒童遊戲場', '大安森林公園', '臺中中央公園']);
+    expect(names()).toEqual(['中和四號公園', '大安森林公園', '臺中中央公園']);
   });
 
   it('goes back to counties on request', async () => {

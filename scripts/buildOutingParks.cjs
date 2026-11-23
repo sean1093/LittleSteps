@@ -2,8 +2,9 @@
 'use strict';
 
 /**
- * Builds public/data/outingParks.json: parks and playgrounds in Taiwan, with
- * coordinates, for LittleOuting's recommendations.
+ * Builds public/data/outingParks.json: named parks in Taiwan, with
+ * coordinates, area and how many playgrounds are mapped inside each, for
+ * LittleOuting's recommendations.
  *
  * Why OpenStreetMap
  *   Park data from the government is one dataset per city, in a different
@@ -26,6 +27,21 @@
  *   mapped inside it. There is no rating and no "good for toddlers". A park
  *   with no playground mapped is not a park without one, so the page says
  *   "mapped", never "has none".
+ *
+ * What is left out
+ *   Playgrounds that are not inside a park. Read as a list they are mostly
+ *   school and kindergarten yards — 內湖國小遊戲場, 幼稚園遊戲區 — which a parent
+ *   cannot walk into, and nothing in the tags tells those from public ones. A
+ *   playground only enters this file as a count on the park that contains it.
+ *
+ *   Names with no Chinese character ("park", "resort homes"): a placeholder
+ *   someone typed, not what the place is called.
+ *
+ * Why outlines with the same name are merged
+ *   A road through a park makes the mapper draw two polygons, and the list
+ *   then shows 下灣公園 three times with a third of its area each. Outlines
+ *   sharing a name and a county within MERGE_WITHIN_M of each other become one
+ *   record: areas and playground counts added, pin on the largest piece.
  *
  * Usage
  *   1. Install osmium-tool (`apt-get install osmium-tool`, `brew install osmium-tool`).
@@ -67,6 +83,9 @@ const MIN_PARKS = 2000;
  * ones that are.
  */
 const MIN_PARK_AREA_M2 = 500;
+
+/** Same-named outlines this close together are one park. */
+const MERGE_WITHIN_M = 400;
 
 /** A playground this close to a park's edge counts as that park's. */
 const NEAR_PARK_M = 30;
@@ -190,11 +209,30 @@ async function main() {
   osmium(['tags-filter', input, 'nwr/leisure=park,playground', '-o', filtered, '--overwrite']);
   osmium(['export', filtered, '-f', 'geojsonseq', '-o', places, '--overwrite', '--add-unique-id=type_id']);
 
-  console.log('filtering county boundaries…');
-  osmium(['tags-filter', input, 'r/admin_level=4', '-o', boundaryPbf, '--overwrite']);
+  console.log('filtering county and district boundaries…');
+  osmium(['tags-filter', input, 'r/admin_level=4,7,8', '-o', boundaryPbf, '--overwrite']);
   osmium(['export', boundaryPbf, '-f', 'geojsonseq', '-o', boundaries, '--overwrite', '--geometry-types=polygon']);
 
-  const counties = (await readFeatures(boundaries))
+  const boundaryFeatures = await readFeatures(boundaries);
+
+  // Districts and townships: level 7 is 區, level 8 is 鄉／鎮／市. The filter
+  // above also drags in whatever those relations reference, so the level and
+  // the traditional-character suffix are both checked — the extract's box
+  // reaches the Fujian coast, whose 镇 and 乡 are not ours.
+  const districts = boundaryFeatures
+    .filter(
+      (feature) =>
+        ['7', '8'].includes(feature.properties.admin_level) &&
+        /[區鄉鎮市]$/.test(feature.properties.name || ''),
+    )
+    .map((feature) => {
+      const polygons = polygonsOf(feature.geometry);
+      return { name: feature.properties.name, polygons, bbox: bboxOf(polygons) };
+    })
+    .filter((district) => district.polygons.length > 0);
+
+  const counties = boundaryFeatures
+    .filter((feature) => feature.properties.admin_level === '4')
     .map((feature) => {
       const name = (feature.properties.name || '').replace(/^台/, '臺');
       const polygons = polygonsOf(feature.geometry);
@@ -214,6 +252,14 @@ async function main() {
         inPolygons(lng, lat, polygons),
     )?.name;
 
+  /** Optional: a park on reclaimed land or a river bar may be in no district. */
+  const districtOf = (lng, lat) =>
+    districts.find(
+      ({ bbox, polygons }) =>
+        lng >= bbox[0] && lng <= bbox[2] && lat >= bbox[1] && lat <= bbox[3] &&
+        inPolygons(lng, lat, polygons),
+    )?.name;
+
   const features = await readFeatures(places);
 
   const parks = [];
@@ -226,9 +272,8 @@ async function main() {
     if (tags.leisure === 'park') {
       const polygons = polygonsOf(feature.geometry);
       const name = (tags['name:zh'] || tags.name || '').trim();
-      if (polygons.length === 0 || !name) continue;
+      if (polygons.length === 0 || !/[\u4e00-\u9fff]/.test(name)) continue;
       const area = areaOf(polygons);
-      if (area < MIN_PARK_AREA_M2) continue;
       const [lng, lat] = pinOf(polygons);
       parks.push({ id: feature.id, name, lng, lat, area, polygons, bbox: bboxOf(polygons), playgrounds: 0 });
     } else if (tags.leisure === 'playground') {
@@ -240,13 +285,11 @@ async function main() {
         if (polygons.length === 0) continue;
         [lng, lat] = pinOf(polygons);
       }
-      playgrounds.push({ id: feature.id, name: (tags['name:zh'] || tags.name || '').trim(), lng, lat });
+      playgrounds.push({ lng, lat });
     }
   }
 
-  // Which park is each playground in? Most playgrounds are unnamed and only
-  // mean something as "this park has one".
-  const standalone = [];
+  // Which park is each playground in? One outside every park is dropped.
   const margin = NEAR_PARK_M / 111000;
   for (const playground of playgrounds) {
     const { lng, lat } = playground;
@@ -260,40 +303,45 @@ async function main() {
           )),
     );
     if (host) host.playgrounds += 1;
-    else if (playground.name) standalone.push(playground);
   }
 
-  const rows = [];
-  for (const park of parks) {
+  // Merge the pieces of one park. Largest first, so the pin and the id are
+  // the main piece's.
+  const merged = [];
+  const byName = new Map();
+  for (const park of [...parks].sort((a, b) => b.area - a.area)) {
     const city = countyOf(park.lng, park.lat);
     if (!city) continue;
-    rows.push({
+    const key = `${city}/${park.name}`;
+    const whole = (byName.get(key) || []).find(
+      (other) => metresBetween(park.lng, park.lat, other.lng, other.lat) <= MERGE_WITHIN_M,
+    );
+    if (whole) {
+      whole.area += park.area;
+      whole.playgrounds += park.playgrounds;
+    } else {
+      const record = { id: park.id, name: park.name, city, lng: park.lng, lat: park.lat, area: park.area, playgrounds: park.playgrounds };
+      merged.push(record);
+      byName.set(key, [...(byName.get(key) || []), record]);
+    }
+  }
+
+  const rows = merged
+    .filter((park) => park.area >= MIN_PARK_AREA_M2)
+    .map((park) => ({
       id: park.id,
-      kind: 'park',
       name: park.name,
-      city,
+      city: park.city,
+      district: districtOf(park.lng, park.lat),
       lat: round(park.lat, 5),
       lng: round(park.lng, 5),
       // Two significant figures: the outline is a volunteer's tracing, and
       // "12,437 m²" would claim a precision it does not have.
       areaM2: Number(park.area.toPrecision(2)),
       playgrounds: park.playgrounds,
-    });
-  }
-  for (const playground of standalone) {
-    const city = countyOf(playground.lng, playground.lat);
-    if (!city) continue;
-    rows.push({
-      id: playground.id,
-      kind: 'playground',
-      name: playground.name,
-      city,
-      lat: round(playground.lat, 5),
-      lng: round(playground.lng, 5),
-    });
-  }
+    }));
 
-  const parkCount = rows.filter((row) => row.kind === 'park').length;
+  const parkCount = rows.length;
   if (parkCount < MIN_PARKS) {
     throw new Error(`only ${parkCount} parks; expected at least ${MIN_PARKS}. Not writing.`);
   }
@@ -315,10 +363,10 @@ async function main() {
   fs.writeFileSync(OUT_FILE, `${JSON.stringify(output)}\n`);
   fs.rmSync(work, { recursive: true, force: true });
 
-  const withPlayground = rows.filter((row) => row.kind === 'park' && row.playgrounds > 0).length;
+  const withPlayground = rows.filter((row) => row.playgrounds > 0).length;
   console.log(
-    `wrote ${rows.length} venues: ${parkCount} parks (${withPlayground} with a playground mapped), ` +
-      `${rows.length - parkCount} standalone playgrounds, ${(fs.statSync(OUT_FILE).size / 1024).toFixed(0)} KB`,
+    `wrote ${parkCount} parks (${withPlayground} with a playground mapped), ` +
+      `${(fs.statSync(OUT_FILE).size / 1024).toFixed(0)} KB`,
   );
 }
 

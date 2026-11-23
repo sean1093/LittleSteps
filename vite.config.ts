@@ -131,8 +131,19 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,json}'],
         // 全國哺乳室資料約 1.1 MB，預先快取會讓每個使用者在安裝 PWA 時就下載，
         // 即使從未開啟 BabyOasis。改為首次進入地圖時才取得並快取。
-        globIgnores: ['**/data/nursingRooms.json'],
+        // 公園資料約 0.8 MB，同理：只有打開親子好去處的公園分頁才用得到。
+        globIgnores: ['**/data/nursingRooms.json', '**/data/outingParks.json'],
         runtimeCaching: [
+          {
+            urlPattern: /\/data\/outingParks\.json$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'outing-parks-data',
+              // 公園不常搬家；過期的清單仍遠勝於「載入失敗」。
+              expiration: { maxEntries: 1, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
           {
             urlPattern: /\/data\/nursingRooms\.json$/,
             handler: 'CacheFirst',

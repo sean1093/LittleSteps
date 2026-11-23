@@ -100,6 +100,14 @@ export const DATA_SOURCES: DataSource[] = [
     // src/babyoasis/data/mrtStations.ts records this as its build date.
     verifiedOn: '2026-09-04',
   },
+  {
+    agency: 'OpenStreetMap 貢獻者',
+    dataset: '全台公園的位置、面積與園內遊戲場（ODbL 授權）',
+    what: '親子好去處「公園」分頁裡的每一座公園；志願者繪製，沒有標出遊戲場不代表沒有',
+    sourceUrl: 'https://www.openstreetmap.org/copyright',
+    // public/data/outingParks.json records this as `builtOn`.
+    verifiedOn: '2026-11-23',
+  },
 ];
 
 // The number strip lives in its own module because the landing page prints it
@@ -139,4 +147,4 @@ export const DEVICE_STORE_DESCRIBED = {
 } as const satisfies Record<keyof ViewPreferences, string>;
 
 /** The day the copy on the about page was last read against the system it describes. */
-export const ABOUT_LAST_UPDATED = '2026-09-07';
+export const ABOUT_LAST_UPDATED = '2026-11-23';

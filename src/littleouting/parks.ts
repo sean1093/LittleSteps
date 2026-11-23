@@ -1,5 +1,5 @@
 /**
- * Parks and playgrounds from OpenStreetMap, as LittleOuting reads them.
+ * Parks from OpenStreetMap, as LittleOuting reads them.
  *
  * The file itself is `public/data/outingParks.json`, built by
  * `scripts/buildOutingParks.cjs`; that script's header says where each field
@@ -12,18 +12,19 @@
  */
 
 export interface ParkVenue {
-  /** OSM type and id, e.g. `w123456`. Stable across rebuilds. */
+  /** osmium's area id for the outline. Stable while the outline exists. */
   id: string;
-  kind: 'park' | 'playground';
   name: string;
   /** One of the 22 counties, in this app's spelling. */
   city: string;
+  /** District or township. Absent for the rare park outside every boundary. */
+  district?: string;
   lat: number;
   lng: number;
-  /** Parks only: area of the mapped outline, to two significant figures. */
-  areaM2?: number;
-  /** Parks only: playgrounds mapped inside the outline. */
-  playgrounds?: number;
+  /** Area of the mapped outline, to two significant figures. */
+  areaM2: number;
+  /** Playgrounds mapped inside the outline. Zero means none mapped, not none. */
+  playgrounds: number;
 }
 
 export interface ParkData {
@@ -51,8 +52,8 @@ export const PARK_FILTERS: { id: ParkFilter; label: string }[] = [
 ];
 
 export function matchesParkFilter(venue: ParkVenue, filter: ParkFilter): boolean {
-  if (filter === 'playground') return venue.kind === 'playground' || (venue.playgrounds ?? 0) > 0;
-  if (filter === 'large') return (venue.areaM2 ?? 0) >= LARGE_PARK_M2;
+  if (filter === 'playground') return venue.playgrounds > 0;
+  if (filter === 'large') return venue.areaM2 >= LARGE_PARK_M2;
   return true;
 }
 

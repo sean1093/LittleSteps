@@ -49,7 +49,7 @@ they used to give no hint that a product existed around them.
 | 🌸 | **LittleBloom** | Pregnancy · weeks 0-40 | hub + back button |
 | 🍼 | **LittleSteps** | Newborn · 0-12 months | sidebar, 12 routes |
 | ☀️ | **LittleExplorer** | Toddler · 1-3 years | 4 bottom tabs |
-| 🌳 | **LittleOuting** | any | 4 in-page tabs |
+| 🌳 | **LittleOuting** | any | 5 in-page tabs |
 | 📍 | **BabyOasis** | any | full-screen map |
 | 🛡️ | **LittleGuard** | any | single board + drawer |
 
@@ -133,10 +133,19 @@ they used to give no hint that a product existed around them.
   and playgrounds — with the date each page was read and the wording it rests on kept
   beside the URL. A test fails on a safety line with no source. The frame is daily
   activity need, not "burning off energy"
-- **Types, not venues, where no register exists** — family centres and restaurants
-  open this app's own lists; parks, playgrounds and libraries have no national
-  register with coordinates, so they link to a map search and the page says the
-  results are not a verified list
+- **5,544 parks across all 22 counties, from OpenStreetMap** — each with its
+  district, the area of its mapped outline and how many playgrounds are mapped
+  inside it. A stage's park recommendations open this list already narrowed to
+  what that stage asks of a park: any park, one of a hectare or more, or one with
+  a playground mapped. Browse by county with the largest first, or tap "nearest to
+  me" to sort by distance; the position is asked for on that tap and never stored.
+  `scripts/buildOutingParks.cjs` builds the file from a Taiwan extract: it merges
+  the pieces of a park a road has split, drops unnamed outlines and anything under
+  500 m², and leaves out playgrounds that are not inside a park, which are mostly
+  school yards. A card says only what the map states — "no playground mapped" is
+  not "no playground", so such a park says nothing
+- **A map search only where there is no data** — libraries and zoos link out, and
+  the page says the results are not a verified list
 - **234 public family centres across all 22 counties**, built by a committed
   script from the national list published by the MOHW Social and Family Affairs
   Administration, plus Taipei's 13 parenting-friendly rooms kept separate

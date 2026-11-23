@@ -180,3 +180,38 @@ test('OUTING-06 @p1 choosing a stage answers with places, and a register link op
   await expect(outing.centreSearch).toBeVisible();
   await expect(outing.resultCount).toBeVisible();
 });
+
+test('OUTING-07 @p1 a park recommendation opens the park list, narrowed, with real parks', async ({
+  page,
+}) => {
+  const outing = new OutingPage(page);
+  const runner = OUTING_STAGES[OUTING_STAGES.length - 1];
+
+  await page.goto('/littleouting');
+  await page.getByRole('button', { name: runner.label, exact: true }).click();
+  await page.getByRole('button', { name: '看有遊戲場的公園' }).click();
+
+  // The stage's condition came along: the list is already narrowed.
+  await expect(page.getByRole('button', { name: '有遊戲場', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(outing.resultCount).toBeVisible();
+
+  // Every card under that filter says a playground is mapped there — the
+  // real file, not a fixture.
+  const cards = page.getByRole('listitem').filter({ has: page.getByRole('heading', { level: 3 }) });
+  await expect(cards.first()).toBeVisible();
+  for (const card of await cards.all()) {
+    await expect(card).toContainText(/地圖上標了 \d+ 處遊戲場/);
+  }
+
+  // The licence asks for attribution wherever the data is shown.
+  await expect(page.getByText(/OpenStreetMap 貢獻者/)).toBeVisible();
+
+  // A county narrows it further, and every card left is in that county.
+  await page.getByRole('button', { name: '臺北市', exact: true }).click();
+  for (const card of await cards.all()) {
+    await expect(card).toContainText('臺北市');
+  }
+});

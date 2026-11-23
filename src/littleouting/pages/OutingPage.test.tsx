@@ -569,8 +569,8 @@ describe('依孩子的狀態推薦', () => {
               attribution: '© OpenStreetMap 貢獻者，依 ODbL 授權',
               builtOn: '2026-11-23',
               venues: [
-                { id: 'w1', kind: 'park', name: '有遊戲場的那一座', city: '臺北市', lat: 25, lng: 121.5, areaM2: 5000, playgrounds: 1 },
-                { id: 'w2', kind: 'park', name: '沒有標遊戲場的那一座', city: '臺北市', lat: 25, lng: 121.5, areaM2: 5000, playgrounds: 0 },
+                { id: 'w1', name: '有遊戲場的那一座', city: '臺北市', lat: 25, lng: 121.5, areaM2: 5000, playgrounds: 1 },
+                { id: 'w2', name: '沒有標遊戲場的那一座', city: '臺北市', lat: 25, lng: 121.5, areaM2: 5000, playgrounds: 0 },
               ],
             }
           : CENTRES,

@@ -33,8 +33,7 @@ const MAX_RENDERED = 30;
 type Position = { lat: number; lng: number };
 
 /**
- * The park register: OpenStreetMap parks and playgrounds, by county or by
- * distance.
+ * The park list: OpenStreetMap parks, by county or by distance.
  *
  * Two ways to narrow it, because parents arrive in two states. Someone
  * planning from the sofa picks a county, as on the family-centre tab, and the
@@ -105,7 +104,7 @@ export default function ParkList({
     }
     return matching
       .filter((venue) => city === allCities || venue.city === city)
-      .sort((a, b) => (b.areaM2 ?? 0) - (a.areaM2 ?? 0))
+      .sort((a, b) => b.areaM2 - a.areaM2)
       .map((venue) => ({ venue, km: null as number | null }));
   }, [data, filter, position, city, allCities]);
 
@@ -232,7 +231,7 @@ export default function ParkList({
 
       {data && (
         <p className="text-xs text-ink-faint leading-relaxed">
-          公園與遊戲場資料：{data.attribution}，{data.builtOn} 取得。這是志願者繪製的地圖，沒有標出遊戲場不代表沒有；面積是地圖上輪廓的大小。出發前請用地圖確認。
+          公園資料：{data.attribution}，{data.builtOn} 取得。這是志願者繪製的地圖，沒有標出遊戲場不代表沒有；面積是地圖上輪廓的大小。出發前請用地圖確認。
         </p>
       )}
     </div>
@@ -242,9 +241,8 @@ export default function ParkList({
 function ParkCard({ venue, km }: { venue: ParkVenue; km: number | null }) {
   const theme = SERVICE_THEME.littleouting;
   const facts = [
-    venue.kind === 'playground' ? '遊戲場' : null,
-    venue.areaM2 !== undefined ? formatArea(venue.areaM2) : null,
-    (venue.playgrounds ?? 0) > 0 ? `地圖上標了 ${venue.playgrounds} 處遊戲場` : null,
+    formatArea(venue.areaM2),
+    venue.playgrounds > 0 ? `地圖上標了 ${venue.playgrounds} 處遊戲場` : null,
   ].filter(Boolean);
 
   return (
@@ -256,7 +254,7 @@ function ParkCard({ venue, km }: { venue: ParkVenue; km: number | null }) {
         )}
       </div>
       <p className="text-sm text-ink-muted mt-0.5">
-        {[venue.city, ...facts].join(' · ')}
+        {[`${venue.city}${venue.district ?? ''}`, ...facts].join(' · ')}
       </p>
       <motion.a
         whileTap={tap}
