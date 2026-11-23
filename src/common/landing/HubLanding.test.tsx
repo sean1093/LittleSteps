@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import HubLanding from './HubLanding';
 import { SERVICE_GROUPS, SERVICE_PITCH, STAGE_RANGE, STAGED_SERVICES } from './serviceCopy';
-import { COVERAGE } from '../about/dataSources';
+import { COVERAGE } from '../about/coverage';
 import { MAX_CHILDREN } from '../childLimits';
 import { requiresAuth } from '../routePolicy';
 import { SERVICE_ORDER, SERVICE_THEME } from '../ui/serviceTheme';

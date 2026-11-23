@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import type { User } from 'firebase/auth';
-import { COVERAGE } from '../about/dataSources';
+import { COVERAGE } from '../about/coverage';
 import { MAX_CHILDREN } from '../childLimits';
 import { goTo } from '../navigate';
 import { fadeInUp, listItem, stagger } from '../ui/motion';
