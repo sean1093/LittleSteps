@@ -270,7 +270,7 @@ export const OUTING_STAGES: OutingStage[] = [
       { type: 'centre', why: '有軟墊的爬行空間，不必自己帶地墊。' },
       { type: 'lawn', why: '樹蔭下鋪野餐墊，坐著、趴著、爬都可以。' },
       { type: 'library', why: '可以坐在地上翻硬頁書。' },
-      { type: 'restaurant', why: '名單上標出哪幾家寫明有兒童餐椅、哪幾家有遊戲區。' },
+      { type: 'restaurant', why: '名單上標出哪幾家有遊戲區。吃飯時孩子有地方待。' },
     ],
     pacing: {
       text: '排在兩次小睡之間。待在推車、餐椅裡連續不超過 1 小時。',

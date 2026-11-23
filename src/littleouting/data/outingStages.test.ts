@@ -6,6 +6,7 @@ import type { Venue } from '../../types';
 import { requiresAuth } from '../../common/routePolicy';
 import { developmentCheckItems } from '../../littleexplorer/data/developmentChecks';
 import { milestones } from '../../littlesteps/data/milestones';
+import { restaurants } from './restaurants';
 import {
   DAILY_ACTIVITY_SOURCE,
   OUTING_SOURCES,
@@ -144,6 +145,17 @@ describe('place types', () => {
         expect(requiresAuth(type.action.page), id).toBe(false);
       }
     }
+  });
+
+  it('only say the restaurant list marks play areas while it does', () => {
+    // An earlier draft promised high chairs too; not one restaurant carries
+    // that tag. The sentence names a tag, so the tag has to be in the data.
+    const line = OUTING_STAGES.flatMap((stage) => stage.places).find((place) =>
+      place.why.includes('標出哪幾家有遊戲區'),
+    );
+    expect(line, 'the sentence was reworded; update this rule').toBeDefined();
+    expect(restaurants.some((venue) => venue.tags.includes('playArea'))).toBe(true);
+    expect(restaurants.some((venue) => !venue.tags.includes('playArea'))).toBe(true);
   });
 
   it('say the family centres admit 0 to 6 only while the register says so', () => {
