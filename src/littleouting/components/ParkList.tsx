@@ -14,7 +14,7 @@ import {
   type ParkData,
   type ParkFilter,
   type ParkVenue,
-} from '../data/parks';
+} from '../parks';
 
 interface ParkListProps {
   /** Counties in display order; only those present in the data are shown. */

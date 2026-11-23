@@ -13,7 +13,7 @@ import {
   type OutingStageId,
   type PlaceAction,
 } from '../data/outingStages';
-import type { ParkFilter } from '../data/parks';
+import type { ParkFilter } from '../parks';
 import type { StageGuess } from '../stageForChild';
 
 interface StageGuideProps {

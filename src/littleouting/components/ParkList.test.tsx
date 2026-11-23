@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { ToastProvider } from '../../common/ui/toast';
-import type { ParkData, ParkFilter } from '../data/parks';
+import type { ParkData, ParkFilter } from '../parks';
 import ParkList from './ParkList';
 
 /**

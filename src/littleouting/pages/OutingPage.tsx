@@ -16,7 +16,7 @@ import { outingChecklist } from '../data/outingChecklist';
 import VenueCard from '../components/VenueCard';
 import StageGuide from '../components/StageGuide';
 import ParkList from '../components/ParkList';
-import type { ParkFilter } from '../data/parks';
+import type { ParkFilter } from '../parks';
 import { OUTING_STAGES, type OutingStageId } from '../data/outingStages';
 import { stageForChild } from '../stageForChild';
 import { useOptionalChildStore } from '../../common/contexts/ChildStoreContext';

@@ -40,7 +40,7 @@
  */
 
 import type { Page } from '../../types/routes';
-import type { ParkFilter } from './parks';
+import type { ParkFilter } from '../parks';
 
 export type OutingSourceId =
   | 'whoActivity'

@@ -5,6 +5,10 @@
  * `scripts/buildOutingParks.cjs`; that script's header says where each field
  * comes from. It is fetched when the parks tab is first opened and never
  * imported, so it stays out of the JS bundle.
+ *
+ * This module holds the shape and the arithmetic only, which is why it sits
+ * beside `data/` and not in it: files there carry facts with a verification
+ * date, and the date for the parks is the `builtOn` inside the JSON.
  */
 
 export interface ParkVenue {
