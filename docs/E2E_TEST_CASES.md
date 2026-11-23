@@ -115,6 +115,8 @@ about.
 | OUTING-03 | P0 | Selecting a city chip on 親子館 renders that city's access panel | A city with verified 使用規則 shows them; a city without shows `CENTRE_ACCESS_UNVERIFIED` instead. Never verified-looking copy for a city nobody checked — this is public-service information a parent plans a trip around |
 | OUTING-04 | P0 | `familyCentres.json` fails to load (route-blocked) | The 親子館資料載入失敗 empty state renders rather than an empty list that reads as "no venues near you" |
 | OUTING-05 | P2 | Outing checklist renders | The 出發前 tab renders **every** item in `outingChecklist` with its question and its rationale. Two things not to assert: there are no toggles (`ChecklistItem` carries no state and the page renders static cards), and there is no per-venue filtering — the tab maps the list unfiltered and `appliesTo` is unused outside its own module |
+| OUTING-06 | P1 | Pick a stage on the recommendation view | The page opens on 孩子現在會什麼？ with no stage chosen and no recommendation shown. Picking a stage renders that stage's need and every venue type listed for it in `OUTING_STAGES`; the 看親子館名冊 action switches to the family-centre register. The other OUTING cases reach the register through `OutingPage.goto()`, which taps the tab, so this is the only case that sees the page as it opens |
+| OUTING-07 | P1 | Follow a park recommendation into the park list | 看有遊戲場的公園 on the last stage opens the 公園 tab with the 有遊戲場 filter already pressed. Against the real `outingParks.json`: every card shown says a playground is mapped there, the OpenStreetMap attribution the ODbL requires is on screen, and choosing 臺北市 leaves only Taipei cards. "Nearest to me" is not driven here — it needs a geolocation grant, and `ParkList.test.tsx` covers the ordering with a stubbed position |
 
 ## WIKI — the three knowledge bases
 
@@ -287,5 +289,5 @@ green while asserting nothing.
 
 ## Case count
 
-Phase 1: **53** cases — HARNESS 1, NAV 7, AUTH 4, GUARD 9, OASIS 8, OUTING 5,
+Phase 1: **55** cases — HARNESS 1, NAV 7, AUTH 4, GUARD 9, OASIS 8, OUTING 7,
 WIKI 5, RWD 4, A11Y 2, SEO 3, PWA 3, BUNDLE 2. Phase 2: **12** reserved IDs.

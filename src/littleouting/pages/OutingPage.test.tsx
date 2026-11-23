@@ -6,6 +6,10 @@ import { CENTRE_ACCESS, CENTRE_ACCESS_UNVERIFIED, CENTRE_DATA_ATTRIBUTION } from
 import { outingChecklist } from '../data/outingChecklist';
 import { restaurants } from '../data/restaurants';
 import { savePreferences } from '../../common/preferences';
+import { ChildStoreValueProvider } from '../../common/contexts/ChildStoreContext';
+import { ToastProvider } from '../../common/ui/toast';
+import type { ChildStore } from '../../common/hooks/useChildStore';
+import { OUTING_STAGES, PLACE_TYPES } from '../data/outingStages';
 import OutingPage from './OutingPage';
 
 /**
@@ -103,6 +107,10 @@ const fetchMock = vi.fn();
 beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock);
   fetchMock.mockReset();
+  // 這支檔案絕大多數的情境都在測名冊，所以每一條都從「上次停在親子館」開始。
+  // 第一次打開時預設是「推薦」那一頁——那個行為在最底下自己一組測，那一組
+  // 會先把這一筆清掉。
+  savePreferences({ outingTab: 'centre' });
 });
 
 afterEach(() => {
@@ -371,15 +379,21 @@ describe('記住上次的分頁與縣市', () => {
     expect(screen.queryByText('找不到符合的場地')).not.toBeInTheDocument();
   });
 
-  it('清掉裝置上的資料就回到原本的行為：親子館、全部縣市', async () => {
+  it('清掉裝置上的資料就回到第一次打開的樣子：推薦那一頁，進名冊是全部縣市', async () => {
     const user = await renderLoaded();
+    await user.click(cityChip(UNVERIFIED_CITY));
     await user.click(screen.getByRole('button', { name: '親子餐廳' }));
     await screen.findByRole('heading', { name: '這是精選，不是完整名單' });
 
     localStorage.clear();
-    await reload();
+    cleanup();
+    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => CENTRES });
+    const again = userEvent.setup();
+    render(<OutingPage />);
 
-    expect(screen.getByRole('button', { name: '親子館' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '推薦' })).toHaveAttribute('aria-pressed', 'true');
+    await again.click(screen.getByRole('button', { name: '親子館' }));
+    await screen.findByText(/共 \d+ 處/);
     expect(cityChip('全部縣市')).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -447,5 +461,195 @@ describe('出發前檢查清單', () => {
       expect(screen.getByText(item.question), item.id).toBeInTheDocument();
       expect(screen.getByText(item.why), item.id).toBeInTheDocument();
     }
+  });
+});
+
+/**
+ * The recommendation view: where to go, by what the child can do.
+ *
+ * It is the first thing a parent sees, so these cases start from an empty
+ * device rather than from the register.
+ */
+describe('依孩子的狀態推薦', () => {
+  const stageChip = (label: string) => screen.getByRole('button', { name: label });
+
+  const renderFresh = () => {
+    localStorage.clear();
+    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => CENTRES });
+    const user = userEvent.setup();
+    render(<OutingPage />);
+    return user;
+  };
+
+  /** A signed-in parent whose current child is `months` old. */
+  const renderWithChild = (months: number, progress: Record<string, { achieved: boolean }> = {}) => {
+    localStorage.clear();
+    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => CENTRES });
+    const birthday = new Date();
+    birthday.setMonth(birthday.getMonth() - months);
+    const store = {
+      currentChild: {
+        id: 'c1',
+        name: '小米',
+        birthday: birthday.toISOString().slice(0, 10),
+        milestoneProgress: progress,
+        vaccineProgress: {},
+      },
+    } as unknown as ChildStore;
+    const user = userEvent.setup();
+    render(
+      <ChildStoreValueProvider store={store}>
+        <OutingPage />
+      </ChildStoreValueProvider>,
+    );
+    return user;
+  };
+
+  it('第一次打開就是推薦那一頁，而且還沒替家長選任何一格', () => {
+    renderFresh();
+
+    expect(screen.getByRole('button', { name: '推薦' })).toHaveAttribute('aria-pressed', 'true');
+    for (const stage of OUTING_STAGES) {
+      expect(stageChip(stage.label), stage.id).toHaveAttribute('aria-pressed', 'false');
+    }
+    // 沒選之前不該出現任何一個階段的建議——那等於替家長回答了問題。
+    expect(screen.queryByRole('heading', { name: '適合去的地方' })).not.toBeInTheDocument();
+  });
+
+  it.each(OUTING_STAGES)('選了「$label」就列出這個階段的場地、待多久與注意事項', async (stage) => {
+    const user = renderFresh();
+    await user.click(stageChip(stage.label));
+
+    expect(stageChip(stage.label)).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText(stage.needs.text)).toBeInTheDocument();
+    for (const place of stage.places) {
+      expect(
+        screen.getByRole('heading', { name: PLACE_TYPES[place.type].label }),
+        place.type,
+      ).toBeInTheDocument();
+      expect(screen.getByText(place.why)).toBeInTheDocument();
+    }
+    expect(screen.getByText(stage.pacing.text)).toBeInTheDocument();
+    for (const item of stage.safety) {
+      expect(screen.getByText(item.text)).toBeInTheDocument();
+    }
+  });
+
+  it('不會走和會跑跳拿到的不是同一份建議', async () => {
+    // 這一頁存在的理由。兩個階段的第一順位要是相同的，分類就沒有在做事。
+    const [first, , , , last] = OUTING_STAGES;
+    expect(first.places[0].type).not.toBe(last.places[0].type);
+
+    const user = renderFresh();
+    await user.click(stageChip(first.label));
+    expect(screen.getByText(first.needs.text)).toBeInTheDocument();
+
+    await user.click(stageChip(last.label));
+    expect(screen.queryByText(first.needs.text)).not.toBeInTheDocument();
+    expect(screen.getByText(last.needs.text)).toBeInTheDocument();
+  });
+
+  it('有名冊的場地直接帶到名冊', async () => {
+    const user = renderFresh();
+    await user.click(stageChip('會坐會爬'));
+    await user.click(screen.getByRole('button', { name: '看親子館名冊' }));
+
+    expect(screen.getByRole('button', { name: '親子館' })).toHaveAttribute('aria-pressed', 'true');
+    expect(await screen.findByRole('heading', { name: '芝山親子館' })).toBeInTheDocument();
+  });
+
+  it('公園類的場地帶到公園那一頁，而且已經篩成這個階段要的條件', async () => {
+    // 兩份資料各走各的網址；公園那一份是 { venues } 而不是陣列。
+    fetchMock.mockImplementation(async (url: string) => ({
+      ok: true,
+      status: 200,
+      json: async () =>
+        String(url).includes('outingParks')
+          ? {
+              attribution: '© OpenStreetMap 貢獻者，依 ODbL 授權',
+              builtOn: '2026-11-23',
+              venues: [
+                { id: 'w1', name: '有遊戲場的那一座', city: '臺北市', lat: 25, lng: 121.5, areaM2: 5000, playgrounds: 1 },
+                { id: 'w2', name: '沒有標遊戲場的那一座', city: '臺北市', lat: 25, lng: 121.5, areaM2: 5000, playgrounds: 0 },
+              ],
+            }
+          : CENTRES,
+    }));
+    localStorage.clear();
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <OutingPage />
+      </ToastProvider>,
+    );
+
+    await user.click(stageChip('會跑會跳'));
+    await user.click(screen.getByRole('button', { name: '看有遊戲場的公園' }));
+
+    expect(screen.getByRole('button', { name: '公園' })).toHaveAttribute('aria-pressed', 'true');
+    expect(await screen.findByRole('heading', { name: '有遊戲場的那一座' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '有遊戲場' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('heading', { name: '沒有標遊戲場的那一座' })).not.toBeInTheDocument();
+  });
+
+  it('沒有資料的場地連到地圖搜尋，並且說清楚那不是查證過的名單', async () => {
+    const user = renderFresh();
+    await user.click(stageChip('還不會坐'));
+
+    const link = screen.getByRole('link', { name: '在地圖上找附近的圖書館' });
+    expect(link).toHaveAttribute('href', expect.stringContaining('google.com/maps/search'));
+    expect(decodeURIComponent(link.getAttribute('href') ?? '')).toContain('圖書館');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(screen.getByText(/不是我們查證過的名單/)).toBeInTheDocument();
+  });
+
+  it('每一句健康說法旁邊都看得到出處，頁尾連得到原文', async () => {
+    const user = renderFresh();
+    await user.click(stageChip('還不會坐'));
+
+    expect(screen.getAllByText(/^出處：/).length).toBeGreaterThanOrEqual(3);
+    const source = screen.getByRole('link', { name: /Sun Safety/ });
+    expect(source).toHaveAttribute('href', expect.stringContaining('healthychildren.org'));
+    expect(screen.getAllByText(/查證於 \d{4}-\d{2}-\d{2}/).length).toBeGreaterThan(0);
+  });
+
+  it('說明這不是發展評估，也不是醫療建議', () => {
+    renderFresh();
+    expect(screen.getByText(/不是發展評估/)).toHaveTextContent('不是醫療建議');
+  });
+
+  it('選過的那一格，重新整理之後還在', async () => {
+    const user = renderFresh();
+    await user.click(stageChip('走得穩'));
+
+    cleanup();
+    render(<OutingPage />);
+
+    expect(stageChip('走得穩')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('heading', { name: '適合去的地方' })).toBeInTheDocument();
+  });
+
+  it('已登入時依孩子的月齡先選一格，並說是依月齡猜的', () => {
+    renderWithChild(18);
+
+    expect(stageChip('走得穩')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText(/依小米的月齡先選了一格/)).toBeInTheDocument();
+  });
+
+  it('孩子的里程碑紀錄比月齡優先，並說是依紀錄選的', () => {
+    // 九個月就會扶著走：不能因為月曆把這一家送去爬行區。
+    renderWithChild(9, { 'm10-physical-1': { achieved: true } });
+
+    expect(stageChip('扶著走、剛會走')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText(/依小米已經勾選的紀錄先選了一格/)).toBeInTheDocument();
+  });
+
+  it('家長自己改過之後，以家長選的為準，也不再說是猜的', async () => {
+    const user = renderWithChild(18);
+    await user.click(stageChip('會跑會跳'));
+
+    expect(stageChip('會跑會跳')).toHaveAttribute('aria-pressed', 'true');
+    expect(stageChip('走得穩')).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.queryByText(/先選了一格/)).not.toBeInTheDocument();
   });
 });

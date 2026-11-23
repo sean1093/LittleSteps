@@ -61,7 +61,8 @@ export const SERVICE_PITCH: Record<ServiceId, string> = {
   littleexplorer:
     '12-36 個月的 30 項發展檢核，健檢、疫苗、塗氟依生日排好，可以匯出到行事曆。',
   babyoasis: '全台 22 縣市、3,852 處。定位找最近的，或選一個捷運站，看附近有哪幾間。',
-  littleouting: '全台 234 間親子館。要不要錢、幾歲能進、要不要預約，查得到的都寫上。',
+  littleouting:
+    '依孩子會不會坐、會不會走、會不會跑跳，推薦適合去的地方。全台 234 間親子館的收費與預約，查得到的都寫上。',
   // No "this week" and no "more or less than usual" here. The board withholds
   // every verdict once its dataset is over a month old, and this line must
   // stay true on that day too.

@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 import { ROUTE_PATH } from '../../src/types/routes';
 import { SCROLL_ROW } from '../fixtures/testIds';
+import { OUTING_STAGES } from '../../src/littleouting/data/outingStages';
 
 /**
  * LittleOuting — family centres, child-friendly restaurants and the checklist.
@@ -35,6 +36,10 @@ export class OutingPage {
    * the signal that the register is on screen.
    */
   readonly reportButtons: Locator;
+  /** The question the recommendation view opens with. */
+  readonly stageQuestion: Locator;
+  /** The stage chips under it, by label. */
+  readonly firstStageChip: Locator;
 
   constructor(private readonly page: Page) {
     this.centreTab = page.getByRole('button', { name: '親子館', exact: true });
@@ -53,10 +58,19 @@ export class OutingPage {
     // this counts the items rendered without binding to `.card`.
     this.checklistQuestions = page.getByRole('heading', { level: 3 });
     this.reportButtons = page.getByRole('button', { name: /^這裡的資訊不對？/ });
+    this.stageQuestion = page.getByRole('heading', { name: '孩子現在會什麼？' });
+    this.firstStageChip = page.getByRole('button', { name: OUTING_STAGES[0].label, exact: true });
   }
 
+  /**
+   * Opens the page on the family-centre register.
+   *
+   * The page opens on the recommendation view; the register is one tap in.
+   * Every OUTING case is about the registers, so the tap lives here.
+   */
   async goto(): Promise<void> {
     await this.page.goto(ROUTE_PATH.littleouting);
+    await this.centreTab.click();
   }
 
   /** A county chip in the scrolling row above the list. */

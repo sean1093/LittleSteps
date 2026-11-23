@@ -17,6 +17,7 @@ const DEFAULTS: ViewPreferences = {
   guardCounty: null,
   guardAgeBand: null,
   outingTab: null,
+  outingStage: null,
   outingCity: null,
   oasisCity: null,
   oasisDistrict: null,
