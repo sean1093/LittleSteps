@@ -1,5 +1,6 @@
 import { CENTRE_ACCESS, CENTRE_ACCESS_UNVERIFIED } from '../../src/littleouting/data/centreAccess';
 import { outingChecklist } from '../../src/littleouting/data/outingChecklist';
+import { OUTING_STAGES, PLACE_TYPES } from '../../src/littleouting/data/outingStages';
 import { restaurants } from '../../src/littleouting/data/restaurants';
 import { expect, test } from '../fixtures/test';
 import { OutingPage } from '../pages/outingPage';
@@ -149,4 +150,33 @@ test('OUTING-05 @p2 the checklist tab renders every item with its reason', async
     await expect(page.getByRole('heading', { name: item.question })).toBeVisible();
     await expect(page.getByText(item.why)).toBeVisible();
   }
+});
+
+test('OUTING-06 @p1 choosing a stage answers with places, and a register link opens the register', async ({
+  page,
+}) => {
+  const outing = new OutingPage(page);
+  // The stage every parent with a crawler picks; its first place is the
+  // family centre, the one type this app has a real register for.
+  const stage = OUTING_STAGES[1];
+
+  // Not `outing.goto()`: that helper taps through to the register, and this
+  // case is about the view the page opens on.
+  await page.goto('/littleouting');
+  await expect(outing.stageQuestion).toBeVisible();
+  // Nothing is answered before the parent has said anything.
+  await expect(page.getByText(stage.needs.text)).toHaveCount(0);
+
+  await page.getByRole('button', { name: stage.label, exact: true }).click();
+
+  await expect(page.getByText(stage.needs.text)).toBeVisible();
+  for (const place of stage.places) {
+    await expect(
+      page.getByRole('heading', { name: PLACE_TYPES[place.type].label, exact: true }),
+    ).toBeVisible();
+  }
+
+  await page.getByRole('button', { name: '看親子館名冊' }).click();
+  await expect(outing.centreSearch).toBeVisible();
+  await expect(outing.resultCount).toBeVisible();
 });

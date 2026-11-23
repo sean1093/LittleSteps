@@ -101,7 +101,7 @@ const READY: Partial<Record<Page, (page: BrowserPage) => Locator>> = {
   'littlebloom/wiki': (page) => new WikiBrowserPage(page, 'littlebloom/wiki').articles.first(),
   'littleexplorer/wiki': (page) =>
     new WikiBrowserPage(page, 'littleexplorer/wiki').articles.first(),
-  // Renders on a family-centre card, so it waits for `familyCentres.json`.
+  // The stage chips are static data, so they are there as soon as the page is.
   littleouting: (page) => new OutingPage(page).firstStageChip,
   // The search input renders once the 1.1 MB nursing-room dataset has arrived.
   babyoasis: (page) => new BabyOasisPage(page).search,
