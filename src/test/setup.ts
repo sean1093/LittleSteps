@@ -90,6 +90,11 @@ vi.mock('firebase/database', () => ({
   push: mockPush,
   get: mockGet,
   onValue: mockOnValue,
+  // A query keeps its reference's path, so a test that answers by path does
+  // not need to know whether a listener asked for all of it or a window.
+  query: vi.fn((reference: object, ...constraints: unknown[]) => ({ ...reference, constraints })),
+  orderByChild: vi.fn((child: string) => ({ orderByChild: child })),
+  startAt: vi.fn((value: unknown) => ({ startAt: value })),
   remove: mockRemove,
   serverTimestamp: mockServerTimestamp,
 }));

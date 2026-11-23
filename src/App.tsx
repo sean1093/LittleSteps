@@ -94,7 +94,8 @@ function AppContent() {
   // 之後 currentChildId 會被清成 null，而畫面已經退到名單裡的第一個孩子。
   // 這裡若用 id，日誌與日記就會去讀一個 null，家長看到的是「這孩子沒有紀錄」。
   //
-  // 兩份都是整個集合的 listener，所以只在會讀它的服務裡才訂閱；其餘頁面傳
+  // 兩份讀的量都不小（日記是整個集合，日誌是最近 90 天），所以只在會讀它的
+  // 服務裡才訂閱；其餘頁面傳
   // null，useFirebaseCollection 遇到 null 就什麼都不掛。理由與為什麼以服務而
   // 不是頁面為界，寫在 routePolicy 的 wantsDailyLogs 上。
   const recordsChildId = currentChild?.id ?? null;

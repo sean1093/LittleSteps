@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, orderByChild, query, startAt } from 'firebase/database';
 import type { User } from 'firebase/auth';
 import { database } from '../../lib/database';
 
@@ -12,6 +12,13 @@ export interface FirebaseCollectionOptions<T> {
   fromFirebase: (data: unknown) => T;
   /** Label used in console error messages. */
   errorLabel?: string;
+  /**
+   * Listen to part of the collection: rows whose `orderBy` child is at or
+   * after `startAt`. Left out, the listener covers the whole collection.
+   * The path needs an `.indexOn` for `orderBy` in `database.rules.json`;
+   * without one the server sends everything and the client filters.
+   */
+  range?: { orderBy: string; startAt: string };
 }
 
 /**
@@ -36,12 +43,19 @@ export function useFirebaseCollection<T>(
   const [erroredFor, setErroredFor] = useState<string | null>(null);
 
   // Options are derived from childId each render; read the latest via a ref so
-  // the effect only re-subscribes on childId/user changes.
+  // the effect re-subscribes only when what is being asked for changes: the
+  // child, the user, or the range (see listenKey below).
   const optionsRef = useRef(options);
   optionsRef.current = options;
 
+  // 「哪一份」不只是哪個孩子：視窗的起點變了，就是另一個查詢，上一份回應不能
+  // 算在它頭上。少了這個，往回翻到視窗之前的那一天時，畫面會先拿較窄的那一份
+  // 說「這天沒有記錄」，下一瞬間才換成載入中。
+  const windowKey = options.range ? `${options.range.orderBy}>=${options.range.startAt}` : '';
+  const listenKey = childId ? `${childId}|${windowKey}` : null;
+
   useEffect(() => {
-    const { firebasePath, empty, fromFirebase, errorLabel } = optionsRef.current;
+    const { firebasePath, empty, fromFirebase, errorLabel, range } = optionsRef.current;
 
     if (!childId || !user) {
       setData(empty);
@@ -56,28 +70,32 @@ export function useFirebaseCollection<T>(
     setErroredFor(null);
     setSettledFor(null);
     const dataRef = ref(database, firebasePath);
+    const target = range
+      ? query(dataRef, orderByChild(range.orderBy), startAt(range.startAt))
+      : dataRef;
     const unsubscribe = onValue(
-      dataRef,
+      target,
       (snapshot) => {
         setData(fromFirebase(snapshot.val()));
-        setSettledFor(childId);
+        setSettledFor(listenKey);
       },
       (err) => {
         // 讀取被拒不是「今天還沒有記錄」。（斷線不會走到這裡：RTDB 斷線時
         // 兩個 callback 都不呼叫，那是 useStalled 在處理的事。）data 維持上一個成功的值，
         // 由 error 讓頁面說得出實話。
         console.error(errorLabel || `Error fetching ${firebasePath}:`, err);
-        setErroredFor(childId);
-        setSettledFor(childId);
+        setErroredFor(listenKey);
+        setSettledFor(listenKey);
       },
     );
     return () => unsubscribe();
-  }, [childId, user]);
+    // listenKey 已經包含 childId 與視窗；單獨列 childId 是給讀的人看的。
+  }, [childId, user, listenKey]);
 
   // 與上面 effect 的 `!childId || !user` 同一個判準：不訂閱的時候就不是載入中。
   const active = Boolean(childId && user);
-  const loading = active && settledFor !== childId;
-  const error = active && erroredFor === childId;
+  const loading = active && settledFor !== listenKey;
+  const error = active && erroredFor === listenKey;
 
   return { data, loading, error };
 }

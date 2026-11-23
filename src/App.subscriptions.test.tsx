@@ -6,7 +6,8 @@ import App from './App';
 /**
  * Which child-record listeners App attaches on which route.
  *
- * `useDailyLogs` and `useDiary` listen to a whole collection with no query.
+ * `useDailyLogs` and `useDiary` each read a lot: the whole diary, and the last
+ * 90 days of the daily log.
  * App used to call both on every route, so a signed-in parent opening the
  * nursing-room map downloaded the child's complete daily log and diary and
  * kept both listeners live on a page that reads neither. This file pins the

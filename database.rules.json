@@ -152,12 +152,13 @@
         ".write": "root.child('children').child($childId).child('members').child(auth.uid).val() === true",
 
         "dailyLogs": {
+          ".indexOn": ["timestamp"],
           "$logId": {
             ".validate": "newData.hasChildren(['type', 'timestamp', 'data'])",
             "id": { ".validate": "newData.isString() && newData.val().length <= 64" },
             "childId": { ".validate": "newData.val() === $childId" },
             "type": { ".validate": "newData.val() === 'feeding' || newData.val() === 'sleep' || newData.val() === 'diaper'" },
-            "timestamp": { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "timestamp": { ".validate": "newData.isString() && newData.val().matches(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/)" },
             "createdAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
             "updatedAt": { ".validate": "newData.isString() && newData.val().length <= 40" },
             "createdBy": { ".validate": "newData.isString() && newData.val().length <= 128" },

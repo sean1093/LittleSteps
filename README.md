@@ -339,6 +339,16 @@ forever. They sit in a sibling subtree because the child listener subscribes to
 the whole `children/$childId` node, so with the logs inside it one nappy change
 re-downloaded the child's entire history to every family member.
 
+Moving them out bounded the fan-out, not the read. The daily log is the one
+that grows fastest, about ten rows a day, so its listener covers a window: rows
+whose `timestamp` falls in the last 90 days, three times the longest lookback
+any screen uses (the monthly report's 30). The day view asks for an earlier
+start when a parent pages back past that, and the export still reads
+everything, once. The window is a string comparison on `timestamp`, which is
+why the rules index that field and accept only the fixed-width UTC form
+`toISOString()` produces: it is the one spelling of a time that sorts as text
+in time order. `src/littlesteps/logWindow.ts` has the reasoning.
+
 Access is enforced by `database.rules.json` — `childRecords/$childId` and
 `childIndex/$childId` both through `children/$childId/members`. See that file
 for the authoritative rules and `scripts/testRules.cjs` for what they are
