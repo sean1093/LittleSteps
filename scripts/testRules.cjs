@@ -75,8 +75,23 @@ async function req(method, path, uid, body) {
   return { status: res.status, text: await res.text() };
 }
 
+/**
+ * 帶查詢條件的讀取。REST 的 orderBy 與 SDK 的 orderByChild 不一樣的地方只有一個，
+ * 而且正是這裡要的：沒有對應的 .indexOn，REST 直接回 400，SDK 則是安靜地把整個
+ * 集合下載回來自己篩。所以用 REST 才驗得到「索引真的在」。
+ */
+async function query(path, uid, params) {
+  const extra = Object.entries(params)
+    .map(([key, value]) => `${key}=${encodeURIComponent(JSON.stringify(value))}`)
+    .join('&');
+  const headers = uid === OWNER ? { Authorization: 'Bearer owner' } : {};
+  const res = await fetch(`${url(path, uid)}&${extra}`, { headers });
+  return { status: res.status, text: await res.text() };
+}
+
 const as = (uid) => ({
   get: (path) => req('GET', path, uid),
+  query: (path, params) => query(path, uid, params),
   put: (path, body) => req('PUT', path, uid, body),
   patch: (path, body) => req('PATCH', path, uid, body),
   del: (path) => req('DELETE', path, uid),
@@ -92,6 +107,31 @@ async function expectAllowed(label, promise) {
     console.log(`  \u2713 ${label}`);
   } else {
     failures.push(`${label} — 應該允許，卻回 ${status} ${text.slice(0, 160)}`);
+    console.log(`  \u2717 ${label} (${status})`);
+  }
+}
+
+/** 讀取成功，回來的資料有 `has` 的每一個 key，而且沒有 `lacks` 的任何一個。 */
+async function expectKeys(label, promise, { has, lacks }) {
+  const { status, text } = await promise;
+  let got = null;
+  try {
+    got = Object.keys(JSON.parse(text) ?? {});
+  } catch {
+    got = null;
+  }
+  const ok =
+    status === 200 &&
+    got !== null &&
+    has.every((key) => got.includes(key)) &&
+    lacks.every((key) => !got.includes(key));
+  if (ok) {
+    passed += 1;
+    console.log(`  \u2713 ${label}`);
+  } else {
+    failures.push(
+      `${label} — 應該有 ${JSON.stringify(has)}、沒有 ${JSON.stringify(lacks)}，卻回 ${status} ${text.slice(0, 160)}`,
+    );
     console.log(`  \u2717 ${label} (${status})`);
   }
 }
@@ -441,6 +481,65 @@ async function main() {
     'timestamp 不是字串就不給寫',
     alice.put('childRecords/c1/dailyLogs/log-bad', dailyLog({ id: 'log-bad', timestamp: 1 })),
   );
+  // 日誌只聽最近一段，查詢把 timestamp 當字串排序。只有 toISOString() 那個
+  // 固定寬度的 UTC 格式，字串順序才等於時間順序；下面三種都是合法的日期字串，
+  // new Date() 都讀得懂，排起來卻會落在錯的地方。
+  for (const [what, timestamp] of [
+    ['帶時區位移', '2026-09-01T16:00:00.000+08:00'],
+    ['沒有毫秒與 Z', '2026-09-01T08:00:00'],
+    ['用斜線的日期', '2026/09/01 08:00'],
+  ]) {
+    await expectDenied(
+      `timestamp ${what}就不給寫`,
+      alice.put('childRecords/c1/dailyLogs/log-bad', dailyLog({ id: 'log-bad', timestamp })),
+    );
+  }
+  // 編輯時只送有改的欄位（updateDailyLog 就是這樣寫的），所以一筆 timestamp 是
+  // 舊格式的紀錄，只要不動時間，照樣改得了備註。以擁有者身分塞一筆舊格式的進去
+  // 當作「規則收緊之前就在那裡的資料」。
+  await admin.put(
+    'childRecords/c1/dailyLogs/log-legacy',
+    dailyLog({ id: 'log-legacy', timestamp: '2026-03-01T08:00:00' }),
+  );
+  await expectAllowed(
+    '舊格式 timestamp 的紀錄，不動時間就還改得了別的欄位',
+    alice.patch('childRecords/c1/dailyLogs/log-legacy/data', { notes: '補一句' }),
+  );
+  await admin.del('childRecords/c1/dailyLogs/log-legacy');
+
+  console.log('\n日誌的時間視窗');
+  // patch 而不是 put：這個集合裡還有上面寫進去、下面要接著改的紀錄。
+  await admin.patch('childRecords/c1/dailyLogs', {
+    old: dailyLog({ id: 'old', timestamp: '2026-01-10T03:00:00.000Z' }),
+    edge: dailyLog({ id: 'edge', timestamp: '2026-06-01T16:00:00.000Z' }),
+    recent: dailyLog({ id: 'recent', timestamp: '2026-08-30T01:00:00.000Z' }),
+  });
+  await expectKeys(
+    '成員可以只讀某個時間點之後的日誌（.indexOn 在，否則 REST 回 400）',
+    alice.query('childRecords/c1/dailyLogs', {
+      orderBy: 'timestamp',
+      startAt: '2026-06-01T16:00:00.000Z',
+    }),
+    { has: ['edge', 'recent'], lacks: ['old'] },
+  );
+  await expectKeys(
+    '起點往前挪，就讀得到更早的那幾筆',
+    alice.query('childRecords/c1/dailyLogs', {
+      orderBy: 'timestamp',
+      startAt: '2026-01-01T00:00:00.000Z',
+    }),
+    { has: ['old', 'edge', 'recent'], lacks: [] },
+  );
+  await expectDenied(
+    '不是成員，帶著查詢條件也讀不到',
+    mallory.query('childRecords/c1/dailyLogs', {
+      orderBy: 'timestamp',
+      startAt: '2026-06-01T16:00:00.000Z',
+    }),
+  );
+  for (const key of ['old', 'edge', 'recent']) {
+    await admin.del(`childRecords/c1/dailyLogs/${key}`);
+  }
   await expectDenied(
     '紀錄少了 data 就不給寫',
     alice.put('childRecords/c1/dailyLogs/log-bad', dailyLog({ id: 'log-bad', data: undefined })),

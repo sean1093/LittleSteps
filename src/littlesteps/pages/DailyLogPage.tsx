@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { User } from 'firebase/auth';
 import { ChildProfile, DailyLog, SleepData } from '../../types';
 import { useDailyLogs } from '../hooks/useDailyLogs';
+import { logWindowStart, widenLogWindow } from '../logWindow';
 import { useFirebaseChildren } from '../../common/hooks/useFirebaseChildren';
 import { calculateDuration, isSameDay } from '../../common/utils/dateHelpers';
 import {
@@ -47,7 +48,21 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
   const [justClosedSleep, setJustClosedSleep] = useState<DailyLog | null>(null);
 
   // Load data
-  const { logs, loading, error } = useDailyLogs(currentChild?.id || null, user);
+  /*
+    日誌只聽最近一段（見 logWindow.ts）。翻到那之前的某一天時把起點往前挪，
+    只會越挪越早：挪回來的話，剛剛才看過的那幾天會從畫面上消失。
+  */
+  const [logsSince, setLogsSince] = useState(() => logWindowStart());
+  const { logs, loading, error } = useDailyLogs(currentChild?.id || null, user, logsSince);
+  /*
+    換日一律走這裡，不直接 setSelectedDate：日期可以從三個地方變——日期列、
+    補記一筆更早的紀錄之後跳過去、一鍵睡眠——漏掉任何一個，畫面就會停在一個
+    listener 沒涵蓋到的日子上，然後說「這天沒有記錄」。
+  */
+  const showDay = (date: Date) => {
+    setSelectedDate(date);
+    setLogsSince((since) => widenLogWindow(since, date));
+  };
   const firebaseChildren = useFirebaseChildren(user?.uid || null);
 
   const isToday = isSameDay(selectedDate, new Date());
@@ -129,7 +144,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
         createdByName: user?.displayName ?? undefined,
       });
       setJustClosedSleep(null);
-      setSelectedDate(new Date(startedAt));
+      showDay(new Date(startedAt));
     } catch (error) {
       reportWriteFailure(error, '開始睡眠記錄失敗，請稍後再試');
     }
@@ -151,7 +166,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
         createdBy: user?.uid,
         createdByName: user?.displayName ?? undefined,
       });
-      setSelectedDate(new Date(now));
+      showDay(new Date(now));
     } catch (error) {
       reportWriteFailure(error, '記錄失敗，請稍後再試');
     }
@@ -242,7 +257,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
 
     // 補記昨天的餵奶時，紀錄不會落在目前這一天。跳到它真正落在的日子，
     // 不然使用者剛存的東西會憑空消失。
-    setSelectedDate(new Date(completeLogData.timestamp));
+    showDay(new Date(completeLogData.timestamp));
   };
 
   const handleEdit = (log: DailyLog) => {
@@ -314,7 +329,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
             value={selectedDate}
             onChange={(date) => {
               setJustClosedSleep(null);
-              setSelectedDate(date);
+              showDay(date);
             }}
           />
         </motion.div>

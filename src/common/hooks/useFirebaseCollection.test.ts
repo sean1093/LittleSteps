@@ -16,10 +16,25 @@ type Next = (snapshot: { val: () => unknown }) => void;
 type Cancel = (error: Error) => void;
 
 const subscriptions = new Map<string, { next: Next; cancel: Cancel }>();
+/** 每一次掛上去的 listener 問的是什麼，照順序；沒帶視窗的就是 null。 */
+const asked: { path: string; orderBy: string; startAt: string }[] = [];
+
+type FakeQuery = { path: string; orderBy?: string; startAt?: string };
 
 vi.mock('firebase/database', () => ({
   ref: (_db: unknown, path: string) => path,
-  onValue: (path: string, next: Next, cancel: Cancel) => {
+  query: (path: string, order: { orderBy: string }, start: { startAt: string }): FakeQuery => ({
+    path,
+    ...order,
+    ...start,
+  }),
+  orderByChild: (child: string) => ({ orderBy: child }),
+  startAt: (value: string) => ({ startAt: value }),
+  onValue: (target: string | FakeQuery, next: Next, cancel: Cancel) => {
+    const path = typeof target === 'string' ? target : target.path;
+    if (typeof target !== 'string') {
+      asked.push({ path, orderBy: target.orderBy ?? '', startAt: target.startAt ?? '' });
+    }
     subscriptions.set(path, { next, cancel });
     return () => subscriptions.delete(path);
   },
@@ -43,6 +58,7 @@ const subscription = (childId: string) => {
 
 beforeEach(() => {
   subscriptions.clear();
+  asked.length = 0;
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
@@ -141,5 +157,69 @@ describe('useFirebaseCollection', () => {
     const forB = seen.filter((render) => render.childId === 'B');
     expect(forB.length).toBeGreaterThan(0);
     expect(forB.every((render) => !render.error)).toBe(true);
+  });
+
+  describe('只聽一段的時候', () => {
+    const windowed = (childId: string, since: string) => ({
+      ...logsOf(childId),
+      window: { orderBy: 'timestamp', startAt: since },
+    });
+
+    it('問資料庫的就是那一段，不是整個集合', () => {
+      renderHook(() => useFirebaseCollection('A', user, windowed('A', '2026-06-01T16:00:00.000Z')));
+
+      expect(asked).toEqual([
+        {
+          path: 'childRecords/A/dailyLogs',
+          orderBy: 'timestamp',
+          startAt: '2026-06-01T16:00:00.000Z',
+        },
+      ]);
+    });
+
+    it('起點往前挪就重新訂閱，而且那一次 render 就是載入中', () => {
+      // 往回翻到視窗之前的那一天。舊的那一份比較窄，拿它回答「這天有沒有
+      // 記錄」只會答「沒有」——所以起點一變，就不能再說自己讀完了。
+      const seen: { since: string; loading: boolean; data: string[] }[] = [];
+      const { rerender } = renderHook(
+        ({ since }: { since: string }) => {
+          const state = useFirebaseCollection('A', user, windowed('A', since));
+          seen.push({ since, loading: state.loading, data: state.data });
+          return state;
+        },
+        { initialProps: { since: '2026-06-01T16:00:00.000Z' } },
+      );
+      act(() => subscription('A').next({ val: () => ({ k1: '六月的餵奶' }) }));
+      expect(seen[seen.length - 1].loading).toBe(false);
+
+      rerender({ since: '2026-03-01T16:00:00.000Z' });
+
+      const widened = seen.filter((render) => render.since === '2026-03-01T16:00:00.000Z');
+      expect(widened.length).toBeGreaterThan(0);
+      expect(widened.every((render) => render.loading)).toBe(true);
+      expect(asked.map((query) => query.startAt)).toEqual([
+        '2026-06-01T16:00:00.000Z',
+        '2026-03-01T16:00:00.000Z',
+      ]);
+
+      act(() => subscription('A').next({ val: () => ({ k0: '三月的餵奶', k1: '六月的餵奶' }) }));
+      expect(seen[seen.length - 1]).toEqual({
+        since: '2026-03-01T16:00:00.000Z',
+        loading: false,
+        data: ['三月的餵奶', '六月的餵奶'],
+      });
+    });
+
+    it('起點沒變就不重新訂閱', () => {
+      const { rerender } = renderHook(
+        ({ since }: { since: string }) => useFirebaseCollection('A', user, windowed('A', since)),
+        { initialProps: { since: '2026-06-01T16:00:00.000Z' } },
+      );
+
+      rerender({ since: '2026-06-01T16:00:00.000Z' });
+      rerender({ since: '2026-06-01T16:00:00.000Z' });
+
+      expect(asked).toHaveLength(1);
+    });
   });
 });
