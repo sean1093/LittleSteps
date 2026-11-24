@@ -38,8 +38,13 @@
  * 胎動起點與計算方式
  * - 初次懷孕約 18–20 週感覺到胎動；28 週後較明顯，約 34 週達高峰，36 週後因空間變小而減緩。
  *   計算法：早、中、晚三時段飯後各觀察 1 小時，一小時 ≧3 次代表狀況良好、達 10 次以上更佳，
- *   多處同時的胎動只算一次；12 小時內測不到胎動或當日胎動大幅減少應聯絡婦產科醫師
+ *   多處同時的胎動只算一次
  *   https://mammy.hpa.gov.tw/Home/NewsKBContent?id=2012&type=01
+ * - 多久沒有胎動要就醫（2026-11-24 查閱）：上面那一頁引用 2010 年的教科書，寫「12 小時內
+ *   測不到胎動」；國健署《孕媽咪衛教手冊》2025 年版改為「一天有 2 個小時以上都感受不到
+ *   明顯的胎動，刺激後仍沒反應，建議就醫檢查」，並說明胎動變少時可先輕拍肚子或吃點東西。
+ *   兩者不一致時採較新、也較保守的 2 小時。
+ *   https://mammy.hpa.gov.tw/Home/NewsKBContent?id=2536&type=01
  * - 28 週後每天測 3 回、每回 1–2 小時各至少 10 次胎動；少於平常一半可能缺氧或胎兒窘迫，應盡快就醫
  *   https://mammy.hpa.gov.tw/Home/NewsKBContent?id=1517&type=01（懷孕第 31 週）
  *
@@ -66,6 +71,14 @@
  * - 葉酸：育齡／備孕每日 400 微克，懷孕期間每日 600 微克；鈣每日 1000 毫克
  *   https://www.hpa.gov.tw/Pages/Detail.aspx?nodeid=1137&pid=7725
  *   https://www.hpa.gov.tw/Pages/Detail.aspx?nodeid=4306&pid=13853
+ * - 咖啡因（2026-11-24 查閱）：世界衛生組織只建議每日超過 300 毫克的孕婦減量；國健署
+ *   《孕媽咪衛教手冊》2025 年版寫「不超過 200～300 毫克，一天一杯是可以的」；食藥署建議
+ *   不超過 200 毫克。採最保守的 200 毫克。一杯 240 毫升咖啡約 90 毫克，所以 300 毫克
+ *   不是「約 1 杯」。
+ *   https://www.who.int/tools/elena/interventions/caffeine-pregnancy
+ *   https://mammy.hpa.gov.tw/Home/NewsKBContent?id=2537&type=01
+ *   https://mammy.hpa.gov.tw/Home/NewsKBContent?id=3698&type=01
+ *   https://mammy.hpa.gov.tw/Home/NewsKBContent?id=3683&type=01
  * - 孕期總增重以 10–14 公斤為宜，依孕前 BMI 分級
  *   https://www.hpa.gov.tw/Pages/Detail.aspx?nodeid=1136&pid=3165
  *   https://mammy.hpa.gov.tw/Home/NewsKBContent?id=1492&type=01（懷孕第 15 週）
@@ -105,7 +118,8 @@ export function trimesterOf(week: number): 1 | 2 | 3 {
 
 const PREECLAMPSIA_SIGNS =
   '持續頭痛不緩解、視力模糊或看見閃光、上腹或右上腹疼痛、手臉突然水腫（子癇前症警訊）';
-const REDUCED_MOVEMENT = '胎動比平常減少一半以上，或 12 小時內測不到胎動';
+const REDUCED_MOVEMENT =
+  '胎動比平常減少一半以上，或超過 2 小時感覺不到明顯胎動，吃點東西、輕拍肚子後仍沒有反應，當天就醫檢查';
 const PRETERM_SIGNS =
   '規則子宮收縮（一小時 6 次以上，休息 30 分鐘仍無改善）、落紅，或流出清澈不黏、持續不止的液體';
 const LABOR_SIGNS = '落紅、規則且強度遞增的陣痛、破水，任一出現就盡快就醫';
@@ -118,7 +132,7 @@ export const pregnancyGuides: PregnancyGuide[] = [
     tips: [
       '固定記錄月經來的第一天，預產期與週數都由此推算。',
       '備孕前三個月起每日補充 400 微克葉酸，懷孕後提高到每日 600 微克，預防胎兒神經管缺陷。',
-      '戒除菸酒與檳榔，咖啡因一天不超過 300 毫克（約 1 杯咖啡）。',
+      '戒除菸酒與檳榔，咖啡因一天不超過 200 毫克（一杯 240 毫升的咖啡約 90 毫克，茶、可樂、巧克力也要一起算）。',
       '先挑好未來產檢的婦產科院所與醫師。',
     ],
     warningSignals: [],
