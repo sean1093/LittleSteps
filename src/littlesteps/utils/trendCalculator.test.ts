@@ -268,23 +268,24 @@ describe('trendCalculator', () => {
 
   describe('getRecommendedSleepHours', () => {
     it('maps an age in months to the matching requirement band', () => {
-      expect(getRecommendedSleepHours(0)).toEqual({ min: 16, max: 17 });
-      expect(getRecommendedSleepHours(0.5)).toEqual({ min: 16, max: 17 });
-      expect(getRecommendedSleepHours(2)).toEqual({ min: 15, max: 16 });
-      expect(getRecommendedSleepHours(4)).toEqual({ min: 13, max: 15 });
-      expect(getRecommendedSleepHours(9)).toEqual({ min: 13, max: 14 });
-      expect(getRecommendedSleepHours(15)).toEqual({ min: 13, max: 14 });
-      expect(getRecommendedSleepHours(20)).toEqual({ min: 12, max: 13 });
+      // WHO 2019: 14-17h at 0-3 months, 12-16h at 4-11 months, 11-14h at 1-2 years.
+      expect(getRecommendedSleepHours(0)).toEqual({ min: 14, max: 17 });
+      expect(getRecommendedSleepHours(0.5)).toEqual({ min: 14, max: 17 });
+      expect(getRecommendedSleepHours(2)).toEqual({ min: 14, max: 17 });
+      expect(getRecommendedSleepHours(4)).toEqual({ min: 12, max: 17 });
+      expect(getRecommendedSleepHours(9)).toEqual({ min: 12, max: 16 });
+      expect(getRecommendedSleepHours(15)).toEqual({ min: 11, max: 14 });
+      expect(getRecommendedSleepHours(20)).toEqual({ min: 11, max: 14 });
       // 30 months must resolve to the 2-3 歲 band, not the 1.5-2 歲 one.
       expect(getRecommendedSleepHours(30)).toEqual({ min: 11, max: 14 });
     });
 
     it('switches bands at the lower bound of each range', () => {
-      expect(getRecommendedSleepHours(1)).toEqual({ min: 15, max: 16 });
-      expect(getRecommendedSleepHours(3)).toEqual({ min: 13, max: 15 });
-      expect(getRecommendedSleepHours(6)).toEqual({ min: 13, max: 14 });
-      expect(getRecommendedSleepHours(12)).toEqual({ min: 13, max: 14 });
-      expect(getRecommendedSleepHours(18)).toEqual({ min: 12, max: 13 });
+      expect(getRecommendedSleepHours(1)).toEqual({ min: 14, max: 17 });
+      expect(getRecommendedSleepHours(3)).toEqual({ min: 12, max: 17 });
+      expect(getRecommendedSleepHours(6)).toEqual({ min: 12, max: 16 });
+      expect(getRecommendedSleepHours(12)).toEqual({ min: 11, max: 14 });
+      expect(getRecommendedSleepHours(18)).toEqual({ min: 11, max: 14 });
       expect(getRecommendedSleepHours(24)).toEqual({ min: 11, max: 14 });
       expect(getRecommendedSleepHours(35.9)).toEqual({ min: 11, max: 14 });
     });

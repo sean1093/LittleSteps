@@ -134,6 +134,8 @@ describe('calculateSleepStats', () => {
   });
 });
 
+const BELOW_RANGE = '睡眠時數低於一般建議範圍';
+
 describe('generateSleepAdvice', () => {
   const adviceTitles = (logs: DailyLog[], period: 'today' | 'week' | 'month', ageMonths: number) =>
     generateSleepAdvice(calculateSleepStats(logs, period), ageMonths).map((a) => a.title);
@@ -145,18 +147,41 @@ describe('generateSleepAdvice', () => {
   });
 
   it('does not call one logged night a shortfall', () => {
-    // 一晚 10 小時對照建議的 13-15 小時。一晚是那一晚的事。
-    expect(adviceTitles([sleep(1, 20, 0, 10)], 'month', 4)).not.toContain('睡眠時間不足');
+    // 一晚 10 小時對照建議的 12-17 小時。一晚是那一晚的事。
+    expect(adviceTitles([sleep(1, 20, 0, 10)], 'month', 4)).not.toContain(BELOW_RANGE);
   });
 
   it('does call it a shortfall once several days agree', () => {
     const logs = [sleep(1, 20, 0, 10), sleep(2, 20, 0, 10), sleep(3, 20, 0, 10)];
 
-    expect(adviceTitles(logs, 'week', 4)).toContain('睡眠時間不足');
+    expect(adviceTitles(logs, 'week', 4)).toContain(BELOW_RANGE);
+  });
+
+  it('does not flag a nine-month-old who sleeps inside the WHO range', () => {
+    // 12.5 小時落在世衛對 4-11 個月的 12-16 小時之內。原本的區段是 13-14 小時，
+    // 這個孩子每一次打開分析頁都被告知「睡眠時間不足」。
+    const logs = [sleep(1, 19, 0, 12.5), sleep(2, 19, 0, 12.5), sleep(3, 19, 0, 12.5)];
+
+    const titles = adviceTitles(logs, 'week', 9);
+
+    expect(titles).toContain('睡眠時長充足');
+    expect(titles).not.toContain(BELOW_RANGE);
+  });
+
+  it('tells a parent below the range when not to worry and when to ask a doctor', () => {
+    const logs = [sleep(1, 20, 0, 10), sleep(2, 20, 0, 10), sleep(3, 20, 0, 10)];
+
+    const advice = generateSleepAdvice(calculateSleepStats(logs, 'week'), 4).find(
+      (a) => a.title === BELOW_RANGE
+    );
+
+    expect(advice?.description).toContain('12-17 小時');
+    expect(advice?.description).toContain('通常不需要擔心');
+    expect(advice?.suggestions.some((line) => line.includes('請醫師'))).toBe(true);
   });
 
   it('measures the daily average against the days actually recorded', () => {
-    // 三天各 13.5 小時，落在 13-15 小時之內。除以 30 會得到 1.35 小時。
+    // 三天各 13.5 小時，落在 12-17 小時之內。除以 30 會得到 1.35 小時。
     const logs = [sleep(1, 20, 0, 13.5), sleep(2, 20, 0, 13.5), sleep(3, 20, 0, 13.5)];
 
     expect(adviceTitles(logs, 'month', 4)).toContain('睡眠時長充足');
@@ -171,6 +196,6 @@ describe('generateSleepAdvice', () => {
 
     expect(titles).toContain('睡眠次數較多');
     expect(titles).toContain('單次睡眠時間較短');
-    expect(titles).not.toContain('睡眠時間不足');
+    expect(titles).not.toContain(BELOW_RANGE);
   });
 });

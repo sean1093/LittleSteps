@@ -12,13 +12,23 @@ export interface SleepRequirement {
   characteristics: string;
 }
 
+// 每日總睡眠時數來源（2026-11-24 查閱）：
+// - 世界衛生組織 2019 年五歲以下兒童身體活動、靜態行為與睡眠指引：
+//   0-3 個月 14-17 小時、4-11 個月 12-16 小時、1-2 歲 11-14 小時，皆含小睡。
+//   https://www.who.int/news/item/24-04-2019-to-grow-up-healthy-children-need-to-sit-less-and-play-more
+// - 國民健康署：新生兒一天總睡眠約 16～18 小時，「但每一個嬰兒的需求大不同」。
+//   https://mammy.hpa.gov.tw/Home/NewsKBContent?id=3659&type=01
+// 3-6 個月這一段橫跨世衛的兩個年齡層，所以取兩者的聯集 12-17 小時。
+// 先前的區段（如 0-1 個月 16-17 小時、6-12 個月 13-14 小時）比任何一份指引都窄，
+// 會把睡在正常範圍內的孩子判成「睡眠不足」。白天／夜間的分配沒有對應的官方數字，
+// 只是常見的作息樣貌，不拿來做任何判斷。
 export const sleepRequirements: SleepRequirement[] = [
   {
     id: 'sleep-0-1m',
     ageRange: '0-1 個月',
     minMonths: 0,
     maxMonths: 1,
-    totalHours: '16-17 小時',
+    totalHours: '14-17 小時',
     daytimeHours: '約 8 小時',
     nighttimeHours: '8-9 小時',
     characteristics: '睡眠極為零碎，無日夜概念'
@@ -28,7 +38,7 @@ export const sleepRequirements: SleepRequirement[] = [
     ageRange: '1-3 個月',
     minMonths: 1,
     maxMonths: 3,
-    totalHours: '15-16 小時',
+    totalHours: '14-17 小時',
     daytimeHours: '4-7 小時',
     nighttimeHours: '8-10 小時',
     characteristics: '6週後生理時鐘開始發展，開始分日夜'
@@ -38,7 +48,7 @@ export const sleepRequirements: SleepRequirement[] = [
     ageRange: '3-6 個月',
     minMonths: 3,
     maxMonths: 6,
-    totalHours: '13-15 小時',
+    totalHours: '12-17 小時',
     daytimeHours: '4-5 小時',
     nighttimeHours: '9-10 小時',
     characteristics: '褪黑激素穩定，3個月後有機會開始睡過夜'
@@ -48,7 +58,7 @@ export const sleepRequirements: SleepRequirement[] = [
     ageRange: '6-12 個月',
     minMonths: 6,
     maxMonths: 12,
-    totalHours: '13-14 小時',
+    totalHours: '12-16 小時',
     daytimeHours: '3 小時 (2次)',
     nighttimeHours: '10-11 小時',
     characteristics: '6個月後夜奶非必須，小睡次數減少'
@@ -58,7 +68,7 @@ export const sleepRequirements: SleepRequirement[] = [
     ageRange: '1-1.5 歲',
     minMonths: 12,
     maxMonths: 18,
-    totalHours: '13-14 小時',
+    totalHours: '11-14 小時',
     daytimeHours: '2-3 小時',
     nighttimeHours: '11 小時',
     characteristics: '睡眠更集中於夜間，小睡可能減至 1-2 次'
@@ -68,7 +78,7 @@ export const sleepRequirements: SleepRequirement[] = [
     ageRange: '1.5-2 歲',
     minMonths: 18,
     maxMonths: 24,
-    totalHours: '12-13 小時',
+    totalHours: '11-14 小時',
     daytimeHours: '1.5-2 小時',
     nighttimeHours: '11 小時',
     characteristics: '注意活動量，養成早睡早起習慣'

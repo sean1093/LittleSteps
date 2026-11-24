@@ -23,7 +23,7 @@ export interface SleepStats {
    * 這個時段裡真的有睡眠記錄的天數。
    *
    * 每日平均一律除這個數。除以時段長度的話，只記了一晚的家長會看到
-   * 「每天平均睡 1.7 小時」，而建議值是 13-15 小時——那不是孩子的狀況，
+   * 「每天平均睡 1.7 小時」，而建議值是 12-17 小時——那不是孩子的狀況，
    * 是 29 天沒記錄被當成 29 天沒睡。
    */
   daysWithRecords: number;
@@ -266,16 +266,17 @@ export function generateSleepAdvice(stats: SleepStats, ageInMonths: number): Sle
         suggestions: ['繼續維持目前的作息安排'],
       });
     } else if (actualHours < minHours) {
-      const deficit = minHours - actualHours;
+      // 這是一般建議範圍，不是診斷門檻：低於範圍的孩子多數沒有問題，所以不說
+      // 「不足」，也先說什麼情況不必擔心，再說什麼情況該問醫師。
       advice.push({
         category: 'improve',
-        title: '睡眠時間不足',
-        description: `寶寶每天平均睡 ${actualHours.toFixed(1)} 小時，少於建議的 ${minHours}-${maxHours} 小時（不足約 ${deficit.toFixed(1)} 小時）。`,
+        title: '睡眠時數低於一般建議範圍',
+        description: `寶寶每天平均睡 ${actualHours.toFixed(1)} 小時，低於世界衛生組織對這個年齡的一般建議（${minHours}-${maxHours} 小時，含小睡）。每個孩子的睡眠需求不同，如果寶寶清醒時精神好、食慾與成長正常，通常不需要擔心。`,
         suggestions: [
           '提早 30 分鐘開始睡前儀式',
           '確保睡眠環境安靜、黑暗、舒適',
           '觀察寶寶的睏倦訊號（揉眼睛、打哈欠），及時安撫入睡',
-          '檢查是否有干擾睡眠的因素（噪音、光線、溫度）',
+          '若同時有白天精神差、容易哭鬧或成長趨緩，回診時請醫師一併評估',
         ],
       });
     } else {

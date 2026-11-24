@@ -19,7 +19,7 @@ const FIXED_NOW = new Date('2026-06-15T01:00:00Z');
 const TODAY = '2026-06-15';
 const YESTERDAY = '2026-06-14';
 
-const AGE_MONTHS = 4; // 4 個月 -> 建議 13-15 小時，70% 門檻是 9.1 小時
+const AGE_MONTHS = 4; // 4 個月 -> 建議 12-17 小時，70% 門檻是 8.4 小時
 
 let logSeq = 0;
 
@@ -70,7 +70,7 @@ describe('alertEngine', () => {
 
   describe('detectSleepAlerts', () => {
     it('stays silent in the morning even though today is nowhere near a full day of sleep', () => {
-      // 今天到 09:00 只睡了 2 小時，遠低於 13 小時的 70%。原本這裡會亮
+      // 今天到 09:00 只睡了 2 小時，遠低於 12 小時的 70%。原本這裡會亮
       // 「今日睡眠時數偏低」，而且會一路亮到深夜——每天早上都一樣。
       const logs = [sleep(YESTERDAY, 780), sleep(TODAY, 120, '05')];
 
@@ -84,7 +84,7 @@ describe('alertEngine', () => {
       expect(alerts[0].id).toBe('sleep-below-recommended');
       expect(alerts[0].title).toBe('昨日睡眠時數偏低');
       expect(alerts[0].message).toBe(
-        '昨日睡眠 6.0 小時，低於建議最低 13 小時的 70%，請注意寶寶作息。'
+        '昨日睡眠 6.0 小時，低於建議最低 12 小時的 70%，請注意寶寶作息。'
       );
     });
 
@@ -105,11 +105,11 @@ describe('alertEngine', () => {
     });
 
     it('adds up every completed sleep of yesterday before judging', () => {
-      // 4 + 2 + 3.5 = 9.5 小時，剛好高於 9.1 小時的門檻。
+      // 4 + 2 + 2.5 = 8.5 小時，剛好高於 8.4 小時的門檻；少算任何一段都會亮警示。
       const logs = [
         sleep(YESTERDAY, 240, '01'),
         sleep(YESTERDAY, 120, '13'),
-        sleep(YESTERDAY, 210, '20'),
+        sleep(YESTERDAY, 150, '20'),
       ];
 
       expect(detectSleepAlerts(logs, AGE_MONTHS)).toEqual([]);

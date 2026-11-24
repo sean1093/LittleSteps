@@ -278,7 +278,7 @@ export function generateSleepRecommendations(
       id: 'insufficient-sleep',
       type: 'warning',
       title: '睡眠時間不足',
-      message: `寶寶過去 24 小時只睡了 ${Math.floor(analytics.totalSleepDuration / 60)} 小時 ${analytics.totalSleepDuration % 60} 分鐘。新生兒需要 14-17 小時，6個月大約 12-15 小時。`,
+      message: `寶寶過去 24 小時只睡了 ${Math.floor(analytics.totalSleepDuration / 60)} 小時 ${analytics.totalSleepDuration % 60} 分鐘。世界衛生組織的一般建議是 0-3 個月 14-17 小時、4-11 個月 12-16 小時（含小睡）。`,
       icon: 'Clock'
     });
   }
