@@ -1,6 +1,7 @@
-import { INDEXABLE_PAGES, SITE_ORIGIN, metaFor } from './pageMeta';
-import { organizationJsonLd } from './structuredData';
-import { ROUTE_PATH, type Page } from '../../types/routes';
+import { INDEXABLE_PAGES, SITE_ORIGIN, metaFor, metaForArticle, type ResolvedMeta } from './pageMeta';
+import { articleJsonLd, breadcrumbJsonLd, organizationJsonLd, type JsonLd } from './structuredData';
+import { articleOutDir, wikiArticlePages, type WikiArticlePage } from './wikiArticlePages';
+import { ROUTE_PATH, articlePath, type Page } from '../../types/routes';
 
 /**
  * 建置期用的 <head> 產生器。
@@ -34,10 +35,14 @@ const REPLACEABLE = [
   /<meta\s+property="twitter:url"[^>]*>\s*/g,
 ];
 
-export function headFor(page: Page): string {
-  const meta = metaFor(page);
-  const jsonLd = JSON.stringify(organizationJsonLd());
+/**
+ * JSON-LD 放進 <script> 之前要擋掉 `<`：文章標題或摘要裡若出現 `</script>`，
+ * 沒跳脫的話會提早結束這個標籤。內容是我們自己的資料檔，但這一步不花成本。
+ */
+const jsonLdScript = (node: JsonLd) =>
+  `<script type="application/ld+json">${JSON.stringify(node).replace(/</g, '\\u003c')}</script>`;
 
+function headFrom(meta: ResolvedMeta, jsonLd: JsonLd[]): string {
   return [
     `<title>${escapeHtml(meta.title)}</title>`,
     `<meta name="description" content="${escapeHtml(meta.description)}" />`,
@@ -49,17 +54,59 @@ export function headFor(page: Page): string {
     `<meta property="twitter:title" content="${escapeHtml(meta.title)}" />`,
     `<meta property="twitter:description" content="${escapeHtml(meta.description)}" />`,
     `<meta property="twitter:url" content="${meta.canonical}" />`,
-    `<script type="application/ld+json">${jsonLd}</script>`,
+    ...jsonLd.map(jsonLdScript),
   ].join('\n    ');
 }
 
-/** 把 index.html 的 head 換成指定頁面的版本。 */
-export function renderPageHtml(template: string, page: Page): string {
+export function headFor(page: Page): string {
+  return headFrom(metaFor(page), [organizationJsonLd()]);
+}
+
+/**
+ * 一篇百科文章的 head：自己的標題、摘要與 canonical，加上 Article 與麵包屑。
+ *
+ * 文章是這個站唯一逐篇對過來源、標了查證日期的內容，所以只有它們拿 Article
+ * 標記（理由見 structuredData.ts）。dateModified 用的是那份資料檔的查證日期。
+ */
+export function headForArticle(entry: WikiArticlePage): string {
+  const meta = metaForArticle(entry.page, entry.article);
+  const path = articlePath(entry.page, entry.article.id);
+  return headFrom(meta, [
+    articleJsonLd({
+      headline: entry.article.title,
+      description: entry.article.summary,
+      url: path,
+      dateModified: entry.verifiedOn,
+    }),
+    breadcrumbJsonLd([
+      { name: 'LittleSteps', url: '/' },
+      { name: entry.wikiName, url: ROUTE_PATH[entry.page] },
+      { name: entry.article.title, url: path },
+    ]),
+  ]);
+}
+
+function renderWithHead(template: string, head: string): string {
   let html = template;
   for (const pattern of REPLACEABLE) {
     html = html.replace(pattern, '');
   }
-  return html.replace('</head>', `  ${headFor(page)}\n  </head>`);
+  return html.replace('</head>', `  ${head}\n  </head>`);
+}
+
+/** 把 index.html 的 head 換成指定頁面的版本。 */
+export function renderPageHtml(template: string, page: Page): string {
+  return renderWithHead(template, headFor(page));
+}
+
+/** 同上，換成某一篇文章的版本。 */
+export function renderArticleHtml(template: string, entry: WikiArticlePage): string {
+  return renderWithHead(template, headForArticle(entry));
+}
+
+/** 建置後每一篇文章各寫一份 index.html，讓文章網址拿到自己的 title 與 og 標籤。 */
+export function articlesToPrerender(): { entry: WikiArticlePage; outDir: string }[] {
+  return wikiArticlePages().map((entry) => ({ entry, outDir: articleOutDir(entry) }));
 }
 
 /** 建置後要額外寫出的頁面：公開的才寫，需登入的沒有被索引的理由。 */
@@ -85,10 +132,24 @@ export function renderSitemap(lastmod: string): string {
     ].join('\n');
   });
 
+  // 每一篇文章也是一個可以被搜到的網址。lastmod 用查證日期而不是建置日：
+  // 文章沒改，就不該每次部署都告訴爬蟲它變了。
+  const articles = wikiArticlePages().map((entry) =>
+    [
+      '  <url>',
+      `    <loc>${SITE_ORIGIN}${articlePath(entry.page, entry.article.id)}</loc>`,
+      `    <lastmod>${entry.verifiedOn}</lastmod>`,
+      '    <changefreq>monthly</changefreq>',
+      '    <priority>0.7</priority>',
+      '  </url>',
+    ].join('\n'),
+  );
+
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
     ...entries,
+    ...articles,
     '</urlset>',
     '',
   ].join('\n');

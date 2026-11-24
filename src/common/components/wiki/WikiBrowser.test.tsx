@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { WikiArticle, WikiCategoryColors } from '../../../types';
 import { SERVICE_THEME } from '../../ui/serviceTheme';
 import WikiBrowser from './WikiBrowser';
+import type { WikiPage } from '../../../types/routes';
 
 /**
  * What a parent meets when they open an article: whether to go to hospital
@@ -42,10 +43,11 @@ const ARTICLES: WikiArticle<Category>[] = [
   },
 ];
 
-function renderBrowser() {
+function renderBrowser(wikiPage?: WikiPage) {
   const user = userEvent.setup();
   render(
     <WikiBrowser
+      wikiPage={wikiPage}
       articles={ARTICLES}
       categoryLabels={{ fever: '發燒與感冒', skin: '皮膚問題' }}
       categoryColors={COLORS}
@@ -118,5 +120,85 @@ describe('WikiBrowser: an open article', () => {
     await waitFor(() =>
       expect(screen.queryByRole('heading', { name: '尿布疹' })).not.toBeInTheDocument(),
     );
+  });
+});
+
+/**
+ * Every article has a URL. The one a parent has open is the one in the address
+ * bar, so it can be sent to someone else and opened again.
+ */
+describe('WikiBrowser: an article has its own URL', () => {
+  const WIKI: WikiPage = 'littlesteps/baby-wiki';
+  const at = (path: string) => window.history.replaceState(null, '', path);
+  const here = () => `${window.location.pathname}${window.location.search}`;
+
+  afterEach(() => at('/'));
+
+  it('opens the article the URL names', () => {
+    at('/littlesteps/baby-wiki/rash');
+    renderBrowser(WIKI);
+
+    expect(card('尿布疹')).toHaveAttribute('aria-expanded', 'true');
+    expect(card('發燒判斷')).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('puts the article in the address bar when it is opened, and takes it out when closed', async () => {
+    at('/littlesteps/baby-wiki');
+    const user = renderBrowser(WIKI);
+
+    await user.click(card('發燒判斷'));
+    expect(here()).toBe('/littlesteps/baby-wiki/fever');
+
+    await user.click(card('發燒判斷'));
+    expect(here()).toBe('/littlesteps/baby-wiki');
+  });
+
+  it('follows a related article to that article\'s URL', async () => {
+    at('/littlesteps/baby-wiki/fever');
+    const user = renderBrowser(WIKI);
+
+    await user.click(within(card('發燒判斷')).getByRole('button', { name: '尿布疹' }));
+
+    expect(here()).toBe('/littlesteps/baby-wiki/rash');
+  });
+
+  it('does not pile up history entries while a parent flips through articles', async () => {
+    at('/littlesteps/baby-wiki');
+    const before = window.history.length;
+    const user = renderBrowser(WIKI);
+
+    await user.click(card('發燒判斷'));
+    await user.click(card('尿布疹'));
+
+    expect(window.history.length).toBe(before);
+  });
+
+  it('shows the whole list for an id that is not an article, and cleans the URL', async () => {
+    at('/littlesteps/baby-wiki/no-such-article');
+    renderBrowser(WIKI);
+
+    expect(card('發燒判斷')).toHaveAttribute('aria-expanded', 'false');
+    expect(card('尿布疹')).toHaveAttribute('aria-expanded', 'false');
+    await waitFor(() => expect(here()).toBe('/littlesteps/baby-wiki'));
+  });
+
+  it('keeps a search in progress when an article is closed', async () => {
+    at('/littlesteps/baby-wiki?q=%E9%AB%94%E6%BA%AB');
+    const user = renderBrowser(WIKI);
+
+    await user.click(card('發燒判斷'));
+    await user.click(card('發燒判斷'));
+
+    expect(window.location.pathname).toBe('/littlesteps/baby-wiki');
+    expect(screen.getByRole('searchbox')).toHaveValue('體溫');
+  });
+
+  it('leaves the address bar alone when the page did not say which wiki it is', async () => {
+    at('/somewhere');
+    const user = renderBrowser();
+
+    await user.click(card('發燒判斷'));
+
+    expect(here()).toBe('/somewhere');
   });
 });

@@ -81,6 +81,70 @@ describe('fever', () => {
   });
 });
 
+/**
+ * Corrections from checking every baby wiki article against the official page
+ * it now cites (HPA 孕產兒關懷網站, Taiwan CDC, AAP). Each case is a sentence
+ * the sources contradict, or a red flag they give that the article lacked.
+ */
+describe('baby wiki, as verified against its sources', () => {
+  const byId = (id: string) => babyWikiArticles.find((article) => article.id === id);
+
+  it('does not recommend sponging a feverish baby (HPA 兒童衛教手冊, AAP)', () => {
+    const steps = text(byId('fever-assessment')?.solutions);
+    expect(steps).not.toMatch(/用溫水擦拭身體散熱/);
+    expect(steps).toMatch(/不建議溫水拭浴/);
+  });
+
+  it('sends a repeatedly 40°C fever to a doctor, not only 41°C (AAP)', () => {
+    const signs = text(byId('fever-assessment')?.warningSignals);
+    expect(signs).toMatch(/反覆超過 40°C/);
+    expect(signs).not.toMatch(/41°C/);
+  });
+
+  it('gives the age limits for fever medicine (AAP)', () => {
+    const steps = text(byId('fever-assessment')?.solutions);
+    expect(steps).toMatch(/未滿 3 個月發燒不要自行給藥/);
+    expect(steps).toMatch(/未滿 6 個月不可使用/);
+  });
+
+  it('never tells the parent of a feverish under-two to wait five days for a rash', () => {
+    const roseola = text(byId('roseola'));
+    expect(roseola).not.toMatch(/持續超過 5 天/);
+    expect(roseola).toMatch(/未滿 2 歲發燒超過 24 小時/);
+  });
+
+  it('does not blame the iron in formula for constipation (AAP)', () => {
+    const constipation = text(byId('constipation'));
+    expect(constipation).not.toMatch(/鐵質可能使大便較硬/);
+    expect(constipation).toMatch(/不要自行換成低鐵配方/);
+  });
+
+  it('lists fever among the signs that crying is not colic', () => {
+    expect(text(byId('colic')?.warningSignals)).toMatch(/發燒.*未滿 3 個月.*38°C.*立即就醫/);
+  });
+
+  it('gives the under-one choking steps where a crawling baby finds small objects', () => {
+    const signs = text(byId('crawling-safety')?.warningSignals);
+    expect(signs).toMatch(/119.*5 次拍背、5 次胸部按壓/);
+    expect(signs).toMatch(/不要用腹部擠壓法/);
+    expect(signs).toMatch(/鈕扣電池.*立即送急診/);
+  });
+
+  it('does not treat a baby who never crawls as delayed (AAP)', () => {
+    expect(text(byId('crawling-safety'))).not.toMatch(/10 個月以上完全無爬行跡象/);
+  });
+
+  it('keeps the baby off the adult bed in the rolling article too', () => {
+    const steps = text(byId('rolling-safety')?.solutions);
+    expect(steps).not.toMatch(/在床邊加裝安全護欄/);
+    expect(steps).toMatch(/不要把寶寶單獨留在大人床或沙發上/);
+  });
+
+  it('says what to do when a baby is not breathing', () => {
+    expect(text(byId('sids-prevention')?.warningSignals)).toMatch(/沒有呼吸.*119/);
+  });
+});
+
 describe('solids', () => {
   it('gives one answer to when to start, everywhere', () => {
     // Three files gave three answers: from 4 months, after 6 months, month 4.

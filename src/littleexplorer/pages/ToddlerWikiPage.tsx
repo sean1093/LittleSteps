@@ -23,6 +23,7 @@ import {
   toddlerWikiCategoryLabels,
 } from '../data/toddlerWiki';
 import ExplorerShell from '../components/ExplorerShell';
+import { articleFromPath } from '../../types/routes';
 
 const CATEGORY_ORDER: ToddlerWikiCategory[] = [
   'toilet',
@@ -79,7 +80,13 @@ export default function ToddlerWikiPage({ currentChild, reminderBadge }: Toddler
     ageMonths !== null && ageMonths >= TODDLER_MIN_MONTHS && ageMonths < TODDLER_MAX_MONTHS;
 
   const currentStage = inToddlerRange ? stageForMonths(ageMonths as number) : null;
-  const [stage, setStage] = useState<StageFilter>(() => currentStage?.id ?? 'all');
+  // 從某一篇文章的連結進來時不套年齡段：那一篇可能不屬於孩子現在的階段，
+  // 先被篩掉的話，連結就落在一份沒有它的清單上。
+  const [stage, setStage] = useState<StageFilter>(() =>
+    articleFromPath(window.location.pathname)?.page === 'littleexplorer/wiki'
+      ? 'all'
+      : (currentStage?.id ?? 'all'),
+  );
 
   const articles = useMemo(() => {
     const picked = WIKI_STAGES.find((s) => s.id === stage);
@@ -164,6 +171,7 @@ export default function ToddlerWikiPage({ currentChild, reminderBadge }: Toddler
           articleTag={tagFor}
           theme={theme}
           crossSearchService="littleexplorer"
+          wikiPage="littleexplorer/wiki"
         />
       </motion.div>
     </ExplorerShell>

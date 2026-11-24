@@ -66,5 +66,43 @@ const PAGE_BY_PATH = new Map<string, Page>(
  */
 export function pageFromPath(pathname: string): Page {
   const normalised = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
-  return PAGE_BY_PATH.get(normalised || '/') ?? 'home';
+  return (
+    PAGE_BY_PATH.get(normalised || '/') ?? articleFromPath(normalised)?.page ?? 'home'
+  );
+}
+
+/**
+ * 三個知識庫。每一篇文章在自己的知識庫底下有一個網址：
+ * `/littlesteps/baby-wiki/fever-assessment`。
+ *
+ * 文章不是 Page：85 篇各佔一個路由鍵的話，PAGE_META、routePolicy 與每一張以
+ * Page 為鍵的表都要多 85 列，而它們的答案和所屬的知識庫完全相同。所以文章
+ * 網址解析成「知識庫那一頁 + 文章代號」，公開與否、頁面外框都跟著知識庫走。
+ */
+export const WIKI_PAGES = ['littlesteps/baby-wiki', 'littlebloom/wiki', 'littleexplorer/wiki'] as const;
+export type WikiPage = (typeof WIKI_PAGES)[number];
+
+/** 文章代號只會是小寫英數與連字號；其他的一律不認，免得把任意字串寫進網址。 */
+const ARTICLE_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+export function articlePath(page: WikiPage, articleId: string): string {
+  return `${ROUTE_PATH[page]}/${articleId}`;
+}
+
+/**
+ * 這個路徑是不是某個知識庫底下的一篇文章。
+ *
+ * 只認「知識庫路徑 + 一段代號」。這裡不檢查那一篇存不存在——那需要載入整份
+ * 文章資料，而這個函式在進入點就會被呼叫；不存在的代號由知識庫自己處理成
+ * 「照常列出全部文章」。
+ */
+export function articleFromPath(pathname: string): { page: WikiPage; articleId: string } | null {
+  const normalised = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+  for (const page of WIKI_PAGES) {
+    const prefix = `${ROUTE_PATH[page]}/`;
+    if (!normalised.startsWith(prefix)) continue;
+    const articleId = normalised.slice(prefix.length);
+    return ARTICLE_ID.test(articleId) ? { page, articleId } : null;
+  }
+  return null;
 }

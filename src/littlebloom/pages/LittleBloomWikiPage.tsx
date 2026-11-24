@@ -39,6 +39,7 @@ export default function LittleBloomWikiPage() {
           searchPlaceholder="搜尋孕期症狀、關鍵字..."
           theme={SERVICE_THEME.littlebloom}
           crossSearchService="littlebloom"
+          wikiPage="littlebloom/wiki"
         />
       </motion.div>
     </BloomShell>

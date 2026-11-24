@@ -551,6 +551,14 @@ src/
 `littlebloom/{prenatal,wiki}`、`littleexplorer/{reminders,diary,wiki}`、
 `littleouting`、`babyoasis`、`littleguard`。
 
+每一篇百科文章在自己的知識庫底下也有一個網址 —
+`/littlesteps/baby-wiki/fever-assessment` — 所以單篇文章可以直接分享、也能被
+單獨索引。文章不是獨立的路由：路徑解析成「知識庫 + 文章代號」
+（`types/routes.ts` 的 `articleFromPath`），瀏覽元件展開那一篇並捲到它，打開另一
+篇時用 `replaceState` 改寫網址列。建置時每一篇各寫一份 `index.html`，帶自己的
+標題、canonical 與 `Article` JSON-LD，並全部列進 `sitemap.xml`；它們不進 PWA 的
+預先快取。
+
 ---
 
 ## PWA

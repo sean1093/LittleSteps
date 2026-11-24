@@ -28,7 +28,7 @@ export default function BabyWikiPage() {
     <div className="screen">
       <div className="screen-body">
         <p className="text-sm text-ink-muted mb-4">
-          常見嬰幼兒照顧問題與處理方式，參考台灣兒科醫學指引
+          常見嬰幼兒照顧問題與處理方式，逐篇對照國民健康署、疾病管制署與美國兒科學會的衛教資料
         </p>
 
         <WikiBrowser
@@ -40,6 +40,7 @@ export default function BabyWikiPage() {
           searchPlaceholder="搜尋症狀、關鍵字..."
           theme={SERVICE_THEME.littlesteps}
           crossSearchService="littlesteps"
+          wikiPage="littlesteps/baby-wiki"
         />
       </div>
     </div>
