@@ -167,7 +167,7 @@ export default function RadarPage() {
   if (failed || (data && !cells)) {
     return (
       <div className={`screen ${theme.pageBg}`}>
-        <AppBar theme={theme} title={theme.name} subtitle={theme.role} actions={<HeaderActions />} />
+        <AppBar theme={theme} title={theme.role} actions={<HeaderActions />} />
         {/* AppBar 留在 <main> 外面，它的 <header> 才算得上 banner 地標；
             同 BloomShell、ExplorerShell 與 OutingPage 的形狀。 */}
         <main className="screen-body">
@@ -187,7 +187,7 @@ export default function RadarPage() {
 
   return (
     <div className={`screen ${theme.pageBg}`}>
-      <AppBar theme={theme} title={theme.name} subtitle={theme.role} actions={<HeaderActions />} />
+      <AppBar theme={theme} title={theme.role} actions={<HeaderActions />} />
       <main className="screen-body space-y-4">
         <p className="text-sm text-ink-muted">
           {data

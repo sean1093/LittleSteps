@@ -26,7 +26,7 @@ describe('ToddlerHandoff', () => {
     expect(screen.getByText(/紀錄都會留著/)).toBeInTheDocument();
   });
 
-  it('整張卡片都可以點，會導到 LittleExplorer', async () => {
+  it('整張卡片都可以點，會導到「幼兒期陪伴」', async () => {
     const user = userEvent.setup();
     render(<ToddlerHandoff childName="小豆" />);
 

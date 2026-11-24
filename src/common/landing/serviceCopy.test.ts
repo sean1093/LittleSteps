@@ -166,13 +166,16 @@ describe('首頁文案的數字', () => {
         CHINESE_DIGITS.indexOf(match[1]),
       ),
     );
-    expect(diseaseCounts).toEqual([radar.diseases.length]);
+    // 工具列上那個大數字用阿拉伯數字寫，兩種寫法都要對，而且全檔只講一次。
+    expect([...diseaseCounts, ...claimed(SERVICE_COPY, '種傳染病')]).toEqual([
+      radar.diseases.length,
+    ]);
   });
 
   it('雷達那一行不承諾「這週」，也不承諾比平常多還是少', () => {
     // 資料集超過一個月沒更新時，板子自己會收起每一句判斷（radar.ts 的
     // expired）。入口頁那一行在那一天也必須是真的，所以它只能描述資料本身。
-    const line = SERVICE_COPY.find((entry) => entry.text.includes('種兒童常見傳染病'));
+    const line = SERVICE_COPY.find((entry) => entry.text.includes('門診人次'));
     expect(line, '找不到雷達的那一行').toBeDefined();
     expect(line?.text).not.toMatch(/這週|本週|每週|多還是少|變多/);
   });
@@ -198,6 +201,7 @@ describe('文案裡沒有第三種數字', () => {
     '36 劑疫苗',
     '33 項里程碑',
     '30 項發展檢核',
+    '7 種傳染病',
   ];
 
   /**

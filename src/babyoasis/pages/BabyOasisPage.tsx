@@ -833,7 +833,7 @@ const BabyOasisPage = () => {
       <div className="absolute top-0 left-0 right-0 z-[1000]">
         <AppBar
           theme={theme}
-          title={theme.name}
+          title={theme.role}
           subtitle={
             loadState === 'ready'
               ? isFiltered

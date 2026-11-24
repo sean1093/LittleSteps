@@ -28,16 +28,25 @@ export type AnytimeService = 'babyoasis' | 'littleouting' | 'littleguard';
 export const STAGED_SERVICES: StagedService[] = ['littlebloom', 'littlesteps', 'littleexplorer'];
 export const ANYTIME_SERVICES: AnytimeService[] = ['babyoasis', 'littleouting', 'littleguard'];
 
+/**
+ * The order is the order on the page. The public tools come first: they are
+ * what a visitor can use this minute, and they used to sit a screen and a half
+ * down behind three cards that end at a sign-in wall. Whether that order costs
+ * sign-ins is an open question the `login_start` event exists to answer.
+ *
+ * The staged note does not say "sign in": a signed-in parent reads it too, and
+ * the page adds that sentence only for a visitor.
+ */
 export const SERVICE_GROUPS: { title: string; note: string; ids: ServiceId[] }[] = [
   {
-    title: '跟著孩子長大，一次用一個',
-    note: '孩子長大就換到下一個，紀錄留在同一份檔案。',
-    ids: STAGED_SERVICES,
+    title: '不用登入，現在就能用',
+    note: '在外面、出門前，打開就查。',
+    ids: ANYTIME_SERVICES,
   },
   {
-    title: '不分年齡，不用登入',
-    note: '出門前打開就好。',
-    ids: ANYTIME_SERVICES,
+    title: '一份檔案，從懷孕記到三歲',
+    note: '孩子長大就換到下一段，紀錄跟著走。',
+    ids: STAGED_SERVICES,
   },
 ];
 
@@ -60,14 +69,31 @@ export const SERVICE_PITCH: Record<ServiceId, string> = {
     '餵奶、睡眠、尿布點幾下記完。36 劑疫苗時程、33 項里程碑，身高體重對照 WHO 生長曲線，看診前整理成一頁摘要。',
   littleexplorer:
     '12-36 個月的 30 項發展檢核，健檢、疫苗、塗氟依生日排好，可以匯出到行事曆。',
-  babyoasis: '全台 22 縣市、3,852 處。定位找最近的，或選一個捷運站，看附近有哪幾間。',
+  // The three tools carry their count in `TOOL_FIGURE`, set large above the
+  // line, so the line itself does not repeat it.
+  babyoasis: '全台 22 縣市都有。定位找最近的，或選一個捷運站，看附近有哪幾間。',
   littleouting:
-    '依孩子會不會坐、會不會走、會不會跑跳，推薦適合去的地方。全台 234 間親子館的收費與預約，查得到的都寫上。',
+    '依孩子會不會坐、會不會走、會不會跑跳，推薦適合去的地方。親子館的收費與預約，查得到的都寫上。',
   // No "this week" and no "more or less than usual" here. The board withholds
   // every verdict once its dataset is over a month old, and this line must
   // stay true on that day too.
   littleguard:
-    '七種兒童常見傳染病在你住的縣市的門診人次。資料來自疾管署的健保門診統計，是哪一週的都寫在上面。',
+    '你住的縣市的門診人次。資料來自疾管署的健保門診統計，是哪一週的都寫在上面。',
+};
+
+/**
+ * The one number each public tool stands on, shown large on its row.
+ *
+ * These used to sit in a four-cell strip between the hero and the cards: four
+ * nouns with no verb, each repeated in a card further down, in a shape that
+ * looked tappable and was not. A number now appears once, on the thing it
+ * counts. The radar's is how many diseases the board covers, which stays true
+ * however old its dataset is.
+ */
+export const TOOL_FIGURE: Record<AnytimeService, string> = {
+  babyoasis: '3,852 處',
+  littleouting: '234 間親子館',
+  littleguard: '7 種傳染病',
 };
 
 export interface ServiceIntroCopy {
@@ -139,3 +165,18 @@ export const SERVICE_INTRO: Record<StagedService, ServiceIntroCopy> = {
     ],
   },
 };
+
+/**
+ * The three knowledge bases, as the landing page links to them.
+ *
+ * Derived from `SERVICE_INTRO` so each article count is written in one place.
+ * 85 sourced articles are public, and the landing page had no way to reach
+ * them except through an intro page that leads with a sign-in button.
+ */
+export const WIKI_LINKS: { page: Page; title: string; count: number }[] = STAGED_SERVICES.flatMap(
+  (service) =>
+    SERVICE_INTRO[service].publicContent.flatMap(({ page, title, detail }) => {
+      const count = /^(\d+) 篇/.exec(detail);
+      return count ? [{ page, title, count: Number(count[1]) }] : [];
+    }),
+);

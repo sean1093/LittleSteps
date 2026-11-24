@@ -19,9 +19,9 @@ import { WikiBrowserPage } from './wikiBrowserPage';
  * same page and one locator cannot answer both:
  *
  * - `content` — "this is the real page, not the intro page a blocked visitor
- *   would see". AUTH-03's oracle. The wordmark in the header is deliberately
- *   not used: `/littleexplorer/wiki` renders `LittleExplorer` in its `AppBar`,
- *   and so does the LittleExplorer intro page.
+ *   would see". AUTH-03's oracle. The service title in the header is
+ *   deliberately not used: `/littleexplorer/wiki` renders the role, 幼兒期陪伴,
+ *   in its `AppBar`, and the LittleExplorer intro page heads itself the same.
  * - `ready` — "the runtime data has arrived and the page is finished". What
  *   the layout invariants and the console sweep wait on before measuring:
  *   three of the ten fetch a data file after mount, and measuring the painted

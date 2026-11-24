@@ -20,7 +20,7 @@ describe('Sidebar', () => {
       />,
     );
 
-    expect(screen.getByRole('dialog', { name: 'LittleSteps 選單' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: '寶寶成長選單' })).toBeInTheDocument();
 
     await user.keyboard('{Escape}');
 

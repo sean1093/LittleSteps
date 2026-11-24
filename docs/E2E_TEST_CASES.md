@@ -243,8 +243,8 @@ them by watching a locator match the wrong thing.
   prefix, the locator that marks a visitor as blocked matches the public
   entry point too — and AUTH-03 classifies it as gated. Keep them distinct,
   and anchor the intro locator at `^使用 Google 登入`.
-- **`/littleexplorer/wiki` renders the same wordmark string as the
-  LittleExplorer intro page's `h1`.** The header cannot distinguish the real
+- **`/littleexplorer/wiki` renders the same title string, the role
+  幼兒期陪伴, as the LittleExplorer intro page's `h1`.** The header cannot distinguish the real
   page from the intro page on that route, so an identity marker has to come
   from the page body.
 - **The growth chart cannot be selected as an `svg`.** Every Lucide icon in the

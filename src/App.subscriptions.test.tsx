@@ -117,7 +117,7 @@ const heading = (name: RegExp) => screen.findByRole('heading', { name }, { timeo
 describe('child-record listeners follow the service on screen', () => {
   it('attaches neither on a public single-page service', async () => {
     open('/babyoasis');
-    await heading(/BabyOasis/);
+    await heading(/哺乳室地圖/);
 
     // The child itself is loaded, so "nothing attached" is not just "no child".
     expect(live).toContain(`children/${CHILD_ID}`);
@@ -149,7 +149,7 @@ describe('child-record listeners follow the service on screen', () => {
 
     window.history.replaceState(null, '', '/babyoasis');
     window.dispatchEvent(new PopStateEvent('popstate'));
-    await heading(/BabyOasis/);
+    await heading(/哺乳室地圖/);
 
     expect(live).not.toContain(LOGS_PATH);
   }, 20000);
@@ -160,7 +160,7 @@ describe('child-record listeners follow the service on screen', () => {
    * pages, the service's own tab bar for the diary.
    */
   const READERS: { path: string; held: string; chrome: () => Promise<HTMLElement> }[] = [
-    { path: '/littlesteps', held: LOGS_PATH, chrome: () => heading(/LittleSteps/) },
+    { path: '/littlesteps', held: LOGS_PATH, chrome: () => heading(/寶寶成長/) },
     { path: '/littlesteps/dashboard', held: LOGS_PATH, chrome: () => heading(/成長總覽/) },
     { path: '/littlesteps/clinic-summary', held: LOGS_PATH, chrome: () => heading(/看診摘要/) },
     { path: '/littlesteps/report', held: LOGS_PATH, chrome: () => heading(/週報月報/) },

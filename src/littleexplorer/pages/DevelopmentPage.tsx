@@ -114,8 +114,8 @@ export default function DevelopmentPage({
     <EmptyState
       theme={THEME}
       title="這是孕期檔案"
-      description={'目前選擇的是還沒出生的寶寶。\n孕期的產檢與每週指南在 LittleBloom；出生後在那裡登記出生日期，這裡就會接手。'}
-      action={{ label: '前往 LittleBloom', onClick: () => { goTo('littlebloom'); } }}
+      description={'目前選擇的是還沒出生的寶寶。\n孕期的產檢與每週指南在「孕期陪伴」；出生後在那裡登記出生日期，這裡就會接手。'}
+      action={{ label: '前往孕期陪伴', onClick: () => { goTo('littlebloom'); } }}
     />
   ) : ageMonths < TODDLER_MIN_MONTHS ? (
     // 這道門檻用的是矯正年齡，所以文案也要跟著講矯正年齡：對一個實際 13 個
@@ -125,10 +125,10 @@ export default function DevelopmentPage({
       title={correcting ? '矯正年齡還不到 1 歲' : '寶寶還不到 1 歲'}
       description={
         correcting
-          ? '幼兒期的成長檢核從矯正年齡滿 1 歲開始，早產的週數已經扣掉了。\n在那之前，LittleSteps 的里程碑與副食品指南更適合現在的階段。'
-          : '幼兒期的成長追蹤從滿 1 歲開始。\n在那之前，LittleSteps 的里程碑與副食品指南更適合現在的階段。'
+          ? '幼兒期的成長檢核從矯正年齡滿 1 歲開始，早產的週數已經扣掉了。\n在那之前，「寶寶成長」的里程碑與副食品指南更適合現在的階段。'
+          : '幼兒期的成長追蹤從滿 1 歲開始。\n在那之前，「寶寶成長」的里程碑與副食品指南更適合現在的階段。'
       }
-      action={{ label: '回 LittleSteps 追蹤里程碑', onClick: () => { goTo('littlesteps/milestones'); } }}
+      action={{ label: '回「寶寶成長」追蹤里程碑', onClick: () => { goTo('littlesteps/milestones'); } }}
     />
   ) : null;
 
@@ -179,7 +179,7 @@ export default function DevelopmentPage({
                   // 原本只說「告一段落」就結束了，等於把家長送進一條死路。
                   // 實際上還有事要做：疫苗時程在 48 與 60 個月還有 3 劑，
                   // 而幼兒百科的文章沒有年齡限制，隨時查得到。
-                  '幼兒期的成長追蹤告一段落，紀錄都留著。\n滿 5 歲前還有幾劑疫苗要打，時程在 LittleSteps 的疫苗追蹤；百科文章隨時都能回來看。'
+                  '幼兒期的成長追蹤告一段落，紀錄都留著。\n滿 5 歲前還有幾劑疫苗要打，時程在「寶寶成長」的疫苗追蹤；百科文章隨時都能回來看。'
                 }
                 action={{
                   label: '看疫苗時程',

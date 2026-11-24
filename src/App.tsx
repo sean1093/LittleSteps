@@ -195,19 +195,19 @@ function AppContent() {
 
 
   const getPageTitle = () => {
-    // LittleBloom and LittleExplorer carry their own wordmark.
+    // LittleBloom and LittleExplorer are titled by their own role.
     if (currentPage === 'littlebloom') {
-      return 'LittleBloom';
+      return SERVICE_THEME.littlebloom.role;
     }
     if (currentPage.startsWith('littleexplorer')) {
-      return 'LittleExplorer';
+      return SERVICE_THEME.littleexplorer.role;
     }
 
-    // 服務首頁就叫 LittleSteps；其餘每一頁的標題是頁名本身，有孩子時前面加
+    // 服務首頁的標題是服務的角色名「寶寶成長」，不是英文代號；其餘每一頁的標題是頁名本身，有孩子時前面加
     // 「誰的」。這裡原本沒有孩子時把頁名直接接在 wordmark 後面，於是未登入的
     // 訪客——也就是從搜尋進到百科的每一個人——看到的是「LittleSteps寶寶…」，
     // 在 390px 上頁名幾乎整個被截掉。
-    let title = currentPage === 'littlesteps' ? 'LittleSteps' : '';
+    let title = currentPage === 'littlesteps' ? SERVICE_THEME.littlesteps.role : '';
     if (currentChild && currentPage !== 'littlesteps') {
       title = `${currentChild.name} 的 `;
     }
@@ -392,8 +392,8 @@ function AppContent() {
               <button
                 onClick={() => navigateToPage('littlesteps')}
                 className="btn-icon bg-ink/5 hover:bg-ink/10"
-                title="LittleSteps 首頁"
-                aria-label="LittleSteps 首頁"
+                title="寶寶成長首頁"
+                aria-label="寶寶成長首頁"
               >
                 <Home className="w-5 h-5" />
               </button>

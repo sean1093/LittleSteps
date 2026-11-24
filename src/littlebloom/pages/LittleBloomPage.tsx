@@ -127,14 +127,14 @@ export default function LittleBloomPage({
   // LittleSteps 儀表板、LittleExplorer 兩個守門一致。
   if (currentChild && lmp && !isPregnancyProfile(currentChild)) {
     return (
-      <BloomShell title="LittleBloom" subtitle="孕期已完成">
+      <BloomShell title="孕期陪伴" subtitle="孕期已完成">
         <EmptyState
           theme={THEME}
           icon={Baby}
           title="寶寶已經出生了"
-          description={`${currentChild.name} 的孕期紀錄已經封存保留。\n接下來的成長里程碑與疫苗，請到 LittleSteps 繼續。`}
+          description={`${currentChild.name} 的孕期紀錄已經封存保留。\n接下來的成長里程碑與疫苗，請到「寶寶成長」繼續。`}
           action={{
-            label: '前往 LittleSteps',
+            label: '前往寶寶成長',
             onClick: () => {
               goTo('littlesteps');
             },
@@ -146,7 +146,7 @@ export default function LittleBloomPage({
 
   if (!lmp) {
     return (
-      <BloomShell title="LittleBloom" subtitle="孕期陪伴">
+      <BloomShell title="孕期陪伴">
         <EmptyState
           theme={THEME}
           title="還沒有孕期檔案"
@@ -163,7 +163,7 @@ export default function LittleBloomPage({
   }
 
   return (
-    <BloomShell title="LittleBloom" subtitle={`第 ${displayWeek} 週 · 預產期 ${formatDate(dueDate)}`}>
+    <BloomShell title="孕期陪伴" subtitle={`第 ${displayWeek} 週 · 預產期 ${formatDate(dueDate)}`}>
       <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-4">
         <motion.section variants={listItem} className="panel text-center">
           <p className={`text-sm ${THEME.muted}`}>{TRIMESTER_LABEL[trimesterOf(displayWeek)]}</p>
@@ -256,7 +256,7 @@ export default function LittleBloomPage({
           <h3 className={`mb-2 ${THEME.body}`}>寶寶出生了</h3>
           <p className={`text-sm leading-relaxed mb-4 ${THEME.muted}`}>
             填入實際出生日期後，這份檔案會變成寶寶檔案，
-            LittleSteps 與 LittleExplorer 就會依實際月齡接手。孕期與產檢紀錄都會保留。
+            「寶寶成長」與「幼兒期陪伴」就會依實際月齡接手。孕期與產檢紀錄都會保留。
           </p>
 
           {birthOpen ? (

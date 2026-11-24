@@ -65,7 +65,7 @@ export default function AppBar({
               onClick={() => {
                 goTo(backTo);
               }}
-              aria-label={backLabel ?? `返回${theme.name}首頁`}
+              aria-label={backLabel ?? `返回${theme.role}首頁`}
               className="btn-icon -ml-1.5"
             >
               <ChevronLeft className="w-5 h-5" />
