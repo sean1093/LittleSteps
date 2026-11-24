@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Minus, Plus, X } from 'lucide-react';
-import { backdrop, sheet } from '../../../common/ui/motion';
+import { Minus, Plus } from 'lucide-react';
+import ModalFrame from '../../../common/components/ModalFrame';
+import ChoiceChips from '../../../common/ui/ChoiceChips';
 import { DailyLog, FeedingData, SleepData, DiaperData } from '../../../types';
 import {
   getCurrentDateTimeLocal,
@@ -234,33 +234,12 @@ export default function LogEntryModal({
     }
   };
 
+  // The shared frame, like every other form in the app. This sheet used to be
+  // drawn by hand: no dialog role, no focus trap, no Escape, and a backdrop
+  // that closed it mid-save and took the request's result with it.
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            {...backdrop}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/40 z-40"
-          />
-
-          {/*
-            A bottom sheet, like every other modal in the app. This one used to be
-            a centred dialog with no scroll, so on a phone with the keyboard up the
-            submit button was unreachable — and it is the most-used form here.
-          */}
-          <motion.div
-            {...sheet}
-            className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl z-50 max-h-[85vh] overflow-y-auto"
-          >
-            <div className="sticky top-0 bg-white border-b border-ink/10 px-4 py-3 flex items-center justify-between">
-              <h2>{getTitle()}</h2>
-              <button onClick={onClose} className="btn-icon" aria-label="關閉">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-4 space-y-4">
+    <ModalFrame isOpen={isOpen} onClose={onClose} title={getTitle()} closeDisabled={isSubmitting}>
+            <form onSubmit={handleSubmit} className="space-y-4">
               {logType === 'feeding' && (
                 <>
                   <div>
@@ -276,20 +255,15 @@ export default function LogEntryModal({
                   </div>
 
                   <div>
-                    <label htmlFor="feeding-type" className={LABEL}>類型 *</label>
-                    <select
-                      id="feeding-type"
+                    <ChoiceChips
+                      label="類型"
                       value={feedingType}
-                      onChange={(e) => setFeedingType(e.target.value as FeedingData['feedingType'])}
-                      className={FIELD}
-                      required
-                    >
-                      {FEEDING_TYPES.map((type) => (
-                        <option key={type} value={type}>
-                          {getFeedingTypeLabel(type)}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={setFeedingType}
+                      options={FEEDING_TYPES.map((type) => ({
+                        value: type,
+                        label: getFeedingTypeLabel(type),
+                      }))}
+                    />
                     {isPumping && (
                       <p className="mt-1 text-xs text-ink-faint">
                         擠出來的量記在這裡，不會算進寶寶今天喝了多少
@@ -298,22 +272,18 @@ export default function LogEntryModal({
                   </div>
 
                   {isPumping && (
-                    <div>
-                      <label htmlFor="feeding-side" className={LABEL}>哪一邊</label>
-                      <select
-                        id="feeding-side"
-                        value={side}
-                        onChange={(e) => setSide(e.target.value as typeof side)}
-                        className={FIELD}
-                      >
-                        <option value="">不記錄</option>
-                        {FEEDING_SIDES.map((value) => (
-                          <option key={value} value={value}>
-                            {getFeedingSideLabel(value)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <ChoiceChips
+                      label="哪一邊"
+                      value={side}
+                      onChange={setSide}
+                      options={[
+                        { value: '' as typeof side, label: '不記錄' },
+                        ...FEEDING_SIDES.map((value) => ({
+                          value: value as typeof side,
+                          label: getFeedingSideLabel(value),
+                        })),
+                      ]}
+                    />
                   )}
 
                   <div>
@@ -376,7 +346,7 @@ export default function LogEntryModal({
 
                   {hasSleepRange && (
                     sleepRangeError ? (
-                      <p role="alert" className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-800">
+                      <p role="alert" className="bg-primary-soft border border-primary/30 rounded-2xl p-3 text-sm text-primary-dark">
                         {sleepRangeError}
                       </p>
                     ) : (
@@ -442,39 +412,23 @@ export default function LogEntryModal({
                     />
                   </div>
 
-                  <div>
-                    <label htmlFor="diaper-type" className={LABEL}>類型 *</label>
-                    <select
-                      id="diaper-type"
-                      value={diaperType}
-                      onChange={(e) => setDiaperType(e.target.value as DiaperData['type'])}
-                      className={FIELD}
-                      required
-                    >
-                      {DIAPER_TYPES.map((type) => (
-                        <option key={type} value={type}>
-                          {getDiaperTypeLabel(type)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <ChoiceChips
+                    label="類型"
+                    value={diaperType}
+                    onChange={setDiaperType}
+                    options={DIAPER_TYPES.map((type) => ({ value: type, label: getDiaperTypeLabel(type) }))}
+                  />
 
                   {(diaperType === 'poop' || diaperType === 'both') && (
-                    <div>
-                      <label htmlFor="diaper-consistency" className={LABEL}>性狀</label>
-                      <select
-                        id="diaper-consistency"
-                        value={consistency}
-                        onChange={(e) => setConsistency(e.target.value as DiaperData['consistency'])}
-                        className={FIELD}
-                      >
-                        {CONSISTENCIES.map((value) => (
-                          <option key={value} value={value}>
-                            {getConsistencyLabel(value)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <ChoiceChips
+                      label="性狀"
+                      value={consistency ?? 'normal'}
+                      onChange={setConsistency}
+                      options={CONSISTENCIES.map((value) => ({
+                        value,
+                        label: getConsistencyLabel(value),
+                      }))}
+                    />
                   )}
                 </>
               )}
@@ -496,8 +450,8 @@ export default function LogEntryModal({
               </div>
 
               {error && (
-                <div role="alert" className="bg-red-50 border border-red-200 rounded-xl p-3">
-                  <p className="text-sm text-red-800">{error}</p>
+                <div role="alert" className="bg-primary-soft border border-primary/30 rounded-2xl p-3">
+                  <p className="text-sm text-primary-dark">{error}</p>
                 </div>
               )}
 
@@ -509,9 +463,6 @@ export default function LogEntryModal({
                 {isSubmitting ? '儲存中...' : (editingLog ? '更新' : '儲存')}
               </button>
             </form>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+    </ModalFrame>
   );
 }

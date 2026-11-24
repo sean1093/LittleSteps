@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Save, X } from 'lucide-react';
-import { backdrop, sheet, tap } from '../../../common/ui/motion';
+import { motion } from 'framer-motion';
+import { Save } from 'lucide-react';
+import { tap } from '../../../common/ui/motion';
 import { GrowthRecord } from '../../../types';
 import { toLocalDateKey } from '../../../common/utils/dateHelpers';
 import { useToast } from '../../../common/ui/toast';
 import { GROWTH_NOTES_LIMIT } from '../../../common/recordLimits';
+import ModalFrame from '../../../common/components/ModalFrame';
 
 interface AddGrowthRecordModalProps {
   isOpen: boolean;
@@ -75,29 +76,8 @@ export default function AddGrowthRecordModal({
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            {...backdrop}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/50 z-40"
-          />
-
-          <motion.div
-            {...sheet}
-            className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl z-50 max-h-[85vh] overflow-y-auto"
-          >
-            {/* Header */}
-            <div className="sticky top-0 bg-white border-b border-ink/10 flex items-center justify-between px-4 py-3 rounded-t-3xl">
-              <h2>{editingRecord ? '編輯成長記錄' : '新增成長記錄'}</h2>
-              <button onClick={onClose} className="btn-icon" aria-label="關閉">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="p-4 space-y-5">
+    <ModalFrame isOpen={isOpen} onClose={onClose} title={editingRecord ? '編輯成長記錄' : '新增成長記錄'}>
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label htmlFor="growth-date" className={LABEL}>測量日期</label>
                 <input
@@ -200,9 +180,6 @@ export default function AddGrowthRecordModal({
                 </motion.button>
               </div>
             </form>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+    </ModalFrame>
   );
 }

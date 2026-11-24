@@ -171,7 +171,7 @@ describe('沿用上一筆', () => {
 
     await user.click(screen.getByRole('button', { name: '餵奶' }));
 
-    expect(await screen.findByLabelText('類型 *')).toHaveValue('formula');
+    expect(await screen.findByRole('radio', { name: '配方奶' })).toBeChecked();
     expect(screen.getByLabelText('奶量（ml）')).toHaveValue(120);
   });
 
@@ -185,7 +185,7 @@ describe('沿用上一筆', () => {
 
     await user.click(screen.getByRole('button', { name: '餵奶' }));
 
-    expect(await screen.findByLabelText('類型 *')).toHaveValue('breast_both');
+    expect(await screen.findByRole('radio', { name: '母乳（兩邊）' })).toBeChecked();
     expect(screen.getByLabelText('奶量（ml）')).toHaveValue(null);
     expect(screen.getByLabelText('時長（分鐘）')).toHaveValue(15);
   });
@@ -288,8 +288,8 @@ describe('沿用上一筆', () => {
 
     await user.click(screen.getByRole('button', { name: '尿布' }));
 
-    expect(await screen.findByLabelText('類型 *')).toHaveValue('both');
-    expect(screen.getByLabelText('性狀')).toHaveValue('soft');
+    expect(await screen.findByRole('radio', { name: '大小便' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: '稀' })).toBeChecked();
   });
 
   /*
@@ -345,7 +345,7 @@ describe('沿用上一筆', () => {
     expect(screen.queryByText('再記一次上次的')).toBeNull();
 
     await user.click(screen.getByRole('button', { name: '餵奶' }));
-    expect(await screen.findByLabelText('類型 *')).toHaveValue('breast_left');
+    expect(await screen.findByRole('radio', { name: '母乳（左）' })).toBeChecked();
     expect(screen.getByLabelText('奶量（ml）')).toHaveValue(null);
   });
 });
@@ -593,5 +593,20 @@ describe('進行中的睡眠', () => {
 
     expect(updateDailyLog).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('這一段中間醒來幾次？')).toBeNull();
+  });
+});
+
+describe('頁面順序', () => {
+  it('記錄鍵排在統計前面——一天要按八次的東西不該排在三個數字後面', async () => {
+    render(
+      <ToastProvider>
+        <DailyLogPage currentChild={child} user={null} />
+      </ToastProvider>,
+    );
+    await screen.findByRole('heading', { name: '快速記錄' });
+
+    const headings = screen.getAllByRole('heading', { level: 2 }).map((node) => node.textContent);
+    expect(headings.indexOf('快速記錄')).toBeGreaterThan(-1);
+    expect(headings.indexOf('快速記錄')).toBeLessThan(headings.indexOf('今日統計'));
   });
 });

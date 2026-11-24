@@ -1,11 +1,10 @@
 import { useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Milestone } from '../../../types';
-import { X, Check, Share2 } from 'lucide-react';
-import { backdrop, sheet } from '../../../common/ui/motion';
+import { Check, Share2 } from 'lucide-react';
 import { shareMilestone } from '../../utils/share';
 import { formatDate } from '../../../common/utils/dateHelpers';
 import { useToast } from '../../../common/ui/toast';
+import ModalFrame from '../../../common/components/ModalFrame';
 
 interface MilestoneModalProps {
   milestone: Milestone | null;
@@ -46,36 +45,13 @@ export default function MilestoneModal({
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            {...backdrop}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/40 z-40"
-          />
-
-          <motion.div
-            {...sheet}
-            className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl z-50 max-h-[85vh] overflow-y-auto"
-          >
-            {/* Header */}
-            <div className="sticky top-0 bg-white border-b border-ink/10 px-4 py-3 flex items-center justify-between">
-              <div className="flex-1 pr-4">
-                <h2>{milestone.title}</h2>
-                {isCompleted && achievedDate && (
-                  <p className="text-sm text-ink-faint mt-1">
-                    完成日期: {formatDate(achievedDate)}
-                  </p>
-                )}
-              </div>
-              <button onClick={onClose} className="btn-icon" aria-label="關閉">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+    <ModalFrame isOpen={isOpen} onClose={onClose} title={milestone.title}>
+            {isCompleted && achievedDate && (
+              <p className="text-sm text-ink-faint mb-4">完成日期: {formatDate(achievedDate)}</p>
+            )}
 
             {/* Content */}
-            <div className="px-4 py-6 space-y-6">
+            <div className="space-y-6">
               <p className="leading-relaxed">{milestone.summary}</p>
 
               <div>
@@ -99,7 +75,7 @@ export default function MilestoneModal({
             </div>
 
             {/* Actions */}
-            <div className="sticky bottom-0 bg-white border-t border-ink/10 px-4 py-4 flex gap-3">
+            <div className="mt-6 flex gap-3">
               <button
                 onClick={onToggle}
                 className={`flex-1 ${isCompleted ? 'btn-secondary' : 'btn-primary'}`}
@@ -112,9 +88,6 @@ export default function MilestoneModal({
                 分享
               </button>
             </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+    </ModalFrame>
   );
 }

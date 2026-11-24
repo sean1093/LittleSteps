@@ -20,6 +20,7 @@ import { vaccineMonthForChild } from '../utils/ageDefaults';
 import { isCorrecting } from '../../common/correctedAge';
 import { buildVaccineIcs, outstandingVaccineDoses, FUNDING_LABEL } from '../utils/vaccineCalendar';
 import { downloadCalendar } from '../../common/utils/icsExport';
+import { useDialogA11y } from '../../common/ui/useDialogA11y';
 
 type FundingFilter = 'all' | 'national' | 'conditional' | 'self-paid';
 type MonthFilter = 'all' | number;
@@ -104,12 +105,22 @@ function Sheet({
   onClose: () => void;
   children: ReactNode;
 }) {
+  // 對話框該有的行為（角色、焦點留在裡面、Esc 關閉、關掉後焦點回到原處）和
+  // 共用的 ModalFrame 同一支 hook；外框留著自己畫，因為這四張是掛在頁面自己
+  // 的 AnimatePresence 底下。
+  const dialogRef = useDialogA11y(true, onClose);
+
   return (
     <>
-      <motion.div {...backdrop} onClick={onClose} className="fixed inset-0 bg-black/50 z-40" />
+      <motion.div {...backdrop} onClick={onClose} className="fixed inset-0 bg-ink/40 z-40" />
       <motion.div
         {...sheet}
-        className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl z-50 max-h-[85vh] overflow-y-auto"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        tabIndex={-1}
+        className="fixed inset-x-0 bottom-0 mx-auto w-full max-w-lg bg-white rounded-t-3xl z-50 max-h-[85vh] overflow-y-auto"
       >
         <div className="sticky top-0 bg-white border-b border-ink/10 px-4 py-3 flex items-center justify-between gap-3">
           <h2>{title}</h2>

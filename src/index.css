@@ -47,6 +47,15 @@
   :focus-visible {
     @apply outline-none ring-2 ring-primary-dark ring-offset-2 ring-offset-warm-white;
   }
+
+  /*
+    A dialog takes focus when it opens so the keyboard starts inside it. It is
+    a container, not a control, and must not draw the ring: at full opacity it
+    showed as a coral outline round every sheet in the app.
+  */
+  [role='dialog']:focus-visible {
+    @apply ring-0 ring-offset-0;
+  }
 }
 
 @layer components {

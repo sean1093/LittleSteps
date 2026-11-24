@@ -35,7 +35,9 @@ export default function QuickLogButtons({ onLogClick, sleepMode = 'log' }: Quick
   ];
 
   return (
-    <div className="flex justify-center gap-4">
+    // Three equal columns across the width: the targets used to be three 80px
+    // squares huddled in the middle, out of a thumb's easy arc on either side.
+    <div className="grid grid-cols-3 gap-3">
       {buttons.map((button) => {
         const Icon = button.icon;
         return (
@@ -44,7 +46,7 @@ export default function QuickLogButtons({ onLogClick, sleepMode = 'log' }: Quick
             onClick={() => onLogClick(button.type)}
             whileTap={tap}
             className={`
-              w-20 h-20 rounded-2xl shadow-soft ${button.skin}
+              w-full min-h-20 rounded-2xl shadow-soft ${button.skin}
               flex flex-col items-center justify-center gap-1
               transition-shadow duration-200 hover:shadow-soft-lg
             `}

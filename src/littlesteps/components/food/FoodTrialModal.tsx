@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X } from 'lucide-react';
-import { backdrop, sheet } from '../../../common/ui/motion';
 import { FoodTrialInput, FoodTrialRecord, AllergyReaction, AllergyReactionType, AllergySeverity, FoodPreference } from '../../../types';
 import { formatDate, toLocalDateKey } from '../../../common/utils/dateHelpers';
 import { trialDateSet, trialDatesOf } from '../../utils/foodTrialDates';
 import { ALLERGY_DESCRIPTION_LIMIT, FOOD_NAME_LIMIT, FOOD_NOTES_LIMIT } from '../../../common/recordLimits';
+import ModalFrame from '../../../common/components/ModalFrame';
 
 interface FoodTrialModalProps {
   isOpen: boolean;
@@ -17,7 +16,7 @@ interface FoodTrialModalProps {
 /* Same recipe as the other two modals; every field here had its own border. */
 const FIELD = 'w-full px-4 py-3 rounded-xl border border-ink/15 focus:border-primary-dark transition-colors';
 const LABEL = 'block text-sm font-medium text-ink mb-2';
-const ERROR_BOX = 'bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-800';
+const ERROR_BOX = 'bg-primary-soft border border-primary/30 rounded-2xl p-3 text-sm text-primary-dark';
 
 const PREFERENCES: { value: FoodPreference; label: string }[] = [
   { value: 'love', label: '超愛' },
@@ -155,29 +154,8 @@ export default function FoodTrialModal({
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            {...backdrop}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/50 z-40"
-          />
-
-          <motion.div
-            {...sheet}
-            className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl z-50 max-h-[85vh] overflow-y-auto"
-          >
-            {/* Header */}
-            <div className="sticky top-0 bg-white border-b border-ink/10 px-4 py-3 flex items-center justify-between">
-              <h2>{editingFood ? '編輯食物記錄' : '記錄新食物嘗試'}</h2>
-              <button onClick={onClose} className="btn-icon" aria-label="關閉">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Form */}
-            <div className="p-4 space-y-4">
+    <ModalFrame isOpen={isOpen} onClose={onClose} title={editingFood ? '編輯食物記錄' : '記錄新食物嘗試'} closeDisabled={saving}>
+            <div className="space-y-4">
               <div>
                 <label htmlFor="food-name" className={LABEL}>
                   食物名稱 <span className="text-red-600">*</span>
@@ -456,9 +434,6 @@ export default function FoodTrialModal({
                 </button>
               </div>
             </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+    </ModalFrame>
   );
 }
