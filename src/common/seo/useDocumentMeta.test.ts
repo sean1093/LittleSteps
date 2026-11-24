@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import { ROUTE_PATH, type Page } from '../../types/routes';
 import { requiresAuth } from '../routePolicy';
-import { metaFor } from './pageMeta';
-import { useDocumentMeta } from './useDocumentMeta';
+import { metaFor, metaForArticle } from './pageMeta';
+import { setDocumentMetaOverride, useDocumentMeta } from './useDocumentMeta';
 
 /**
  * The document title is static per route and never names a child.
@@ -37,5 +37,26 @@ describe('useDocumentMeta', () => {
       expect(robots, page).toBe(requiresAuth(page) ? 'noindex, follow' : 'index, follow');
       unmount();
     }
+  });
+
+  it('lets an open wiki article take over the head, and gives it back afterwards', () => {
+    const article = { id: 'fever-assessment', title: '發燒怎麼判斷', summary: '什麼時候要就醫。' };
+    const meta = metaForArticle('littlesteps/baby-wiki', article);
+    const canonical = () => document.head.querySelector('link[rel="canonical"]')?.getAttribute('href');
+
+    // Set before the page's own hook has run: the order the two effects fire
+    // in is not something either side controls.
+    setDocumentMetaOverride(meta);
+    const { unmount } = renderHook(() => useDocumentMeta('littlesteps/baby-wiki'));
+
+    expect(document.title).toBe('發燒怎麼判斷｜寶寶百科｜LittleSteps');
+    expect(canonical()).toBe(meta.canonical);
+    expect(canonical()).toContain('/littlesteps/baby-wiki/fever-assessment');
+
+    act(() => setDocumentMetaOverride(null));
+
+    expect(document.title).toBe(metaFor('littlesteps/baby-wiki').title);
+    expect(canonical()).toBe(metaFor('littlesteps/baby-wiki').canonical);
+    unmount();
   });
 });

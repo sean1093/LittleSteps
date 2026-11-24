@@ -50,6 +50,9 @@ const PUBLIC_CHECKUP_WEEKS = prenatalCheckupSchedule
   .map((item) => item.dueWeek)
   .join('、');
 
+/** 檔頭那個查證日期；文章頁的結構化資料用它當 dateModified。 */
+export const pregnancyWikiVerifiedOn = '2026-09-04';
+
 export const pregnancyWikiCategoryLabels: Record<PregnancyWikiCategory, string> = {
   nutrition: '孕期營養',
   health: '健康照護',

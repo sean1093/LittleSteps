@@ -629,6 +629,15 @@ every screen is shareable and crawlable. Sub-routes:
 `littlebloom/{prenatal,wiki}`, `littleexplorer/{reminders,diary,wiki}`,
 `littleouting`, `babyoasis`, `littleguard`.
 
+Each wiki article also has a URL under its knowledge base —
+`/littlesteps/baby-wiki/fever-assessment` — so one article can be shared and
+indexed on its own. An article is not a route of its own: the path resolves to
+the knowledge base plus an article id (`articleFromPath` in `types/routes.ts`),
+the browser expands that article and scrolls to it, and opening another one
+rewrites the address bar with `replaceState`. The build writes one `index.html`
+per article with its own title, canonical URL and `Article` JSON-LD, and lists
+all of them in `sitemap.xml`; they are left out of the PWA precache.
+
 ---
 
 ## PWA

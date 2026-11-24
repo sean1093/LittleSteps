@@ -19,6 +19,9 @@
 
 import { BabyWikiArticle, WikiCategory, WikiCategoryColors } from '../../types';
 
+/** 檔頭那個查證日期；文章頁的結構化資料用它當 dateModified。 */
+export const babyWikiVerifiedOn = '2026-11-24';
+
 export const wikiCategoryLabels: Record<WikiCategory, string> = {
   skin: '皮膚問題',
   oral: '口腔與長牙',

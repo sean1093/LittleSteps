@@ -1,4 +1,4 @@
-import { ROUTE_PATH, type Page } from '../../types/routes';
+import { ROUTE_PATH, articlePath, type Page, type WikiPage } from '../../types/routes';
 import { requiresAuth } from '../routePolicy';
 
 export const SITE_ORIGIN = 'https://littlesteps-c6ab6.web.app';
@@ -154,3 +154,29 @@ export function metaFor(page: Page): ResolvedMeta {
 export const INDEXABLE_PAGES = (Object.keys(ROUTE_PATH) as Page[]).filter(
   (page) => !requiresAuth(page),
 );
+
+/** 知識庫在文章標題後面的名字，例如「發燒怎麼判斷｜寶寶百科｜LittleSteps」。 */
+const WIKI_NAME: Record<WikiPage, string> = {
+  'littlesteps/baby-wiki': '寶寶百科｜LittleSteps',
+  'littlebloom/wiki': '孕期知識庫｜LittleBloom',
+  'littleexplorer/wiki': '幼兒百科｜LittleExplorer',
+};
+
+/**
+ * 一篇百科文章自己的 title、description 與 canonical。
+ *
+ * description 就是文章的摘要：那是作者為這一篇寫的一句話，比任何另外編的
+ * 搜尋摘要都更對得上內容。
+ */
+export function metaForArticle(
+  page: WikiPage,
+  article: { id: string; title: string; summary: string },
+): ResolvedMeta {
+  return {
+    title: `${article.title}｜${WIKI_NAME[page]}`,
+    description: article.summary,
+    canonical: `${SITE_ORIGIN}${articlePath(page, article.id)}`,
+    noindex: requiresAuth(page),
+    siteName: SITE_NAME,
+  };
+}

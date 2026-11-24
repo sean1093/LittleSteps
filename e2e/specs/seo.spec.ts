@@ -1,6 +1,8 @@
 import { expect, test } from '../fixtures/test';
 import { GATED_ROUTES, PUBLIC_ROUTES, pathOf } from '../fixtures/routes';
-import { INDEXABLE_PAGES, SITE_ORIGIN, metaFor } from '../../src/common/seo/pageMeta';
+import { INDEXABLE_PAGES, SITE_ORIGIN, metaFor, metaForArticle } from '../../src/common/seo/pageMeta';
+import { wikiArticlePages } from '../../src/common/seo/wikiArticlePages';
+import { WIKI_PAGES, articlePath } from '../../src/types/routes';
 
 /**
  * SEO-01, SEO-02, SEO-03 — the crawl boundary over gated routes.
@@ -76,9 +78,42 @@ test('SEO-02 @p0 sitemap.xml lists exactly the indexable pages', async ({ page }
   // Set equality, both directions: a gated route present is a child's health
   // record offered to a crawler, and a public route missing is content a
   // parent without an account cannot find.
-  expect(listed.slice().sort()).toEqual(
-    INDEXABLE_PAGES.map((route) => `${SITE_ORIGIN}${pathOf(route)}`).sort(),
+  // Every wiki article is a page of its own, under a public knowledge base.
+  const articles = wikiArticlePages().map(
+    ({ page: wiki, article }) => `${SITE_ORIGIN}${articlePath(wiki, article.id)}`,
   );
+  expect(listed.slice().sort()).toEqual(
+    [...INDEXABLE_PAGES.map((route) => `${SITE_ORIGIN}${pathOf(route)}`), ...articles].sort(),
+  );
+});
+
+test('SEO-03 @p0 a wiki article is served its own prerendered head', async ({ page }) => {
+  // One article per knowledge base, read off the wire before any JavaScript:
+  // this is what a link preview in LINE and a crawler that does not run
+  // scripts see. Without the prerendered file every article would share the
+  // knowledge base's title.
+  const entries = wikiArticlePages();
+  const sampled = WIKI_PAGES.map((wiki) => entries.find((entry) => entry.page === wiki));
+
+  for (const entry of sampled) {
+    expect(entry, 'a knowledge base has no articles').toBeDefined();
+    if (!entry) continue;
+    const path = articlePath(entry.page, entry.article.id);
+
+    await test.step(path, async () => {
+      const response = await page.request.get(`${path}/`);
+      expect(response.status()).toBe(200);
+
+      const html = await response.text();
+      const meta = metaForArticle(entry.page, entry.article);
+
+      expect(html).toContain(`<link rel="canonical" href="${meta.canonical}" />`);
+      expect(html).toContain('<meta name="robots" content="index, follow" />');
+      expect(html).toContain(entry.article.title);
+      expect(html).toContain('"@type":"Article"');
+      expect(html).not.toContain(`<title>${metaFor(entry.page).title}</title>`);
+    });
+  }
 });
 
 test('SEO-03 @p1 each public route is served its own prerendered head', async ({ page }) => {

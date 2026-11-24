@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X } from 'lucide-react';
 import { getLucideIcon } from '../../lucideIcons';
@@ -12,6 +12,9 @@ import { matchesKeyword } from '../../wiki/matchesKeyword';
 import { queryFromLocation } from '../../wiki/crossWikiSearch';
 import type { ServiceId } from '../../ui/serviceTheme';
 import SuiteNote from '../../landing/SuiteNote';
+import { ROUTE_PATH, articleFromPath, articlePath, type WikiPage } from '../../../types/routes';
+import { metaForArticle } from '../../seo/pageMeta';
+import { setDocumentMetaOverride } from '../../seo/useDocumentMeta';
 
 /**
  * 三個知識庫的瀏覽介面：搜尋、分類篩選、篇數、空狀態、展開卡片。
@@ -60,6 +63,23 @@ interface WikiBrowserProps<
    * 是把 85 篇查證過的文章切成三份互不相通的直接後果。
    */
   crossSearchService?: ServiceId;
+  /**
+   * 這個知識庫是哪一頁。有給，打開的那一篇就有自己的網址。
+   *
+   * 文章原本只是頁面裡的一個展開狀態：想把「發燒什麼時候要就醫」傳給另一半，
+   * 只能傳整個百科再請對方自己找；搜尋引擎也只看得到一個網址，85 篇文章共用
+   * 一個標題。現在展開哪一篇，網址列就是那一篇，重新整理或從連結進來都會
+   * 落在那一篇上。
+   */
+  wikiPage?: WikiPage;
+}
+
+/** 網址指的那一篇；不是這個知識庫的文章、或那一篇不在清單裡，就當作沒有。 */
+function articleIdInUrl(wikiPage: WikiPage | undefined, articles: readonly { id: string }[]) {
+  if (!wikiPage) return null;
+  const target = articleFromPath(window.location.pathname);
+  if (!target || target.page !== wikiPage) return null;
+  return articles.some((article) => article.id === target.articleId) ? target.articleId : null;
 }
 
 export default function WikiBrowser<
@@ -75,11 +95,51 @@ export default function WikiBrowser<
   articleTag,
   theme,
   crossSearchService,
+  wikiPage,
 }: WikiBrowserProps<Category, Article>) {
   // 從別的知識庫帶著關鍵字跳過來時，要落在搜尋中間，不是從空白開始。
   const [query, setQuery] = useState(() => queryFromLocation(window.location.search));
   const [category, setCategory] = useState<Category | 'all'>('all');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(() =>
+    articleIdInUrl(wikiPage, articles),
+  );
+
+  // 從文章連結進來：那一篇已經展開，但它可能在清單很下面。只在掛載時捲一次。
+  useEffect(() => {
+    const id = articleIdInUrl(wikiPage, articles);
+    if (!id) return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(`wiki-article-${id}`)?.scrollIntoView({ block: 'start' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+    // 只處理進站那一刻的網址，所以不跟著 props 重跑。
+  }, []);
+
+  const expandedArticle = useMemo(
+    () => articles.find((article) => article.id === expandedId) ?? null,
+    [articles, expandedId],
+  );
+
+  /*
+   * 網址與 <head> 跟著展開的那一篇走。
+   *
+   * 用 replaceState 而不是 pushState：展開、收合是在同一頁裡翻看，每翻一篇就
+   * 多一筆歷史紀錄的話，「上一頁」要按十幾下才離得開百科。收合時保留 query，
+   * 搜尋到一半的關鍵字不能因為收起一篇文章就不見。
+   */
+  useEffect(() => {
+    if (!wikiPage) return;
+    const target = expandedArticle
+      ? articlePath(wikiPage, expandedArticle.id)
+      : `${ROUTE_PATH[wikiPage]}${window.location.search}`;
+    if (`${window.location.pathname}${window.location.search}` !== target) {
+      window.history.replaceState(window.history.state, '', target);
+    }
+    setDocumentMetaOverride(expandedArticle ? metaForArticle(wikiPage, expandedArticle) : null);
+  }, [wikiPage, expandedArticle]);
+
+  // 離開知識庫時把 <head> 還給頁面本身。
+  useEffect(() => () => setDocumentMetaOverride(null), []);
 
   const categories = categoryOrder ?? (Object.keys(categoryLabels) as Category[]);
 

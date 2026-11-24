@@ -4,7 +4,9 @@ import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import {
+  articlesToPrerender,
   pagesToPrerender,
+  renderArticleHtml,
   renderPageHtml,
   renderRobotsTxt,
   renderSitemap,
@@ -32,6 +34,13 @@ function seoStaticFiles(): Plugin {
         const target = join(dist, outDir, 'index.html')
         mkdirSync(dirname(target), { recursive: true })
         writeFileSync(target, renderPageHtml(template, page))
+      }
+
+      // 每一篇百科文章也有自己的網址，同樣各寫一份。
+      for (const { entry, outDir } of articlesToPrerender()) {
+        const target = join(dist, outDir, 'index.html')
+        mkdirSync(dirname(target), { recursive: true })
+        writeFileSync(target, renderArticleHtml(template, entry))
       }
 
       // 首頁本身也要換成自己的 head，否則它還是原始樣板。
@@ -132,7 +141,14 @@ export default defineConfig({
         // 全國哺乳室資料約 1.1 MB，預先快取會讓每個使用者在安裝 PWA 時就下載，
         // 即使從未開啟 BabyOasis。改為首次進入地圖時才取得並快取。
         // 公園資料約 0.8 MB，同理：只有打開親子好去處的公園分頁才用得到。
-        globIgnores: ['**/data/nursingRooms.json', '**/data/outingParks.json'],
+        // 85 篇文章各自的 index.html 只有 <head> 不同，是給爬蟲與分享預覽看的；
+        // 已安裝的 PWA 走 navigateFallback 拿根目錄那一份就夠了，預先快取它們
+        // 只是讓每個使用者多下載 85 份幾乎相同的檔案。
+        globIgnores: [
+          '**/data/nursingRooms.json',
+          '**/data/outingParks.json',
+          '**/*wiki/*/index.html',
+        ],
         runtimeCaching: [
           {
             urlPattern: /\/data\/outingParks\.json$/,

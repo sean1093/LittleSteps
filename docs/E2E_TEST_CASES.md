@@ -125,7 +125,7 @@ about.
 | ID | Pri | Case | Expected |
 |---|---|---|---|
 | WIKI-01 | P0 | Each of the three wikis lists articles | A non-empty list renders. An empty wiki is the "no data where there is data" failure |
-| WIKI-02 | P1 | Expand and collapse an article | Sections render in place; collapsing restores the list; **the URL is unchanged throughout**. Articles are an accordion (`expandedId` state), not routes — do not assert a history entry or a back-button return |
+| WIKI-02 | P0/P1 | Expand an article; open one from its own URL | Sections render in place and the address bar becomes `<wiki>/<article id>` with the article's title in `document.title`; collapsing restores the list and the wiki URL. A direct visit to an article URL, in each of the three wikis, lands on that article expanded and in the viewport. The URL is written with `replaceState` — do not assert a history entry or a back-button return |
 | WIKI-03 | P1 | Wiki search or category filter narrows the list | Result set changes and an empty query restores it |
 | WIKI-04 | P1 | Care guide and sleep guide render signed out | Both are on the allowlist; both must render real content |
 | WIKI-05 | P1 | Cross-wiki search | Search in one wiki, follow a `CrossWikiResults` hit into another wiki, and land with the keyword pre-filled. `WikiBrowser` seeds its query from `queryFromLocation(window.location.search)` and `goTo(page, { search })` carries it, so this exercises the path parser, the query string and a lazy chunk in one navigation — none of which a component test touches |
@@ -182,7 +182,7 @@ This plan already builds and serves `dist/`, so the check is nearly free.
 | ID | Pri | Case | Expected |
 |---|---|---|---|
 | SEO-01 | P0 | `GET /robots.txt` on the built app | Returns 200 and disallows every path where `requiresAuth` is true. Derived from `requiresAuth`, like AUTH-04 — not a hard-coded list. Note that `renderRobotsTxt` anchors the three service roots (`Disallow: /littlesteps$`), so assert containment per route rather than line-exact equality |
-| SEO-02 | P0 | `GET /sitemap.xml` on the built app | Returns 200 and lists exactly `INDEXABLE_PAGES` — no gated route present, no public route missing |
+| SEO-02 | P0 | `GET /sitemap.xml` on the built app | Returns 200 and lists exactly `INDEXABLE_PAGES` plus one URL per wiki article — no gated route present, no public route or article missing |
 | SEO-03 | P1 | Prerendered `<title>` and meta per route | The prerender hook emits one `index.html` per public page, but **`vite preview` serves the root `index.html` for every extensionless path**, so requesting `/littleouting` returns the *home* title. Request the directory-index form (`/littleouting/`) and say why: production serves the prerendered file because `firebase.json` sets `cleanUrls: true`. Asserts the served HTML before any JavaScript runs — a different mechanism from NAV-01 |
 
 ## PWA — shell and service worker

@@ -32,6 +32,9 @@ import type {
   WikiCategoryColors,
 } from '../../types';
 
+/** 檔頭那個查證日期；文章頁的結構化資料用它當 dateModified。 */
+export const toddlerWikiVerifiedOn = '2026-08-27';
+
 export const toddlerWikiCategoryLabels: Record<ToddlerWikiCategory, string> = {
   toilet: '如廁訓練',
   language: '語言發展',

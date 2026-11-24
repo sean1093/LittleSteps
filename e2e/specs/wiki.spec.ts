@@ -28,7 +28,7 @@ import {
  * holds reached the browser — not that some did.
  */
 
-const WIKIS: { route: WikiRoute; articles: readonly { title: string }[] }[] = [
+const WIKIS: { route: WikiRoute; articles: readonly { id: string; title: string }[] }[] = [
   { route: 'littlesteps/baby-wiki', articles: babyWikiArticles },
   { route: 'littlebloom/wiki', articles: pregnancyWikiArticles },
   // The toddler wiki filters by age band above the browser, but its default is
@@ -47,38 +47,57 @@ for (const { route, articles } of WIKIS) {
   });
 }
 
-test('WIKI-02 @p1 an article expands and collapses in place, without touching the URL', async ({
-  page,
-}) => {
+test('WIKI-02 @p1 an article expands in place and the address bar names it', async ({ page }) => {
   const wiki = new WikiBrowserPage(page, 'littlesteps/baby-wiki');
   await wiki.goto();
   await expect(wiki.articles).toHaveCount(babyWikiArticles.length);
 
-  // Articles are an accordion — `WikiBrowser` holds `expandedId` in state and
-  // writes nothing to the address bar. So this case asserts the URL is
-  // untouched rather than asserting a history entry: there is no per-article
-  // route to go back to, and inventing one is a product decision, not a fix
-  // for a red test.
-  const urlBeforeExpanding = page.url();
+  // Articles are an accordion, and the open one has a URL of its own: that is
+  // what lets a parent send one article rather than the whole knowledge base.
+  // The id comes from the data file, in the order the page lists it.
+  const article = babyWikiArticles[0];
   const first = wiki.articles.first();
-  const title = (await first.getByRole('heading', { level: 3 }).innerText()).trim();
+  await expect(first.getByRole('heading', { level: 3, name: article.title })).toBeVisible();
 
   await first.click();
 
   // In place: the sections render inside the same card as the title, which is
   // what `openArticle` scoping these two locators asserts.
   await expect(wiki.openArticle).toHaveCount(1);
-  await expect(wiki.openArticle.getByRole('heading', { level: 3, name: title })).toBeVisible();
+  await expect(wiki.openArticle.getByRole('heading', { level: 3, name: article.title })).toBeVisible();
   await expect(wiki.openArticle.getByRole('heading', { name: '處理方式' })).toBeVisible();
   await expect(wiki.articles).toHaveCount(babyWikiArticles.length - 1);
-  expect(page.url(), 'expanding an article changed the URL').toBe(urlBeforeExpanding);
+  await expect(page).toHaveURL(new RegExp(`${wiki.path}/${article.id}$`));
+  await expect(page).toHaveTitle(new RegExp(`^${article.title}｜`));
 
   await wiki.openArticle.click();
 
   await expect(wiki.openArticle).toHaveCount(0);
   await expect(wiki.articles).toHaveCount(babyWikiArticles.length);
-  expect(page.url(), 'collapsing an article changed the URL').toBe(urlBeforeExpanding);
+  await expect(page).toHaveURL(new RegExp(`${wiki.path}$`));
 });
+
+for (const { route, articles } of WIKIS) {
+  test(`WIKI-02 @p0 a link to one ${route} article opens that article`, async ({ page }) => {
+    const wiki = new WikiBrowserPage(page, route);
+    // The last one in the file: the furthest from the top of the list, so a
+    // page that opened the list and left the visitor to find it would fail.
+    const article = articles[articles.length - 1] as { id: string; title: string };
+
+    await page.goto(`${wiki.path}/${article.id}`);
+
+    await expect(wiki.openArticle).toHaveCount(1);
+    await expect(wiki.openArticle.getByRole('heading', { level: 3, name: article.title })).toBeVisible();
+    await expect(wiki.openArticle).toBeInViewport();
+    // Still the public knowledge base: no sign-in wall in front of an article.
+    await expect(wiki.articles).toHaveCount(articles.length - 1);
+    await expect(page).toHaveTitle(new RegExp(`^${escapeForRegExp(article.title)}｜`));
+  });
+}
+
+function escapeForRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 test('WIKI-03 @p1 searching narrows the list and clearing restores it', async ({ page }) => {
   const wiki = new WikiBrowserPage(page, 'littlesteps/baby-wiki');
