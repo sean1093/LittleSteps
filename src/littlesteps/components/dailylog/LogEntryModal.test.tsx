@@ -117,7 +117,7 @@ describe('沿用上一筆', () => {
   it('新增餵奶時帶出上次的類型與奶量，而且是真的填在欄位裡', () => {
     renderModal({ logType: 'feeding', lastLog: lastFormula });
 
-    expect(screen.getByLabelText('類型 *')).toHaveValue('formula');
+    expect(screen.getByRole('radio', { name: '配方奶' })).toBeChecked();
     expect(screen.getByLabelText('奶量（ml）')).toHaveValue(120);
     expect(screen.getByLabelText('時長（分鐘）')).toHaveValue(10);
   });
@@ -139,14 +139,14 @@ describe('沿用上一筆', () => {
     };
     renderModal({ logType: 'diaper', lastLog: lastDiaper });
 
-    expect(screen.getByLabelText('類型 *')).toHaveValue('both');
-    expect(screen.getByLabelText('性狀')).toHaveValue('soft');
+    expect(screen.getByRole('radio', { name: '大小便' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: '稀' })).toBeChecked();
   });
 
   it('第一次記錄的孩子回到原本的預設值，不報錯也沒有空狀態', () => {
     renderModal({ logType: 'feeding', lastLog: null });
 
-    expect(screen.getByLabelText('類型 *')).toHaveValue('breast_left');
+    expect(screen.getByRole('radio', { name: '母乳（左）' })).toBeChecked();
     expect(screen.getByLabelText('奶量（ml）')).toHaveValue(null);
   });
 
@@ -198,7 +198,7 @@ describe('沿用上一筆', () => {
     };
     renderModal({ logType: 'feeding', editingLog, lastLog: lastFormula });
 
-    expect(screen.getByLabelText('類型 *')).toHaveValue('solid');
+    expect(screen.getByRole('radio', { name: '副食品' })).toBeChecked();
     expect(screen.getByLabelText('奶量（ml）')).toHaveValue(30);
   });
 });
@@ -213,7 +213,7 @@ describe('擠奶', () => {
 
     expect(screen.getByRole('heading', { name: '新增餵奶記錄' })).toBeInTheDocument();
 
-    await user.selectOptions(screen.getByLabelText('類型 *'), 'pumping');
+    await user.click(screen.getByRole('radio', { name: '擠奶' }));
 
     expect(screen.getByRole('heading', { name: '新增擠奶記錄' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: '新增餵奶記錄' })).toBeNull();
@@ -222,8 +222,8 @@ describe('擠奶', () => {
   it('存成 pumping，帶擠出量、時間與哪一邊', async () => {
     const { user, onSave } = renderModal({ logType: 'feeding' });
 
-    await user.selectOptions(screen.getByLabelText('類型 *'), 'pumping');
-    await user.selectOptions(screen.getByLabelText('哪一邊'), 'left');
+    await user.click(screen.getByRole('radio', { name: '擠奶' }));
+    await user.click(screen.getByRole('radio', { name: '左側' }));
     await user.type(screen.getByLabelText('擠出量（ml）'), '150');
     await user.type(screen.getByLabelText('時長（分鐘）'), '20');
     await user.click(screen.getByRole('button', { name: '儲存' }));
@@ -240,9 +240,9 @@ describe('擠奶', () => {
   it('哪一邊只屬於擠奶，換成瓶餵就不會被帶著走', async () => {
     const { user, onSave } = renderModal({ logType: 'feeding' });
 
-    await user.selectOptions(screen.getByLabelText('類型 *'), 'pumping');
-    await user.selectOptions(screen.getByLabelText('哪一邊'), 'both');
-    await user.selectOptions(screen.getByLabelText('類型 *'), 'breast_milk_bottle');
+    await user.click(screen.getByRole('radio', { name: '擠奶' }));
+    await user.click(screen.getByRole('radio', { name: '兩側' }));
+    await user.click(screen.getByRole('radio', { name: '母乳（瓶餵）' }));
 
     expect(screen.queryByLabelText('哪一邊')).toBeNull();
 
@@ -318,5 +318,61 @@ describe('欄位上限', () => {
   it('備註的上限就是規則的上限', () => {
     renderModal();
     expect(screen.getByLabelText('備註')).toHaveAttribute('maxlength', String(DAILY_LOG_NOTES_LIMIT));
+  });
+});
+
+/**
+ * The form is a dialog like every other form in the app. It used to be a sheet
+ * drawn by hand, with no role, no way out by keyboard, and a backdrop that
+ * closed it while a save was still in flight.
+ */
+describe('對話框的行為', () => {
+  it('是一個有名字的對話框，名字就是這張表在記什麼', () => {
+    renderModal({ logType: 'diaper' });
+    expect(screen.getByRole('dialog', { name: '新增尿布記錄' })).toBeInTheDocument();
+  });
+
+  it('按 Esc 就關', async () => {
+    const { user, onClose } = renderModal();
+    await user.keyboard('{Escape}');
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('存檔還沒回來時關不掉，剛填的東西不會跟著請求一起消失', async () => {
+    let finish = () => {};
+    const onSave = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const { user, onClose } = renderModal({ onSave });
+
+    await user.type(screen.getByLabelText('奶量（ml）'), '120');
+    await user.click(screen.getByRole('button', { name: '儲存' }));
+
+    // 存檔中：關閉鍵鎖住，Esc 也沒有用。
+    expect(screen.getByRole('button', { name: '關閉' })).toBeDisabled();
+    await user.keyboard('{Escape}');
+    expect(onClose).not.toHaveBeenCalled();
+
+    finish();
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+  });
+
+  it('類型一點就選，不用開下拉選單', async () => {
+    const { user, onSave } = renderModal({ logType: 'diaper' });
+
+    await user.click(screen.getByRole('radio', { name: '大小便' }));
+    await user.click(screen.getByRole('button', { name: '儲存' }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    expect(onSave.mock.calls[0][0].data).toMatchObject({ type: 'both' });
+  });
+
+  it('數字欄位叫出數字鍵盤', () => {
+    renderModal();
+    expect(screen.getByLabelText('奶量（ml）')).toHaveAttribute('inputmode', 'numeric');
+    expect(screen.getByLabelText('時長（分鐘）')).toHaveAttribute('inputmode', 'numeric');
   });
 });

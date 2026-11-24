@@ -378,18 +378,8 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
           </motion.div>
         )}
 
-        <motion.div variants={listItem} className="card mb-6">
-          <h2 className="mb-3">{isToday ? '今日統計' : '這天的統計'}</h2>
-          <div className="flex justify-around">
-            {stats.map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="text-2xl font-bold text-primary-dark">{stat.count}</div>
-                <div className="text-sm text-ink-muted">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
+        {/* 記錄鍵排在統計前面。這一頁一天要用八次以上，多半是單手；它原本排在
+            第四塊，每一次都得先滑過三個只能看的數字才按得到。 */}
         <motion.div variants={listItem} className="mb-6">
           <h2 className="mb-3">快速記錄</h2>
           <QuickLogButtons onLogClick={handleQuickLog} sleepMode={sleepMode} />
@@ -411,6 +401,18 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
               </button>
             </div>
           )}
+        </motion.div>
+
+        <motion.div variants={listItem} className="card mb-6">
+          <h2 className="mb-3">{isToday ? '今日統計' : '這天的統計'}</h2>
+          <div className="flex justify-around">
+            {stats.map((stat) => (
+              <div key={stat.label} className="text-center">
+                <div className="text-2xl font-bold text-primary-dark">{stat.count}</div>
+                <div className="text-sm text-ink-muted">{stat.label}</div>
+              </div>
+            ))}
+          </div>
         </motion.div>
 
         <motion.div variants={listItem}>
