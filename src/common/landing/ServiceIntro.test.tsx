@@ -17,11 +17,12 @@ describe.each(STAGED_SERVICES)('ServiceIntro: %s', (service) => {
   const theme = SERVICE_THEME[service];
   const intro = SERVICE_INTRO[service];
 
-  it('names the service by role, wordmark and age range', () => {
-    render(<ServiceIntro service={service} onSignIn={vi.fn()} />);
+  it('names the service by role and age range, not by an English sub-brand', () => {
+    const { container } = render(<ServiceIntro service={service} onSignIn={vi.fn()} />);
 
     expect(screen.getByRole('heading', { level: 1, name: theme.role })).toBeInTheDocument();
-    expect(screen.getByText(new RegExp(`${theme.name}.*${STAGE_RANGE[service]}`))).toBeInTheDocument();
+    expect(screen.getByText(STAGE_RANGE[service])).toBeInTheDocument();
+    expect(container.textContent).not.toMatch(/LittleBloom|LittleExplorer|LittleSteps/);
     expect(screen.getByText(intro.promise)).toBeInTheDocument();
   });
 

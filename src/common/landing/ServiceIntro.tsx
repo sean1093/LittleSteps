@@ -54,9 +54,7 @@ export default function ServiceIntro({ service, onSignIn }: ServiceIntroProps) {
           {/* The role is the heading, not the wordmark: the suite and the
               0-12 month service share the name LittleSteps. */}
           <h1 className={`sm:text-3xl ${theme.ink}`}>{theme.role}</h1>
-          <p className={`text-sm ${theme.muted}`}>
-            {theme.name} · {STAGE_RANGE[service]}
-          </p>
+          <p className={`text-sm ${theme.muted}`}>{STAGE_RANGE[service]}</p>
           <p className={`${theme.body} leading-relaxed mt-4`}>{intro.promise}</p>
 
           <motion.button

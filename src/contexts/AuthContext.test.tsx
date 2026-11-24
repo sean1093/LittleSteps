@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ToastProvider } from '../common/ui/toast';
+import { signInWithPopup } from 'firebase/auth';
+import { logAuthEvent } from '../lib/firebase';
 import { AuthProvider, useAuth } from './AuthContext';
 
 /**
@@ -141,5 +143,55 @@ describe('deleteAccount', () => {
     expect(await screen.findByText(/帳號還沒刪掉/)).toBeInTheDocument();
     expect(mocks.reauthenticateWithPopup).not.toHaveBeenCalled();
     expect(mocks.signOut).not.toHaveBeenCalled();
+  });
+});
+
+function SignInButton() {
+  const { signInWithGoogle } = useAuth();
+
+  return (
+    <button type="button" onClick={() => signInWithGoogle()}>
+      sign in
+    </button>
+  );
+}
+
+describe('signInWithGoogle', () => {
+  const clickSignIn = async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <AuthProvider>
+          <SignInButton />
+        </AuthProvider>
+      </ToastProvider>,
+    );
+    await user.click(screen.getByRole('button', { name: 'sign in' }));
+  };
+
+  it('records that sign-in was started, separately from whether it finished', async () => {
+    // The landing page now puts the no-account tools right under the sign-in
+    // button. Whether that costs sign-ins cannot be read from successes
+    // alone: a parent who gives up in the Google popup and one who never
+    // pressed the button look the same.
+    vi.mocked(signInWithPopup).mockRejectedValueOnce(authError('auth/popup-closed-by-user'));
+
+    await clickSignIn();
+
+    await waitFor(() => expect(vi.mocked(signInWithPopup)).toHaveBeenCalled());
+    expect(vi.mocked(logAuthEvent).mock.calls.map(([action]) => action)).toEqual(['login_start']);
+  });
+
+  it('records the start and then the success when the popup completes', async () => {
+    vi.mocked(signInWithPopup).mockResolvedValueOnce({ user: { uid: 'u1' } } as never);
+
+    await clickSignIn();
+
+    await waitFor(() =>
+      expect(vi.mocked(logAuthEvent).mock.calls.map(([action]) => action)).toEqual([
+        'login_start',
+        'login',
+      ]),
+    );
   });
 });

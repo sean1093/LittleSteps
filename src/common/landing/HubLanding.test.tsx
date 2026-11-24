@@ -2,8 +2,16 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import HubLanding from './HubLanding';
-import { SERVICE_GROUPS, SERVICE_PITCH, STAGE_RANGE, STAGED_SERVICES } from './serviceCopy';
-import { COVERAGE } from '../about/coverage';
+import {
+  ANYTIME_SERVICES,
+  SERVICE_GROUPS,
+  SERVICE_PITCH,
+  STAGE_RANGE,
+  STAGED_SERVICES,
+  TOOL_FIGURE,
+  WIKI_LINKS,
+} from './serviceCopy';
+import { ROUTE_PATH } from '../../types/routes';
 import { MAX_CHILDREN } from '../childLimits';
 import { requiresAuth } from '../routePolicy';
 import { SERVICE_ORDER, SERVICE_THEME } from '../ui/serviceTheme';
@@ -11,21 +19,23 @@ import { SERVICE_ORDER, SERVICE_THEME } from '../ui/serviceTheme';
 /**
  * The landing page is the only place a parent can discover the other
  * services: no sub-app links to a sibling, and the LittleSteps sidebar is
- * scoped to LittleSteps routes by type. A card that goes missing here makes
+ * scoped to LittleSteps routes by type. An entry that goes missing here makes
  * that service unreachable without hand-editing the URL.
  */
 
 const SIGNED_IN = { uid: 'u1' } as never;
 
 /**
- * The whole card is the tap target, so the way in is the `role="button"`
- * around the heading and not a button inside the card.
+ * Each service is one link, and the whole entry is the link: the heading that
+ * names it sits inside the anchor.
  */
-function cardOf(role: string): HTMLElement {
-  const card = screen.getByRole('heading', { name: role }).closest('[role="button"]');
-  expect(card, `the ${role} card is not a tap target`).not.toBeNull();
-  return card as HTMLElement;
+function entryOf(role: string): HTMLAnchorElement {
+  const link = screen.getByRole('heading', { name: role }).closest('a');
+  expect(link, `the ${role} entry is not a link`).not.toBeNull();
+  return link as HTMLAnchorElement;
 }
+
+const ENGLISH_NAMES = /LittleBloom|LittleExplorer|BabyOasis|LittleOuting|LittleGuard/;
 
 describe('HubLanding: the six services', () => {
   it('groups cover every service exactly once', () => {
@@ -34,24 +44,34 @@ describe('HubLanding: the six services', () => {
     expect(new Set(grouped).size, 'a service is listed in two groups').toBe(grouped.length);
   });
 
-  it('gives every service a card that names it and says what it does', () => {
+  it('gives every service an entry that names it and says what it does', () => {
     render(<HubLanding onNavigate={vi.fn()} />);
     for (const id of SERVICE_ORDER) {
-      const theme = SERVICE_THEME[id];
-      const card = cardOf(theme.role);
-      // The role leads, but the wordmark a parent may have heard of is there too.
-      expect(card, id).toHaveTextContent(theme.name);
-      expect(card, id).toHaveTextContent(SERVICE_PITCH[id]);
+      expect(entryOf(SERVICE_THEME[id].role), id).toHaveTextContent(SERVICE_PITCH[id]);
     }
   });
 
-  it('opens the service wherever on the card the tap lands', async () => {
+  it('names a service by what it does, not by an English sub-brand', () => {
+    // The pages these entries open are titled by role as well; a name here
+    // that the destination never repeats is a name the parent has to map.
+    const { container } = render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={vi.fn()} />);
+    expect(container.textContent).not.toMatch(ENGLISH_NAMES);
+  });
+
+  it('makes every entry a real link to that service', () => {
+    render(<HubLanding onNavigate={vi.fn()} />);
+    for (const id of SERVICE_ORDER) {
+      expect(entryOf(SERVICE_THEME[id].role), id).toHaveAttribute('href', ROUTE_PATH[id]);
+    }
+  });
+
+  it('opens the service wherever in the entry the tap lands', async () => {
     const user = userEvent.setup();
     for (const id of SERVICE_ORDER) {
       const onNavigate = vi.fn();
       const { unmount } = render(<HubLanding onNavigate={onNavigate} />);
 
-      // The description line: the part of the card furthest from its heading.
+      // The description line: the part of the entry furthest from its heading.
       await user.click(screen.getByText(SERVICE_PITCH[id]));
       expect(onNavigate, id).toHaveBeenCalledWith(id);
 
@@ -59,35 +79,38 @@ describe('HubLanding: the six services', () => {
     }
   });
 
-  it('lets the keyboard into a card with Enter or Space', async () => {
+  it('leaves a new-tab click to the browser', async () => {
     const user = userEvent.setup();
     const onNavigate = vi.fn();
     render(<HubLanding onNavigate={onNavigate} />);
 
-    for (const id of SERVICE_ORDER) {
-      expect(cardOf(SERVICE_THEME[id].role), id).toHaveAttribute('tabindex', '0');
-    }
+    await user.keyboard('{Control>}');
+    await user.click(entryOf(SERVICE_THEME.babyoasis.role));
+    await user.keyboard('{/Control}');
 
-    const card = cardOf(SERVICE_THEME.babyoasis.role);
-    card.focus();
-    await user.keyboard('{Enter}');
-    await user.keyboard(' ');
-    expect(onNavigate.mock.calls).toEqual([['babyoasis'], ['babyoasis']]);
+    expect(onNavigate).not.toHaveBeenCalled();
   });
 
-  it('puts no second way in inside a card', () => {
+  it('puts no second way in inside an entry', () => {
     render(<HubLanding onNavigate={vi.fn()} />);
     for (const id of SERVICE_ORDER) {
-      expect(cardOf(SERVICE_THEME[id].role).querySelectorAll('button, a').length, id).toBe(0);
+      expect(entryOf(SERVICE_THEME[id].role).querySelectorAll('button, a').length, id).toBe(0);
     }
   });
 
-  it('tells the three staged services apart by age range', () => {
+  it('tells the three staged services apart by age range, in the order a child passes through them', () => {
     // 「寶寶成長」 and 「幼兒期陪伴」 alone cannot place a fifteen-month-old.
     render(<HubLanding onNavigate={vi.fn()} />);
     for (const id of STAGED_SERVICES) {
-      expect(cardOf(SERVICE_THEME[id].role), id).toHaveTextContent(STAGE_RANGE[id]);
+      expect(entryOf(SERVICE_THEME[id].role), id).toHaveTextContent(STAGE_RANGE[id]);
     }
+
+    const sequence = screen.getAllByRole('list').find((list) => list.tagName === 'OL');
+    expect(sequence, 'the stages are not an ordered list').toBeDefined();
+    const roles = within(sequence as HTMLElement)
+      .getAllByRole('heading', { level: 3 })
+      .map((node) => node.textContent);
+    expect(roles).toEqual(STAGED_SERVICES.map((id) => SERVICE_THEME[id].role));
   });
 
   it('only promises "no sign-in" for services routePolicy really leaves public', () => {
@@ -100,9 +123,9 @@ describe('HubLanding: the six services', () => {
     }
   });
 
-  it('marks the current stage on one card only, and on none without a child', () => {
+  it('marks the current stage on one entry only, and on none without a child', () => {
     const { unmount } = render(<HubLanding onNavigate={vi.fn()} currentService="littlesteps" />);
-    expect(cardOf(SERVICE_THEME.littlesteps.role)).toHaveTextContent('目前階段');
+    expect(entryOf(SERVICE_THEME.littlesteps.role)).toHaveTextContent('目前階段');
     expect(screen.getAllByText('目前階段')).toHaveLength(1);
     unmount();
 
@@ -117,25 +140,69 @@ describe('HubLanding: signed out', () => {
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });
 
-  it('offers sign-in as the primary action', async () => {
+  it('offers sign-in as the one button in the hero', async () => {
     const user = userEvent.setup();
     const onSignIn = vi.fn(async () => {});
     render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={onSignIn} />);
 
-    await user.click(screen.getByRole('button', { name: /使用 Google 帳號開始記錄/ }));
+    await user.click(screen.getByRole('button', { name: '用 Google 登入，開始記錄' }));
     expect(onSignIn).toHaveBeenCalledTimes(1);
+
+    // The trust panel is the only other thing with a button role, and it is
+    // far below. A second button beside sign-in is what was cut.
+    const buttons = screen.getAllByRole('button').map((node) => node.getAttribute('aria-label') ?? node.textContent);
+    expect(buttons).toHaveLength(2);
   });
 
-  it('offers a way in that needs no account, and it really needs none', async () => {
+  it('puts what needs no account before what does, and it really needs none', () => {
+    render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={vi.fn()} />);
+
+    const headings = screen.getAllByRole('heading', { level: 2 }).map((node) => node.textContent);
+    expect(headings.slice(0, 2)).toEqual(SERVICE_GROUPS.map((group) => group.title));
+    expect(headings[0]).toContain('不用登入');
+
+    for (const id of ANYTIME_SERVICES) {
+      expect(requiresAuth(id), `${id} would bounce to an intro page`).toBe(false);
+    }
+  });
+
+  it('sets each public tool under the one number it stands on', () => {
+    // The numbers used to sit in a strip of their own and again in the cards.
+    // serviceCopy.test.ts holds each figure against its dataset.
+    render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={vi.fn()} />);
+    for (const id of ANYTIME_SERVICES) {
+      expect(entryOf(SERVICE_THEME[id].role), id).toHaveTextContent(TOOL_FIGURE[id]);
+      expect(screen.getAllByText(TOOL_FIGURE[id]), id).toHaveLength(1);
+    }
+    expect(screen.queryByRole('region', { name: '資料涵蓋範圍' })).not.toBeInTheDocument();
+  });
+
+  it('links straight to the three knowledge bases, with their real article counts', async () => {
     const user = userEvent.setup();
-    const onNavigate = vi.fn();
-    render(<HubLanding onNavigate={onNavigate} user={null} onSignIn={vi.fn()} />);
+    window.history.replaceState(null, '', '/');
+    render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={vi.fn()} />);
 
-    await user.click(screen.getByRole('button', { name: /先不登入/ }));
+    expect(WIKI_LINKS).toHaveLength(3);
+    for (const { page, title, count } of WIKI_LINKS) {
+      expect(requiresAuth(page), `${page} is behind sign-in`).toBe(false);
+      const link = screen.getByRole('link', { name: `${title} ${count} 篇` });
+      expect(link).toHaveAttribute('href', ROUTE_PATH[page]);
+    }
 
-    expect(onNavigate).toHaveBeenCalledTimes(1);
-    const [destination] = onNavigate.mock.calls[0];
-    expect(requiresAuth(destination), `${destination} would bounce to an intro page`).toBe(false);
+    const [first] = WIKI_LINKS;
+    await user.click(screen.getByRole('link', { name: `${first.title} ${first.count} 篇` }));
+    expect(window.location.pathname).toBe(ROUTE_PATH[first.page]);
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('says the staged services need an account', () => {
+    render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={vi.fn()} />);
+    expect(screen.getByText(/^需要登入。/)).toBeInTheDocument();
+  });
+
+  it('tells a second carer there is a way in for them', () => {
+    render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={vi.fn()} />);
+    expect(screen.getByText(/登入後用代碼加入/)).toBeInTheDocument();
   });
 
   it('never says "free" without the child limit beside it', () => {
@@ -147,23 +214,10 @@ describe('HubLanding: signed out', () => {
     }
   });
 
-  it('shows coverage numbers that come from the checked list, not typed ones', () => {
+  it('does not claim the radar is current, only what it covers', () => {
+    // Its dataset can be weeks behind; "seven diseases" is true on that day too.
     render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={vi.fn()} />);
-    const strip = screen.getByRole('region', { name: '資料涵蓋範圍' });
-
-    const shown = within(strip)
-      .getAllByRole('definition')
-      .map((node) => Number(node.textContent?.replace(/,/g, '')));
-    expect(shown.length).toBeGreaterThanOrEqual(4);
-    // `dataSources.test.ts` holds every COVERAGE value against its dataset.
-    const checked = COVERAGE.map((item) => item.value as number);
-    for (const value of shown) expect(checked).toContain(value);
-  });
-
-  it('does not headline the radar, whose dataset can be weeks behind', () => {
-    render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={vi.fn()} />);
-    const strip = screen.getByRole('region', { name: '資料涵蓋範圍' });
-    expect(strip).not.toHaveTextContent('傳染病');
+    expect(entryOf(SERVICE_THEME.littleguard.role).textContent).not.toMatch(/這週|本週|最新|即時/);
   });
 
   it('makes the whole trust panel the way into the about page', async () => {
@@ -179,6 +233,11 @@ describe('HubLanding: signed out', () => {
 
     await user.click(panel);
     expect(window.location.pathname).toBe('/about');
+  });
+
+  it('says "not medical advice" once, not in every section', () => {
+    render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={vi.fn()} />);
+    expect(screen.getAllByText(/不能取代醫師的判斷/)).toHaveLength(1);
   });
 });
 
@@ -214,7 +273,7 @@ describe('HubLanding: signed in', () => {
     expect(onAddChild).toHaveBeenCalledTimes(1);
   });
 
-  it('drops the pitch: no sign-in, no proof strip, no trust panel', () => {
+  it('drops the pitch: no sign-in, no sign-in note, no trust panel', () => {
     render(
       <HubLanding
         onNavigate={vi.fn()}
@@ -225,11 +284,11 @@ describe('HubLanding: signed in', () => {
       />,
     );
 
-    expect(screen.queryByRole('button', { name: /使用 Google 帳號開始記錄/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole('region', { name: '資料涵蓋範圍' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Google/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/^需要登入。/)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /孩子的紀錄誰看得到/ })).not.toBeInTheDocument();
     // The six services are still all there.
-    for (const id of SERVICE_ORDER) cardOf(SERVICE_THEME[id].role);
+    for (const id of SERVICE_ORDER) entryOf(SERVICE_THEME[id].role);
   });
 
   it('keeps the about page reachable from the footer', async () => {

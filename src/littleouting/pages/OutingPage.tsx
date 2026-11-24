@@ -192,8 +192,7 @@ export default function OutingPage() {
     <div className={`min-h-dscreen ${theme.pageBg}`}>
       <AppBar
         theme={theme}
-        title={theme.name}
-        subtitle={theme.role}
+        title={theme.role}
         actions={
           <>
             <AccountButton service="littleouting" className="bg-outing-light hover:bg-outing/40 text-outing-ink" />

@@ -39,7 +39,7 @@ export default function ExplorerShell({
     <div className={`min-h-dscreen ${theme.pageBg}`}>
       <AppBar
         theme={theme}
-        title={theme.name}
+        title={theme.role}
         subtitle={subtitle}
         actions={
           /* explorer-sand (#FDF8EE) is almost white, so the default neutral

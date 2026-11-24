@@ -153,7 +153,7 @@ export default function Sidebar({
             ref={drawerRef}
             role="dialog"
             aria-modal="true"
-            aria-label="LittleSteps 選單"
+            aria-label="寶寶成長選單"
             tabIndex={-1}
             initial={{ x: '-100%' }}
             animate={{ x: 0 }}
@@ -165,7 +165,7 @@ export default function Sidebar({
             <div className="sticky top-0 bg-secondary-light px-5 py-4 z-10">
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <h2 className="text-ink truncate">LittleSteps</h2>
+                  <h2 className="text-ink truncate">寶寶成長</h2>
                   <p className="text-xs text-ink-muted">育兒里程碑追蹤</p>
                 </div>
                 <button

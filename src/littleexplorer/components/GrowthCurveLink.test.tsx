@@ -21,7 +21,7 @@ describe('GrowthCurveLink', () => {
     expect(screen.getByText(/到 3 歲都適用/)).toBeInTheDocument();
   });
 
-  it('導到 LittleSteps 的成長曲線圖', async () => {
+  it('導到「寶寶成長」的成長曲線圖', async () => {
     const user = userEvent.setup();
     render(<GrowthCurveLink />);
 

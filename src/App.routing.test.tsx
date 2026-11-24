@@ -48,7 +48,7 @@ const currentTab = (label: string) => async () => {
 };
 
 const ROUTES: Probe[] = [
-  { path: '/', page: 'home', expect: heading('跟著孩子長大') },
+  { path: '/', page: 'home', expect: heading('從懷孕記到三歲') },
   { path: '/littlesteps', page: 'littlesteps', expect: heading('開始記錄寶寶的成長') },
   { path: '/littlesteps/dashboard', page: 'littlesteps/dashboard', expect: heading('成長總覽') },
   { path: '/littlesteps/milestones', page: 'littlesteps/milestones', expect: heading('里程碑追蹤') },
@@ -69,9 +69,9 @@ const ROUTES: Probe[] = [
   { path: '/littleexplorer/reminders', page: 'littleexplorer/reminders', expect: currentTab('提醒') },
   { path: '/littleexplorer/diary', page: 'littleexplorer/diary', expect: currentTab('日記') },
   { path: '/littleexplorer/wiki', page: 'littleexplorer/wiki', expect: currentTab('百科') },
-  { path: '/littleouting', page: 'littleouting', expect: heading('LittleOuting') },
-  { path: '/babyoasis', page: 'babyoasis', expect: heading('BabyOasis') },
-  { path: '/littleguard', page: 'littleguard', expect: heading('LittleGuard') },
+  { path: '/littleouting', page: 'littleouting', expect: heading('親子好去處') },
+  { path: '/babyoasis', page: 'babyoasis', expect: heading('哺乳室地圖') },
+  { path: '/littleguard', page: 'littleguard', expect: heading('疫情雷達') },
 ];
 
 const visit = (path: string) => window.history.replaceState(null, '', path);
@@ -92,13 +92,13 @@ describe('深連結', () => {
   it('認不得的路徑落回服務集合首頁，而不是空白畫面', async () => {
     visit('/does-not-exist');
     render(<App />);
-    await screen.findByRole('heading', { name: /跟著孩子長大/ });
+    await screen.findByRole('heading', { name: /從懷孕記到三歲/ });
   });
 
   it('根路徑就是服務集合首頁', async () => {
     visit('/');
     render(<App />);
-    await screen.findByRole('heading', { name: /跟著孩子長大/ });
+    await screen.findByRole('heading', { name: /從懷孕記到三歲/ });
   });
 });
 
@@ -121,7 +121,7 @@ describe('上一頁／下一頁', () => {
 
     visit('/garbage');
     window.dispatchEvent(new PopStateEvent('popstate'));
-    await screen.findByRole('heading', { name: /跟著孩子長大/ });
+    await screen.findByRole('heading', { name: /從懷孕記到三歲/ });
   }, 20000);
 });
 

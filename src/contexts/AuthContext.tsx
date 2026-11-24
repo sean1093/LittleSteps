@@ -91,6 +91,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const signInWithGoogle = async () => {
+    // 「按下登入」和「登入成功」分開記：入口頁把免登入的工具排到登入按鈕正下方，
+    // 這個改動會不會讓人少登入，只看成功數看不出來——少掉的可能是沒按，也可能
+    // 是按了卻沒完成。
+    logAuthEvent('login_start');
     try {
       // 檢測是否在 WebView 中
       if (isInAppBrowser()) {

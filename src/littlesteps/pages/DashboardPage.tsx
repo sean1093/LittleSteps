@@ -170,7 +170,7 @@ export default function DashboardPage({
             <p className="font-semibold text-bloom-stone-ink mb-1">這是孕期檔案</p>
             <p className="text-sm text-bloom-stone-ink/70 leading-relaxed">
               寶寶還沒出生，所以下面的里程碑、疫苗與日誌都還是空的。
-              每週指南與產檢時程在 LittleBloom；出生後在那裡登記出生日期，這裡就會開始有內容。
+              每週指南與產檢時程在「孕期陪伴」；出生後在那裡登記出生日期，這裡就會開始有內容。
             </p>
             <button
               type="button"
@@ -179,7 +179,7 @@ export default function DashboardPage({
               }}
               className="btn-primary bg-bloom-dusty-rose-deep mt-3"
             >
-              前往 LittleBloom
+              前往孕期陪伴
             </button>
           </motion.div>
         )}

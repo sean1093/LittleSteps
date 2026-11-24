@@ -330,7 +330,7 @@ export const logChildProfileAction = (action: 'create' | 'update' | 'delete' | '
   logEvent('child_profile_action', { action });
 };
 
-export const logAuthEvent = (action: 'login' | 'logout' | 'login_failed') => {
+export const logAuthEvent = (action: 'login_start' | 'login' | 'logout' | 'login_failed') => {
   logEvent('auth_action', { action });
 };
 

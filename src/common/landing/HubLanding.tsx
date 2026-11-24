@@ -1,34 +1,46 @@
+import type { MouseEvent } from 'react';
 import { motion } from 'framer-motion';
 import type { User } from 'firebase/auth';
-import { COVERAGE } from '../about/coverage';
 import { MAX_CHILDREN } from '../childLimits';
 import { goTo } from '../navigate';
 import { fadeInUp, listItem, stagger } from '../ui/motion';
 import { pressable } from '../ui/pressable';
 import { SERVICE_THEME } from '../ui/serviceTheme';
 import type { ServiceId } from '../ui/serviceTheme';
-import { SERVICE_GROUPS, SERVICE_PITCH, STAGE_RANGE } from './serviceCopy';
+import { ROUTE_PATH } from '../../types/routes';
+import {
+  ANYTIME_SERVICES,
+  SERVICE_GROUPS,
+  SERVICE_PITCH,
+  STAGED_SERVICES,
+  STAGE_RANGE,
+  TOOL_FIGURE,
+  WIKI_LINKS,
+  type StagedService,
+} from './serviceCopy';
 
 /**
  * The landing page: the one place that says what the whole product is.
  *
- * It used to be a chooser — six cards under a headline — which answered
- * "which service" for someone who already knew what the services were, and
- * gave a first-time visitor no wordmark, no proof and no action above the
- * fold. It now reads in the order a stranger needs: what this is, one thing
- * to do about it, why the numbers can be believed, then the six services,
- * then who can see a child's records.
+ * It reads in the order a stranger on a phone needs. What this is and the one
+ * thing to do about it. Then what can be used this minute with no account,
+ * because that is most of what a first visit wants and it used to sit a screen
+ * and a half down. Then the three services a family records in, drawn as the
+ * sequence they are. Then who can see a child's records.
  *
- * Three rules the page keeps:
+ * Rules the page keeps:
  *
- * - One primary action per state. Signed out it is sign-in, with the nursing
- *   room map as the way in for someone not ready to hand over an account.
- *   Signed in it is the child's own service, and the pitch below it is gone:
- *   a returning parent came to record something, not to be sold to.
- * - Every service has exactly one card, and the whole card is the tap target.
- *   This page is the only route to the sibling services.
- * - No number is typed here. The proof strip reads `COVERAGE`, the card lines
- *   read `serviceCopy.ts`, and both are held against the data by tests.
+ * - One primary action per state. Signed out it is sign-in; the tool rows
+ *   directly under it are the way in for someone not ready to hand over an
+ *   account. Signed in it is the child's own service, and the pitch is gone.
+ * - Every service has exactly one entry, and it is a real link: it can be
+ *   opened in a new tab, and it says where it goes.
+ * - A service is named by what it does. The English sub-brands are gone from
+ *   this page and from the pages it leads to; "LittleSteps" is the product.
+ * - No number is typed here. Figures and article counts come from
+ *   `serviceCopy.ts`, where a test holds each against the data.
+ * - One left edge at every width. The hero used to centre on a desktop above
+ *   a left-aligned page, which is two axes on one screen.
  */
 
 interface HubLandingProps {
@@ -51,12 +63,15 @@ interface HubLandingProps {
 }
 
 /**
- * The radar's count is left out of the strip. Its dataset is refreshed by a
- * job that needs a Taiwan-routed runner, and when that job falls behind the
- * board says so itself; a headline number here would promise more than the
- * board below it can show.
+ * The rule beside the stage the child is in, in that service's accent. The
+ * theme only carries the accent as a background class, and Tailwind needs to
+ * see a border class spelled out to generate it.
  */
-const PROOF = COVERAGE.filter((item) => item.unit !== '種傳染病');
+const STAGE_RULE: Record<StagedService, string> = {
+  littlebloom: 'border-bloom-dusty-rose',
+  littlesteps: 'border-primary',
+  littleexplorer: 'border-explorer-sunbeam',
+};
 
 const TRUST_POINTS = [
   '要讀寫孩子的紀錄一定要登入，沒有訪客模式。',
@@ -76,15 +91,21 @@ export default function HubLanding({
   onJoinChild,
 }: HubLandingProps) {
   const signedIn = Boolean(user);
+  const [tools, staged] = SERVICE_GROUPS;
+
+  /** A real href for the browser, in-app navigation for an ordinary tap. */
+  const linkTo = (id: ServiceId) => ({
+    href: ROUTE_PATH[id],
+    onClick: (event: MouseEvent<HTMLAnchorElement>) => {
+      if (isModifiedClick(event)) return;
+      event.preventDefault();
+      onNavigate(id);
+    },
+  });
 
   return (
-    <div className="screen-body-wide space-y-10">
-      <motion.section
-        initial="hidden"
-        animate="visible"
-        variants={stagger}
-        className="pt-4 sm:pt-10 sm:text-center"
-      >
+    <div className="screen-body-wide space-y-12">
+      <motion.section initial="hidden" animate="visible" variants={stagger} className="pt-4 sm:pt-10">
         {signedIn ? (
           <SignedInHero
             childName={childName}
@@ -98,34 +119,26 @@ export default function HubLanding({
             {/* Chinese has no word breaks, so a narrow screen would split the
                 headline mid-phrase. Each phrase is its own inline-block and
                 the line can only break between them. */}
-            <motion.h1 variants={listItem} className="text-3xl sm:text-4xl text-ink">
+            <motion.h1 variants={listItem} className="text-3xl sm:text-5xl text-ink">
               <span className="inline-block">從懷孕到三歲，</span>
               <span className="inline-block">該記的都在這裡</span>
             </motion.h1>
             <motion.p
               variants={listItem}
-              className="mt-3 text-base text-ink-muted leading-relaxed max-w-xl sm:mx-auto"
+              className="mt-3 text-base text-ink-muted leading-relaxed max-w-xl"
             >
-              產檢、疫苗、里程碑照時程排好，每天的餵奶和睡眠記在同一份檔案。
+              下一次產檢、下一針疫苗先排好給你看；餵奶、睡眠、尿布，點幾下就記完。
             </motion.p>
 
             {onSignIn && (
-              <motion.div
-                variants={listItem}
-                className="mt-6 flex flex-col gap-3 sm:max-w-sm sm:mx-auto"
-              >
+              <motion.div variants={listItem} className="mt-6 sm:max-w-sm">
                 <button type="button" onClick={onSignIn} className="btn-primary w-full">
-                  使用 Google 帳號開始記錄
+                  用 Google 登入，開始記錄
                 </button>
-                <button
-                  type="button"
-                  onClick={() => onNavigate('babyoasis')}
-                  className="btn-secondary w-full"
-                >
-                  先不登入，找最近的哺乳室
-                </button>
-                <p className="text-xs text-ink-muted">
-                  目前免費，一個帳號最多記錄 {MAX_CHILDREN} 個寶寶。知識內容與地圖不需要帳號。
+                <p className="mt-3 text-xs text-ink-muted leading-relaxed">
+                  目前免費，一個帳號可以記 {MAX_CHILDREN} 個寶寶。
+                  <br />
+                  另一半已經在記了？登入後用代碼加入。
                 </p>
               </motion.div>
             )}
@@ -133,88 +146,105 @@ export default function HubLanding({
         )}
       </motion.section>
 
-      {!signedIn && (
-        <motion.section
+      <section className="space-y-3">
+        <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
+          <h2 className="text-ink">{tools.title}</h2>
+          <p className="text-sm text-ink-muted mt-1">{tools.note}</p>
+        </motion.div>
+
+        <motion.ul
           initial="hidden"
           animate="visible"
-          variants={fadeInUp}
-          aria-label="資料涵蓋範圍"
-          className="space-y-1 sm:text-center"
+          variants={stagger}
+          className="grid grid-cols-1 md:grid-cols-3 gap-3"
         >
-          <dl className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-4">
-            {PROOF.map((item) => (
-              // Number first on screen, label first in the markup: a `dt`
-              // must precede its `dd`, and the number is what the eye wants.
-              <div key={item.unit} className="flex flex-col-reverse">
-                <dt className="text-xs text-ink-muted">{item.unit}</dt>
-                <dd className="text-2xl font-bold text-ink tabular-nums">
-                  {item.value.toLocaleString('en-US')}
-                </dd>
-              </div>
-            ))}
-          </dl>
-          <p className="text-sm text-ink-muted">來自國健署、社家署、疾管署與 WHO 的公開資料。</p>
-          <p>
-            <a
-              href="/about"
-              onClick={(event) => {
-                event.preventDefault();
-                goTo('about');
-              }}
-              className="inline-flex items-center min-h-tap text-sm font-medium text-primary-dark"
-            >
-              看每個數字的出處
-            </a>
-          </p>
-        </motion.section>
-      )}
-
-      {SERVICE_GROUPS.map((group) => (
-        <section key={group.title} className="space-y-3">
-          <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
-            <h2 className="text-ink">{group.title}</h2>
-            <p className="text-sm text-ink-muted mt-1">{group.note}</p>
-          </motion.div>
-
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={stagger}
-            className="grid grid-cols-1 md:grid-cols-3 gap-3"
-          >
-            {group.ids.map((id) => {
-              const theme = SERVICE_THEME[id];
-              const range = (STAGE_RANGE as Partial<Record<ServiceId, string>>)[id];
-
-              return (
-                <motion.div
-                  key={id}
-                  variants={listItem}
-                  {...pressable(() => onNavigate(id))}
-                  className="card-tap"
-                >
-                  {/* The role leads, not the wordmark: the suite and the
-                      0-12 month service are both called LittleSteps, and
-                      「寶寶成長」 is the name that tells them apart. The
-                      labels stay outside the h3 so its accessible name is
-                      exactly the role. */}
-                  <div className="flex items-baseline gap-2 flex-wrap">
-                    <h3 className={theme.ink}>{theme.role}</h3>
-                    {range && <span className="text-xs text-ink-muted">{range}</span>}
-                    {id === currentService && (
-                      <span className={`tag ${theme.tint} ${theme.ink}`}>目前階段</span>
-                    )}
-                  </div>
-                  <p className="text-xs text-ink-faint">{theme.name}</p>
-                  <p className={`text-sm ${theme.body} leading-relaxed mt-2`}>
+          {ANYTIME_SERVICES.map((id) => {
+            const theme = SERVICE_THEME[id];
+            return (
+              <motion.li key={id} variants={listItem}>
+                <a {...linkTo(id)} className="card-tap block h-full">
+                  {/* The figure is the proof and the heading is the name, in
+                      that order on screen. It is a `p`, so the h3 is still the
+                      first heading inside the link. */}
+                  <p className={`text-2xl font-bold tabular-nums ${theme.ink}`}>
+                    {TOOL_FIGURE[id]}
+                  </p>
+                  <h3 className="text-ink mt-1">{theme.role}</h3>
+                  <p className="text-sm text-ink-muted leading-relaxed mt-1">
                     {SERVICE_PITCH[id]}
                   </p>
-                </motion.div>
-              );
-            })}
-          </motion.div>
-        </section>
-      ))}
+                </a>
+              </motion.li>
+            );
+          })}
+        </motion.ul>
+
+        {/* The knowledge bases are public too, and this is their only door
+            from here that does not pass a sign-in button first. */}
+        <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="text-sm">
+          <p className="text-ink-muted">也可以先讀</p>
+          <ul className="flex flex-wrap gap-x-4">
+            {WIKI_LINKS.map(({ page, title, count }) => (
+              <li key={page}>
+                <a
+                  href={ROUTE_PATH[page]}
+                  onClick={(event) => {
+                    if (isModifiedClick(event)) return;
+                    event.preventDefault();
+                    goTo(page);
+                  }}
+                  className="inline-flex items-center min-h-tap font-medium text-primary-dark underline underline-offset-2"
+                >
+                  {title} {count} 篇
+                </a>
+              </li>
+            ))}
+          </ul>
+        </motion.div>
+      </section>
+
+      <section className="space-y-3">
+        <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
+          <h2 className="text-ink">{staged.title}</h2>
+          <p className="text-sm text-ink-muted mt-1">
+            {signedIn ? staged.note : `需要登入。${staged.note}`}
+          </p>
+        </motion.div>
+
+        {/* A sequence, not a set: a family is in one of these at a time and
+            moves down the line. So it is an ordered list on a rule, not three
+            more white boxes, and the age range is the largest thing in each
+            row because "which one is mine" is the question it answers. */}
+        <motion.ol
+          initial="hidden"
+          animate="visible"
+          variants={stagger}
+          className="md:grid md:grid-cols-3 md:gap-6"
+        >
+          {STAGED_SERVICES.map((id) => {
+            const theme = SERVICE_THEME[id];
+            const isCurrent = id === currentService;
+            return (
+              <motion.li
+                key={id}
+                variants={listItem}
+                className={`border-l-2 md:border-l-0 md:border-t-2 ${
+                  isCurrent ? STAGE_RULE[id] : 'border-ink/10'
+                }`}
+              >
+                <a {...linkTo(id)} className="block pl-4 py-4 md:pl-0 md:pr-2">
+                  <p className={`text-2xl font-bold ${theme.ink}`}>{STAGE_RANGE[id]}</p>
+                  <div className="flex items-baseline gap-2 flex-wrap mt-1">
+                    <h3 className="text-ink">{theme.role}</h3>
+                    {isCurrent && <span className={`tag ${theme.tint} ${theme.ink}`}>目前階段</span>}
+                  </div>
+                  <p className="text-sm text-ink-muted leading-relaxed mt-1">{SERVICE_PITCH[id]}</p>
+                </a>
+              </motion.li>
+            );
+          })}
+        </motion.ol>
+      </section>
 
       {/* The whole panel is the way into the about page, which says all of
           this in full. A signed-in parent has already decided; they keep the
@@ -234,8 +264,8 @@ export default function HubLanding({
               <li key={point}>{point}</li>
             ))}
           </ul>
-          <p className="text-sm text-ink-faint">
-            內容整理自政府與 WHO 的公開資料，不是醫療建議，不能取代醫師的判斷。
+          <p className="text-sm text-ink-muted leading-relaxed">
+            時程與名冊整理自國健署、社家署、疾管署與 WHO 的公開資料。
           </p>
           <p className="text-sm font-medium text-primary-dark">
             看完整說明：資料存在哪裡、每個數字從哪來
@@ -243,7 +273,7 @@ export default function HubLanding({
         </motion.section>
       )}
 
-      <footer className="text-center text-xs text-ink-faint space-y-1">
+      <footer className="text-xs text-ink-faint space-y-1">
         <p>
           <a
             href="/about"
@@ -251,7 +281,7 @@ export default function HubLanding({
               event.preventDefault();
               goTo('about');
             }}
-            className="inline-flex items-center min-h-tap px-2 text-ink-muted underline underline-offset-2"
+            className="inline-flex items-center min-h-tap text-ink-muted underline underline-offset-2"
           >
             關於資料與來源
           </a>
@@ -261,6 +291,11 @@ export default function HubLanding({
       </footer>
     </div>
   );
+}
+
+/** Ctrl, Cmd, Shift or middle click: the visitor asked the browser for a new tab. */
+function isModifiedClick(event: MouseEvent<HTMLAnchorElement>): boolean {
+  return event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0;
 }
 
 function SignedInHero({
@@ -286,7 +321,7 @@ function SignedInHero({
             目前階段：{theme.role}
           </motion.p>
         )}
-        <motion.div variants={listItem} className="mt-5 sm:max-w-sm sm:mx-auto">
+        <motion.div variants={listItem} className="mt-5 sm:max-w-sm">
           <button
             type="button"
             onClick={onContinue}
@@ -308,7 +343,7 @@ function SignedInHero({
         懷孕中也可以：填預產期，就從孕期開始記。
       </motion.p>
       {onAddChild && (
-        <motion.div variants={listItem} className="mt-5 sm:max-w-sm sm:mx-auto">
+        <motion.div variants={listItem} className="mt-5 sm:max-w-sm">
           <button type="button" onClick={onAddChild} className="btn-primary w-full">
             新增寶寶
           </button>

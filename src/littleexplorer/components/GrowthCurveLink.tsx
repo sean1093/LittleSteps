@@ -31,7 +31,7 @@ export default function GrowthCurveLink() {
         <div className="flex-1 min-w-0">
           <h3 className={`mb-1 ${THEME.body}`}>身高體重的成長曲線</h3>
           <p className={`text-sm ${THEME.muted}`}>
-            WHO 生長標準到 3 歲都適用，百分位在 LittleSteps 的成長曲線圖。
+            WHO 生長標準到 3 歲都適用，百分位在「寶寶成長」的成長曲線圖。
           </p>
         </div>
         <ArrowRight className={`w-4 h-4 shrink-0 ${THEME.ink}`} />

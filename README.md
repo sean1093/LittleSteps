@@ -24,17 +24,27 @@ and the only route between the six services. They share a design system, an
 auth model and a data layer; each keeps its own palette and its own navigation
 shape.
 
-The page reads in the order a stranger needs: what this is and one thing to do
-about it, how much data stands behind it, the six services, and who can see a
-child's records. A signed-in parent gets a shorter page — the hero becomes
-"carry on recording", one tap from their child's current service, and the pitch
-below it is gone.
+The page reads in the order a stranger on a phone needs: what this is and the
+one thing to do about it; what can be used this minute with no account; the
+three services a family records in; and who can see a child's records. A
+signed-in parent gets a shorter page — the hero becomes "carry on recording",
+one tap from their child's current service, and the pitch is gone.
 
-The six cards are grouped the way the `Stage` column below is, because the two
-halves are not the same kind of thing: three services follow the child's age
-and a family uses one at a time, and three are usable at any age and are fully
-public. Each card leads with the Chinese role name rather than the wordmark,
-since the suite and the 0-12 month service are both called LittleSteps.
+The two halves are drawn differently because they are not the same kind of
+thing. The three public tools are link cards, each under the one number it
+stands on (rooms, family centres, diseases covered), followed by links to the
+three knowledge bases. The three staged services are an ordered timeline with
+the age range as the largest type, since "which one is mine" is the question it
+answers. Every entry is a real link.
+
+Services are named in the UI by their Chinese role (孕期陪伴, 寶寶成長,
+幼兒期陪伴, 哺乳室地圖, 親子好去處, 疫情雷達), on the landing page and in each
+service's own header. The English names in the table below are the code names
+used in this repo; "LittleSteps" in the UI means the product.
+
+Sign-in logs `auth_action: login_start` when the button is pressed, separately
+from `login` when it completes, so the effect of putting the public tools above
+the staged services can be read from sign-in starts rather than assumed.
 
 Every sentence a service says about itself lives in
 `src/common/landing/serviceCopy.ts`, read by the landing page and by the intro
