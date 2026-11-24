@@ -57,9 +57,6 @@ function verificationDates(source: string): string[] {
  */
 const UNDATED: Record<string, string> = {
   'littlesteps/data/milestones.ts': '發展里程碑，需對照國健署兒童健康手冊逐條查證後再標日期。',
-  'littlesteps/data/babyWiki.ts':
-    '15 篇寶寶百科。另外兩份 wiki（littlebloom、littleexplorer）都有引用與日期，' +
-    '這一份沒有，看起來是漏掉而不是決定。',
   'littlesteps/data/sleep.ts': '睡眠時數建議來自 AAP／NSF，需逐項對照後標日期。',
   'littlesteps/data/careGuides.ts':
     '每月照護重點，需對照國健署兒童健康手冊逐條查證後再標日期，同里程碑。',
