@@ -79,11 +79,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const signInWithGoogle = async () => {
-    // 「按下登入」和「登入成功」分開記：入口頁把免登入的工具排到登入按鈕正下方，
-    // 這個改動會不會讓人少登入，只看成功數看不出來——少掉的可能是沒按，也可能
-    // 是按了卻沒完成。
-    logAuthEvent('login_start');
-
     // LINE、Facebook、Instagram 的內建瀏覽器：Google 在自己的頁面上就拒絕
     // （disallowed_useragent），我們連錯誤都收不到，家長只看到一頁 Google 的
     // 錯誤然後離開。所以根本不開始 OAuth，先請家長換到真的瀏覽器。
@@ -92,6 +87,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setBlockedBrowser(browser);
       return;
     }
+
+    // 「按下登入」和「登入成功」分開記：入口頁把免登入的工具排到登入按鈕正下方，
+    // 這個改動會不會讓人少登入，只看成功數看不出來——少掉的可能是沒按，也可能
+    // 是按了卻沒完成。只在真的開始 OAuth 時記：上面那張說明不是一次登入，記成
+    // start 卻永遠不會有 login 或 login_failed 跟在後面。
+    logAuthEvent('login_start');
 
     try {
       await signInWithPopup(auth, googleProvider);

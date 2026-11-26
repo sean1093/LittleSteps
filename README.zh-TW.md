@@ -35,7 +35,8 @@
 親子好去處、疫情雷達），入口頁與各服務自己的頁首都一樣。下表的英文名稱是這個
 repo 裡用的代號；介面上的「LittleSteps」指的是整個產品。
 
-按下登入按鈕時會記一筆 `auth_action: login_start`，和完成登入時的 `login` 分開，
+按下登入按鈕、真的開始 Google 登入時會記一筆 `auth_action: login_start`（內建瀏覽器
+改開「用瀏覽器開啟」說明時不記），和完成登入時的 `login` 分開，
 所以「把公開工具排在分階段服務前面」的影響可以從開始登入的次數讀出來，不必用猜的。
 
 每個服務介紹自己的每一句話都放在 `src/common/landing/serviceCopy.ts`，首頁和

@@ -229,6 +229,9 @@ describe('signInWithGoogle', () => {
     expect(vi.mocked(signInWithPopup)).not.toHaveBeenCalled();
     expect(vi.mocked(signInWithRedirect)).not.toHaveBeenCalled();
     expect(within(dialog).queryByRole('button', { name: '複製連結' })).not.toBeInTheDocument();
+    // The sheet is not a sign-in attempt: a login_start here would never be
+    // followed by login or login_failed.
+    expect(vi.mocked(logAuthEvent)).not.toHaveBeenCalled();
 
     await userEvent.click(within(dialog).getByRole('button', { name: '用瀏覽器開啟' }));
     expect(vi.mocked(openInExternalBrowser)).toHaveBeenCalledTimes(1);
