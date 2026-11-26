@@ -18,6 +18,7 @@ const emptySummary: DailySummary = {
   date: '2026-06-15',
   feedingCount: 0,
   totalFeedingAmount: 0,
+  bottleAmount: 0,
   sleepCount: 0,
   totalSleepDuration: 0,
   diaperCount: 0,

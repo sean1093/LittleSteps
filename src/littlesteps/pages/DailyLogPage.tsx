@@ -7,8 +7,10 @@ import { defaultLogWindowStart, widenLogWindow } from '../logWindow';
 import { useStalled } from '../../common/hooks/useStalled';
 import RecordsNotice from '../../common/ui/RecordsNotice';
 import { useFirebaseChildren } from '../../common/hooks/useFirebaseChildren';
-import { calculateDuration, isSameDay } from '../../common/utils/dateHelpers';
+import { calculateDuration, isSameDay, toLocalDateKey } from '../../common/utils/dateHelpers';
 import {
+  breastSideOf,
+  calculateDailySummary,
   dailyLogChanges,
   findLastLog,
   findOpenSleep,
@@ -72,12 +74,16 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
   const firebaseChildren = useFirebaseChildren(user?.uid || null);
 
   const isToday = isSameDay(selectedDate, new Date());
-  const todayLogs = logs.filter((log) => isSameDay(log.timestamp, selectedDate));
-  // 擠奶是產出，不是餵了一餐——這個數字要跟摘要卡說同一件事。
-  const feedingCount = todayLogs.filter(isIntakeFeedingLog).length;
-  // 忘了按「醒了」的那一筆不是一段睡眠，是一個待補的欄位；它有自己的卡片。
-  const sleepCount = todayLogs.filter((l) => l.type === 'sleep' && !isStaleOpenSleep(l)).length;
-  const diaperCount = todayLogs.filter((l) => l.type === 'diaper').length;
+  /*
+    跟首頁摘要卡同一個函式算：擠奶不是一餐、忘了按「醒了」的睡眠不算一段，
+    兩頁才不會給出兩個答案。
+
+    尿布拆成濕尿布與便便（大小便兩邊都算）：照顧者被交代要看的是濕尿布的數量，
+    合在一起的「尿布 6」答不了那個問題。瓶餵的 ml 只加配方奶與瓶餵母乳——親餵
+    量不出來，擠奶是產出。不給「夠不夠」的判斷：那要看月齡與體重，屬於有來源
+    的百科，不屬於一個加總。
+  */
+  const daySummary = calculateDailySummary(logs, toLocalDateKey(selectedDate));
 
   const openSleep = findOpenSleep(logs);
   /*
@@ -101,6 +107,8 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
     「再記一次」則把兩者拆開：擠奶不是一餐，也不該擋住「再餵一次上次那餐」。
   */
   const lastFeedingForm = findLastLog(logs, (log) => log.type === 'feeding');
+  // 只拿來給表單顯示「上次：左側」，不拿來預填或自動換邊。
+  const lastBreastFeed = findLastLog(logs, (log) => breastSideOf(log) !== null);
   const lastLogForForm =
     modalType === 'diaper' ? lastDiaper : modalType === 'feeding' ? lastFeedingForm : null;
 
@@ -335,9 +343,10 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
   }
 
   const stats = [
-    { label: '餵奶', count: feedingCount },
-    { label: '睡眠', count: sleepCount },
-    { label: '尿布', count: diaperCount },
+    { label: '餵奶', count: daySummary.feedingCount },
+    { label: '睡眠', count: daySummary.sleepCount },
+    { label: '濕尿布', count: daySummary.peeCount },
+    { label: '便便', count: daySummary.poopCount },
   ];
 
   return (
@@ -426,7 +435,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
 
         <motion.div variants={listItem} className="card mb-6">
           <h2 className="mb-3">{isToday ? '今日統計' : '這天的統計'}</h2>
-          <div className="flex justify-around">
+          <div className="grid grid-cols-4 gap-2">
             {stats.map((stat) => (
               <div key={stat.label} className="text-center">
                 <div className="text-2xl font-bold text-primary-dark">{stat.count}</div>
@@ -434,6 +443,12 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
               </div>
             ))}
           </div>
+          {daySummary.bottleAmount > 0 && (
+            <p className="mt-3 text-sm text-ink">
+              瓶餵合計 <span className="font-semibold tabular-nums">{daySummary.bottleAmount} ml</span>
+              <span className="text-ink-muted">（配方奶與瓶餵母乳，不含擠奶）</span>
+            </p>
+          )}
         </motion.div>
 
         <motion.div variants={listItem}>
@@ -473,6 +488,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
             logType={modalType}
             editingLog={editingLog}
             lastLog={lastLogForForm}
+            lastBreastFeed={lastBreastFeed}
             childName={currentChild.name}
           />
         )}

@@ -11,6 +11,16 @@ interface ModalFrameProps {
   /** 送出中時鎖住關閉，避免半途卸載掉正在等待的請求。 */
   closeDisabled?: boolean;
   children: ReactNode;
+  /**
+   * 釘在 sheet 底部、捲動時不會離開畫面的那一列，通常是送出鍵。
+   *
+   * 餵奶表單有時間、七個類型、時長與奶量各一排快捷鍵，單手拿著手機時送出鍵
+   * 永遠在摺線以下。header 已經釘在頂端，footer 用同一個做法釘在底部——這是
+   * 唯一的一份，要釘住送出鍵的表單都用它，不要再各自手寫 sticky。
+   *
+   * 鍵在表單外面，所以 submit 鍵要用 `form` 屬性指回表單的 id。
+   */
+  footer?: ReactNode;
 }
 
 /**
@@ -26,6 +36,7 @@ export default function ModalFrame({
   title,
   closeDisabled,
   children,
+  footer,
 }: ModalFrameProps) {
   const dialogRef = useDialogA11y(isOpen, onClose, closeDisabled);
 
@@ -62,7 +73,13 @@ export default function ModalFrame({
               </button>
             </div>
 
-            <div className="px-5 pb-6">{children}</div>
+            <div className={footer ? 'px-5 pb-4' : 'px-5 pb-6'}>{children}</div>
+
+            {footer && (
+              <div className="sticky bottom-0 z-10 border-t border-ink/10 bg-white px-5 pt-3 pb-5">
+                {footer}
+              </div>
+            )}
           </motion.div>
         </>
       )}

@@ -551,3 +551,70 @@ describe('標題說這是誰的紀錄', () => {
     expect(screen.getByRole('dialog', { name: '幫小安記擠奶' })).toBeInTheDocument();
   });
 });
+
+/*
+  餵奶表單有時間、七個類型、時長與奶量各一排快捷鍵，送出鍵原本排在最後一個
+  欄位下面，單手拿著手機時永遠在摺線以下。現在它在 ModalFrame 釘在底部的那一
+  列裡，不在會捲動的欄位之間。happy-dom 沒有版面可量，所以這裡驗的是位置：鍵
+  不在表單的欄位裡，卻仍然送出這張表單。真的量過的是 390px 與 320px 的截圖。
+*/
+describe('儲存鍵一直看得到', () => {
+  it('儲存鍵在 sheet 底部那一列，不在捲動的欄位之間，按下去送出的仍是這張表', async () => {
+    const { user, onSave } = renderModal({ logType: 'feeding' });
+
+    const save = screen.getByRole('button', { name: '儲存' });
+    const amount = screen.getByLabelText('奶量（ml）');
+    const form = amount.closest('form')!;
+
+    expect(form.contains(save)).toBe(false);
+    // 在對話框裡、排在所有欄位之後：讀螢幕軟體走到它之前已經讀完整張表。
+    expect(screen.getByRole('dialog').contains(save)).toBe(true);
+    expect(form.compareDocumentPosition(save) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    await user.type(amount, '90');
+    await user.click(save);
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onSave.mock.calls[0][0].data.amount).toBe(90);
+  });
+});
+
+describe('上次親餵的那一邊', () => {
+  const breastFeed = (feedingType: FeedingData['feedingType'], timestamp: string): DailyLog => ({
+    id: `b-${feedingType}`,
+    childId: 'c1',
+    type: 'feeding',
+    timestamp,
+    data: { feedingType, duration: 15 },
+    createdAt: timestamp,
+  });
+  const today = (hours: number, minutes: number) => {
+    const d = new Date();
+    d.setHours(hours, minutes, 0, 0);
+    return d.toISOString();
+  };
+
+  it('類型上面寫著上次是哪一邊、幾點，選中的類型照舊是上一筆，不會自動換邊', () => {
+    const last = breastFeed('breast_left', today(0, 5));
+    renderModal({ logType: 'feeding', lastLog: last, lastBreastFeed: last });
+
+    expect(screen.getByText('上次：左側（00:05）')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: '母乳（左）' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: '母乳（右）' })).not.toBeChecked();
+  });
+
+  it('不是今天的話帶上日期', () => {
+    renderModal({
+      logType: 'feeding',
+      lastBreastFeed: breastFeed('breast_both', '2026-09-01T02:00:00.000+08:00'),
+    });
+
+    expect(screen.getByText('上次：兩側（9/1 02:00）')).toBeInTheDocument();
+  });
+
+  it('編輯一筆舊紀錄時不說「上次」', () => {
+    const last = breastFeed('breast_right', today(0, 5));
+    renderModal({ logType: 'feeding', editingLog: last, lastBreastFeed: last });
+
+    expect(screen.queryByText(/^上次：/)).toBeNull();
+  });
+});

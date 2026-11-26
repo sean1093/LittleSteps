@@ -303,12 +303,27 @@ describe('logHelpers', () => {
         date: '2026-06-15',
         feedingCount: 3,
         totalFeedingAmount: 210,
+        bottleAmount: 210,
         sleepCount: 3,
         totalSleepDuration: 135,
         diaperCount: 3,
         poopCount: 2,
         peeCount: 2,
       });
+    });
+
+    it('totals bottle millilitres from formula and bottled breast milk only, never pumping', () => {
+      const logs = [
+        feedingLog('formula', '2026-06-15T01:00:00.000Z', { amount: 120 }),
+        feedingLog('bottle', '2026-06-15T04:00:00.000Z', { feedingType: 'breast_milk_bottle', amount: 90 }),
+        // Pumped milk is the mother's output, not what the baby drank.
+        feedingLog('pump', '2026-06-15T05:00:00.000Z', { feedingType: 'pumping', amount: 150 }),
+        // A direct breastfeed has no scale; an amount typed on one is not a bottle.
+        feedingLog('breast', '2026-06-15T06:00:00.000Z', { feedingType: 'breast_left', amount: 40 }),
+        feedingLog('solid', '2026-06-15T07:00:00.000Z', { feedingType: 'solid', amount: 30 }),
+      ];
+
+      expect(calculateDailySummary(logs, '2026-06-15').bottleAmount).toBe(210);
     });
 
     it('derives the sleep duration when the stored duration is 0', () => {
@@ -340,6 +355,7 @@ describe('logHelpers', () => {
         date: '2026-03-01',
         feedingCount: 0,
         totalFeedingAmount: 0,
+        bottleAmount: 0,
         sleepCount: 0,
         totalSleepDuration: 0,
         diaperCount: 0,

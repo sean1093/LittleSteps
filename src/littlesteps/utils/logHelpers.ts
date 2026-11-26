@@ -111,6 +111,28 @@ export function isPumpingLog(log: DailyLog): boolean {
   return log.type === 'feeding' && (log.data as FeedingData).feedingType === 'pumping';
 }
 
+/**
+ * 瓶餵：配方奶與瓶餵母乳。「今天喝了幾 ml」只對這兩種量得出來——親餵沒有
+ * 刻度，擠奶是擠出來的量，不是寶寶喝下去的。
+ */
+export function isBottleFeedingLog(log: DailyLog): boolean {
+  if (log.type !== 'feeding') return false;
+  const type = (log.data as FeedingData).feedingType;
+  return type === 'formula' || type === 'breast_milk_bottle';
+}
+
+const BREAST_SIDE: Partial<Record<FeedingData['feedingType'], NonNullable<FeedingData['side']>>> = {
+  breast_left: 'left',
+  breast_right: 'right',
+  breast_both: 'both',
+};
+
+/** 親餵是哪一邊；不是親餵就回 null。 */
+export function breastSideOf(log: DailyLog): NonNullable<FeedingData['side']> | null {
+  if (log.type !== 'feeding') return null;
+  return BREAST_SIDE[(log.data as FeedingData).feedingType] ?? null;
+}
+
 /** 真的餵進寶寶嘴裡的那些紀錄。 */
 export function isIntakeFeedingLog(log: DailyLog): boolean {
   return log.type === 'feeding' && (log.data as FeedingData).feedingType !== 'pumping';
@@ -176,6 +198,7 @@ export function calculateDailySummary(
     date: targetDate,
     feedingCount: 0,
     totalFeedingAmount: 0,
+    bottleAmount: 0,
     sleepCount: 0,
     totalSleepDuration: 0,
     diaperCount: 0,
@@ -191,6 +214,7 @@ export function calculateDailySummary(
         summary.feedingCount++;
         const feedingData = log.data as FeedingData;
         summary.totalFeedingAmount += feedingData.amount || 0;
+        if (isBottleFeedingLog(log)) summary.bottleAmount += feedingData.amount || 0;
         break;
       }
 
