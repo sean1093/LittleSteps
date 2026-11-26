@@ -107,8 +107,8 @@ function ToothCell({ tooth, erupted, due, onToggle, className = '' }: ToothCellP
   const surface = erupted
     ? 'bg-explorer-meadow-ink border-explorer-meadow-ink text-white'
     : due
-      ? 'bg-white border-explorer-sunbeam border-dashed text-explorer-bark/70'
-      : 'bg-explorer-sand border-explorer-sand text-explorer-bark/70';
+      ? 'bg-white border-explorer-sunbeam border-dashed text-explorer-muted-ink'
+      : 'bg-explorer-sand border-explorer-sand text-explorer-muted-ink';
 
   return (
     <motion.button

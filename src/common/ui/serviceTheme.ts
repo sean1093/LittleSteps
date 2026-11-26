@@ -84,9 +84,10 @@ export const SERVICE_THEME: Record<ServiceId, ServiceTheme> = {
     fill: 'bg-bloom-dusty-rose-deep',
     fillText: 'text-white',
     body: 'text-bloom-stone-ink',
-    // /80 keeps muted visibly lighter than body while still clearing the 3:1
-    // floor on bloom-cream (3.38:1). /70 was 2.82:1 there — under the floor.
-    muted: 'text-bloom-stone-ink/80',
+    // A solid shade, not `stone-ink/80`. muted carries 12–14px captions —
+    // AppBar subtitles, panel notes — so the floor is 4.5:1, not the 3:1 that
+    // WCAG allows only for large text. /80 was 3.38:1 on bloom-cream.
+    muted: 'text-bloom-muted-ink',
   },
   littleexplorer: {
     id: 'littleexplorer',
@@ -100,7 +101,8 @@ export const SERVICE_THEME: Record<ServiceId, ServiceTheme> = {
     fill: 'bg-explorer-sunbeam',
     fillText: 'text-ink',
     body: 'text-explorer-bark',
-    muted: 'text-explorer-bark/70',
+    // Solid for the same reason as LittleBloom: `bark/70` was 3.17:1 on sand.
+    muted: 'text-explorer-muted-ink',
   },
   babyoasis: {
     id: 'babyoasis',

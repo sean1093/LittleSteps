@@ -230,14 +230,30 @@ describe('SERVICE_THEME 對比度', () => {
     }
   });
 
-  it('muted 是次要文案，門檻 3:1', () => {
-    // muted 出現的地方是 AppBar 副標、panel 裡的說明字，底色都是白。
-    // 實測 littlebloom 的 muted（`text-bloom-stone-ink/80`）是白底 3.69:1、
-    // 自己的 cream pageBg 上 3.38:1。`/70` 在 cream 上只有 2.81:1（破 3:1
-    // 地板），所以透明度是 /80 而不是 /70。
+  it('muted 在白色與自己的 pageBg 上都 ≥4.5:1', () => {
+    // muted 承載的是 12–14px 的小字（AppBar 副標、panel 裡的說明），WCAG 的
+    // 3:1 只給大字級，這裡一律 4.5。曾經用透明度做 muted：littlebloom 的
+    // `text-bloom-stone-ink/80` 在 cream 上 3.38:1、littleexplorer 的
+    // `text-explorer-bark/70` 在 sand 上 3.17:1，所以 resolve 會把透明度壓到
+    // 底色上再算——把 /80 放回去，這條就紅。實測：littlebloom 4.62、
+    // littleexplorer 4.64（各自的 pageBg），其餘四個服務共用 ink-muted 5.68。
     for (const [id, theme] of SERVICES) {
-      const value = contrast(theme.muted, 'bg-white');
-      expect(value, `${id} muted ${theme.muted} 在白色上只有 ${value.toFixed(2)}:1`).toBeGreaterThanOrEqual(3);
+      const onPage = contrast(theme.muted, theme.pageBg);
+      const onWhite = contrast(theme.muted, 'bg-white');
+      expect(onPage, `${id} muted ${theme.muted} 在 ${theme.pageBg} 上只有 ${onPage.toFixed(2)}:1`)
+        .toBeGreaterThanOrEqual(4.5);
+      expect(onWhite, `${id} muted ${theme.muted} 在白色上只有 ${onWhite.toFixed(2)}:1`)
+        .toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('muted 仍比 body 淺，層級沒有被抹平', () => {
+    // 把 muted 直接換成 body 的色階也能過上一條，但次要文案就和正文一樣深了。
+    for (const [id, theme] of SERVICES) {
+      const muted = contrast(theme.muted, theme.pageBg);
+      const body = contrast(theme.body, theme.pageBg);
+      expect(muted, `${id} muted（${muted.toFixed(2)}:1）不比 body（${body.toFixed(2)}:1）淺`)
+        .toBeLessThan(body);
     }
   });
 
