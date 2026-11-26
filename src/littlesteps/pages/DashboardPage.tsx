@@ -81,13 +81,6 @@ export default function DashboardPage({
   const { analytics: sleepAnalytics } = useSleepAnalytics(dailyLogs);
   const { stats: foodStats } = useFoodTracking(currentChild?.id || null, user);
 
-  // Calculate baby's age in months
-  const ageMonths = currentChild?.birthday
-    ? Math.max(0, Math.floor(
-        (Date.now() - new Date(currentChild.birthday).getTime()) / (1000 * 60 * 60 * 24 * 30.44)
-      ))
-    : 0;
-
   /*
     警示用矯正年齡。「超過 6 小時沒餵」只對 3 個月以下的寶寶說話，用實際月齡
     算的話，32 週出生的寶寶在實際 3 個月、矯正還不到 2 個月時就失去這則提醒
@@ -232,7 +225,8 @@ export default function DashboardPage({
 
           <SleepAnalyticsCard
             analytics={sleepAnalytics}
-            ageMonths={ageMonths}
+            // 建議睡眠時數跟警示一樣看矯正年齡，與睡眠分析頁說的是同一個數字。
+            ageMonths={correctedAgeMonths(currentChild)}
             onNavigate={() => onNavigate('littlesteps/sleep-analysis')}
           />
         </motion.div>

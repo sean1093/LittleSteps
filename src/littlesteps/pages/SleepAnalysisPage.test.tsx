@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import type { ChildProfile, DailyLog } from '../../types';
 import SleepAnalysisPage from './SleepAnalysisPage';
@@ -73,5 +73,63 @@ describe('睡眠分析的分母', () => {
     expect(screen.getByText('這段時間還沒有睡眠記錄')).toBeInTheDocument();
     expect(screen.queryByText('睡眠時長對比')).toBeNull();
     expect(screen.queryByText('0.0h')).toBeNull();
+  });
+});
+
+/*
+  睡眠建議看的是發展，早產兒要用矯正年齡。32 週出生、實際 7 個月的寶寶矯正後
+  才 5 個月：用實際月齡的話，這一頁會拿 6-12 個月的範圍去對照，「6 個月以上一天
+  睡 3-4 次」的建議也會對一個矯正 5 個月的孩子說話。
+*/
+describe('早產兒的睡眠建議用矯正年齡', () => {
+  const NOW = new Date(2026, 10, 26, 12); // 2026-11-26 12:00
+
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(NOW);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  // 實際 7 個月又 10 天。
+  const sevenMonthOld = (gestationalAgeWeeks?: number): ChildProfile => ({
+    ...child,
+    birthday: '2026-04-16',
+    gestationalAgeWeeks,
+  });
+
+  // 今天上午的六次小睡：每日睡眠次數 6，超過「6 個月以上」那條建議的門檻 5。
+  const sixNaps = (): DailyLog[] =>
+    Array.from({ length: 6 }, (_, i) => {
+      const start = new Date(2026, 10, 26, 4 + i);
+      const end = new Date(start.getTime() + 40 * 60_000);
+      return {
+        id: `nap-${i}`,
+        childId: 'c1',
+        type: 'sleep',
+        timestamp: start.toISOString(),
+        data: { startTime: start.toISOString(), endTime: end.toISOString(), duration: 40 },
+        createdAt: start.toISOString(),
+      };
+    });
+
+  it('32 週出生、實際 7 個月：對照矯正 5 個月的範圍並說明是矯正年齡', () => {
+    withLogs(sixNaps());
+    render(<SleepAnalysisPage currentChild={sevenMonthOld(32)} user={null} />);
+
+    expect(screen.getByText('依矯正年齡 5 個月建議：12-17 小時')).toBeInTheDocument();
+    expect(screen.queryByText(/12-16 小時/)).toBeNull();
+    expect(screen.queryByText('睡眠次數較多')).toBeNull();
+  });
+
+  it('足月的同齡寶寶照實際月齡，不標矯正', () => {
+    withLogs(sixNaps());
+    render(<SleepAnalysisPage currentChild={sevenMonthOld()} user={null} />);
+
+    expect(screen.getByText('7 個月大寶寶建議：12-16 小時')).toBeInTheDocument();
+    expect(screen.queryByText(/依矯正年齡/)).toBeNull();
+    expect(screen.getByText('睡眠次數較多')).toBeInTheDocument();
   });
 });
