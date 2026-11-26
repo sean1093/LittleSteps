@@ -380,3 +380,21 @@ describe('刪除寶寶前的確認', () => {
     expect(mocks.deleteChild).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * 帳號滿了的時候，「新增寶寶」停用的原因原本只寫在 title 裡：手機不顯示
+ * title，停用的按鈕也拿不到焦點，家長只看到一顆灰掉的按鈕。
+ */
+describe('帳號滿了', () => {
+  it('兩個寶寶時，停用的新增寶寶下面寫出原因與空出位置的方法，並綁在按鈕上', async () => {
+    await openSheet('littlesteps');
+
+    const add = await screen.findByRole('button', { name: '新增寶寶' });
+    expect(add).toBeDisabled();
+    expect(add).not.toHaveAttribute('title');
+    expect(add).toHaveAccessibleDescription(/最多可以追蹤 2 個寶寶/);
+    expect(add).toHaveAccessibleDescription(/離開或刪除其中一份紀錄，就能空出一個位置/);
+    // 看得見的字，不只是給螢幕閱讀器的描述。
+    expect(screen.getByText(/最多可以追蹤 2 個寶寶/)).toBeVisible();
+  });
+});

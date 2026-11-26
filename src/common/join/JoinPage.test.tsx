@@ -163,6 +163,9 @@ describe('JoinPage', () => {
     });
 
     expect(screen.getByRole('heading', { name: '這個帳號的檔案已經滿了' })).toBeInTheDocument();
+    // Joined records count toward the limit, so "full" alone is a dead end:
+    // the parent has to be told what frees a slot.
+    expect(screen.getByText(/離開或刪除其中一份紀錄，就能空出一個位置/)).toBeInTheDocument();
     expect(store.joinChild).not.toHaveBeenCalled();
   });
 });

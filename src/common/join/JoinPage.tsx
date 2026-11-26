@@ -8,7 +8,7 @@ import { goTo } from '../navigate';
 import { useChildStoreContext } from '../contexts/ChildStoreContext';
 import { useOptionalAuth } from '../../contexts/AuthContext';
 import { ChildJoinError } from '../childJoinError';
-import { CHILD_LIMIT_MESSAGE, MAX_CHILDREN } from '../childLimits';
+import { CHILD_LIMIT_FREE_SLOT, CHILD_LIMIT_MESSAGE, MAX_CHILDREN } from '../childLimits';
 import { entryPageForChild } from '../stageEntry';
 import { isPregnancyProfile } from '../pregnancy';
 import { toMemberName } from '../memberNames';
@@ -88,7 +88,7 @@ export default function JoinPage() {
         <EmptyState
           theme={theme}
           title="這個帳號的檔案已經滿了"
-          description={CHILD_LIMIT_MESSAGE}
+          description={`${CHILD_LIMIT_MESSAGE}。${CHILD_LIMIT_FREE_SLOT}`}
           action={{ label: '回到所有服務', onClick: () => leave('home') }}
         />
       );
