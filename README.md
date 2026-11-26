@@ -109,7 +109,11 @@ they used to give no hint that a product existed around them.
   the child rather than the account, so a parent of a formula-fed and a breastfed baby
   gets each one's own defaults. A sleep can be started and ended in one tap from the
   day view, with a live elapsed count; one left open past 14 hours is flagged as
-  needing an end time and excluded from every sleep total, average and score
+  needing an end time and excluded from every sleep total, average and score. The
+  feeding form says which breast was used last and when, without switching sides for
+  the parent, and its Save button stays pinned to the bottom of the sheet. The day's
+  stats count wet and dirty nappies separately and total the bottle millilitres
+  (formula plus bottled breast milk), with no target or verdict attached
 - **Pumping and bottled breast milk** — a pumping session records volume, minutes and
   optionally which side, and is kept out of every intake total, feed count and feeding
   alert, with its own section in the weekly report. Breast milk given by bottle counts

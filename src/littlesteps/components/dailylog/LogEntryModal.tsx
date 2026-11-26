@@ -19,7 +19,10 @@ import {
   getDiaperTypeLabel,
   getFeedingSideLabel,
   getFeedingTypeLabel,
+  breastSideOf,
+  formatTime,
 } from '../../utils/logHelpers';
+import { isSameDay } from '../../../common/utils/dateHelpers';
 
 interface LogEntryModalProps {
   isOpen: boolean;
@@ -40,6 +43,11 @@ interface LogEntryModalProps {
    * 看得出「現在記在誰身上」的地方。沒給就維持不帶名字的標題。
    */
   childName?: string;
+  /**
+   * 這個孩子最近一次親餵（左、右或兩邊）。只拿來顯示「上次：左側（03:12）」，
+   * 不會替家長換邊：先餵比較脹的那一側才是原則，左右輪流只是經驗法則。
+   */
+  lastBreastFeed?: DailyLog | null;
 }
 
 /* Repeated verbatim on eight fields below. */
@@ -125,6 +133,18 @@ function TimePresets({ onPick }: { onPick: (dateTimeLocal: string) => void }) {
   );
 }
 
+const FORM_ID = 'log-entry-form';
+
+/** 「上次：左側（03:12）」；不是今天的話把日期帶上，免得把昨晚的讀成剛剛。 */
+function lastSideLine(log: DailyLog): string | null {
+  const side = breastSideOf(log);
+  if (!side) return null;
+  const time = formatTime(log.timestamp);
+  const date = new Date(log.timestamp);
+  const when = isSameDay(date, new Date()) ? time : `${date.getMonth() + 1}/${date.getDate()} ${time}`;
+  return `上次：${getFeedingSideLabel(side)}（${when}）`;
+}
+
 const RANGE_ERROR = '結束時間要晚於開始時間；睡到隔天的話，結束時間請選隔天的日期。';
 
 export default function LogEntryModal({
@@ -135,6 +155,7 @@ export default function LogEntryModal({
   editingLog,
   lastLog,
   childName,
+  lastBreastFeed,
 }: LogEntryModalProps) {
   // Common fields
   const [timestamp, setTimestamp] = useState(getCurrentDateTimeLocal());
@@ -338,9 +359,34 @@ export default function LogEntryModal({
   // The shared frame, like every other form in the app. This sheet used to be
   // drawn by hand: no dialog role, no focus trap, no Escape, and a backdrop
   // that closed it mid-save and took the request's result with it.
+  // 新增時才說：編輯一筆舊紀錄時，「上次」指的不是那一筆的上一次。
+  const sideLine = !editingLog && lastBreastFeed ? lastSideLine(lastBreastFeed) : null;
+
   return (
-    <ModalFrame isOpen={isOpen} onClose={onClose} title={getTitle()} closeDisabled={isSubmitting}>
-            <form onSubmit={handleSubmit} className="space-y-4">
+    <ModalFrame
+      isOpen={isOpen}
+      onClose={onClose}
+      title={getTitle()}
+      closeDisabled={isSubmitting}
+      footer={
+        <>
+          {error && (
+            <div role="alert" className="mb-3 bg-primary-soft border border-primary/30 rounded-2xl p-3">
+              <p className="text-sm text-primary-dark">{error}</p>
+            </div>
+          )}
+          <button
+            type="submit"
+            form={FORM_ID}
+            disabled={isSubmitting || sleepRangeError !== null}
+            className="btn-primary w-full"
+          >
+            {isSubmitting ? '儲存中...' : (editingLog ? '更新' : '儲存')}
+          </button>
+        </>
+      }
+    >
+            <form id={FORM_ID} onSubmit={handleSubmit} className="space-y-4">
               {logType === 'feeding' && (
                 <>
                   <div>
@@ -359,6 +405,7 @@ export default function LogEntryModal({
                   </div>
 
                   <div>
+                    {sideLine && <p className="mb-2 text-sm text-ink">{sideLine}</p>}
                     <ChoiceChips
                       label="類型"
                       value={feedingType}
@@ -586,20 +633,6 @@ export default function LogEntryModal({
                   </button>
                 </div>
               )}
-
-              {error && (
-                <div role="alert" className="bg-primary-soft border border-primary/30 rounded-2xl p-3">
-                  <p className="text-sm text-primary-dark">{error}</p>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={isSubmitting || sleepRangeError !== null}
-                className="btn-primary w-full"
-              >
-                {isSubmitting ? '儲存中...' : (editingLog ? '更新' : '儲存')}
-              </button>
             </form>
     </ModalFrame>
   );

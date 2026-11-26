@@ -725,3 +725,117 @@ describe('頁面順序', () => {
     expect(headings.indexOf('快速記錄')).toBeLessThan(headings.indexOf('今日統計'));
   });
 });
+
+/*
+  「今天喝得夠不夠？」——照顧者被交代要看的是濕尿布的數量與瓶餵的 ml。
+  合在一起的「尿布 6」答不了，而擠奶一旦算進 ml，數字就是錯的那一邊。
+*/
+describe('今日統計：濕尿布、便便與瓶餵 ml', () => {
+  const at = (hour: number) => {
+    const d = new Date();
+    d.setHours(hour, 0, 0, 0);
+    return d.toISOString();
+  };
+  const make = (id: string, hour: number, type: DailyLog['type'], data: DailyLog['data']): DailyLog => ({
+    id,
+    childId: 'c1',
+    type,
+    timestamp: at(hour),
+    data,
+    createdAt: at(hour),
+  });
+
+  const renderStats = () => {
+    render(
+      <ToastProvider>
+        <DailyLogPage currentChild={child} user={null} />
+      </ToastProvider>,
+    );
+    return screen.getByRole('heading', { name: '今日統計' }).parentElement!;
+  };
+  const stat = (card: HTMLElement, label: string) =>
+    within(card).getByText(label).previousElementSibling?.textContent;
+
+  it('大小便各算一次：濕尿布與便便分開數', () => {
+    readState.logs = [
+      make('d1', 1, 'diaper', { type: 'pee' }),
+      make('d2', 2, 'diaper', { type: 'pee' }),
+      make('d3', 3, 'diaper', { type: 'poop', consistency: 'soft' }),
+      make('d4', 4, 'diaper', { type: 'both' }),
+    ];
+    const card = renderStats();
+
+    expect(stat(card, '濕尿布')).toBe('3');
+    expect(stat(card, '便便')).toBe('2');
+  });
+
+  it('瓶餵 ml 加的是配方奶與瓶餵母乳，擠奶一滴都不算', () => {
+    readState.logs = [
+      make('f1', 1, 'feeding', { feedingType: 'formula', amount: 120 }),
+      make('f2', 2, 'feeding', { feedingType: 'breast_milk_bottle', amount: 90 }),
+      make('p1', 3, 'feeding', { feedingType: 'pumping', amount: 150 }),
+      make('p2', 4, 'feeding', { feedingType: 'pumping', amount: 200 }),
+    ];
+    const card = renderStats();
+
+    expect(card).toHaveTextContent('瓶餵合計 210 ml');
+    expect(stat(card, '餵奶')).toBe('2');
+  });
+
+  it('只有擠奶的一天不出現瓶餵合計', () => {
+    readState.logs = [make('p1', 3, 'feeding', { feedingType: 'pumping', amount: 150 })];
+    const card = renderStats();
+
+    expect(card).not.toHaveTextContent('瓶餵合計');
+  });
+});
+
+/*
+  泌乳顧問：先餵比較脹的那一側，左右輪流只是經驗法則。所以表單只說上次是哪
+  一邊，不替家長換；一鍵重複也照抄同一邊。
+*/
+describe('上次親餵的那一邊', () => {
+  beforeEach(() => {
+    const at = new Date();
+    at.setHours(0, 5, 0, 0);
+    readState.logs = [
+      {
+        id: 'left',
+        childId: 'c1',
+        type: 'feeding',
+        timestamp: at.toISOString(),
+        data: { feedingType: 'breast_left', duration: 15 },
+        createdAt: at.toISOString(),
+      },
+    ];
+    addDailyLog.mockResolvedValue('new-log');
+  });
+
+  it('表單寫出上次是左側，預填的仍是左側', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <DailyLogPage currentChild={child} user={null} />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: '餵奶' }));
+
+    expect(await screen.findByText('上次：左側（00:05）')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: '母乳（左）' })).toBeChecked();
+  });
+
+  it('一鍵重複照抄同一邊，不換邊', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <DailyLogPage currentChild={child} user={null} />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: '餵奶 · 母乳（左） 15 分鐘' }));
+
+    expect(addDailyLog).toHaveBeenCalledTimes(1);
+    expect(addDailyLog.mock.calls[0][1].data).toMatchObject({ feedingType: 'breast_left' });
+  });
+});

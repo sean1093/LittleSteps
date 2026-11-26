@@ -394,6 +394,11 @@ export interface DailySummary {
   date: string; // YYYY-MM-DD
   feedingCount: number;
   totalFeedingAmount: number; // ml
+  /**
+   * 瓶餵的量（ml）：配方奶加瓶餵母乳。親餵量不出來，擠奶是產出不是攝取，
+   * 兩者都不在裡面。
+   */
+  bottleAmount: number;
   sleepCount: number;
   totalSleepDuration: number; // minutes
   diaperCount: number;
