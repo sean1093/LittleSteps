@@ -4,13 +4,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { KeyboardEvent } from 'react';
 import { pressable } from './pressable';
-import WikiArticleCard from '../components/wiki/WikiArticleCard';
-import { SERVICE_THEME } from './serviceTheme';
-import {
-  toddlerWikiArticles,
-  toddlerWikiCategoryColors,
-  toddlerWikiCategoryLabels,
-} from '../../littleexplorer/data/toddlerWiki';
+import FoodGuideStages from '../../littlesteps/components/food/FoodGuideStages';
+import { foodStages } from '../../littlesteps/data/complementaryFood';
 
 /**
  * `pressable` 是「可點的 div 也要能用鍵盤操作」的唯一實作。
@@ -22,10 +17,11 @@ import {
  *     是巢狀按鈕（編輯、刪除）的 Enter 不會順便把外層那一列一起切換的原因，
  *     用 fireEvent 從 DOM 打是打不出這個組合的。
  *
- *  2. 行為層——真的渲染一張 WikiArticleCard，用鍵盤把它打開再關上。
- *     契約全對但沒接上去的情況存在過：這張卡片就是原本只有 onClick 的那個
- *     元件，三個知識庫共 92 篇文章因此在鍵盤下看得到卻打不開。props 正確
- *     不代表使用者按得到，所以要有一個真的按下去的證明。
+ *  2. 行為層——真的渲染一個用 pressable 的手風琴（副食品三階段），用鍵盤
+ *     把它打開再關上。契約全對但沒接上去的情況存在過：知識庫文章卡原本只有
+ *     onClick，三個知識庫共 92 篇文章因此在鍵盤下看得到卻打不開。props 正確
+ *     不代表使用者按得到，所以要有一個真的按下去的證明。（文章卡後來改成
+ *     標題裡的原生 <button>，不再用 pressable，它的鍵盤測試在 WikiBrowser.test。）
  */
 
 const noop = () => {};
@@ -127,52 +123,48 @@ describe('pressable 的鍵盤處理', () => {
   });
 });
 
-describe('WikiArticleCard 用鍵盤就能展開', () => {
-  const article = toddlerWikiArticles[0];
+describe('pressable 的列用鍵盤就能展開', () => {
+  const stage = foodStages[0];
 
-  /** 和 ToddlerWikiPage 一樣，展開狀態由外面持有；卡片本身是受控的。 */
+  /** 和副食品頁一樣，展開狀態由外面持有；元件本身是受控的。 */
   function Harness() {
-    const [expanded, setExpanded] = useState(false);
-    return createElement(WikiArticleCard, {
-      article,
-      isExpanded: expanded,
-      onToggle: () => setExpanded((open) => !open),
-      categoryLabel: toddlerWikiCategoryLabels[article.category],
-      categoryColors: toddlerWikiCategoryColors[article.category],
-      theme: SERVICE_THEME.littleexplorer,
+    const [expanded, setExpanded] = useState<number | null>(null);
+    return createElement(FoodGuideStages, {
+      expandedStage: expanded,
+      onToggleStage: setExpanded,
     });
   }
 
   it('可以聚焦、按 Enter 展開，再按一次收合', async () => {
     const user = userEvent.setup();
-    // 資料前提：文章沒有處理步驟的話，展開與否在畫面上看不出差別。
-    expect(article.solutions.length, article.id).toBeGreaterThan(0);
+    // 資料前提：沒有重點提示的話，展開與否在畫面上看不出差別。
+    expect(stage.keyPoints.length, stage.name).toBeGreaterThan(0);
 
     render(createElement(Harness));
 
-    const row = screen.getByRole('button', { name: new RegExp(article.title) });
+    const row = screen.getByRole('button', { name: new RegExp(stage.name) });
     expect(row).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByText('處理方式')).not.toBeInTheDocument();
+    expect(screen.queryByText('重點提示')).not.toBeInTheDocument();
 
     row.focus();
     expect(row).toHaveFocus();
 
     await user.keyboard('{Enter}');
     expect(row).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByText('處理方式')).toBeInTheDocument();
-    expect(screen.getByText(article.solutions[0].step)).toBeInTheDocument();
+    expect(screen.getByText('重點提示')).toBeInTheDocument();
+    expect(screen.getByText(stage.keyPoints[0])).toBeInTheDocument();
 
     await user.keyboard('{Enter}');
     expect(row).toHaveAttribute('aria-expanded', 'false');
     // AnimatePresence 的收合是動畫，節點會晚一點才離開 DOM。
-    await waitFor(() => expect(screen.queryByText('處理方式')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('重點提示')).not.toBeInTheDocument());
   });
 
   it('空白鍵一樣能展開，而且不會讓頁面捲動', async () => {
     const user = userEvent.setup();
     render(createElement(Harness));
 
-    const row = screen.getByRole('button', { name: new RegExp(article.title) });
+    const row = screen.getByRole('button', { name: new RegExp(stage.name) });
     row.focus();
 
     // React 18 把 handler 掛在 root container 上，不是掛在這個節點上，所以
@@ -190,7 +182,7 @@ describe('WikiArticleCard 用鍵盤就能展開', () => {
     }
 
     expect(row).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByText('處理方式')).toBeInTheDocument();
+    expect(screen.getByText('重點提示')).toBeInTheDocument();
     expect(defaultPrevented, '空白鍵沒被攔下，頁面會捲動而不是展開').toBe(true);
   });
 });

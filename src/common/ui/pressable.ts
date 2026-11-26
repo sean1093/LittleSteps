@@ -3,11 +3,13 @@ import type { KeyboardEvent } from 'react';
 /**
  * Makes a non-button element behave like a button for a keyboard.
  *
- * Several expandable rows are `motion.div`s with an `onClick` — the wiki
- * article card, the sleep-training method accordion, the food stage accordion,
- * the food record rows. A mouse works; a keyboard does not reach them at all,
- * which on the wiki meant all 92 articles across the three knowledge bases
- * could be seen but never opened without a pointer.
+ * Several expandable rows are `motion.div`s with an `onClick` — the
+ * sleep-training method accordion, the food stage accordion, the food record
+ * rows. A mouse works; a keyboard does not reach them at all. (The wiki article
+ * card used this too until #167 gave it a real `<button>` inside its `<h3>`:
+ * a `role="button"` row hides its heading from heading navigation and takes
+ * the whole summary as its name. Prefer that shape where the row has one
+ * title.)
  *
  * They stay `div`s rather than becoming `<button>`s because each contains
  * headings, lists and its own nested buttons, and a `<button>` may not contain
