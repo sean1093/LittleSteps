@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import type { PrenatalCheckupTemplate } from '../data/prenatalCheckups';
 import {
   dueDateFromLmp,
+  formatGestation,
+  pregnancyPosition,
   resolvePrenatalItems,
   weeksPregnant,
 } from './prenatalSchedule';
@@ -152,5 +154,50 @@ describe('resolvePrenatalItems', () => {
       'prenatal-nuchal-translucency',
       'prenatal-gbs',
     ]);
+  });
+});
+
+describe('pregnancyPosition', () => {
+  const on = (y: number, m: number, d: number) => new Date(y, m - 1, d, 12);
+
+  it('說的是已完成幾週又幾天，指南週是整週 + 1', () => {
+    // LMP 2026-01-01 → 2026-05-24 是第 143 天：20 週又 3 天。
+    expect(pregnancyPosition(LMP, on(2026, 5, 24))).toEqual({
+      status: 'in-term',
+      weeks: 20,
+      days: 3,
+      guideWeek: 21,
+    });
+    expect(formatGestation({ weeks: 20, days: 3 })).toBe('懷孕 20 週又 3 天');
+  });
+
+  it('LMP 當天是 0 週又 0 天、指南第 1 週', () => {
+    expect(pregnancyPosition(LMP, on(2026, 1, 1))).toMatchObject({ weeks: 0, days: 0, guideWeek: 1 });
+  });
+
+  it('預產期當天仍在期內、指南第 40 週；隔天才算過了預產期', () => {
+    const due = dueDateFromLmp(LMP);
+    const [y, m, d] = due.split('-').map(Number);
+    expect(pregnancyPosition(LMP, on(y, m, d))).toEqual({
+      status: 'in-term',
+      weeks: 40,
+      days: 0,
+      guideWeek: 40,
+    });
+    expect(pregnancyPosition(LMP, on(y, m, d + 1))).toMatchObject({
+      status: 'past-term',
+      weeks: 40,
+      days: 1,
+      guideWeek: 40,
+    });
+  });
+
+  it('末次月經在未來時不假裝已經懷孕', () => {
+    expect(pregnancyPosition('2026-03-01', on(2026, 2, 1))?.status).toBe('too-early');
+  });
+
+  it('不是完整日期就不算', () => {
+    expect(pregnancyPosition('')).toBeNull();
+    expect(pregnancyPosition('NaN-NaN-NaN')).toBeNull();
   });
 });

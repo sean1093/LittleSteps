@@ -152,7 +152,7 @@ describe('產檢時程試算', () => {
     expect(
       screen.getByRole('heading', { name: `接下來的（${prenatalCheckupSchedule.length} 項）` }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/現在大約是懷孕第 2 週/)).toBeInTheDocument();
+    expect(screen.getByText('今天是懷孕 2 週又 0 天。')).toBeInTheDocument();
   });
 
   it('gives the same schedule from the last period as from the due date it implies', async () => {
@@ -228,7 +228,7 @@ describe('孕期每週指南', () => {
     await user.type(screen.getByLabelText('預產期'), daysFromToday(280 - (20 * 7 + 3)));
 
     expect(screen.getByRole('heading', { name: titleOf(21) })).toBeInTheDocument();
-    expect(screen.getByText('現在大約是懷孕第 21 週。')).toBeInTheDocument();
+    expect(screen.getByText('今天是懷孕 20 週又 3 天，看第 21 週的內容。')).toBeInTheDocument();
   });
 
   it('steps to the next and previous week, and back to this one', async () => {

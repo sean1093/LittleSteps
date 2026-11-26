@@ -5,9 +5,10 @@ import ToolCallout from '../../common/tools/ToolCallout';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { prenatalCheckupSchedule, prenatalItemKindLabels } from '../data/prenatalCheckups';
 import {
+  formatGestation,
   lmpFromDueDate,
+  pregnancyPosition,
   resolvePrenatalItems,
-  weeksPregnant,
   type ResolvedPrenatalItem,
 } from '../utils/prenatalSchedule';
 import { buildPrenatalIcs } from '../utils/prenatalCalendar';
@@ -50,7 +51,8 @@ export default function CheckupScheduleToolPage() {
   // 混在同一個標題下，正在區間裡、這幾天就該去做的那一項讀起來像還早。
   const openNow = ahead.filter((item) => item.windowStart <= todayKey);
   const upcoming = ahead.filter((item) => item.windowStart > todayKey);
-  const week = lastPeriodDate ? weeksPregnant(lastPeriodDate) : null;
+  // 和每週指南、孕期陪伴同一支算法、同一句話：已完成幾週又幾天。
+  const position = pregnancyPosition(lastPeriodDate);
 
   const exportAhead = () => {
     downloadCalendar(buildPrenatalIcs(ahead, { id: 'checkup-schedule-tool' }), '產檢時程.ics');
@@ -83,8 +85,8 @@ export default function CheckupScheduleToolPage() {
               className="w-full min-h-tap px-4 py-3 bg-white border border-ink/15 rounded-2xl text-ink"
             />
           </div>
-          {week !== null && week >= 0 && week <= 42 && (
-            <p className={`text-sm font-medium ${theme.ink}`}>現在大約是懷孕第 {week} 週。</p>
+          {position && position.status !== 'too-early' && position.weeks <= 42 && (
+            <p className={`text-sm font-medium ${theme.ink}`}>今天是{formatGestation(position)}。</p>
           )}
         </section>
 

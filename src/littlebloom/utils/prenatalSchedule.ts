@@ -1,4 +1,5 @@
 import {
+  GESTATION_DAYS,
   dueDateFromLmp,
   lmpFromDueDate,
   parseLocalDate,
@@ -69,6 +70,60 @@ export function weeksPregnant(lastPeriodDate: string, today: Date = new Date()):
   );
   if (days < 0) return 0;
   return Math.floor(days / DAYS_PER_WEEK);
+}
+
+/**
+ * 今天落在這個孕期的哪裡。三個畫面——產檢時程試算、公開的每週指南、登入後的
+ * 孕期陪伴——都從這裡讀，不各算各的。
+ *
+ * 原本試算頁印已完成整週、另外兩頁印整週 + 1，同一個預產期、同一句「現在大約是
+ * 懷孕第 N 週」，差了一週，家長分不出哪個對。
+ *
+ * - `weeks` / `days`：已完成的整週與多出來的天數，就是產檢醫師說的「20 週又 3 天」。
+ * - `guideWeek`：每週指南的「第 N 週」是 weeks + 1，最多到第 40 週。
+ * - `status`：末次月經還在未來是 too-early；預產期當天仍是 in-term（40 週又 0 天），
+ *   過了預產期才是 past-term（#157）。
+ *
+ * 日期不是 YYYY-MM-DD（打到一半、或不存在的日期）回傳 null。
+ */
+export interface PregnancyPosition {
+  status: 'too-early' | 'in-term' | 'past-term';
+  weeks: number;
+  days: number;
+  guideWeek: number;
+}
+
+const GUIDE_LAST_WEEK = GESTATION_DAYS / DAYS_PER_WEEK;
+
+export function pregnancyPosition(
+  lastPeriodDate: string,
+  today: Date = new Date(),
+): PregnancyPosition | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(lastPeriodDate)) return null;
+  const elapsed = Math.round(
+    (parseLocalDate(toLocalDateKey(today)).getTime() -
+      parseLocalDate(lastPeriodDate).getTime()) /
+      MS_PER_DAY,
+  );
+  if (Number.isNaN(elapsed)) return null;
+  if (elapsed < 0) return { status: 'too-early', weeks: 0, days: 0, guideWeek: 1 };
+  const weeks = Math.floor(elapsed / DAYS_PER_WEEK);
+  return {
+    status: elapsed > GESTATION_DAYS ? 'past-term' : 'in-term',
+    weeks,
+    days: elapsed % DAYS_PER_WEEK,
+    guideWeek: Math.min(weeks + 1, GUIDE_LAST_WEEK),
+  };
+}
+
+/** 產檢醫師的說法：「懷孕 20 週又 3 天」。三個畫面都用這一句。 */
+export function formatGestation(position: Pick<PregnancyPosition, 'weeks' | 'days'>): string {
+  return `懷孕 ${position.weeks} 週又 ${position.days} 天`;
+}
+
+/** 每週指南的內容照「第 N 週」編號，比整週多一；兩個數字一起說，才不會像在打架。 */
+export function formatGuideWeek(position: Pick<PregnancyPosition, 'guideWeek'>): string {
+  return `看第 ${position.guideWeek} 週的內容`;
 }
 
 /**
