@@ -21,7 +21,9 @@ import {
   toddlerWikiArticles,
   toddlerWikiCategoryColors,
   toddlerWikiCategoryLabels,
+  toddlerWikiVerifiedOn,
 } from '../data/toddlerWiki';
+import { SUITE_NOTES } from '../../common/landing/SuiteNote';
 import ExplorerShell from '../components/ExplorerShell';
 import { articleFromPath } from '../../types/routes';
 
@@ -125,6 +127,7 @@ export default function ToddlerWikiPage({ currentChild, reminderBadge }: Toddler
       childName={currentChild?.name}
       ageLabel={currentChild ? calculateAgeDisplay(currentChild.birthday) : undefined}
       reminderBadge={reminderBadge}
+      title="幼兒百科"
     >
       <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="space-y-4">
         <div>
@@ -172,6 +175,8 @@ export default function ToddlerWikiPage({ currentChild, reminderBadge }: Toddler
           theme={theme}
           crossSearchService="littleexplorer"
           wikiPage="littleexplorer/wiki"
+          verifiedNote={`內容查證於 ${toddlerWikiVerifiedOn}。`}
+          suiteNote={SUITE_NOTES.toddlerWiki}
         />
       </motion.div>
     </ExplorerShell>

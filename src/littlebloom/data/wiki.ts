@@ -415,11 +415,12 @@ export const pregnancyWikiArticles: PregnancyWikiArticle[] = [
   // https://shh.tmu.edu.tw/page/HealthDetail.aspx?deptCode=05&seqNo=20180113112338202222
   // 國民健康署 健康九九 闢謠專區 孕期睡姿 https://health99.hpa.gov.tw/rumor/2906
   // ——《EClinicalMedicine》（The Lancet 旗下）合併紐西蘭、英國、澳洲與美國資料的研究指出，
-  //   孕婦 28 週後仰睡使死產風險增加約 2.6 倍；機制為子宮壓迫下腔靜脈、回心血流與胎盤血流減少。
+  //   孕婦 28 週後仰睡與死產風險增加有關；機制為子宮壓迫下腔靜脈、回心血流與胎盤血流減少。
+  //   原本內文寫的倍數查證不到出處，所以只留建議、不寫數字。
   {
     id: 'health-sleep-position',
     title: '孕期睡姿與睡眠品質',
-    summary: '28 週後最重要的一件事是不要仰睡，研究顯示仰睡會讓死產風險增加約 2.6 倍。',
+    summary: '28 週後建議側睡；半夜醒來發現自己仰躺，翻回側躺就好。',
     category: 'health',
     causes: [
       '孕晚期子宮重量落在下腔靜脈上，血液無法從腹部回到心臟，血壓下降、心跳加快，子宮與胎盤血流跟著減少',
@@ -437,7 +438,9 @@ export const pregnancyWikiArticles: PregnancyWikiArticle[] = [
     warningSignals: [
       '躺下就呼吸困難、必須坐起來才能呼吸，要立刻就醫',
       '睡覺時打鼾嚴重、白天嗜睡合併血壓升高，需回診評估睡眠呼吸中止與妊娠高血壓',
-      '早上起床發現胎動明顯比平常少，先左側躺數胎動一小時，仍不足需立刻到院',
+      // 來源（2026-11-26 查證）：國民健康署 孕產兒關懷網站「孕媽咪的第一次胎動」
+      // https://mammy.hpa.gov.tw/Home/NewsKBContent?id=2536&type=01
+      '早上起床發現胎動比平常減少一半以上，或超過 2 小時感覺不到明顯胎動，吃點東西、輕拍肚子後仍沒有反應，需立刻到院',
       '失眠合併整天情緒低落、對事情失去興趣超過兩週，需就醫評估孕期憂鬱',
     ],
     relatedArticleIds: ['symptoms-heartburn', 'symptoms-edema-cramps', 'health-mood-depression'],
@@ -865,7 +868,9 @@ export const pregnancyWikiArticles: PregnancyWikiArticle[] = [
       '單側小腿腫脹、發熱、按壓疼痛，要立刻就醫排除深層靜脈栓塞',
       '出現胸悶、胸痛、呼吸急促或咳嗽，立即通報空服員並於落地後就醫，可能是肺栓塞',
       '飛行途中或落地後出現陰道出血、有液體流出或規則宮縮，立刻到最近的醫院',
-      '旅途中胎動明顯減少，先左側躺數胎動，不足就當天就醫',
+      // 來源（2026-11-26 查證）：國民健康署 孕產兒關懷網站「孕媽咪的第一次胎動」
+      // https://mammy.hpa.gov.tw/Home/NewsKBContent?id=2536&type=01
+      '旅途中胎動比平常減少一半以上，或超過 2 小時感覺不到明顯胎動，吃點東西、輕拍肚子後仍沒有反應，就當天就醫',
     ],
     relatedArticleIds: ['symptoms-edema-cramps', 'lifestyle-work-leave', 'checkup-schedule'],
     icon: 'Wind',

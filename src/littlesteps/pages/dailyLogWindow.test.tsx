@@ -125,7 +125,7 @@ describe('DailyLogPage and the log window', () => {
     render(<DailyLogPage currentChild={child} user={null} />);
 
     await user.click(screen.getByRole('button', { name: '餵奶' }));
-    fireEvent.change(await screen.findByLabelText(/時間/), {
+    fireEvent.change(await screen.findByLabelText('時間 *'), {
       target: { value: noonDaysAgo(LOG_WINDOW_DAYS + 20) },
     });
     await user.type(screen.getByLabelText('奶量（ml）'), '90');

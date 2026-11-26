@@ -197,3 +197,115 @@ describe('用代碼加入', () => {
     expect(onJoin).toHaveBeenCalledWith('abc-123');
   });
 });
+
+/**
+ * 孕期表單。小名標的是「選填」，送出的條件卻要求它——懷孕的家長填了預產期、
+ * 按下「開始追蹤孕期」，畫面上什麼都不會發生。
+ */
+describe('孕期檔案', () => {
+  const openPregnancy = async (onSave = vi.fn(), onClose = vi.fn()) => {
+    render(
+      <AddChildModal isOpen onClose={onClose} onSave={onSave} modes={['create', 'pregnancy']} />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: '懷孕中' }));
+    return { onSave, onClose };
+  };
+
+  it('還沒取名、只填預產期也存得進去', async () => {
+    const { onSave, onClose } = await openPregnancy();
+
+    fireEvent.change(screen.getByLabelText('預產期'), { target: { value: '2027-03-01' } });
+    await userEvent.click(screen.getByRole('button', { name: '開始追蹤孕期' }));
+
+    expect(onSave).toHaveBeenCalledWith('寶寶', '2027-03-01', undefined, true, '2027-03-01');
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('只打了空白的小名也當成沒取名', async () => {
+    const { onSave } = await openPregnancy();
+
+    await userEvent.type(screen.getByLabelText(/寶寶小名/), '   ');
+    fireEvent.change(screen.getByLabelText('預產期'), { target: { value: '2027-03-01' } });
+    await userEvent.click(screen.getByRole('button', { name: '開始追蹤孕期' }));
+
+    expect(onSave).toHaveBeenCalledWith('寶寶', '2027-03-01', undefined, true, '2027-03-01');
+  });
+
+  it('取了小名就用那個小名', async () => {
+    const { onSave } = await openPregnancy();
+
+    await userEvent.type(screen.getByLabelText(/寶寶小名/), '小花苞');
+    fireEvent.change(screen.getByLabelText('預產期'), { target: { value: '2027-03-01' } });
+    await userEvent.click(screen.getByRole('button', { name: '開始追蹤孕期' }));
+
+    expect(onSave).toHaveBeenCalledWith('小花苞', '2027-03-01', undefined, true, '2027-03-01');
+  });
+
+  it('沒填預產期時不送出', async () => {
+    const { onSave } = await openPregnancy();
+    const form = screen.getByRole('button', { name: '開始追蹤孕期' }).closest('form');
+    fireEvent.submit(form as HTMLFormElement);
+    expect(onSave).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * 生日填成未來的日子：那是預產期，存成寶寶檔案的話，孕期陪伴看不到它，
+ * 寶寶成長則會替一個還沒出生的孩子算月齡。
+ */
+describe('還沒出生的生日', () => {
+  const tomorrow = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
+
+  it('新增寶寶時擋下未來的生日，並指到「懷孕中」', async () => {
+    const onSave = vi.fn();
+    render(<AddChildModal isOpen onClose={vi.fn()} onSave={onSave} />);
+
+    await userEvent.type(screen.getByLabelText('寶寶姓名'), '小明');
+    fireEvent.change(screen.getByLabelText('寶寶生日'), { target: { value: tomorrow() } });
+    const form = screen.getByRole('button', { name: '新增寶寶' }).closest('form');
+    fireEvent.submit(form as HTMLFormElement);
+
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      '寶寶還沒出生？請改選「懷孕中」，填預產期。',
+    );
+  });
+
+  it('生日那一格的上限是今天', () => {
+    render(<AddChildModal isOpen onClose={vi.fn()} onSave={vi.fn()} />);
+    const max = screen.getByLabelText('寶寶生日').getAttribute('max');
+    expect(max).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(max! < tomorrow()).toBe(true);
+  });
+
+  it('編輯孕期檔案時那一格是預產期，未來的日子照樣能存', async () => {
+    const onSave = vi.fn();
+    render(
+      <AddChildModal
+        isOpen
+        onClose={vi.fn()}
+        onSave={onSave}
+        editingChild={{
+          id: 'p1',
+          name: '寶寶',
+          birthday: tomorrow(),
+          isPregnancy: true,
+          milestoneProgress: {},
+          vaccineProgress: {},
+          createdAt: '2026-01-01T00:00:00.000Z',
+          createdBy: 'u1',
+          members: { u1: true },
+        }}
+      />,
+    );
+
+    expect(screen.getByLabelText('預產期')).not.toHaveAttribute('max');
+    await userEvent.click(screen.getByRole('button', { name: '儲存修改' }));
+    expect(onSave).toHaveBeenCalledWith('寶寶', tomorrow(), undefined, undefined, undefined, undefined);
+  });
+});

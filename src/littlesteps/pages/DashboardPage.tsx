@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
 import { isPregnancyProfile } from '../../common/pregnancy';
 import { stageOfChild } from '../../common/stageEntry';
 import ToddlerHandoff from '../components/ToddlerHandoff';
@@ -23,7 +22,7 @@ import EmptyState from '../../common/ui/EmptyState';
 import RecordsNotice from '../../common/ui/RecordsNotice';
 import type { RecordsStatus } from '../../common/recordsStatus';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
-import { stagger, listItem, tap, hoverLift } from '../../common/ui/motion';
+import { stagger, listItem } from '../../common/ui/motion';
 import { goTo } from '../../common/navigate';
 
 interface DashboardPageProps {
@@ -68,13 +67,6 @@ const MORE_FEATURES = [
   '照顧重點提醒',
   '資料跨裝置同步',
   '支援多個寶寶',
-];
-
-const QUICK_NAV: { label: string; page: 'littlesteps/milestones' | 'littlesteps/vaccine-tracking' | 'littlesteps/complementary-food' | 'littlesteps/care-guide' }[] = [
-  { label: '里程碑', page: 'littlesteps/milestones' },
-  { label: '疫苗追蹤', page: 'littlesteps/vaccine-tracking' },
-  { label: '副食品', page: 'littlesteps/complementary-food' },
-  { label: '照顧重點', page: 'littlesteps/care-guide' },
 ];
 
 export default function DashboardPage({
@@ -219,25 +211,10 @@ export default function DashboardPage({
           <ToddlerHandoff childName={currentChild.name} />
         )}
 
-        {/* Summary Cards Grid */}
-        <motion.div variants={listItem} className="grid md:grid-cols-2 gap-4 mb-4">
-          {milestoneSummary && (
-            <MilestoneSummaryCard
-              milestoneProgress={currentChild.milestoneProgress || {}}
-              onNavigate={() => onNavigate('littlesteps/milestones')}
-            />
-          )}
-
-          {vaccineSummary && (
-            <VaccineSummaryCard
-              vaccineProgress={currentChild.vaccineProgress || {}}
-              birthday={currentChild.birthday}
-              onNavigate={() => onNavigate('littlesteps/vaccine-tracking')}
-            />
-          )}
-        </motion.div>
-
-        {/* Daily Log & Sleep Analytics */}
+        {/*
+          今天的紀錄排在里程碑與疫苗前面：這一頁一天開很多次，為的幾乎都是
+          「上次什麼時候餵的」，而里程碑一個月才變一次。
+        */}
         <motion.div variants={listItem} className="grid md:grid-cols-2 gap-4 mb-4">
           <DailyLogSummaryCard
             summary={todaySummary}
@@ -253,7 +230,7 @@ export default function DashboardPage({
         </motion.div>
 
         {/* Poop & Food Tracking */}
-        <motion.div variants={listItem} className="grid md:grid-cols-2 gap-4 mb-6">
+        <motion.div variants={listItem} className="grid md:grid-cols-2 gap-4 mb-4">
           <PoopSummaryCard
             dailyLogs={dailyLogs}
             onNavigate={() => onNavigate('littlesteps/daily-log')}
@@ -264,23 +241,22 @@ export default function DashboardPage({
           />
         </motion.div>
 
-        {/* Quick Navigation */}
-        <motion.div variants={listItem}>
-          <h2 className="mb-3">快速導航</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {QUICK_NAV.map((item) => (
-              <motion.button
-                key={item.page}
-                whileHover={hoverLift}
-                whileTap={tap}
-                onClick={() => onNavigate(item.page)}
-                className="card-tap flex items-center justify-between gap-2 text-left"
-              >
-                <span className="font-semibold text-ink">{item.label}</span>
-                <ArrowRight className="w-4 h-4 text-primary-dark shrink-0" />
-              </motion.button>
-            ))}
-          </div>
+        {/* 里程碑與疫苗摘要 */}
+        <motion.div variants={listItem} className="grid md:grid-cols-2 gap-4 mb-4">
+          {milestoneSummary && (
+            <MilestoneSummaryCard
+              milestoneProgress={currentChild.milestoneProgress || {}}
+              onNavigate={() => onNavigate('littlesteps/milestones')}
+            />
+          )}
+
+          {vaccineSummary && (
+            <VaccineSummaryCard
+              vaccineProgress={currentChild.vaccineProgress || {}}
+              birthday={currentChild.birthday}
+              onNavigate={() => onNavigate('littlesteps/vaccine-tracking')}
+            />
+          )}
         </motion.div>
       </motion.div>
     </div>

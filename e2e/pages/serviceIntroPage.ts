@@ -45,7 +45,7 @@ export class ServiceIntroPage {
       page.getByRole('button', { name: '餵奶' }),
       page.getByRole('heading', { name: /成長曲線圖/ }),
       page.getByRole('button', { name: /記錄接種日期$/ }),
-      page.getByRole('button', { name: /^(標記完成|取消完成)$/ }),
+      page.getByRole('button', { name: /^(會了|已經會了，取消)$/ }),
     ];
   }
 

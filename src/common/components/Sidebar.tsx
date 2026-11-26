@@ -27,7 +27,8 @@ const MENU_SECTIONS = [
     items: [
       {
         id: 'littlesteps/dashboard' as const,
-        label: '儀表板',
+        // 頁首與儀表板自己都叫這一頁「成長總覽」，選單跟著叫同一個名字。
+        label: '成長總覽',
         icon: Home,
         description: '寶寶成長總覽'
       },
@@ -235,14 +236,8 @@ export default function Sidebar({
               ))}
             </motion.div>
 
-            {/* Footer */}
-            <div className="sticky bottom-0 left-0 right-0 p-5 bg-warm-white border-t border-ink/5">
-              <p className="text-xs text-ink-faint text-center">
-                © {new Date().getFullYear()} LittleSteps
-                <br />
-                陪伴寶貝每一步成長
-              </p>
-            </div>
+            {/* 這裡原本有一塊 sticky 的版權頁尾，在 12 列的選單上永遠蓋住底部
+                約 70px。那一行入口頁已經有了，抽屜的高度留給選單。 */}
           </motion.div>
 
         </>

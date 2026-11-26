@@ -70,7 +70,7 @@ export default function GrowthChartsPage({
           <EmptyState
             theme={SERVICE_THEME.littlesteps}
             title="尚未建立寶寶檔案"
-            description="請從左上角選單新增寶寶資料"
+            description="請點右上角的帳號按鈕新增或選擇寶寶。"
           />
         </div>
       </div>
@@ -125,7 +125,7 @@ export default function GrowthChartsPage({
                   </span>
                   <span className="text-sm text-ink-muted mt-1">體重</span>
                   {latestRecord.percentile?.weight && (
-                    <span className="text-sm text-primary-dark mt-1">
+                    <span className="text-sm text-ink-muted mt-1">
                       第 {latestRecord.percentile.weight.toFixed(0)} 百分位
                     </span>
                   )}
@@ -138,7 +138,7 @@ export default function GrowthChartsPage({
                   </span>
                   <span className="text-sm text-ink-muted mt-1">身高</span>
                   {latestRecord.percentile?.height && (
-                    <span className="text-sm text-primary-dark mt-1">
+                    <span className="text-sm text-ink-muted mt-1">
                       第 {latestRecord.percentile.height.toFixed(0)} 百分位
                     </span>
                   )}
@@ -151,13 +151,30 @@ export default function GrowthChartsPage({
                   </span>
                   <span className="text-sm text-ink-muted mt-1">頭圍</span>
                   {latestRecord.percentile?.headCircumference && (
-                    <span className="text-sm text-primary-dark mt-1">
+                    <span className="text-sm text-ink-muted mt-1">
                       第 {latestRecord.percentile.headCircumference.toFixed(0)} 百分位
                     </span>
                   )}
                 </div>
               )}
             </div>
+            {/*
+              百分位用同一個中性色、下面接這段話：家長會把「第 10 百分位」讀成
+              10 分。
+            */}
+            {/* 來源（2026-11-26 查證）：American Academy of Pediatrics「Growth Charts: By the Numbers」 */}
+            {/* https://www.healthychildren.org/English/health-issues/conditions/Glands-Growth-Disorders/Pages/Growth-Charts-By-the-Numbers.aspx */}
+            {/*
+              原文："it's really no better or worse than coming in at the 90th…
+              It is the rate and trend in your child's growth that is important"。
+              前兩句出自這裡；「跨過兩條線／落在最外側線之外」請醫師看，是臨床
+              慣例，不在這份來源裡。
+            */}
+            {latestRecord.percentile && (
+              <p className="mt-4 text-sm text-ink-muted leading-relaxed">
+                百分位不是分數，第 10 和第 90 一樣可以是健康的。重點是沿著自己的曲線長；連續幾次往上或往下跨過兩條線，或落在最外側線之外，健檢時請醫師看。
+              </p>
+            )}
           </motion.div>
         )}
 

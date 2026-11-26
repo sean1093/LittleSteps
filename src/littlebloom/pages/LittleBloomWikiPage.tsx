@@ -4,7 +4,9 @@ import {
   pregnancyWikiArticles,
   pregnancyWikiCategoryLabels,
   pregnancyWikiCategoryColors,
+  pregnancyWikiVerifiedOn,
 } from '../data/wiki';
+import { SUITE_NOTES } from '../../common/landing/SuiteNote';
 import WikiBrowser from '../../common/components/wiki/WikiBrowser';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { fadeInUp } from '../../common/ui/motion';
@@ -40,6 +42,8 @@ export default function LittleBloomWikiPage() {
           theme={SERVICE_THEME.littlebloom}
           crossSearchService="littlebloom"
           wikiPage="littlebloom/wiki"
+          verifiedNote={`內容查證於 ${pregnancyWikiVerifiedOn}。`}
+          suiteNote={SUITE_NOTES.pregnancyWiki}
         />
       </motion.div>
     </BloomShell>

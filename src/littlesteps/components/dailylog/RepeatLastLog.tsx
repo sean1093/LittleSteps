@@ -37,6 +37,19 @@ function describe(log: DailyLog): string {
 }
 
 /**
+ * 一鍵重複存完之後要回報的那句話：「配方奶 120 ml」「擠奶 150 ml」「大便 稀」。
+ *
+ * 跟按鈕上的字同一個來源，家長按之前看到的和按之後被告知的才會是同一件事。
+ * 擠奶在按鈕上靠標題說自己是擠奶；這裡沒有標題，要自己補上。
+ */
+export function describeRepeatedLog(log: DailyLog): string {
+  const detail = describe(log);
+  const isPumping = log.type === 'feeding' && (log.data as FeedingData).feedingType === 'pumping';
+  if (!isPumping) return detail;
+  return detail ? `擠奶 ${detail}` : '擠奶';
+}
+
+/**
  * 一鍵重複上一筆。
  *
  * 同一位家長一天會記八次一模一樣的餵奶，而每一次都要開表單、選類型、打奶量。

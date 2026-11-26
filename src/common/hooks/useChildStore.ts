@@ -39,6 +39,8 @@ export interface ChildStore {
   currentChildToothProgress: ToothProgress;
   childrenLoading: boolean;
   toggleMilestone: (id: string) => Promise<void>;
+  /** 明講要記成會了或還不會，以及是哪一天；補記以前的里程碑用。 */
+  setMilestone: (id: string, achieved: boolean, achievedDate?: string) => Promise<void>;
   setVaccineDose: (
     vaccineId: string,
     doseNumber: number,
@@ -177,6 +179,26 @@ export function useChildStore(user: User | null): ChildStore {
   };
 
   /**
+   * 記下里程碑，日期由家長給。
+   *
+   * toggleMilestone 只會「反過來」而且一律蓋上今天：家長補記上個月就會的翻身，
+   * 得到的卻是今天的日期，而這個產品的承諾是「記下會翻身的那一天」。
+   */
+  const setMilestone = async (id: string, achieved: boolean, achievedDate?: string) => {
+    if (!user || !currentChild) return;
+    try {
+      await firebaseChildren.updateMilestoneProgress(currentChild.id, id, achieved, achievedDate);
+      // 只在狀態真的變了才記事件；改日期不是一次新的達成。
+      if (Boolean(currentChildMilestoneProgress[id]?.achieved) !== achieved) {
+        logMilestoneToggle(achieved);
+      }
+    } catch (error) {
+      console.error('更新里程碑失敗:', error);
+      toast.show(errorMessage(error, '里程碑更新失敗，請稍後再試'));
+    }
+  };
+
+  /**
    * administered 由呼叫端明講，不從現況推。原本這裡算的是「反過來」，於是家長在
    * 已接種的那一劑上確認「修改接種日期」時，反而把 administered 翻成 false，
    * 資料層接著把 administeredDate 一併刪掉——想改日期，紀錄卻整筆消失。
@@ -234,7 +256,8 @@ export function useChildStore(user: User | null): ChildStore {
     }
     try {
       await firebaseChildren.joinChild(childUuid, childCount);
-      logChildProfileAction('create'); // Creating a reference to an existing child.
+      // 加入不是建立：兩者混在一起，就看不出有多少孩子是第二位照顧者帶進來的。
+      logChildProfileAction('join');
     } catch (error) {
       console.error('加入寶寶失敗:', error);
       throw error;
@@ -367,12 +390,31 @@ export function useChildStore(user: User | null): ChildStore {
 
   const recordBirth = async (birthday: string, gender?: Gender) => {
     if (!user || !pregnancyChild) return;
+    // 先記下來：寫入一成功 listener 就會送新的名單進來，pregnancyChild 可能
+    // 已經換成別的檔案。
+    const born = pregnancyChild;
     try {
-      await firebaseChildren.recordBirth(pregnancyChild.id, birthday, gender);
+      await firebaseChildren.recordBirth(born.id, birthday, gender);
       logChildProfileAction('update');
     } catch (error) {
       console.error('登記出生失敗:', error);
       throw error;
+    }
+
+    // 選到剛出生的這一個。出生之後它不再是「進行中的孕期」，孕期陪伴改看
+    // currentChild 有沒有帶著封存的孕期資料（見 resolvePregnancyChild）；
+    // 選取還停在哥哥姊姊身上的話，那一頁會說「還沒有孕期檔案」，剛登記的
+    // 新生兒看起來就像不見了。
+    //
+    // 直接呼叫資料層而不是 store 的 setCurrentChild：這不是家長自己切換，
+    // 不該記成一次 switch。失敗也不往上丟——出生已經寫進去了，讓表單說
+    // 「儲存失敗」會叫家長再登記一次；選取可以從帳號視窗手動換。
+    if (currentChildId !== born.id) {
+      try {
+        await firebaseChildren.setCurrentChild(born.id);
+      } catch (error) {
+        console.error('登記出生後切換寶寶失敗:', error);
+      }
     }
   };
 
@@ -442,6 +484,7 @@ export function useChildStore(user: User | null): ChildStore {
     currentChildToothProgress,
     childrenLoading,
     toggleMilestone,
+    setMilestone,
     setVaccineDose,
     addChild,
     joinChild,

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { shareMilestone, shareText } from './share';
+import { SITE_ORIGIN } from '../../common/seo/pageMeta';
 
 /**
  * jsdom 兩個 API 都沒有，所以每一條都自己裝上去再拆掉——留著會汙染別的檔案。
@@ -101,10 +102,12 @@ describe('shareMilestone', () => {
     setShare(share);
 
     await expect(shareMilestone('翻身')).resolves.toBe('shared');
+    // The link is the home page: the milestone page needs sign-in, so its URL
+    // would land the recipient on an intro page. And no "must-have app" pitch.
     expect(share).toHaveBeenCalledWith({
       title: 'LittleSteps - 育兒里程碑',
-      text: '我的寶貝達成了【翻身】里程碑了！推薦給新手父母的育兒神器：',
-      url: window.location.href,
+      text: '我的寶貝會【翻身】了！我用 LittleSteps 記錄寶寶的里程碑：',
+      url: SITE_ORIGIN,
     });
   });
 });

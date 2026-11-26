@@ -21,11 +21,13 @@ import { pressable } from '../../common/ui/pressable';
 import { careTaskKindLabels } from '../data/careTasks';
 import { tipCategoryLabels, toddlerCareTips } from '../data/monthlyTips';
 import { buildGoogleCalendarUrl, downloadIcs } from '../../common/utils/icsExport';
+import { logCalendarExport } from '../../lib/firebase';
 import { TODDLER_MIN_MONTHS, bandForMonths } from '../utils/ageBands';
 import ExplorerShell from '../components/ExplorerShell';
 import NoChildNotice from '../components/NoChildNotice';
 import AgeBandPicker from '../components/AgeBandPicker';
 import { goTo } from '../../common/navigate';
+import { confirmDelete } from '../../common/ui/confirmDelete';
 import { CARE_TASK_LOCATION_LIMIT, CARE_TASK_NOTES_LIMIT } from '../../common/recordLimits';
 
 const THEME = SERVICE_THEME.littleexplorer;
@@ -194,6 +196,8 @@ export default function RemindersPage({
 
   const undoTask = async (taskId: string) => {
     if (!onUndoTask || saving) return;
+    // 取消完成會把日期、院所與備註一起刪掉，沒有地方找回來，所以先問。
+    if (!confirmDelete('這一項的完成記錄')) return;
     setSaving(true);
     setFailure(null);
     try {
@@ -449,7 +453,10 @@ export default function RemindersPage({
               variants={listItem}
               type="button"
               whileTap={tap}
-              onClick={() => downloadIcs(actionable, currentChild?.name ?? '寶寶')}
+              onClick={() => {
+                downloadIcs(actionable, currentChild?.name ?? '寶寶');
+                logCalendarExport('reminders');
+              }}
               className="btn-secondary w-full text-explorer-bark"
             >
               <Download className="w-5 h-5" />

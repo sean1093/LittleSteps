@@ -20,7 +20,7 @@ import type { ParkFilter } from '../parks';
 import { OUTING_STAGES, type OutingStageId } from '../data/outingStages';
 import { stageForChild } from '../stageForChild';
 import { useOptionalChildStore } from '../../common/contexts/ChildStoreContext';
-import SuiteNote from '../../common/landing/SuiteNote';
+import SuiteNote, { SUITE_NOTES } from '../../common/landing/SuiteNote';
 
 /** 縣市排序：六都在前，其餘依館數多寡，離島最後——和家長心裡的順序一致。 */
 const CITY_ORDER = [
@@ -388,7 +388,7 @@ export default function OutingPage() {
           )}
         </AnimatePresence>
 
-        <SuiteNote />
+        <SuiteNote note={SUITE_NOTES.outing} />
       </main>
     </div>
   );

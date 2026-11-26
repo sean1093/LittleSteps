@@ -1,5 +1,6 @@
 import { ROUTE_PATH, articlePath, type Page, type WikiPage } from '../../types/routes';
 import { requiresAuth } from '../routePolicy';
+import { ARTICLE_SEARCH_TITLE } from './articleSearchTitles';
 
 export const SITE_ORIGIN = 'https://littlesteps-c6ab6.web.app';
 const SITE_NAME = 'LittleSteps';
@@ -12,6 +13,10 @@ interface PageMeta {
 
 /**
  * 每一頁的 title 與 description。
+ *
+ * 結尾一律是產品名 LittleSteps。原本各服務掛自己的英文代號（｜BabyOasis、
+ * ｜LittleGuard…），但介面上已經不用那些名字，也沒有人拿它們來搜尋；搜尋結果
+ * 上看到的品牌和點進來看到的品牌要是同一個。
  *
  * 只有公開頁面值得寫得像搜尋結果——它們是唯一會被索引的頁。需登入的頁面
  * 仍然給一組像樣的文字，因為分享到 LINE 時 og:title 也吃這裡；但它們一律
@@ -32,7 +37,7 @@ const PAGE_META: Record<Page, PageMeta> = {
       '孩子的紀錄存在哪裡、誰看得到、我們用它做什麼，以及每一頁的內容出自哪一份政府或 WHO 的公開資料。',
   },
   littlesteps: {
-    title: 'LittleSteps 寶寶追蹤｜0-1 歲里程碑、疫苗與日常記錄',
+    title: '寶寶成長｜0-1 歲里程碑、疫苗與日常記錄｜LittleSteps',
     description: '記錄 0-1 歲寶寶的發展里程碑、疫苗接種、副食品與每日餵奶睡眠，並可產生看診摘要。',
   },
   'littlesteps/dashboard': {
@@ -56,7 +61,7 @@ const PAGE_META: Record<Page, PageMeta> = {
   'littlesteps/complementary-food': {
     title: '副食品添加完整指南｜4-12 個月｜LittleSteps',
     description:
-      '副食品添加時機與原則、三階段奶量轉換、月份菜單、蔬果過敏等級與 4×3 試敏法，並可記錄寶寶的食物嘗試。',
+      '副食品添加時機與原則、三階段奶量轉換、月份菜單、蔬果過敏等級與一次試一種新食材的做法，並可記錄寶寶的食物嘗試。',
   },
   'littlesteps/daily-log': {
     title: '快速日誌｜餵奶、睡眠與尿布記錄｜LittleSteps',
@@ -88,47 +93,47 @@ const PAGE_META: Record<Page, PageMeta> = {
     description: '把每日記錄彙整成週報與月報，看出餵奶、睡眠與尿布的長期趨勢。',
   },
   littlebloom: {
-    title: 'LittleBloom 孕期陪伴｜每週身體變化與產檢時程',
+    title: '孕期陪伴｜每週身體變化與產檢時程｜LittleSteps',
     description: '依懷孕週數顯示身體變化與本週提醒，管理 14 次公費產檢時程，出生後轉為寶寶檔案。',
   },
   'littlebloom/prenatal': {
-    title: '產檢時程表｜14 次公費產檢｜LittleBloom',
+    title: '產檢時程表｜14 次公費產檢｜LittleSteps',
     description: '依末次月經自動排出 14 次公費產檢時程，記錄每次產檢的日期、院所與備註。',
   },
   'littlebloom/wiki': {
-    title: '孕期知識庫｜常見孕期狀況與就醫時機｜LittleBloom',
+    title: '孕期知識庫｜常見孕期狀況與就醫時機｜LittleSteps',
     description:
       '孕吐、妊娠糖尿病、產兆判斷等常見孕期狀況的成因與處理方式。',
   },
   littleexplorer: {
-    title: 'LittleExplorer 幼兒陪伴｜1-3 歲發展檢核',
+    title: '幼兒期陪伴｜1-3 歲發展檢核｜LittleSteps',
     description: '依年齡分段的幼兒發展檢核、健檢與疫苗提醒、成長日記與幼兒百科。',
   },
   'littleexplorer/reminders': {
-    title: '幼兒健檢與疫苗提醒｜LittleExplorer',
+    title: '幼兒健檢與疫苗提醒｜LittleSteps',
     description: '依出生日排出兒童健檢、疫苗與塗氟時程，逾期與即將到期一目了然，可加入 Google 日曆。',
   },
   'littleexplorer/diary': {
-    title: '成長日記｜LittleExplorer',
+    title: '成長日記｜LittleSteps',
     description: '記下那些不會出現在數據裡的時刻，依月份整理成孩子的成長軌跡。',
   },
   'littleexplorer/wiki': {
-    title: '幼兒百科｜1-3 歲照顧問題｜LittleExplorer',
+    title: '幼兒百科｜1-3 歲照顧問題｜LittleSteps',
     description:
       '如廁訓練、語言發展、入園準備、睡眠轉換等 1-3 歲常見照顧問題，依年齡篩選。',
   },
   littleouting: {
-    title: '帶孩子去哪裡｜依會不會走推薦場地，全台親子館名冊｜LittleOuting',
+    title: '帶孩子去哪裡｜依動作發展選場地、全台親子館｜LittleSteps',
     description:
       '還不會坐、會爬、剛會走、會跑跳的孩子適合去的地方各不相同：依動作發展推薦場地類型與注意事項，並附全台親子館與親子餐廳名冊。',
   },
   babyoasis: {
-    title: '全台哺乳室地圖｜3,852 處哺乳室查詢｜BabyOasis',
+    title: '全台哺乳室地圖｜3,852 處哺乳室查詢｜LittleSteps',
     description:
       '全台 3,852 處哺乳室的地圖查詢，依所在位置找出最近的哺乳室，資料來源為政府公開資料。',
   },
   littleguard: {
-    title: '兒童傳染病門診就診統計｜各縣市疫情雷達｜LittleGuard',
+    title: '兒童傳染病門診就診統計｜各縣市疫情雷達｜LittleSteps',
     description:
       '腸病毒、手足口病、疱疹性咽峽炎、類流感、COVID-19、腹瀉、水痘的門診就診人次，可依縣市與孩子年齡查看，資料來自衛福部疾管署開放資料。',
   },
@@ -158,8 +163,8 @@ export const INDEXABLE_PAGES = (Object.keys(ROUTE_PATH) as Page[]).filter(
 /** 知識庫在文章標題後面的名字，例如「發燒怎麼判斷｜寶寶百科｜LittleSteps」。 */
 const WIKI_NAME: Record<WikiPage, string> = {
   'littlesteps/baby-wiki': '寶寶百科｜LittleSteps',
-  'littlebloom/wiki': '孕期知識庫｜LittleBloom',
-  'littleexplorer/wiki': '幼兒百科｜LittleExplorer',
+  'littlebloom/wiki': '孕期知識庫｜LittleSteps',
+  'littleexplorer/wiki': '幼兒百科｜LittleSteps',
 };
 
 /**
@@ -173,7 +178,7 @@ export function metaForArticle(
   article: { id: string; title: string; summary: string },
 ): ResolvedMeta {
   return {
-    title: `${article.title}｜${WIKI_NAME[page]}`,
+    title: `${ARTICLE_SEARCH_TITLE[article.id] ?? article.title}｜${WIKI_NAME[page]}`,
     description: article.summary,
     canonical: `${SITE_ORIGIN}${articlePath(page, article.id)}`,
     noindex: requiresAuth(page),

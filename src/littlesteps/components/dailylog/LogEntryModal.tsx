@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import ModalFrame from '../../../common/components/ModalFrame';
 import ChoiceChips from '../../../common/ui/ChoiceChips';
@@ -35,11 +35,95 @@ interface LogEntryModalProps {
    * 真的填進欄位的值，不是灰色提示：家長要看得見接下來會存進去什麼。
    */
   lastLog?: DailyLog | null;
+  /**
+   * 這筆紀錄是誰的。有兩個孩子的家長，凌晨換完一個再餵另一個，表單標題是唯一
+   * 看得出「現在記在誰身上」的地方。沒給就維持不帶名字的標題。
+   */
+  childName?: string;
 }
 
 /* Repeated verbatim on eight fields below. */
 const FIELD = 'w-full px-4 py-3 rounded-xl border border-ink/15 focus:border-primary-dark transition-colors';
 const LABEL = 'block text-sm font-medium text-ink mb-1';
+
+/*
+  常用的數字做成一點就填的鍵。這張表一天開八次以上，多半單手，而兩個數字欄位
+  每一次都叫出鍵盤、把送出鍵頂出畫面。輸入框留著：喝了 75 ml 的那一餐還是要
+  記得進去。
+*/
+const DURATION_PRESETS = [5, 10, 15, 20, 30];
+const AMOUNT_PRESETS = [60, 90, 120, 150, 180];
+
+/** 「幾分鐘前」的快捷鍵。0 就是現在。 */
+const TIME_PRESETS = [
+  { label: '現在', minutesAgo: 0 },
+  { label: '5 分鐘前', minutesAgo: 5 },
+  { label: '15 分鐘前', minutesAgo: 15 },
+  { label: '30 分鐘前', minutesAgo: 30 },
+  { label: '1 小時前', minutesAgo: 60 },
+];
+
+/**
+ * 填進 datetime-local 的值，不是直接拿去存的值：送出時仍然走
+ * dateTimeLocalToISO → toISOString()，資料庫規則只收那個格式。
+ */
+function minutesAgoLocal(minutesAgo: number): string {
+  return isoToDateTimeLocal(new Date(Date.now() - minutesAgo * 60_000).toISOString());
+}
+
+interface NumberPresetsProps {
+  /** 這一排在填什麼，給讀螢幕軟體用。 */
+  label: string;
+  unit: string;
+  presets: number[];
+  value: string;
+  onPick: (value: string) => void;
+}
+
+/*
+  不用 ChoiceChips：它是單選題，自己畫一行標題，而且一定有一個被選中。這裡是
+  幫輸入框代打數字的捷徑，欄位的 label 已經在上面，值也可以不在這五個裡面。
+
+  沒有 flex-1：跟 min-w-tap 配在一起，nowrap 的字會溢出去疊到隔壁（見 CLAUDE.md）。
+*/
+function NumberPresets({ label, unit, presets, value, onPick }: NumberPresetsProps) {
+  return (
+    <div role="group" aria-label={label} className="mt-2 flex flex-wrap gap-2">
+      {presets.map((preset) => {
+        const picked = value === String(preset);
+        return (
+          <button
+            key={preset}
+            type="button"
+            aria-pressed={picked}
+            aria-label={`${preset} ${unit}`}
+            onClick={() => onPick(String(preset))}
+            className={`chip min-w-tap justify-center ${picked ? 'chip-on' : ''}`}
+          >
+            {preset}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function TimePresets({ onPick }: { onPick: (dateTimeLocal: string) => void }) {
+  return (
+    <div role="group" aria-label="快速設定時間" className="mt-2 flex flex-wrap gap-2">
+      {TIME_PRESETS.map((preset) => (
+        <button
+          key={preset.label}
+          type="button"
+          onClick={() => onPick(minutesAgoLocal(preset.minutesAgo))}
+          className="chip"
+        >
+          {preset.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 const RANGE_ERROR = '結束時間要晚於開始時間；睡到隔天的話，結束時間請選隔天的日期。';
 
@@ -50,6 +134,7 @@ export default function LogEntryModal({
   logType,
   editingLog,
   lastLog,
+  childName,
 }: LogEntryModalProps) {
   // Common fields
   const [timestamp, setTimestamp] = useState(getCurrentDateTimeLocal());
@@ -73,6 +158,22 @@ export default function LogEntryModal({
 
   // Common
   const [notes, setNotes] = useState('');
+  /*
+    備註預設收起來。三列高的輸入框排在送出鍵前面，鍵盤一開送出鍵就在畫面外，
+    而絕大多數的紀錄根本沒有備註。編輯一筆本來就有備註的紀錄時自動展開——藏
+    起來的話，家長會以為它不見了。
+  */
+  const [notesOpen, setNotesOpen] = useState(false);
+  const notesRef = useRef<HTMLTextAreaElement>(null);
+  /** 只有按「加備註」展開的那一次要把游標放進去；編輯時自動展開的不搶焦點。 */
+  const focusNotesOnOpen = useRef(false);
+
+  useEffect(() => {
+    if (notesOpen && focusNotesOnOpen.current) {
+      focusNotesOnOpen.current = false;
+      notesRef.current?.focus();
+    }
+  }, [notesOpen]);
 
   // Loading and error states
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -85,6 +186,8 @@ export default function LogEntryModal({
     setIsSubmitting(false);
 
     if (editingLog) {
+      const existingNotes = (editingLog.data as { notes?: string }).notes;
+      setNotesOpen(Boolean(existingNotes));
       // 不是 slice(0, 16)：存的是 UTC，input 讀的是本地時間。見 isoToDateTimeLocal。
       setTimestamp(isoToDateTimeLocal(editingLog.timestamp));
 
@@ -121,6 +224,7 @@ export default function LogEntryModal({
       setEndTime('');
       setNightWakings('');
       setNotes('');
+      setNotesOpen(false);
       setDuration(lastFeeding?.duration?.toString() ?? '');
       setAmount(lastFeeding?.amount?.toString() ?? '');
       setFeedingType(lastFeeding?.feedingType ?? 'breast_left');
@@ -221,17 +325,14 @@ export default function LogEntryModal({
   };
 
   const getTitle = () => {
-    const prefix = editingLog ? '編輯' : '新增';
-    switch (logType) {
-      case 'feeding':
-        // 擠奶不是餵奶。標題還寫著「餵奶記錄」，等於畫面自己否認了這個 PR
-        // 要建立的區別。
-        return isPumping ? `${prefix}擠奶記錄` : `${prefix}餵奶記錄`;
-      case 'sleep':
-        return `${prefix}睡眠記錄`;
-      case 'diaper':
-        return `${prefix}尿布記錄`;
+    // 擠奶不是餵奶。標題還寫著「餵奶記錄」，等於畫面自己否認了這個區別。
+    const subject =
+      logType === 'feeding' ? (isPumping ? '擠奶' : '餵奶') : logType === 'sleep' ? '睡眠' : '尿布';
+
+    if (childName) {
+      return editingLog ? `修改${childName}的${subject}記錄` : `幫${childName}記${subject}`;
     }
+    return `${editingLog ? '編輯' : '新增'}${subject}記錄`;
   };
 
   // The shared frame, like every other form in the app. This sheet used to be
@@ -252,6 +353,9 @@ export default function LogEntryModal({
                       className={FIELD}
                       required
                     />
+                    {/* 只在新增時：這些鍵是相對於「現在」的，按在一筆上週的紀錄上
+                        會把它整筆搬到今天。 */}
+                    {!editingLog && <TimePresets onPick={setTimestamp} />}
                   </div>
 
                   <div>
@@ -298,6 +402,13 @@ export default function LogEntryModal({
                       placeholder="例如: 15"
                       min="0"
                     />
+                    <NumberPresets
+                      label="常用時長"
+                      unit="分鐘"
+                      presets={DURATION_PRESETS}
+                      value={duration}
+                      onPick={setDuration}
+                    />
                   </div>
 
                   <div>
@@ -313,6 +424,13 @@ export default function LogEntryModal({
                       className={FIELD}
                       placeholder="例如: 120"
                       min="0"
+                    />
+                    <NumberPresets
+                      label={isPumping ? '常用擠出量' : '常用奶量'}
+                      unit="ml"
+                      presets={AMOUNT_PRESETS}
+                      value={amount}
+                      onPick={setAmount}
                     />
                   </div>
                 </>
@@ -410,6 +528,9 @@ export default function LogEntryModal({
                       className={FIELD}
                       required
                     />
+                    {/* 只在新增時：這些鍵是相對於「現在」的，按在一筆上週的紀錄上
+                        會把它整筆搬到今天。 */}
+                    {!editingLog && <TimePresets onPick={setTimestamp} />}
                   </div>
 
                   <ChoiceChips
@@ -433,21 +554,38 @@ export default function LogEntryModal({
                 </>
               )}
 
-              <div>
-                <label htmlFor="log-notes" className={LABEL}>備註</label>
-                <textarea
-                  id="log-notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className={`${FIELD} resize-none`}
-                  rows={3}
-                  placeholder="選填"
-                  // 上限就是規則的上限。超過它回來的是 PERMISSION_DENIED，表單只會照印
-                  // SDK 的原文，家長看不出該改什麼。
-                  maxLength={DAILY_LOG_NOTES_LIMIT}
-                  disabled={isSubmitting}
-                />
-              </div>
+              {notesOpen ? (
+                <div>
+                  <label htmlFor="log-notes" className={LABEL}>備註</label>
+                  <textarea
+                    id="log-notes"
+                    ref={notesRef}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className={`${FIELD} resize-none`}
+                    rows={3}
+                    placeholder="選填"
+                    // 上限就是規則的上限。超過它回來的是 PERMISSION_DENIED，表單只會照印
+                    // SDK 的原文，家長看不出該改什麼。
+                    maxLength={DAILY_LOG_NOTES_LIMIT}
+                    disabled={isSubmitting}
+                  />
+                </div>
+              ) : (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      focusNotesOnOpen.current = true;
+                      setNotesOpen(true);
+                    }}
+                    disabled={isSubmitting}
+                    className="btn-ghost -ml-4 text-sm"
+                  >
+                    加備註
+                  </button>
+                </div>
+              )}
 
               {error && (
                 <div role="alert" className="bg-primary-soft border border-primary/30 rounded-2xl p-3">

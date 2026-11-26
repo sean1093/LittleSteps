@@ -245,7 +245,7 @@ export default function FoodTrialModal({
                     }`}
                   >
                     <span
-                      className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${
+                      className={`w-5 h-5 bg-white rounded-full shadow-soft transition-transform ${
                         hasAllergy ? 'translate-x-6' : 'translate-x-0.5'
                       }`}
                     />
@@ -373,9 +373,9 @@ export default function FoodTrialModal({
                 </div>
               )}
 
-              {/* Trial Dates (4x3 Rule Tracking) */}
+              {/* Trial dates: the days this food was offered */}
               <div>
-                <div className={LABEL}>嘗試日期記錄（4x3 法則）</div>
+                <div className={LABEL}>試吃日期</div>
                 <div className="card bg-secondary-soft border border-secondary/40">
                   <p className="text-sm text-ink-muted mb-2">
                     已記錄 {trialDates.length} 次嘗試

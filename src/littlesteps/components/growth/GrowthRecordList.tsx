@@ -1,7 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Pencil, Trash2 } from 'lucide-react';
 import { GrowthRecord } from '../../../types';
-import { getPercentileCategory } from '../../utils/growthCalculator';
 import EmptyState from '../../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../../common/ui/serviceTheme';
 import { listItem, stagger, tap } from '../../../common/ui/motion';
@@ -34,13 +33,12 @@ export default function GrowthRecordList({
     }
   };
 
-  const getPercentileColor = (percentile?: number): string => {
-    if (!percentile) return 'text-ink-faint';
-    const category = getPercentileCategory(percentile);
-    if (category === 'low') return 'text-butter-dark';
-    if (category === 'high') return 'text-secondary-dark';
-    return 'text-mint-dark';
-  };
+  /*
+    百分位只有一個顏色。原本 P15 以下是琥珀色、中間是綠色，等於替每一筆打了
+    分數——而第 10 百分位的孩子可以完全健康。該看的是趨勢，不是單一筆的顏色
+    （說明與來源在 GrowthChartsPage 的摘要下方）。
+  */
+  const PERCENTILE_TEXT = 'text-ink-muted';
 
   if (loading) {
     return (
@@ -112,7 +110,7 @@ export default function GrowthRecordList({
                     <span className="text-xs text-ink-muted mb-1">體重</span>
                     <span className="font-bold whitespace-nowrap">{record.weight} kg</span>
                     {record.percentile?.weight && (
-                      <span className={`text-xs mt-1 font-medium ${getPercentileColor(record.percentile.weight)}`}>
+                      <span className={`text-xs mt-1 font-medium ${PERCENTILE_TEXT}`}>
                         P{record.percentile.weight.toFixed(0)}
                       </span>
                     )}
@@ -124,7 +122,7 @@ export default function GrowthRecordList({
                     <span className="text-xs text-ink-muted mb-1">身高</span>
                     <span className="font-bold whitespace-nowrap">{record.height} cm</span>
                     {record.percentile?.height && (
-                      <span className={`text-xs mt-1 font-medium ${getPercentileColor(record.percentile.height)}`}>
+                      <span className={`text-xs mt-1 font-medium ${PERCENTILE_TEXT}`}>
                         P{record.percentile.height.toFixed(0)}
                       </span>
                     )}
@@ -136,7 +134,7 @@ export default function GrowthRecordList({
                     <span className="text-xs text-ink-muted mb-1">頭圍</span>
                     <span className="font-bold whitespace-nowrap">{record.headCircumference} cm</span>
                     {record.percentile?.headCircumference && (
-                      <span className={`text-xs mt-1 font-medium ${getPercentileColor(record.percentile.headCircumference)}`}>
+                      <span className={`text-xs mt-1 font-medium ${PERCENTILE_TEXT}`}>
                         P{record.percentile.headCircumference.toFixed(0)}
                       </span>
                     )}

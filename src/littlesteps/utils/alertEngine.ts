@@ -31,17 +31,43 @@ function lastCompletedDay(): string {
 /** 少於這麼多天有記錄就沒有「平均」可比 */
 const MIN_BASELINE_DAYS = 3;
 
+const HOUR_MS = 1000 * 60 * 60;
+
+/**
+ * 「距離上次……已經多久」量的其實是「距離上次『記下來的』……」。
+ *
+ * 家長週末回娘家、手機沒電、或只是不想記了，紀錄就停在那裡，而這兩則警示會
+ * 照樣亮起來說寶寶六小時沒喝奶、三天沒排便——說的是紀錄，不是寶寶。所以只在
+ * 看得出家長還在記的時候才說話：那件事之後還有別的紀錄（任何類型），而且最新
+ * 的一筆在 24 小時內。之後記了尿布卻沒記餵奶，那個空白才有可能是真的。
+ */
+function isStillLoggingSince(logs: DailyLog[], sinceMs: number, nowMs: number): boolean {
+  return logs.some((log) => {
+    const time = new Date(log.timestamp).getTime();
+    return time > sinceMs && time <= nowMs && nowMs - time <= 24 * HOUR_MS;
+  });
+}
+
+/**
+ * 餵奶間隔的提醒只給這個月齡以下的寶寶。
+ *
+ * 這是審閱本功能的小兒科醫師的臨床判斷，不是引自指引的數字：三個月以上的寶寶
+ * 夜裡連睡六小時以上沒喝奶是常態，對他們亮這則提醒只是每天早上的例行虛驚。
+ */
+const FEEDING_GAP_MAX_AGE_MONTHS = 3;
+
 /**
  * Detect feeding alerts
  *
  * Rules:
  * - warning: yesterday's feeding amount < 70% of the surrounding week's average
- * - warning: last feeding was >6 hours ago
+ * - warning: last feeding was >6 hours ago — only under 3 months old, and only
+ *   while the parent is demonstrably still logging
  *
  * Both rules count intake only. A pumping session is the mother's output and
  * says nothing about whether the baby has been fed.
  */
-export function detectFeedingAlerts(logs: DailyLog[], _ageMonths: number): Alert[] {
+export function detectFeedingAlerts(logs: DailyLog[], ageMonths: number): Alert[] {
   const alerts: Alert[] = [];
 
   // 已經過完的 7 天（不含今天），最後一格是昨天。
@@ -72,17 +98,18 @@ export function detectFeedingAlerts(logs: DailyLog[], _ageMonths: number): Alert
 
     擠奶不算。一位半夜兩點擠奶的母親，寶寶並沒有因此喝到東西——把擠奶當成
     一餐，這則「超過六小時沒餵」的提醒就會被悄悄關掉，而它正是要提醒她的事。
+    （擠奶紀錄倒是「家長還在記」的證據，所以下面的 isStillLoggingSince 算它。）
   */
   const feedingLogs = logs
     .filter(isIntakeFeedingLog)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-  if (feedingLogs.length > 0) {
+  if (feedingLogs.length > 0 && ageMonths < FEEDING_GAP_MAX_AGE_MONTHS) {
     const lastFeedingTime = new Date(feedingLogs[0].timestamp).getTime();
     const now = Date.now();
-    const hoursSinceLastFeeding = (now - lastFeedingTime) / (1000 * 60 * 60);
+    const hoursSinceLastFeeding = (now - lastFeedingTime) / HOUR_MS;
 
-    if (hoursSinceLastFeeding > 6) {
+    if (hoursSinceLastFeeding > 6 && isStillLoggingSince(logs, lastFeedingTime, now)) {
       alerts.push({
         id: 'feeding-long-gap',
         category: 'feeding',
@@ -100,9 +127,9 @@ export function detectFeedingAlerts(logs: DailyLog[], _ageMonths: number): Alert
 /**
  * Detect poop alerts
  *
- * Rules:
- * - warning: no poop in >48 hours
- * - danger: no poop in >72 hours
+ * Rule:
+ * - warning: no stool logged in >72 hours, while the parent is demonstrably
+ *   still logging. One level only, never `danger`.
  */
 export function detectPoopAlerts(logs: DailyLog[]): Alert[] {
   const alerts: Alert[] = [];
@@ -123,24 +150,21 @@ export function detectPoopAlerts(logs: DailyLog[]): Alert[] {
 
   const lastPoopTime = new Date(poopLogs[0].timestamp).getTime();
   const now = Date.now();
-  const hoursSinceLastPoop = (now - lastPoopTime) / (1000 * 60 * 60);
+  const hoursSinceLastPoop = (now - lastPoopTime) / HOUR_MS;
 
-  if (hoursSinceLastPoop > 72) {
+  // 來源（2026-11-26 查證）：American Academy of Pediatrics「Pooping By the Numbers」
+  // https://www.healthychildren.org/English/ages-stages/baby/Pages/Pooping-By-the-Numbers.aspx
+  // 原文："going as many as 5 to 7 days between poops is not necessarily a problem
+  // for babies who have already proven themselves fully capable of pooping… and
+  // are eating and growing well"。所以幾天沒排便本身不是「危險」：只有一級提醒，
+  // 而且訊息把真正該就醫的徵象列出來，不拿時數當判決。
+  if (hoursSinceLastPoop > 72 && isStillLoggingSince(logs, lastPoopTime, now)) {
     alerts.push({
       id: 'poop-no-poop-72h',
       category: 'poop',
-      severity: 'danger',
-      title: '超過 72 小時未排便',
-      message: `寶寶已超過 ${Math.round(hoursSinceLastPoop)} 小時未排便，建議諮詢醫師是否需要處理。`,
-      icon: 'AlertOctagon',
-    });
-  } else if (hoursSinceLastPoop > 48) {
-    alerts.push({
-      id: 'poop-no-poop-48h',
-      category: 'poop',
       severity: 'warning',
-      title: '超過 48 小時未排便',
-      message: `寶寶已超過 ${Math.round(hoursSinceLastPoop)} 小時未排便，請持續觀察。`,
+      title: '超過 72 小時沒有排便紀錄',
+      message: `已 ${Math.round(hoursSinceLastPoop)} 小時沒有排便紀錄。便便軟、吃得好、精神好，幾天一次也常見；便硬、解便時哭、肚子脹、吐或帶血，請就醫。`,
       icon: 'AlertTriangle',
     });
   }

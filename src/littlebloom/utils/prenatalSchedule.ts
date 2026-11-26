@@ -35,6 +35,12 @@ export interface ResolvedPrenatalItem {
   /** 距建議週的週數；負數表示已過 */
   weeksUntilDue: number;
   completedDate?: string;
+  /**
+   * 家長完成時填的院所與備註。存了卻不帶出來，產檢頁就只印得出「已於…完成」，
+   * 家長剛寫的那句話一儲存就像消失了。
+   */
+  clinicName?: string;
+  notes?: string;
 }
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -74,7 +80,7 @@ export function weeksPregnant(lastPeriodDate: string, today: Date = new Date()):
 export function resolvePrenatalItems(
   lastPeriodDate: string,
   templates: PrenatalCheckupTemplate[],
-  completed: Record<string, { completedDate: string }>,
+  completed: Record<string, { completedDate: string; clinicName?: string; notes?: string }>,
   today: Date = new Date(),
 ): ResolvedPrenatalItem[] {
   if (!lastPeriodDate) return [];
@@ -92,7 +98,8 @@ export function resolvePrenatalItems(
         lastPeriodDate,
         template.toWeek * DAYS_PER_WEEK + (DAYS_PER_WEEK - 1),
       );
-      const completedDate = completed[template.id]?.completedDate;
+      const record = completed[template.id];
+      const completedDate = record?.completedDate;
 
       return {
         template,
@@ -107,6 +114,8 @@ export function resolvePrenatalItems(
         ),
         weeksUntilDue: template.dueWeek - currentWeek,
         completedDate,
+        clinicName: record?.clinicName,
+        notes: record?.notes,
       };
     })
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate));

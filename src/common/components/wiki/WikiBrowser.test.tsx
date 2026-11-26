@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { WikiArticle, WikiCategoryColors } from '../../../types';
@@ -58,13 +58,17 @@ function renderBrowser(wikiPage?: WikiPage) {
   return user;
 }
 
-const card = (title: string) =>
+/** The whole article: its header row and, once open, everything under it. */
+const card = (title: string) => screen.getByRole('article', { name: title });
+
+/** The header row, which is the only part that opens and closes the article. */
+const header = (title: string) =>
   screen.getByRole('heading', { name: title }).closest('[role="button"]') as HTMLElement;
 
 describe('WikiBrowser: an open article', () => {
   it('puts the see-a-doctor signs before causes and steps', async () => {
     const user = renderBrowser();
-    await user.click(card('發燒判斷'));
+    await user.click(header('發燒判斷'));
 
     const headings = within(card('發燒判斷'))
       .getAllByRole('heading', { level: 4 })
@@ -75,18 +79,20 @@ describe('WikiBrowser: an open article', () => {
 
   it('names its related articles and leaves out ids that resolve to nothing', async () => {
     const user = renderBrowser();
-    await user.click(card('發燒判斷'));
+    await user.click(header('發燒判斷'));
 
-    const related = within(card('發燒判斷')).getAllByRole('button');
+    const section = within(card('發燒判斷')).getByRole('heading', { name: '相關文章' })
+      .parentElement as HTMLElement;
+    const related = within(section).getAllByRole('button');
     expect(related.map((node) => node.textContent)).toEqual(['尿布疹']);
   });
 
   it('opens a related article in place, without collapsing into a dead end', async () => {
     const user = renderBrowser();
-    await user.click(card('發燒判斷'));
+    await user.click(header('發燒判斷'));
     await user.click(within(card('發燒判斷')).getByRole('button', { name: '尿布疹' }));
 
-    expect(card('尿布疹')).toHaveAttribute('aria-expanded', 'true');
+    expect(header('尿布疹')).toHaveAttribute('aria-expanded', 'true');
     expect(within(card('尿布疹')).getByText('破皮滲液')).toBeInTheDocument();
   });
 
@@ -99,16 +105,16 @@ describe('WikiBrowser: an open article', () => {
       expect(screen.queryByRole('heading', { name: '尿布疹' })).not.toBeInTheDocument(),
     );
 
-    await user.click(card('發燒判斷'));
+    await user.click(header('發燒判斷'));
     await user.click(within(card('發燒判斷')).getByRole('button', { name: '尿布疹' }));
 
-    expect(card('尿布疹')).toHaveAttribute('aria-expanded', 'true');
+    expect(header('尿布疹')).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('button', { name: '全部' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('shows no related section for an article that points nowhere', async () => {
     const user = renderBrowser();
-    await user.click(card('尿布疹'));
+    await user.click(header('尿布疹'));
     expect(within(card('尿布疹')).queryByRole('heading', { name: '相關文章' })).not.toBeInTheDocument();
   });
 
@@ -138,18 +144,18 @@ describe('WikiBrowser: an article has its own URL', () => {
     at('/littlesteps/baby-wiki/rash');
     renderBrowser(WIKI);
 
-    expect(card('尿布疹')).toHaveAttribute('aria-expanded', 'true');
-    expect(card('發燒判斷')).toHaveAttribute('aria-expanded', 'false');
+    expect(header('尿布疹')).toHaveAttribute('aria-expanded', 'true');
+    expect(header('發燒判斷')).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('puts the article in the address bar when it is opened, and takes it out when closed', async () => {
     at('/littlesteps/baby-wiki');
     const user = renderBrowser(WIKI);
 
-    await user.click(card('發燒判斷'));
+    await user.click(header('發燒判斷'));
     expect(here()).toBe('/littlesteps/baby-wiki/fever');
 
-    await user.click(card('發燒判斷'));
+    await user.click(header('發燒判斷'));
     expect(here()).toBe('/littlesteps/baby-wiki');
   });
 
@@ -167,8 +173,8 @@ describe('WikiBrowser: an article has its own URL', () => {
     const before = window.history.length;
     const user = renderBrowser(WIKI);
 
-    await user.click(card('發燒判斷'));
-    await user.click(card('尿布疹'));
+    await user.click(header('發燒判斷'));
+    await user.click(header('尿布疹'));
 
     expect(window.history.length).toBe(before);
   });
@@ -177,8 +183,8 @@ describe('WikiBrowser: an article has its own URL', () => {
     at('/littlesteps/baby-wiki/no-such-article');
     renderBrowser(WIKI);
 
-    expect(card('發燒判斷')).toHaveAttribute('aria-expanded', 'false');
-    expect(card('尿布疹')).toHaveAttribute('aria-expanded', 'false');
+    expect(header('發燒判斷')).toHaveAttribute('aria-expanded', 'false');
+    expect(header('尿布疹')).toHaveAttribute('aria-expanded', 'false');
     await waitFor(() => expect(here()).toBe('/littlesteps/baby-wiki'));
   });
 
@@ -186,8 +192,8 @@ describe('WikiBrowser: an article has its own URL', () => {
     at('/littlesteps/baby-wiki?q=%E9%AB%94%E6%BA%AB');
     const user = renderBrowser(WIKI);
 
-    await user.click(card('發燒判斷'));
-    await user.click(card('發燒判斷'));
+    await user.click(header('發燒判斷'));
+    await user.click(header('發燒判斷'));
 
     expect(window.location.pathname).toBe('/littlesteps/baby-wiki');
     expect(screen.getByRole('searchbox')).toHaveValue('體溫');
@@ -197,8 +203,62 @@ describe('WikiBrowser: an article has its own URL', () => {
     at('/somewhere');
     const user = renderBrowser();
 
-    await user.click(card('發燒判斷'));
+    await user.click(header('發燒判斷'));
 
     expect(here()).toBe('/somewhere');
+  });
+});
+
+/**
+ * An open article is something a parent reads for a minute or two, often
+ * one-handed. It must not close under their thumb, and it should be easy to
+ * pass on.
+ */
+describe('WikiBrowser: reading an open article', () => {
+  const at = (path: string) => window.history.replaceState(null, '', path);
+
+  afterEach(() => at('/'));
+
+  it('stays open when the text is tapped', async () => {
+    const user = renderBrowser();
+    await user.click(header('發燒判斷'));
+
+    await user.click(within(card('發燒判斷')).getByText('用耳溫槍或肛溫計。'));
+
+    expect(header('發燒判斷')).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('closes from the button at the end, where the reader finishes', async () => {
+    const user = renderBrowser();
+    await user.click(header('發燒判斷'));
+
+    await user.click(within(card('發燒判斷')).getByRole('button', { name: '收起' }));
+
+    expect(header('發燒判斷')).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('shares the article by its own URL, not the knowledge base', async () => {
+    const share = vi.fn(async () => {});
+    Object.defineProperty(navigator, 'share', { value: share, configurable: true });
+    at('/littlesteps/baby-wiki');
+    const user = renderBrowser('littlesteps/baby-wiki');
+    await user.click(header('發燒判斷'));
+
+    await user.click(within(card('發燒判斷')).getByRole('button', { name: '分享這篇' }));
+
+    expect(share).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: '發燒判斷',
+        url: expect.stringMatching(/\/littlesteps\/baby-wiki\/fever$/),
+      }),
+    );
+    Reflect.deleteProperty(navigator, 'share');
+  });
+
+  it('offers no share button where the article has no URL to share', async () => {
+    const user = renderBrowser();
+    await user.click(header('發燒判斷'));
+
+    expect(within(card('發燒判斷')).queryByRole('button', { name: '分享這篇' })).not.toBeInTheDocument();
   });
 });

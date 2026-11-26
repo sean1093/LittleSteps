@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check, ChevronDown, PartyPopper, X } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, PartyPopper, X } from 'lucide-react';
 import type {
   ChildProfile,
   DevelopmentCheckItem,
@@ -33,6 +33,7 @@ import AgeBandPicker from '../components/AgeBandPicker';
 import GrowthCurveLink from '../components/GrowthCurveLink';
 import ToothChart from '../components/ToothChart';
 import { goTo } from '../../common/navigate';
+import { allAchieved, bandEndLabel, pickWeeklyTry } from './developmentHints';
 
 const THEME = SERVICE_THEME.littleexplorer;
 
@@ -100,6 +101,19 @@ export default function DevelopmentPage({
     [band],
   );
   const achievedCount = bandItems.filter((item) => progress[item.id]?.achieved).length;
+
+  /*
+   * 「這週可以試試」只在看的是孩子自己的年齡段時出現：家長翻到下一段是在預習，
+   * 把那一段的練習說成「這週」就是在催。順序跟畫面一樣照領域排，所以「第一個
+   * 還沒勾的」就是家長往下滑時看到的第一個。
+   */
+  const isChildBand = band === bandForMonths(ageMonths) && ageMonths < TODDLER_MAX_MONTHS;
+  const orderedItems = useMemo(
+    () => DOMAIN_ORDER.flatMap((domain) => bandItems.filter((item) => item.domain === domain)),
+    [bandItems],
+  );
+  const weeklyTry = pickWeeklyTry(orderedItems, progress);
+  const bandComplete = allAchieved(orderedItems, progress);
   const warning = developmentWarnings.find((w) => w.ageBand === band);
 
   const outOfRange = !currentChild ? (
@@ -207,6 +221,29 @@ export default function DevelopmentPage({
               算不出百分位，而這張卡片正是拿百分位當賣點。 */}
           {ageMonths < TODDLER_MAX_MONTHS && <GrowthCurveLink />}
 
+          {/* 幼兒期這邊沒有一頁是每天、每週會打開的。午睡、吃飯、尿布的記錄
+              滿 1 歲之後照樣能用（那一頁只擋孕期檔案，不看月齡），只是從來
+              沒有任何入口從這裡過去。 */}
+          {ageMonths < TODDLER_MAX_MONTHS && (
+            <motion.button
+              variants={listItem}
+              whileTap={tap}
+              type="button"
+              onClick={() => goTo('littlesteps/daily-log')}
+              className="card-tap w-full text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <h3 className={`mb-1 ${THEME.body}`}>記午睡、吃飯和尿布</h3>
+                  <p className={`text-sm ${THEME.muted}`}>
+                    每日記錄在「寶寶成長」，1 歲以後一樣可以用。
+                  </p>
+                </div>
+                <ArrowRight className={`w-4 h-4 shrink-0 ${THEME.ink}`} aria-hidden="true" />
+              </div>
+            </motion.button>
+          )}
+
           <motion.section variants={listItem} className="panel">
             <div className="flex items-baseline justify-between mb-3">
               <h2 className={THEME.body}>這個階段的 {bandItems.length} 件事</h2>
@@ -220,7 +257,28 @@ export default function DevelopmentPage({
                 style={{ width: `${bandItems.length ? (achievedCount / bandItems.length) * 100 : 0}%` }}
               />
             </div>
+            {/* 題目的判準是「這個階段結束時」。剛進這一段的孩子打開看到 0 件，
+                不說這句話就會被讀成落後。 */}
+            <p className={`text-sm mt-3 leading-relaxed ${THEME.muted}`}>
+              這些是這個階段結束前多數孩子會的事。剛進這個階段，還沒勾到是正常的。
+            </p>
           </motion.section>
+
+          {isChildBand && (weeklyTry || bandComplete) && (
+            <motion.section variants={listItem} className="panel">
+              <h2 className={`mb-2 ${THEME.body}`}>這週可以試試</h2>
+              {weeklyTry ? (
+                <>
+                  <p className={`leading-relaxed ${THEME.body}`}>{weeklyTry.tip}</p>
+                  <p className={`text-sm mt-2 ${THEME.muted}`}>來自：{weeklyTry.title}</p>
+                </>
+              ) : (
+                <p className={`leading-relaxed ${THEME.body}`}>
+                  這個階段的都會了，可以看下一個階段在玩什麼。
+                </p>
+              )}
+            </motion.section>
+          )}
 
           {DOMAIN_ORDER.map((domain) => {
             const items = bandItems.filter((item) => item.domain === domain);
@@ -364,6 +422,11 @@ export default function DevelopmentPage({
 
               {warningsOpen && (
                 <div className="mt-4 space-y-3">
+                  {/* 警訊對的是這個階段「結束時」的門檻。少了這一句，剛滿 1 歲的
+                      孩子會被拿去對 1 歲 3 個月的標準。 */}
+                  <p className={`text-sm leading-relaxed ${THEME.body}`}>
+                    到了這個階段結束時（{bandEndLabel(band)}），如果還有下面任何一項：
+                  </p>
                   <ul className="space-y-2">
                     {warning.signals.map((signal) => (
                       <li key={signal} className={`text-sm flex gap-2 ${THEME.body}`}>

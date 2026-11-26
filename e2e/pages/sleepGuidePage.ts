@@ -11,14 +11,15 @@ export class SleepGuidePage {
   readonly main: Locator;
 
   /**
-   * The bedtime-ritual steps. Each row is a `role="checkbox"`, which nothing
-   * else on the page is, so the role alone counts them.
+   * The bedtime-ritual steps: the items of the page's one ordered list. They
+   * used to be checkboxes whose ticks were lost on reload; they are steps to
+   * follow now, in order, so the list semantics are what identify them.
    */
   readonly ritualSteps: Locator;
 
   constructor(private readonly page: Page) {
     this.main = page.getByRole('main');
-    this.ritualSteps = this.main.getByRole('checkbox');
+    this.ritualSteps = this.main.locator('ol > li');
   }
 
   /** A card title — a sleep-stage range, a safety rule, a training method. */

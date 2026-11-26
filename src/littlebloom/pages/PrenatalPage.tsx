@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Baby, Check, ChevronDown, History, Undo2 } from 'lucide-react';
+import { Baby, CalendarPlus, Check, ChevronDown, History, Pencil, Undo2 } from 'lucide-react';
 import type { ChildProfile, PrenatalCheckupProgress } from '../../types';
 import {
   prenatalCheckupSchedule,
@@ -9,6 +9,7 @@ import {
 import type { PrenatalItemKind } from '../data/prenatalCheckups';
 import { resolvePrenatalItems, weeksPregnant } from '../utils/prenatalSchedule';
 import type { PrenatalItemStatus, ResolvedPrenatalItem } from '../utils/prenatalSchedule';
+import { buildPrenatalIcs, outstandingPrenatalItems } from '../utils/prenatalCalendar';
 import BloomShell from '../components/BloomShell';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
@@ -18,6 +19,9 @@ import { isPregnancyProfile } from '../../common/pregnancy';
 import { formatDate, toLocalDateKey } from '../../common/utils/dateHelpers';
 import { splitOverdueByProfileStart } from '../../common/utils/profileHistory';
 import { goTo } from '../../common/navigate';
+import { confirmDelete } from '../../common/ui/confirmDelete';
+import { downloadCalendar } from '../../common/utils/icsExport';
+import { logCalendarExport } from '../../lib/firebase';
 import { PRENATAL_CLINIC_LIMIT, PRENATAL_NOTES_LIMIT } from '../../common/recordLimits';
 
 const THEME = SERVICE_THEME.littlebloom;
@@ -89,6 +93,15 @@ export default function PrenatalPage({
     [items, currentChild?.createdAt],
   );
 
+  /*
+   * 匯出的是「還沒做、而且不是建檔前就到期」的那幾項。按鈕自己寫出項數，
+   * 按下去拿到的就是那個數字（同疫苗追蹤頁的做法）。
+   */
+  const outstanding = useMemo(
+    () => outstandingPrenatalItems(items, currentChild?.createdAt),
+    [items, currentChild?.createdAt],
+  );
+
   const weeks = lmp ? weeksPregnant(lmp) : 0;
 
   // 與 LittleBloomPage 同一個理由：出生後 lmp 仍在，只有 status 變成 archived。
@@ -154,18 +167,30 @@ export default function PrenatalPage({
     }
   };
 
+  /*
+   * 取消完成會把日期、院所與備註一起刪掉，而且沒有地方找回來，所以先問。
+   * 它原本是已完成那一列上的單一按鈕，手指滑過就整筆消失。
+   */
   const undo = async (templateId: string) => {
     if (saving) return;
+    if (!confirmDelete('這次產檢的完成記錄')) return;
     setSaving(true);
     setFailure(null);
     try {
       await onUndo(templateId);
+      setFormFor(null);
     } catch (error) {
       console.error('取消產檢記錄失敗:', error);
       setFailure({ templateId, message: '取消失敗，請確認網路後再試一次。' });
     } finally {
       setSaving(false);
     }
+  };
+
+  const exportOutstanding = () => {
+    if (!currentChild) return;
+    downloadCalendar(buildPrenatalIcs(items, currentChild), '產檢時程.ics');
+    logCalendarExport('prenatal');
   };
 
   /**
@@ -206,6 +231,13 @@ export default function PrenatalPage({
             {item.completedDate && (
               <p className="text-sm text-bloom-sage-ink mt-2">
                 已於 {formatDate(item.completedDate)} 完成
+                {item.clinicName ? ` · ${item.clinicName}` : ''}
+              </p>
+            )}
+            {/* 備註是家長自己寫的話：存了就要看得到，否則像是沒存進去。 */}
+            {item.completedDate && item.notes && (
+              <p className={`text-sm mt-1 leading-relaxed break-words ${THEME.muted}`}>
+                {item.notes}
               </p>
             )}
           </div>
@@ -217,13 +249,21 @@ export default function PrenatalPage({
               type="button"
               whileTap={tap}
               onClick={() => {
-                void undo(template.id);
+                if (showForm) {
+                  setFormFor(null);
+                  return;
+                }
+                // 同一張表單，帶著存過的內容打開：日期填錯、院所漏寫都改得了。
+                setFormFor(template.id);
+                setCompletedDate(item.completedDate ?? today());
+                setClinicName(item.clinicName ?? '');
+                setNotes(item.notes ?? '');
               }}
-              disabled={saving}
-              className="btn-ghost text-sm disabled:opacity-60"
+              aria-expanded={showForm}
+              className="btn-ghost text-sm"
             >
-              <Undo2 className="w-4 h-4" />
-              取消完成
+              <Pencil className="w-4 h-4" />
+              修改
             </motion.button>
           ) : (
             <motion.button
@@ -287,6 +327,19 @@ export default function PrenatalPage({
             >
               {saving ? '儲存中…' : '儲存'}
             </button>
+            {status === 'done' && (
+              <button
+                type="button"
+                onClick={() => {
+                  void undo(template.id);
+                }}
+                disabled={saving}
+                className="btn-ghost w-full text-sm disabled:opacity-60"
+              >
+                <Undo2 className="w-4 h-4" />
+                取消完成
+              </button>
+            )}
           </div>
         )}
 
@@ -323,6 +376,19 @@ export default function PrenatalPage({
       backTo="littlebloom"
     >
       <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-4">
+        {outstanding.length > 0 && (
+          <motion.button
+            type="button"
+            variants={listItem}
+            whileTap={tap}
+            onClick={exportOutstanding}
+            className="btn-secondary w-full text-sm"
+          >
+            <CalendarPlus className="w-4 h-4" />
+            匯出未完成的 {outstanding.length} 項到行事曆
+          </motion.button>
+        )}
+
         {SECTIONS.map(renderSection)}
 
         {missingHistory.length > 0 && (

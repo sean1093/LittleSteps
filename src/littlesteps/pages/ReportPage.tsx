@@ -216,7 +216,7 @@ export default function ReportPage({
           <>
             {/* Section 1: Score Overview */}
             <motion.div variants={listItem} className="panel mb-4">
-              <h2 className="mb-5">總覽評分</h2>
+              <h2 className="mb-5">記錄規律度</h2>
               {/* grid 而不是 justify-around：三顆圓環各佔一欄、跟著欄寬縮，
                   寫死 100px 的版本在 320px 的螢幕上會橫向溢出。 */}
               <div className="grid grid-cols-3 gap-3">
@@ -228,12 +228,12 @@ export default function ReportPage({
                 <ScoreCircle
                   score={report.scores.sleep.score}
                   label={report.scores.sleep.label}
-                  title="睡眠品質"
+                  title="睡眠規律度"
                 />
                 <ScoreCircle
                   score={report.scores.poop.score}
                   label={report.scores.poop.label}
-                  title="排便正常度"
+                  title="排便規律度"
                 />
               </div>
               {/* 分母要跟分數一起看得到，否則「兩天記錄算出來的 90 分」和
@@ -241,6 +241,10 @@ export default function ReportPage({
               <p className="mt-4 text-center text-xs text-ink-faint">
                 近 {days} 天中有記錄的天數：餵奶 {report.scores.feeding.loggedDays}、
                 睡眠 {report.scores.sleep.loggedDays}、排便 {report.scores.poop.loggedDays}
+              </p>
+              {/* 三個數字量的是每天有多接近，家長卻會把它讀成寶寶的成績單。 */}
+              <p className="mt-2 text-center text-sm text-ink-muted">
+                這是記錄有多規律，不是健康評分。寶寶吃得好、尿布濕、有精神，變動大也可以是正常的。
               </p>
             </motion.div>
 

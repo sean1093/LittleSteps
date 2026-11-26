@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { developmentCheckItems } from '../../littleexplorer/data/developmentChecks';
+import { toddlerWikiArticles } from '../../littleexplorer/data/toddlerWiki';
 import { prenatalCheckupSchedule } from '../../littlebloom/data/prenatalCheckups';
 import { pregnancyWikiArticles } from '../../littlebloom/data/wiki';
 import { babyWikiArticles } from './babyWiki';
 import { generalSafetyItems, monthlyCareGuides } from './careGuides';
 import * as complementaryFood from './complementaryFood';
+import { milestones } from './milestones';
 import * as sleep from './sleep';
 
 /**
@@ -175,5 +177,147 @@ describe('agreement between files', () => {
     const article = pregnancyWikiArticles.find((entry) => entry.id === 'checkup-schedule');
     expect(text(article?.solutions)).toContain(`第 ${weeks.join('、')} 週`);
     expect(weeks).toHaveLength(14);
+  });
+});
+
+/**
+ * Corrections from the second review, which read the month table, the care
+ * cards and the milestone tips against the principle cards printed beside
+ * them, and against AAP / HPA / MOHW pages. The recurring fault was one file
+ * giving two answers: a principle saying "do not delay allergens" above a
+ * table that delayed them.
+ */
+describe('solids: the month table agrees with the principle cards', () => {
+  const firstRowOffering = (pattern: RegExp) =>
+    complementaryFood.monthlyFoodMenus.find((menu) => menu.foods.some((food) => pattern.test(food)));
+
+  it.each([
+    ['meat', /雞肉|豬肉|牛肉/],
+    ['fish', /魚/],
+    ['egg', /蛋/],
+    ['tofu', /豆腐/],
+    ['shellfish', /蝦/],
+    ['tree nuts', /核桃|花生|堅果/],
+  ])('offers %s once solids have started, about 6 months (AAP: no benefit in waiting)', (_name, pattern) => {
+    // Not later than the 6-month row, and not in the 4-month row either: the
+    // principle card says about 6 months, 4 at the earliest.
+    const row = firstRowOffering(pattern);
+    expect(row?.month).toBe('6個月');
+    expect(row?.focus).toMatch(/開始吃副食品後（約 6 個月）/);
+  });
+
+  it('never lists a nut without saying it must be ground or pureed', () => {
+    const nuts = complementaryFood.monthlyFoodMenus
+      .flatMap((menu) => menu.foods)
+      .filter((food) => /核桃|花生|堅果/.test(food));
+    expect(nuts.length).toBeGreaterThan(0);
+    for (const nut of nuts) expect(nut).toMatch(/粉|泥/);
+  });
+
+  it('no longer calls seven months the start of meat', () => {
+    expect(FOOD).not.toMatch(/開葷/);
+    expect(FOOD).not.toMatch(/一歲前肉類仍建議打泥/);
+  });
+
+  it('tests one new food over 3 to 5 days, not nine (AAP)', () => {
+    const method = complementaryFood.allergyTestingMethod;
+    expect(method.name).toBe('每 3–5 天試一種新食材');
+    expect(method.observeDays).toEqual({ min: 3, max: 5 });
+    expect(text(method.steps)).not.toMatch(/觀察3天|停止新食材/);
+    // The emergency branch must survive the rewrite.
+    expect(method.principle).toMatch(/呼吸困難.*119/);
+  });
+
+  it('keeps cow’s milk as a drink and juice off the menu before one (AAP)', () => {
+    const restrictions = complementaryFood.infantFoodRestrictions.flatMap((category) => category.items);
+    const milk = restrictions.find((item) => item.food === '鮮奶當飲料');
+    const juice = restrictions.find((item) => item.food === '果汁');
+    expect(milk?.ageLimit).toBe('1 歲前');
+    expect(milk?.reason).toMatch(/不能取代母乳或配方奶/);
+    expect(juice?.ageLimit).toBe('1 歲前');
+    expect(FOOD).not.toMatch(/一歲前除蜂蜜外都可嘗試/);
+  });
+});
+
+describe('care guide, by month', () => {
+  const month = (n: number) => text(monthlyCareGuides.find((guide) => guide.month === n)?.highlights);
+
+  it.each([1, 2, 3])('month %i carries the under-three-months fever rule (AAP)', (n) => {
+    expect(month(n)).toMatch(/未滿 3 個月體溫 38°C 以上.*立刻就醫.*不要先自行退燒/);
+  });
+
+  it('does not tell parents to cut milk at ten months', () => {
+    expect(CARE).not.toMatch(/應減少奶量/);
+  });
+
+  it('caps whole milk at twelve months (AAP)', () => {
+    expect(month(12)).toMatch(/滿 1 歲可開始喝全脂鮮奶，一天不超過約 480 ml/);
+  });
+});
+
+describe('milestones', () => {
+  it('keeps "see a doctor" warnings out of the practice tips', () => {
+    // A tip is something to do with the baby today; the page prints the
+    // when-to-ask line once, so a threshold here is read as a practice step.
+    for (const milestone of milestones) {
+      for (const tip of milestone.tips) {
+        expect(tip, milestone.id).not.toMatch(/諮詢醫師|應注意/);
+      }
+    }
+    expect(text(milestones)).not.toMatch(/6個月不會翻滾/);
+  });
+
+  it('does not expect unsupported sitting at five to six months (AAP)', () => {
+    const band = text(milestones.filter((milestone) => milestone.monthRange === '5-6'));
+    expect(band).not.toMatch(/不需協助能自己坐著|獨立坐/);
+    expect(band).toMatch(/滿 9 個月還不能自己坐/);
+  });
+
+  it('keeps the ids parents’ progress is stored under', () => {
+    const ids = milestones.map((milestone) => milestone.id);
+    expect(ids).toEqual(expect.arrayContaining(['m0-1-physical-1', 'm2-physical-1', 'm2-social-1', 'm6-physical-1', 'm6-social-1', 'm10-cognitive-1', 'm11-motor-1']));
+  });
+});
+
+describe('sleep training', () => {
+  it('starts at six months and says when to stop (HPA, AAP)', () => {
+    expect(sleep.trainingTips.timing.content).toMatch(/6 個月後再練習自行入睡/);
+    expect(SLEEP).not.toMatch(/4-6 個月大後開始進行睡眠訓練/);
+    expect(sleep.trainingTips.pause.content).toMatch(/生病、發燒.*先暫停.*哭聲和平常不一樣就進去看/);
+  });
+});
+
+describe('pregnancy wiki', () => {
+  const PREGNANCY = text(pregnancyWikiArticles);
+
+  it('has no one-hour fetal movement threshold left (HPA)', () => {
+    expect(PREGNANCY).not.toMatch(/數胎動一小時|胎動[^'"]{0,12}(1|一) ?小時/);
+    // Every line that tells a parent to count gives the same threshold.
+    expect(PREGNANCY).not.toMatch(/先左側躺數胎動/);
+    expect(PREGNANCY.match(/超過 2 小時感覺不到明顯胎動/g)?.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('does not quote a stillbirth multiplier nobody could source', () => {
+    expect(PREGNANCY).not.toMatch(/2\.6 倍/);
+    expect(PREGNANCY).toMatch(/28 週後建議側睡/);
+  });
+});
+
+describe('toddler content', () => {
+  const TODDLER = text(toddlerWikiArticles);
+
+  it('does not call a two-year-old 「番」', () => {
+    expect(TODDLER).not.toContain('番兩歲');
+    // The id is a URL; the title changed, the address must not.
+    expect(toddlerWikiArticles.some((article) => article.id === 'emotion-terrible-twos')).toBe(true);
+  });
+
+  it('uses the checklist’s own age for "says mama or dada with meaning"', () => {
+    expect(TODDLER).not.toMatch(/1 歲不會叫/);
+    expect(TODDLER).toMatch(/1 歲 3 個月還不會有意義地叫爸爸或媽媽/);
+  });
+
+  it('does not reward dry nights, which a child cannot control', () => {
+    expect(TODDLER).not.toMatch(/用貼紙記錄乾爽的夜晚/);
   });
 });

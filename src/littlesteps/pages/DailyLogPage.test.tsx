@@ -49,7 +49,7 @@ const openFeedingSheet = async () => {
   render(<DailyLogPage currentChild={child} user={null} />);
 
   await user.click(screen.getByRole('button', { name: '餵奶' }));
-  await screen.findByRole('heading', { name: '新增餵奶記錄' });
+  await screen.findByRole('heading', { name: '幫小豆記餵奶' });
   await user.type(screen.getByLabelText('奶量（ml）'), '120');
 
   return user;
@@ -69,7 +69,7 @@ describe('記錄一筆餵奶', () => {
     await user.click(screen.getByRole('button', { name: '儲存' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('權限不足，無法寫入');
-    expect(screen.getByRole('heading', { name: '新增餵奶記錄' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '幫小豆記餵奶' })).toBeInTheDocument();
     expect(screen.getByLabelText('奶量（ml）')).toHaveValue(120);
   });
 
@@ -80,7 +80,7 @@ describe('記錄一筆餵奶', () => {
     await user.click(screen.getByRole('button', { name: '儲存' }));
 
     await waitFor(() =>
-      expect(screen.queryByRole('heading', { name: '新增餵奶記錄' })).toBeNull(),
+      expect(screen.queryByRole('heading', { name: '幫小豆記餵奶' })).toBeNull(),
     );
     expect(addDailyLog).toHaveBeenCalledTimes(1);
   });
@@ -205,7 +205,7 @@ describe('沿用上一筆', () => {
     expect(written.type).toBe('feeding');
     expect(written.data).toMatchObject({ feedingType: 'formula', amount: 120 });
     expect(Date.now() - Date.parse(written.timestamp)).toBeLessThan(1000);
-    expect(screen.queryByRole('heading', { name: '新增餵奶記錄' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: '幫小豆記餵奶' })).toBeNull();
   });
 
   /*
@@ -333,6 +333,121 @@ describe('沿用上一筆', () => {
     expect((written.data as FeedingData).feedingType).toBe('pumping');
   });
 
+  /*
+    一鍵重複不開表單，存完之後畫面上唯一的變化在摺線以下的時間軸。沒有回報，
+    家長分不出「存了」和「沒按到」，然後再按一次，多出一筆假的餵奶。
+  */
+  it('一鍵重複存完會說存了什麼', async () => {
+    const ago = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
+    readState.logs = [
+      {
+        id: 'feed',
+        childId: 'c1',
+        type: 'feeding',
+        timestamp: ago(180),
+        data: { feedingType: 'formula', amount: 120 },
+        createdAt: ago(180),
+      },
+      {
+        id: 'pump',
+        childId: 'c1',
+        type: 'feeding',
+        timestamp: ago(30),
+        data: { feedingType: 'pumping', amount: 90 },
+        createdAt: ago(30),
+      },
+    ];
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <DailyLogPage currentChild={child} user={null} />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: '餵奶 · 配方奶 120 ml' }));
+    expect(await screen.findByText('已記錄：配方奶 120 ml')).toBeInTheDocument();
+
+    // 擠奶在按鈕上靠標題說自己是擠奶；回報裡沒有標題，要自己說。
+    await user.click(screen.getByRole('button', { name: '擠奶 · 90 ml' }));
+    expect(await screen.findByText('已記錄：擠奶 90 ml')).toBeInTheDocument();
+  });
+
+  it('一鍵重複寫入失敗時不說「已記錄」', async () => {
+    readState.logs = [feedingLog('f1', 'c1', { feedingType: 'formula', amount: 120 })];
+    addDailyLog.mockRejectedValueOnce(new Error('權限不足，無法寫入'));
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <DailyLogPage currentChild={child} user={null} />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: '餵奶 · 配方奶 120 ml' }));
+
+    expect(await screen.findByText('權限不足，無法寫入')).toBeInTheDocument();
+    expect(screen.queryByText(/已記錄/)).toBeNull();
+  });
+
+  /*
+    「上次什麼時候餵的」是家長打開這一頁最常要的答案，而擠奶不是一餐：三小時前
+    餵的、半小時前擠的，答案是三小時前。
+  */
+  it('記錄鍵上面就說上次餵奶與換尿布是多久以前', () => {
+    const ago = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
+    readState.logs = [
+      {
+        id: 'feed',
+        childId: 'c1',
+        type: 'feeding',
+        timestamp: ago(130),
+        data: { feedingType: 'breast_left', duration: 15 },
+        createdAt: ago(130),
+      },
+      {
+        id: 'pump',
+        childId: 'c1',
+        type: 'feeding',
+        timestamp: ago(30),
+        data: { feedingType: 'pumping', amount: 90 },
+        createdAt: ago(30),
+      },
+      {
+        id: 'diaper',
+        childId: 'c1',
+        type: 'diaper',
+        timestamp: ago(50),
+        data: { type: 'pee' },
+        createdAt: ago(50),
+      },
+    ];
+    render(
+      <ToastProvider>
+        <DailyLogPage currentChild={child} user={null} />
+      </ToastProvider>,
+    );
+
+    const feedingLine = screen.getByText(/^上次餵奶/);
+    expect(feedingLine).toHaveTextContent('上次餵奶 2 小時 10 分鐘前 · 母乳（左）');
+    expect(screen.getByText(/^上次換尿布/)).toHaveTextContent('上次換尿布 50 分鐘前');
+    // 排在記錄鍵之前
+    expect(
+      feedingLine.compareDocumentPosition(screen.getByRole('heading', { name: '快速記錄' })) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('還沒記過餵奶與尿布就沒有那兩行', () => {
+    readState.logs = [];
+    render(
+      <ToastProvider>
+        <DailyLogPage currentChild={child} user={null} />
+      </ToastProvider>,
+    );
+
+    expect(screen.queryByText(/^上次餵奶/)).toBeNull();
+    expect(screen.queryByText(/^上次換尿布/)).toBeNull();
+  });
+
   it('還沒有任何紀錄的孩子沒有重複鍵，表單也回到原本的預設值', async () => {
     readState.logs = [];
     const user = userEvent.setup();
@@ -394,7 +509,7 @@ describe('編輯既有的紀錄', () => {
     );
 
     await user.click(screen.getByRole('button', { name: '編輯' }));
-    await screen.findByRole('heading', { name: '編輯餵奶記錄' });
+    await screen.findByRole('heading', { name: '修改小豆的餵奶記錄' });
 
     const amount = screen.getByLabelText('奶量（ml）');
     await user.clear(amount);
@@ -428,7 +543,7 @@ describe('編輯既有的紀錄', () => {
     );
 
     await user.click(screen.getByRole('button', { name: '編輯' }));
-    await screen.findByRole('heading', { name: '編輯餵奶記錄' });
+    await screen.findByRole('heading', { name: '修改小豆的餵奶記錄' });
     await user.click(screen.getByRole('button', { name: '更新' }));
 
     await waitFor(() => expect(updateDailyLog).toHaveBeenCalledTimes(1));

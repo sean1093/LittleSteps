@@ -1,50 +1,20 @@
-/**
- * 分享結果。
- *
- * 這是一個純函式，拿不到 toast 的 hook，所以它只回報發生了什麼，由呼叫端
- * 決定要不要說話——原本它自己 alert('已複製到剪貼簿！')，等於一個 util
- * 直接接管了畫面。
- *
- * 'cancelled' 和 'failed' 分開：使用者在系統分享面板上按取消，不是失敗，
- * 不該收到「分享失敗，請稍後再試」。
- */
-export type ShareOutcome = 'shared' | 'copied' | 'cancelled' | 'failed';
+import { shareText, type ShareOutcome } from '../../common/share';
+import { SITE_ORIGIN } from '../../common/seo/pageMeta';
+
+// 分享本身搬到 common/share：百科文章也要用，而它不屬於任何一個服務。
+export { shareText, type ShareOutcome };
 
 /**
- * 有系統分享面板就用它，沒有就退回剪貼簿。
+ * 分享一個里程碑。
  *
- * `url` 是選用的：里程碑要帶上 app 連結推薦給其他家長，看診摘要不要——
- * 那份文字是要給醫師看的，塞一個推薦連結進去很奇怪。
+ * 連結給的是首頁，不是目前這一頁：里程碑頁要登入，收到連結的人點開只會看到
+ * 介紹頁。文案原本寫「推薦給新手父母的育兒神器」，那是內容農場的口吻，這個站
+ * 其他地方都不這樣講話。
  */
-export async function shareText(
-  title: string,
-  text: string,
-  url?: string,
-): Promise<ShareOutcome> {
-  if (navigator.share) {
-    try {
-      await navigator.share(url ? { title, text, url } : { title, text });
-      return 'shared';
-    } catch (error) {
-      if ((error as Error).name === 'AbortError') return 'cancelled';
-      console.error('分享失敗:', error);
-      return 'failed';
-    }
-  }
-
-  try {
-    await navigator.clipboard.writeText(url ? `${text} ${url}` : text);
-    return 'copied';
-  } catch (error) {
-    console.error('複製失敗:', error);
-    return 'failed';
-  }
-}
-
 export async function shareMilestone(title: string): Promise<ShareOutcome> {
   return shareText(
     'LittleSteps - 育兒里程碑',
-    `我的寶貝達成了【${title}】里程碑了！推薦給新手父母的育兒神器：`,
-    window.location.href,
+    `我的寶貝會【${title}】了！我用 LittleSteps 記錄寶寶的里程碑：`,
+    SITE_ORIGIN,
   );
 }

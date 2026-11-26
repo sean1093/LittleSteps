@@ -11,10 +11,12 @@ import CrossWikiResults from './CrossWikiResults';
 import { matchesKeyword } from '../../wiki/matchesKeyword';
 import { queryFromLocation } from '../../wiki/crossWikiSearch';
 import type { ServiceId } from '../../ui/serviceTheme';
-import SuiteNote from '../../landing/SuiteNote';
+import SuiteNote, { type SuiteNoteContent } from '../../landing/SuiteNote';
 import { ROUTE_PATH, articleFromPath, articlePath, type WikiPage } from '../../../types/routes';
 import { metaForArticle } from '../../seo/pageMeta';
 import { setDocumentMetaOverride } from '../../seo/useDocumentMeta';
+import { shareText } from '../../share';
+import { useToast } from '../../ui/toast';
 
 /**
  * 三個知識庫的瀏覽介面：搜尋、分類篩選、篇數、空狀態、展開卡片。
@@ -72,6 +74,10 @@ interface WikiBrowserProps<
    * 落在那一篇上。
    */
   wikiPage?: WikiPage;
+  /** 文末那一行「內容查證於…」。各知識庫自己知道日期與對照了哪些機關。 */
+  verifiedNote?: string;
+  /** 頁尾那張卡片要帶家長去哪；省略就是通用的那一句。 */
+  suiteNote?: SuiteNoteContent;
 }
 
 /** 網址指的那一篇；不是這個知識庫的文章、或那一篇不在清單裡，就當作沒有。 */
@@ -96,7 +102,21 @@ export default function WikiBrowser<
   theme,
   crossSearchService,
   wikiPage,
+  verifiedNote,
+  suiteNote,
 }: WikiBrowserProps<Category, Article>) {
+  const toast = useToast();
+
+  /* 文章現在有自己的網址，但頁面上沒有任何東西把它交到家長手上。LINE 群組轉傳
+     是這個站唯一的擴散管道，所以每一篇文末都有一顆分享。 */
+  const shareArticle = async (article: Article) => {
+    if (!wikiPage) return;
+    const meta = metaForArticle(wikiPage, article);
+    const outcome = await shareText(article.title, article.summary, meta.canonical);
+    if (outcome === 'copied') toast.show('已複製連結', 'success');
+    if (outcome === 'failed') toast.show('分享失敗，請稍後再試');
+  };
+
   // 從別的知識庫帶著關鍵字跳過來時，要落在搜尋中間，不是從空白開始。
   const [query, setQuery] = useState(() => queryFromLocation(window.location.search));
   const [category, setCategory] = useState<Category | 'all'>('all');
@@ -259,6 +279,8 @@ export default function WikiBrowser<
                     return title ? [{ id, title }] : [];
                   })}
                   onOpenRelated={openRelated}
+                  onShare={wikiPage ? () => void shareArticle(article) : undefined}
+                  verifiedNote={verifiedNote}
                 />
               </motion.div>
             ))}
@@ -270,7 +292,7 @@ export default function WikiBrowser<
         <CrossWikiResults query={query} service={crossSearchService} theme={theme} />
       )}
 
-      <SuiteNote />
+      <SuiteNote note={suiteNote} />
     </div>
   );
 }

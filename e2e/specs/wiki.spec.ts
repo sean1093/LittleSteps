@@ -3,6 +3,7 @@ import { CareGuidePage } from '../pages/careGuidePage';
 import { SleepGuidePage } from '../pages/sleepGuidePage';
 import { WikiBrowserPage, type WikiRoute } from '../pages/wikiBrowserPage';
 import { ROUTE_PATH } from '../../src/types/routes';
+import { metaForArticle } from '../../src/common/seo/pageMeta';
 import { babyWikiArticles, wikiCategoryLabels } from '../../src/littlesteps/data/babyWiki';
 import type { WikiCategory } from '../../src/types';
 import { pregnancyWikiArticles } from '../../src/littlebloom/data/wiki';
@@ -28,7 +29,7 @@ import {
  * holds reached the browser — not that some did.
  */
 
-const WIKIS: { route: WikiRoute; articles: readonly { id: string; title: string }[] }[] = [
+const WIKIS: { route: WikiRoute; articles: readonly { id: string; title: string; summary: string }[] }[] = [
   { route: 'littlesteps/baby-wiki', articles: babyWikiArticles },
   { route: 'littlebloom/wiki', articles: pregnancyWikiArticles },
   // The toddler wiki filters by age band above the browser, but its default is
@@ -68,9 +69,12 @@ test('WIKI-02 @p1 an article expands in place and the address bar names it', asy
   await expect(wiki.openArticle.getByRole('heading', { name: '處理方式' })).toBeVisible();
   await expect(wiki.articles).toHaveCount(babyWikiArticles.length - 1);
   await expect(page).toHaveURL(new RegExp(`${wiki.path}/${article.id}$`));
-  await expect(page).toHaveTitle(new RegExp(`^${article.title}｜`));
+  await expect(page).toHaveTitle(metaForArticle('littlesteps/baby-wiki', article).title);
 
-  await wiki.openArticle.click();
+  // Tapping the text must not close it; the header row does.
+  await wiki.openArticle.getByRole('heading', { name: '處理方式' }).click();
+  await expect(wiki.openArticle).toHaveCount(1);
+  await wiki.openHeader.click();
 
   await expect(wiki.openArticle).toHaveCount(0);
   await expect(wiki.articles).toHaveCount(babyWikiArticles.length);
@@ -82,7 +86,7 @@ for (const { route, articles } of WIKIS) {
     const wiki = new WikiBrowserPage(page, route);
     // The last one in the file: the furthest from the top of the list, so a
     // page that opened the list and left the visitor to find it would fail.
-    const article = articles[articles.length - 1] as { id: string; title: string };
+    const article = articles[articles.length - 1];
 
     await page.goto(`${wiki.path}/${article.id}`);
 
@@ -91,12 +95,10 @@ for (const { route, articles } of WIKIS) {
     await expect(wiki.openArticle).toBeInViewport();
     // Still the public knowledge base: no sign-in wall in front of an article.
     await expect(wiki.articles).toHaveCount(articles.length - 1);
-    await expect(page).toHaveTitle(new RegExp(`^${escapeForRegExp(article.title)}｜`));
+    // Some articles carry a search-phrased title in `<title>`; the page's own
+    // heading, asserted above, is always the article's name.
+    await expect(page).toHaveTitle(metaForArticle(route, article).title);
   });
-}
-
-function escapeForRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 test('WIKI-03 @p1 searching narrows the list and clearing restores it', async ({ page }) => {

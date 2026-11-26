@@ -23,7 +23,7 @@ const tabClass = (isActive: boolean) => `
   ${isActive ? 'bg-white text-ink shadow-soft' : 'text-ink-muted hover:text-ink'}
 `;
 
-/** 「我的追蹤」：食物清單與 4×3 試敏兩個分頁。 */
+/** 「我的追蹤」：食物清單與試新食材兩個分頁。 */
 export default function FoodTrackingView({
   activeTab,
   onTabChange,
@@ -53,7 +53,7 @@ export default function FoodTrackingView({
         </button>
         <button onClick={() => onTabChange('tracker')} className={tabClass(activeTab === 'tracker')}>
           <Calendar className="w-4 h-4" />
-          <span>4×3 追蹤</span>
+          <span>試新食材</span>
         </button>
       </div>
 

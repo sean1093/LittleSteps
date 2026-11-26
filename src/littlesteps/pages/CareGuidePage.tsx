@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getLucideIcon } from '../../common/lucideIcons';
 import { generalSafetyItems, monthlyCareGuides, careCategories } from '../data/careGuides';
 import { stagger, listItem, tap } from '../../common/ui/motion';
-import SuiteNote from '../../common/landing/SuiteNote';
+import SuiteNote, { SUITE_NOTES } from '../../common/landing/SuiteNote';
 
 export default function CareGuidePage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -111,11 +111,11 @@ export default function CareGuidePage() {
           >
             {filteredGuides.map((guide) => (
               <motion.div key={guide.month} layout variants={listItem} className="card">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-full bg-secondary-dark flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">
-                    {guide.month}月
-                  </div>
-                  <div className="flex-1 flex flex-wrap items-center gap-2">
+                {/* 「4月」讀起來是四月，不是滿四個月；原本那顆圓牌每張卡片都一樣，
+                    只是裝飾。月齡改成標題上方的一行字。 */}
+                <div className="mb-3">
+                  <p className="text-xs font-semibold text-secondary-dark">滿 {guide.month} 個月</p>
+                  <div className="flex flex-wrap items-center gap-2">
                     <h3>{guide.title}</h3>
                     <span className={`tag ${getCategoryBadgeColor(guide.category)}`}>
                       {getCategoryLabel(guide.category)}
@@ -133,7 +133,7 @@ export default function CareGuidePage() {
           </motion.div>
         </AnimatePresence>
 
-        <SuiteNote />
+        <SuiteNote note={SUITE_NOTES.careGuide} />
       </div>
     </div>
   );

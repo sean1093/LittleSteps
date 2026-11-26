@@ -1,7 +1,8 @@
 import DashboardCard from '../dashboard/DashboardCard';
 import SparklineChart from '../shared/SparklineChart';
 import { DailySummary, DailyLog } from '../../../types';
-import { formatDuration } from '../../utils/logHelpers';
+import { findLastLog, formatDuration, isIntakeFeedingLog } from '../../utils/logHelpers';
+import LastEventLines from './LastEventLines';
 import { getFeedingTrend } from '../../utils/trendCalculator';
 
 interface DailyLogSummaryCardProps {
@@ -17,9 +18,15 @@ export default function DailyLogSummaryCard({
 }: DailyLogSummaryCardProps) {
   const hasAnyLogs = summary.feedingCount > 0 || summary.sleepCount > 0 || summary.diaperCount > 0;
   const feedingTrend = getFeedingTrend(dailyLogs, 7);
+  // 擠奶不是一餐：跟日誌頁的「上次餵奶」用同一個定義，兩頁才不會給出兩個答案。
+  const lastFeeding = findLastLog(dailyLogs, isIntakeFeedingLog);
+  const lastDiaper = findLastLog(dailyLogs, (log) => log.type === 'diaper');
 
   return (
     <DashboardCard title="今日記錄" onClick={onNavigate} bgColor="bg-secondary-light/30">
+      {/* 排在今天的數字前面，也不管今天記了沒：凌晨打開時「今天」還是空的，
+          而家長要問的正是昨晚最後一餐是幾點。 */}
+      <LastEventLines lastFeeding={lastFeeding} lastDiaper={lastDiaper} />
       {hasAnyLogs ? (
         <>
           <div className="grid grid-cols-3 gap-3">
@@ -67,7 +74,11 @@ export default function DailyLogSummaryCard({
           )}
         </>
       ) : (
-        <p className="text-center py-4 text-ink-faint">今日尚無記錄</p>
+        // 整張卡就是通往日誌的那顆按鈕（DashboardCard 的 onClick），所以這裡只
+        // 需要說下一步是什麼，不必再巢狀一顆做同一件事的按鈕。
+        <p className="py-2 text-sm text-ink-muted">
+          還沒有今天的紀錄。記第一筆：餵奶、睡眠或尿布，點一下就好。
+        </p>
       )}
     </DashboardCard>
   );

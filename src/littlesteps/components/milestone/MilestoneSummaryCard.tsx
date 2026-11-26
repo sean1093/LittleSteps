@@ -15,21 +15,14 @@ export default function MilestoneSummaryCard({
 
   return (
     <DashboardCard title="里程碑追蹤" onClick={onNavigate} bgColor="bg-primary-light/30">
-      <div className="flex items-baseline gap-2">
-        <span className="text-2xl font-bold text-primary-dark">
-          {summary.achievedCount}
-        </span>
-        <span className="text-ink-muted">
-          / {summary.totalMilestones} 已達成
-        </span>
-      </div>
-
-      <div className="w-full h-2 bg-ink/10 rounded-full overflow-hidden">
-        <div
-          className="h-full bg-primary transition-all duration-500"
-          style={{ width: `${summary.achievementRate}%` }}
-        />
-      </div>
+      {/*
+        只說已經會了幾件，沒有分母也沒有進度條。原本是「3 / 33 已達成」加一條
+        9% 的進度條：分母是整個第一年的里程碑，等於拿一歲的清單替新生兒打分數。
+      */}
+      <p className="text-ink-muted">
+        已經會了{' '}
+        <span className="text-2xl font-bold text-primary-dark">{summary.achievedCount}</span> 件
+      </p>
 
       {summary.recentAchievements.length > 0 ? (
         <div className="pt-2 border-t border-ink/10">

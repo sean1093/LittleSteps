@@ -315,10 +315,19 @@ export const sleepTrainingMethods: SleepTrainingMethod[] = [
 ];
 
 // 訓練建議與提醒
+// 來源（2026-11-26 查閱）：國民健康署 孕產兒關懷網站「從哄睡到自然入睡！寶寶階段性睡眠習慣養成，該如何做？」
+// https://mammy.hpa.gov.tw/Home/NewsKBContent?id=3659&type=01
+// 來源（2026-11-26 查閱）：AAP「Getting Your Baby to Sleep」
+// https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/Getting-Your-Baby-to-Sleep.aspx
 export const trainingTips = {
   timing: {
     title: '建議時機',
-    content: '通常建議 4-6 個月大後開始進行睡眠訓練'
+    content: '國健署建議 6 個月後再練習自行入睡；4 個月起可以先在想睡但還醒著時放上床'
+  },
+  // 等待哭聲的方法都有不該照做的日子；少了這一條，家長會在寶寶發燒那晚照表等 10 分鐘。
+  pause: {
+    title: '什麼時候先暫停',
+    content: '生病、發燒、剛打完疫苗或還需要夜奶時先暫停；哭聲和平常不一樣就進去看'
   },
   consistency: {
     title: '一致性很重要',

@@ -186,18 +186,18 @@ describe('reportGenerator', () => {
     it('gives a regular week that meets the age recommendation full marks', () => {
       const { scores } = generateWeeklyReport(buildRegularWeek(), [], 4);
 
-      expect(scores.feeding).toEqual({ score: 100, label: '很棒！', loggedDays: 7 });
+      expect(scores.feeding).toEqual({ score: 100, label: '很規律', loggedDays: 7 });
       // 12h against the 12-17h band for 4 months: min(12/12, 1) * 60 + 40 = 100
-      expect(scores.sleep).toEqual({ score: 100, label: '很棒！', loggedDays: 7 });
+      expect(scores.sleep).toEqual({ score: 100, label: '很規律', loggedDays: 7 });
       // 100 * 0.7 + 30 = 100
-      expect(scores.poop).toEqual({ score: 100, label: '很棒！', loggedDays: 7 });
+      expect(scores.poop).toEqual({ score: 100, label: '很規律', loggedDays: 7 });
     });
 
     it('summarises a regular week whose sleep sits on the lower edge of the range', () => {
       const report = generateWeeklyReport(buildRegularWeek(), [], 4);
 
       expect(report.summaryText).toBe(
-        '餵奶量平均每日 240ml。睡眠時數平均 12 小時，符合建議範圍。排便規律正常。'
+        '餵奶量平均每日 240ml。睡眠時數平均 12 小時，符合建議範圍。排便間隔在 2 天內。'
       );
     });
 
@@ -269,9 +269,9 @@ describe('reportGenerator', () => {
       const { scores } = generateWeeklyReport(buildIrregularWeek(), [], 4);
 
       // amount CV = 40/260 = 0.1538, count CV = 0 -> avg 0.0769 -> 100 - 7.69 = 92.31
-      expect(scores.feeding).toEqual({ score: 92, label: '很棒！', loggedDays: 7 });
+      expect(scores.feeding).toEqual({ score: 92, label: '很規律', loggedDays: 7 });
       // 13h/day exactly meets the 13h recommendation, with zero variance
-      expect(scores.sleep).toEqual({ score: 100, label: '很棒！', loggedDays: 7 });
+      expect(scores.sleep).toEqual({ score: 100, label: '很規律', loggedDays: 7 });
       // 尿布只記了 3 天，而且那 3 天都各一次。原本把沒記的 4 天當成 0，
       // 算出 CV > 1、分數 30 分的「需注意」——那 4 天發生什麼事沒人知道。
       expect(scores.poop).toEqual({ score: null, label: '再記幾天', loggedDays: 3 });
@@ -281,7 +281,7 @@ describe('reportGenerator', () => {
       const report = generateWeeklyReport(buildIrregularWeek(), [], 4);
 
       expect(report.summaryText).toBe(
-        '餵奶量平均每日 260ml。睡眠時數平均 13 小時，符合建議範圍。排便間隔最長達 72 小時，需留意。'
+        '餵奶量平均每日 260ml。睡眠時數平均 13 小時，符合建議範圍。排便間隔最長 72 小時。'
       );
     });
   });
@@ -328,9 +328,9 @@ describe('reportGenerator', () => {
 
       // 那 7 天是完全規律的。原本補 0 後餵奶 0 分、睡眠 13 分、排便 30 分，
       // 三張紅色的「需注意」就印在正確算出 240ml／12 小時的平均值旁邊。
-      expect(scores.feeding).toEqual({ score: 100, label: '很棒！', loggedDays: 7 });
-      expect(scores.sleep).toEqual({ score: 100, label: '很棒！', loggedDays: 7 });
-      expect(scores.poop).toEqual({ score: 100, label: '很棒！', loggedDays: 7 });
+      expect(scores.feeding).toEqual({ score: 100, label: '很規律', loggedDays: 7 });
+      expect(scores.sleep).toEqual({ score: 100, label: '很規律', loggedDays: 7 });
+      expect(scores.poop).toEqual({ score: 100, label: '很規律', loggedDays: 7 });
     });
 
     /*
@@ -452,7 +452,7 @@ describe('reportGenerator', () => {
 
       const { scores } = generateMonthlyReport(logs, [], 4);
 
-      expect(scores.feeding).toEqual({ score: 100, label: '很棒！', loggedDays: 4 });
+      expect(scores.feeding).toEqual({ score: 100, label: '很規律', loggedDays: 4 });
     });
   });
 
@@ -530,19 +530,19 @@ describe('reportGenerator', () => {
     it('awards full sleep credit once the age recommendation is met', () => {
       // 24 months -> "11-14 小時" -> min 11; 11h/day meets it exactly.
       const scores = calculateScores(sleepEveryDay(660), 7, 24);
-      expect(scores.sleep).toEqual({ score: 100, label: '很棒！', loggedDays: 7 });
+      expect(scores.sleep).toEqual({ score: 100, label: '很規律', loggedDays: 7 });
     });
 
     it('scales sleep down proportionally when short of the recommendation', () => {
       // 6h vs. the 12h recommendation: 6/12 * 60 + 40 = 70
       const scores = calculateScores(sleepEveryDay(360), 7, 4);
-      expect(scores.sleep).toEqual({ score: 70, label: '不錯', loggedDays: 7 });
+      expect(scores.sleep).toEqual({ score: 70, label: '大致規律', loggedDays: 7 });
     });
 
     it('uses the newborn recommendation for infants under a month', () => {
       // 0 months -> "14-17 小時" -> min 14; 12h/day -> 12/14 * 60 + 40 = 91.43 -> 91
       const scores = calculateScores(sleepEveryDay(720), 7, 0);
-      expect(scores.sleep).toEqual({ score: 91, label: '很棒！', loggedDays: 7 });
+      expect(scores.sleep).toEqual({ score: 91, label: '很規律', loggedDays: 7 });
     });
 
     it('withholds a poop score entirely when no diaper was ever logged', () => {
@@ -555,14 +555,14 @@ describe('reportGenerator', () => {
     it('rewards a daily poop rhythm regardless of consistency labels', () => {
       const logs = WEEK_DATES.map(date => diaperLog(date, 'poop'));
       const scores = calculateScores(logs, 7, 4);
-      expect(scores.poop).toEqual({ score: 100, label: '很棒！', loggedDays: 7 });
+      expect(scores.poop).toEqual({ score: 100, label: '很規律', loggedDays: 7 });
     });
 
     it('scores pee-only diaper days as a real zero, not as missing data', () => {
       const logs = WEEK_DATES.map(date => diaperLog(date, 'pee'));
       const scores = calculateScores(logs, 7, 4);
       // 有記尿布卻沒有大便，是真的七天沒大便，該說。
-      expect(scores.poop).toEqual({ score: 0, label: '需注意', loggedDays: 7 });
+      expect(scores.poop).toEqual({ score: 0, label: '變動大', loggedDays: 7 });
     });
 
     it('derives sleep duration from start/end when duration is absent', () => {
@@ -581,7 +581,7 @@ describe('reportGenerator', () => {
       });
 
       const scores = calculateScores(logs, 7, 4);
-      expect(scores.sleep).toEqual({ score: 100, label: '很棒！', loggedDays: 7 });
+      expect(scores.sleep).toEqual({ score: 100, label: '很規律', loggedDays: 7 });
     });
   });
 
@@ -589,9 +589,9 @@ describe('reportGenerator', () => {
     const baseReport = (overrides: Partial<WeeklyReport> = {}): WeeklyReport => ({
       period: { start: '2026-06-09', end: '2026-06-15' },
       scores: {
-        feeding: { score: 0, label: '需注意', loggedDays: 7 },
-        sleep: { score: 0, label: '需注意', loggedDays: 7 },
-        poop: { score: 0, label: '需注意', loggedDays: 7 },
+        feeding: { score: 0, label: '變動大', loggedDays: 7 },
+        sleep: { score: 0, label: '變動大', loggedDays: 7 },
+        poop: { score: 0, label: '變動大', loggedDays: 7 },
       },
       feeding: {
         dailyAmounts: [],
@@ -652,20 +652,20 @@ describe('reportGenerator', () => {
       expect(text).not.toContain('次');
     });
 
-    it('rounds and flags poop gaps beyond 48 hours', () => {
+    it('rounds and states poop gaps beyond 48 hours, without a verdict', () => {
       const report = baseReport({
         poop: { ...baseReport().poop, avgDailyCount: 0.3, longestGap: 72.6 },
       });
 
-      expect(generateSummaryText(report)).toBe('排便間隔最長達 73 小時，需留意。');
+      expect(generateSummaryText(report)).toBe('排便間隔最長 73 小時。');
     });
 
-    it('treats a 48-hour gap as still regular', () => {
+    it('describes a 48-hour gap as within two days', () => {
       const report = baseReport({
         poop: { ...baseReport().poop, avgDailyCount: 0.5, longestGap: 48 },
       });
 
-      expect(generateSummaryText(report)).toBe('排便規律正常。');
+      expect(generateSummaryText(report)).toBe('排便間隔在 2 天內。');
     });
 
     it('joins every available section in order', () => {
@@ -676,7 +676,7 @@ describe('reportGenerator', () => {
       });
 
       expect(generateSummaryText(report)).toBe(
-        '餵奶量平均每日 600ml。睡眠時數平均 14 小時，符合建議範圍。排便規律正常。'
+        '餵奶量平均每日 600ml。睡眠時數平均 14 小時，符合建議範圍。排便間隔在 2 天內。'
       );
     });
 
@@ -686,7 +686,7 @@ describe('reportGenerator', () => {
       });
 
       expect(generateSummaryText(report)).toContain(
-        '睡眠時數平均 11 小時，略低於建議值，建議觀察作息'
+        '睡眠時數平均 11 小時，比建議範圍少一些'
       );
     });
   });

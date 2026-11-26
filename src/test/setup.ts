@@ -53,6 +53,8 @@ vi.mock('../lib/firebase', () => ({
   logMilestoneToggle: vi.fn(),
   logVaccineToggle: vi.fn(),
   logChildProfileAction: vi.fn(),
+  logDailyLogAction: vi.fn(),
+  logCalendarExport: vi.fn(),
   logAuthEvent: vi.fn(),
 }));
 

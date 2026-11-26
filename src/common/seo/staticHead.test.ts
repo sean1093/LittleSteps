@@ -33,7 +33,10 @@ describe('the prerendered head of a wiki article', () => {
     const entry = fever();
     const html = renderArticleHtml(TEMPLATE, entry);
 
-    expect(html).toContain(`<title>${entry.article.title}｜寶寶百科｜LittleSteps</title>`);
+    // The fever article has a search title; the article's own title stays in
+    // the structured data, checked below.
+    expect(html).toContain('<title>寶寶發燒幾度要看醫生？量法與退燒藥｜寶寶百科｜LittleSteps</title>');
+    expect(html).toContain('<meta property="og:type" content="article" />');
     expect(html).toContain(
       `<link rel="canonical" href="${SITE_ORIGIN}/littlesteps/baby-wiki/fever-assessment" />`,
     );

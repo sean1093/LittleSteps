@@ -146,7 +146,7 @@ describe('switching child on the daily log', () => {
     expect(screen.getByText(dayInView)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '餵奶' }));
-    await screen.findByRole('heading', { name: '新增餵奶記錄' });
+    await screen.findByRole('heading', { name: '幫小樹記餵奶' });
     await user.type(screen.getByLabelText('奶量（ml）'), '120');
     await user.click(screen.getByRole('button', { name: '儲存' }));
 

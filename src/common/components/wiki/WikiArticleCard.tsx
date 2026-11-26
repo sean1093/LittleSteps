@@ -3,6 +3,7 @@ import { ChevronDown } from 'lucide-react';
 import { getLucideIcon } from '../../lucideIcons';
 import { collapse } from '../../ui/motion';
 import { pressable } from '../../ui/pressable';
+import { goTo } from '../../navigate';
 import type { WikiArticle, WikiCategoryColors } from '../../../types';
 import type { ServiceTheme } from '../../ui/serviceTheme';
 
@@ -23,6 +24,10 @@ interface WikiArticleCardProps {
    */
   related?: { id: string; title: string }[];
   onOpenRelated?: (id: string) => void;
+  /** 有給就在文末放「分享這篇」。交給上層做，因為網址與 toast 都在那裡。 */
+  onShare?: () => void;
+  /** 這份知識庫的內容最後一次對過來源的日期與說明，印在文末。 */
+  verifiedNote?: string;
 }
 
 /**
@@ -41,18 +46,21 @@ export default function WikiArticleCard({
   theme,
   related = [],
   onOpenRelated,
+  onShare,
+  verifiedNote,
 }: WikiArticleCardProps) {
   // 每篇文章的圖示都不一樣，在三十幾篇的長清單裡是用來重新找回某一列的記號，
   // 所以留著；但原本包在外面那層著色圓角方塊只是裝飾，而且分類已經有文字 pill。
   const IconComponent = getLucideIcon(article.icon);
 
   return (
-    <motion.div
-      layout
-      className="card-tap overflow-hidden"
-      {...pressable(onToggle, isExpanded)}
-    >
-      <div className="flex items-start gap-3">
+    // 點擊區只有標題那一列。原本整張卡片都是：展開後是一篇兩千像素的文章，
+    // 讀到一半手指碰到任何地方，文章就收起來、頁面跳走。
+    <motion.article layout aria-label={article.title} className="card overflow-hidden">
+      <div
+        className={`flex items-start gap-3 -mx-4 -mt-4 px-4 pt-4 cursor-pointer ${isExpanded ? '' : '-mb-4 pb-4'}`}
+        {...pressable(onToggle, isExpanded)}
+      >
         <IconComponent className={`w-5 h-5 shrink-0 mt-0.5 ${categoryColors.text}`} />
 
         <div className="flex-1 min-w-0">
@@ -138,11 +146,7 @@ export default function WikiArticleCard({
                       <li key={entry.id}>
                         <button
                           type="button"
-                          onClick={(event) => {
-                            // 卡片本身是點擊區；不擋下來的話，這一下會先把自己收起來。
-                            event.stopPropagation();
-                            onOpenRelated(entry.id);
-                          }}
+                          onClick={() => onOpenRelated(entry.id)}
                           className={`inline-flex items-center min-h-tap text-sm font-medium underline underline-offset-2 text-left ${theme.ink}`}
                         >
                           {entry.title}
@@ -152,10 +156,39 @@ export default function WikiArticleCard({
                   </ul>
                 </div>
               )}
+
+              {/* 查證日期原本只寫在給搜尋引擎看的結構化資料裡；「關於資料」頁
+                  說每一篇都標了日期，而頁面上其實看不到。 */}
+              {verifiedNote && (
+                <p className="text-xs text-ink-muted leading-relaxed">
+                  {verifiedNote}{' '}
+                  <a
+                    href="/about"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      goTo('about');
+                    }}
+                    className={`font-medium underline underline-offset-2 ${theme.ink}`}
+                  >
+                    看資料來源
+                  </a>
+                </p>
+              )}
+
+              <div className="flex gap-2">
+                {onShare && (
+                  <button type="button" onClick={onShare} className="btn-secondary flex-1">
+                    分享這篇
+                  </button>
+                )}
+                <button type="button" onClick={onToggle} className="btn-ghost flex-1">
+                  收起
+                </button>
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </motion.article>
   );
 }

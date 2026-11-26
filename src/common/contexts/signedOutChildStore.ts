@@ -22,6 +22,7 @@ export const SIGNED_OUT_CHILD_STORE: ChildStore = {
   currentChildToothProgress: {},
   childrenLoading: false,
   toggleMilestone: nothing,
+  setMilestone: nothing,
   setVaccineDose: nothing,
   addChild: nothing,
   joinChild: nothing,

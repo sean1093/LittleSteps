@@ -157,3 +157,28 @@ describe('讀不到記錄時', () => {
     expect(screen.queryByRole('heading', { name: '尚無記錄' })).toBeNull();
   });
 });
+
+/*
+  家長會把「第 10 百分位」讀成 10 分。摘要下面要說清楚它不是分數，以及什麼
+  情況才值得在健檢時提出來。
+*/
+describe('百分位的說明', () => {
+  it('有百分位時，摘要下面說它不是分數', () => {
+    withRecords([{ ...weightOnly, percentile: { weight: 8 } }]);
+    renderPage();
+
+    expect(screen.getByText('第 8 百分位')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        '百分位不是分數，第 10 和第 90 一樣可以是健康的。重點是沿著自己的曲線長；連續幾次往上或往下跨過兩條線，或落在最外側線之外，健檢時請醫師看。',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('這筆紀錄算不出百分位時，不對著空氣解釋', () => {
+    withRecords([{ ...weightOnly, percentile: undefined }]);
+    renderPage();
+
+    expect(screen.queryByText(/百分位不是分數/)).toBeNull();
+  });
+});

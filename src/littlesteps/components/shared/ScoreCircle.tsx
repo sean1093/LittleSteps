@@ -14,7 +14,10 @@ interface ScoreCircleProps {
 const TONES = {
   good: { ring: '#3F7D43', text: 'text-mint-dark' }, // mint-dark
   watch: { ring: '#9A6212', text: 'text-butter-dark' }, // butter-dark
-  low: { ring: '#B84A50', text: 'text-primary-dark' }, // primary-dark
+  // 最低一階原本是珊瑚紅。這個圓現在量的是「記錄有多規律」，不是健康；
+  // 兩天排一次便的寶寶會落在這裡，而紅色讀起來就是不及格。所以它和中間那
+  // 一階同色，只靠環的長度與文字區分。
+  low: { ring: '#9A6212', text: 'text-butter-dark' }, // butter-dark
 } as const;
 
 function toneFor(score: number) {

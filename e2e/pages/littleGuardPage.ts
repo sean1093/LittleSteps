@@ -55,7 +55,7 @@ export class LittleGuardPage {
     this.ageBandHeading = page.getByRole('heading', { name: '孩子的年齡' });
     this.weekLine = page.getByText(/疾管署健保門診就診統計$/);
     this.staleBanner = page.getByText(/^這份資料有點舊了/);
-    this.expiredBanner = page.getByText(/^這份資料超過一個月沒更新/);
+    this.expiredBanner = page.getByText(/已經超過一個月沒更新/);
     this.boardSummary = page.getByText(/^這一週/);
     this.emptyState = page.getByRole('heading', { name: '現在抓不到資料' });
     this.closeDrawer = page.getByRole('button', { name: '關閉' });

@@ -122,9 +122,10 @@ describe('沿用上一筆', () => {
     expect(screen.getByLabelText('時長（分鐘）')).toHaveValue(10);
   });
 
-  it('備註不沿用：那是上一次那一餐的事', () => {
-    renderModal({ logType: 'feeding', lastLog: lastFormula });
+  it('備註不沿用：那是上一次那一餐的事', async () => {
+    const { user } = renderModal({ logType: 'feeding', lastLog: lastFormula });
 
+    await user.click(screen.getByRole('button', { name: '加備註' }));
     expect(screen.getByLabelText('備註')).toHaveValue('');
   });
 
@@ -170,6 +171,7 @@ describe('沿用上一筆', () => {
 
     await user.clear(screen.getByLabelText('奶量（ml）'));
     await user.type(screen.getByLabelText('奶量（ml）'), '85');
+    await user.click(screen.getByRole('button', { name: '加備註' }));
     await user.type(screen.getByLabelText('備註'), '喝到一半睡著');
 
     // 另一位照顧者存了一筆 200ml：監聽器送回一個新的物件。
@@ -315,8 +317,9 @@ describe('夜醒次數', () => {
 describe('欄位上限', () => {
   // 規則對 dailyLogs/$id/data/notes 有長度上限，超過時回來的是 PERMISSION_DENIED，
   // 表單只會把 SDK 的原文印出來。欄位本身不能超過規則，那個錯誤才不會出現。
-  it('備註的上限就是規則的上限', () => {
-    renderModal();
+  it('備註的上限就是規則的上限', async () => {
+    const { user } = renderModal();
+    await user.click(screen.getByRole('button', { name: '加備註' }));
     expect(screen.getByLabelText('備註')).toHaveAttribute('maxlength', String(DAILY_LOG_NOTES_LIMIT));
   });
 });
@@ -374,5 +377,177 @@ describe('對話框的行為', () => {
     renderModal();
     expect(screen.getByLabelText('奶量（ml）')).toHaveAttribute('inputmode', 'numeric');
     expect(screen.getByLabelText('時長（分鐘）')).toHaveAttribute('inputmode', 'numeric');
+  });
+});
+
+/*
+  這張表一天開八次以上，多半單手。每一個要叫出鍵盤的欄位，都是把送出鍵頂出
+  畫面的一次機會。
+*/
+describe('少開幾次鍵盤', () => {
+  it('常用奶量一點就填進欄位，存進去的就是那個數字', async () => {
+    const { user, onSave } = renderModal();
+
+    await user.click(screen.getByRole('button', { name: '120 ml' }));
+
+    expect(screen.getByLabelText('奶量（ml）')).toHaveValue(120);
+    expect(screen.getByRole('button', { name: '120 ml' })).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(screen.getByRole('button', { name: '儲存' }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect((onSave.mock.calls[0][0].data as FeedingData).amount).toBe(120);
+  });
+
+  it('常用時長也是，而且不在這五個裡的數字照樣打得進去', async () => {
+    const { user, onSave } = renderModal();
+
+    await user.click(screen.getByRole('button', { name: '15 分鐘' }));
+    expect(screen.getByLabelText('時長（分鐘）')).toHaveValue(15);
+
+    await user.clear(screen.getByLabelText('時長（分鐘）'));
+    await user.type(screen.getByLabelText('時長（分鐘）'), '7');
+    expect(screen.getByRole('button', { name: '15 分鐘' })).toHaveAttribute('aria-pressed', 'false');
+
+    await user.click(screen.getByRole('button', { name: '儲存' }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect((onSave.mock.calls[0][0].data as FeedingData).duration).toBe(7);
+  });
+
+  it('「15 分鐘前」把時間往回撥，存進去的仍然是 toISOString() 的格式', async () => {
+    // 只假造 Date：userEvent 還是要靠真的計時器走。
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-01T02:30:20.000Z'));
+    try {
+      const { user, onSave } = renderModal({ logType: 'diaper' });
+
+      await user.click(screen.getByRole('button', { name: '15 分鐘前' }));
+      await user.click(screen.getByRole('button', { name: '儲存' }));
+
+      await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+      const saved = onSave.mock.calls[0][0] as Omit<DailyLog, 'id'>;
+      // datetime-local 只到分鐘，所以秒數歸零。規則只收這個形狀的字串。
+      expect(saved.timestamp).toBe('2026-09-01T02:15:00.000Z');
+      expect(new Date(saved.timestamp).toISOString()).toBe(saved.timestamp);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('「現在」把改過的時間撥回來', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-01T02:30:00.000Z'));
+    try {
+      const { user, onSave } = renderModal();
+
+      await user.click(screen.getByRole('button', { name: '1 小時前' }));
+      await user.click(screen.getByRole('button', { name: '現在' }));
+      await user.click(screen.getByRole('button', { name: '儲存' }));
+
+      await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+      expect(onSave.mock.calls[0][0].timestamp).toBe('2026-09-01T02:30:00.000Z');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('編輯舊紀錄時沒有「幾分鐘前」：那會把上週的紀錄搬到今天', () => {
+    const editingLog: DailyLog = {
+      id: 'f-old',
+      childId: 'c1',
+      type: 'feeding',
+      timestamp: '2026-08-20T02:00:00.000Z',
+      data: { feedingType: 'formula', amount: 120 },
+      createdAt: '2026-08-20T02:00:00.000Z',
+    };
+    renderModal({ editingLog });
+
+    expect(screen.queryByRole('button', { name: '15 分鐘前' })).toBeNull();
+  });
+});
+
+describe('備註', () => {
+  it('預設收著，送出鍵緊跟在欄位後面；沒打備註就不存備註', async () => {
+    const { user, onSave } = renderModal({ logType: 'diaper' });
+
+    expect(screen.queryByLabelText('備註')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '儲存' }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onSave.mock.calls[0][0].data.notes).toBeUndefined();
+  });
+
+  it('按「加備註」就展開，游標直接在裡面，打的字存得進去', async () => {
+    const { user, onSave } = renderModal({ logType: 'diaper' });
+
+    await user.click(screen.getByRole('button', { name: '加備註' }));
+    expect(screen.getByLabelText('備註')).toHaveFocus();
+
+    await user.keyboard('有點紅屁股');
+    await user.click(screen.getByRole('button', { name: '儲存' }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onSave.mock.calls[0][0].data.notes).toBe('有點紅屁股');
+  });
+
+  it('編輯一筆有備註的紀錄時自動展開，備註不會看起來像不見了', () => {
+    const editingLog: DailyLog = {
+      id: 'd-note',
+      childId: 'c1',
+      type: 'diaper',
+      timestamp: '2026-09-01T02:00:00.000Z',
+      data: { type: 'pee', notes: '量很多' },
+      createdAt: '2026-09-01T02:00:00.000Z',
+    };
+    renderModal({ logType: 'diaper', editingLog });
+
+    expect(screen.getByLabelText('備註')).toHaveValue('量很多');
+    expect(screen.queryByRole('button', { name: '加備註' })).toBeNull();
+  });
+
+  it('編輯一筆沒有備註的紀錄時收著', () => {
+    const editingLog: DailyLog = {
+      id: 'd-plain',
+      childId: 'c1',
+      type: 'diaper',
+      timestamp: '2026-09-01T02:00:00.000Z',
+      data: { type: 'pee' },
+      createdAt: '2026-09-01T02:00:00.000Z',
+    };
+    renderModal({ logType: 'diaper', editingLog });
+
+    expect(screen.getByRole('button', { name: '加備註' })).toBeInTheDocument();
+  });
+});
+
+describe('標題說這是誰的紀錄', () => {
+  it.each([
+    ['feeding', '幫小安記餵奶'],
+    ['sleep', '幫小安記睡眠'],
+    ['diaper', '幫小安記尿布'],
+  ] as const)('新增 %s：%s', (logType, title) => {
+    renderModal({ logType, childName: '小安' });
+    expect(screen.getByRole('dialog', { name: title })).toBeInTheDocument();
+  });
+
+  it('編輯時是「修改某某的……記錄」', () => {
+    const editingLog: DailyLog = {
+      id: 'd-edit',
+      childId: 'c1',
+      type: 'diaper',
+      timestamp: '2026-09-01T02:00:00.000Z',
+      data: { type: 'pee' },
+      createdAt: '2026-09-01T02:00:00.000Z',
+    };
+    renderModal({ logType: 'diaper', editingLog, childName: '小安' });
+
+    expect(screen.getByRole('dialog', { name: '修改小安的尿布記錄' })).toBeInTheDocument();
+  });
+
+  it('擠奶仍然不叫餵奶', async () => {
+    const { user } = renderModal({ childName: '小安' });
+
+    await user.click(screen.getByRole('radio', { name: '擠奶' }));
+
+    expect(screen.getByRole('dialog', { name: '幫小安記擠奶' })).toBeInTheDocument();
   });
 });

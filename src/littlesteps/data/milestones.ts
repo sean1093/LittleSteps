@@ -1,5 +1,15 @@
 import { Milestone, MonthRange } from '../../types';
 
+// 趴著玩的時間、放手坐穩的月齡、滿 1 歲的詞彙量，都對過下面的來源。
+// 「什麼時候該問醫師」不放在 tips：tips 是可以照著做的練習，頁面另有固定的一行。
+// 來源（2026-11-26 查閱）：AAP「Back to Sleep, Tummy to Play」
+// https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/Back-to-Sleep-Tummy-to-Play.aspx
+// 來源（2026-11-26 查閱）：AAP「Developmental Milestones: 7 Months」
+// https://www.healthychildren.org/English/ages-stages/baby/Pages/Developmental-Milestones-7-Months.aspx
+// 來源（2026-11-26 查閱）：AAP「Movement: 8 to 12 Months」
+// https://www.healthychildren.org/English/ages-stages/baby/Pages/Movement-8-to-12-Months.aspx
+// 來源（2026-11-26 查閱）：衛生福利部「兒童健康手冊」
+// https://www.mohw.gov.tw/cp-16-58340-1.html
 export const milestones: Milestone[] = [
   // --- 0-1 個月：初生適應期 ---
   {
@@ -9,7 +19,7 @@ export const milestones: Milestone[] = [
     title: "俯臥短暫抬頭",
     summary: "趴著時頭部可稍微抬起並左右擺頭",
     details: "這階段寶寶大多數時間都在吃睡，趴著時頸部力量雖弱，但能嘗試離開床面。",
-    tips: ["在有人看顧下練習 1 分鐘 Tummy Time", "觀察睡姿，鼓勵寶寶平衡地向左右擺頭"]
+    tips: ["出院回家就能開始：清醒、有大人看著時趴 3-5 分鐘，一天 2-3 次", "觀察睡姿，鼓勵寶寶平衡地向左右擺頭"]
   },
   {
     id: "m0-1-motor-1",
@@ -29,7 +39,7 @@ export const milestones: Milestone[] = [
     title: "抬頭幅度增加",
     summary: "趴著能小幅抬頭，拉扶坐起時頭微後仰",
     details: "頸部肌肉力量增強，趴著時視野開始稍微擴大。",
-    tips: ["2個月若完全無法抬頭需諮詢醫師", "用色彩鮮豔的玩具誘發抬頭"]
+    tips: ["趴著時把臉湊到他面前說話，他會想抬頭看你", "用色彩鮮豔的玩具誘發抬頭"]
   },
   {
     id: "m2-motor-1",
@@ -56,7 +66,7 @@ export const milestones: Milestone[] = [
     title: "社會性微笑",
     summary: "能近距離辨識人臉，會對照顧者微笑",
     details: "寶寶開始想看照顧者的臉孔，並能做出回應式的微笑。",
-    tips: ["多與寶寶面對面眼神交流", "若2個月仍不微笑應注意"]
+    tips: ["多與寶寶面對面眼神交流", "他笑，你就笑回去、說話回應。滿 2 個月的健檢可以跟醫師聊聊他的互動"]
   },
 
   // --- 3 個月：翻身前奏與眼力提升 ---
@@ -155,14 +165,14 @@ export const milestones: Milestone[] = [
     tips: ["給予安全感，不要強迫讓陌生人抱寶寶"]
   },
 
-  // --- 6 個月：翻滾達人與獨立坐 ---
+  // --- 6 個月：翻滾達人，扶著能坐 ---
   {
     id: "m6-physical-1",
     monthRange: "5-6",
     category: "physical",
-    title: "翻滾達人與獨立坐",
-    summary: "不需協助能自己坐著，扶站時大腿能支撐",
-    details: "核心與下肢肌肉發達。扶站時寶寶會試著用力踩地。",
+    title: "翻身熟練，扶著能坐",
+    summary: "雙手撐在前面可以坐一下，扶站時雙腿會用力",
+    details: "放手自己坐穩多半在 6-8 個月；滿 9 個月還不能自己坐，再跟醫師提",
     tips: ["練習坐在地墊上玩玩具，訓練背部平衡力"]
   },
   {
@@ -172,7 +182,7 @@ export const milestones: Milestone[] = [
     title: "打開臉上的手帕",
     summary: "能抓開蓋在臉上的物品，喜歡東西塞嘴巴",
     details: "這代表手部力量與問題解決能力的結合。口腔探索依然強烈。",
-    tips: ["注意玩具清潔消毒，嚴防細菌病毒", "玩進階版躲貓貓：用手帕遮住玩具讓寶寶找"]
+    tips: ["玩具會進嘴巴，定期清洗就好", "玩進階版躲貓貓：用手帕遮住玩具讓寶寶找"]
   },
   {
     id: "m6-cognitive-1",
@@ -189,7 +199,7 @@ export const milestones: Milestone[] = [
     category: "cognitive",
     title: "分離焦慮出現",
     summary: "照顧者不在會焦慮，樂於與人開心地互動",
-    details: "對熟人與陌生人的分辨能力大幅提升。此時若6個月不會翻滾應諮詢醫師。",
+    details: "對熟人與陌生人的分辨能力大幅提升。",
     tips: ["建立穩定的告別儀式，增加寶寶安全感"]
   },
 
@@ -237,7 +247,7 @@ export const milestones: Milestone[] = [
     title: "理解「不可以」的語氣",
     summary: "對否定意義詞語有反應，但還不能完全遵守",
     details: "能從語氣分辨照顧者的情緒，能將單音連成「爸爸、媽媽」。",
-    tips: ["語氣要堅定一致，避免過度吼叫"]
+    tips: ["語氣平穩、每次說法一樣，同時把他抱離或把東西拿開"]
   },
 
   // --- 9-10 個月：物體恆存與捏取動作 ---
@@ -292,7 +302,7 @@ export const milestones: Milestone[] = [
     category: "cognitive",
     title: "學習生活詞彙",
     summary: "理解「拜拜」等意思，會揮手回應",
-    details: "能講出媽媽爸爸以外的簡單詞語如「不、走、來」。",
+    details: "有意義地叫爸爸或媽媽；滿 1 歲時有的孩子會 2-3 個詞，更多孩子還在說自己的『外星話』，兩種都正常",
     tips: ["多練習社交手勢如：謝謝、拜拜、親一個"]
   },
 
@@ -311,7 +321,7 @@ export const milestones: Milestone[] = [
     monthRange: "10-12",
     category: "motor",
     title: "精細操作：堆疊與按鈕",
-    summary: "能在容器堆疊積木，會用手指戳碰按鈕",
+    summary: "把積木放進容器再倒出來，用食指戳按鈕",
     details: "手指力量更集中，能單獨使用食指操作物體。",
     tips: ["提供有按鍵的聲光玩具或按鈕書"]
   }
