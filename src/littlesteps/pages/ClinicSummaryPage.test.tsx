@@ -200,3 +200,15 @@ describe('分享看診摘要', () => {
     expect(text).toContain('■ 近 7 天日常摘要（1 天有記錄）');
   });
 });
+
+describe('發展段落', () => {
+  it('畫面上有發展這一段，沒勾過的孩子說尚無記錄，而不是空白', () => {
+    renderPage();
+
+    const heading = screen.getByRole('heading', { level: 2, name: /^發展（/ });
+    const section = heading.closest('section')!;
+    expect(section).toHaveTextContent('已會的里程碑尚無記錄');
+    expect(section).toHaveTextContent('沒有記錄不代表還不會');
+    expect(section.textContent).not.toMatch(/遲緩|落後|%/);
+  });
+});

@@ -3,7 +3,13 @@ import { renderHook } from '@testing-library/react';
 import type { ChildProfile, DailyLog, FeedingData } from '../../types';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
 import { vaccineSchedules } from '../data/vaccines';
-import { buildClinicSummaryText, useClinicSummary } from './useClinicSummary';
+import {
+  buildClinicSummaryText,
+  buildDevelopmentSection,
+  developmentHeading,
+  useClinicSummary,
+} from './useClinicSummary';
+import { milestones } from '../data/milestones';
 
 /**
  * 回歸測試：看診摘要在真實資料下會整頁白掉。
@@ -174,5 +180,70 @@ describe('useClinicSummary', () => {
       expect(text).toContain('下一劑：');
       expect(text).not.toContain('沒有記錄不代表沒打');
     });
+  });
+});
+
+/*
+  看診摘要的發展段落。早產兒的家長帶去回診的，最常就是發展的問題。只列事實：
+  勾過什麼、走過的區間裡還沒記錄什麼。不打分數、不下「落後」的結論。
+*/
+describe('發展段落', () => {
+  const AT = new Date(2026, 10, 26, 12); // 2026-11-26
+  // 2026-04-26 出生：實際 7 個月。
+  const baby = (extra: Partial<ChildProfile> = {}): ChildProfile =>
+    ({
+      ...childWithoutProgressMaps(),
+      birthday: '2026-04-26',
+      milestoneProgress: {
+        'm0-1-physical-1': { achieved: true, achievedDate: '2026-05-20' },
+        'm0-1-motor-1': { achieved: true },
+      },
+      ...extra,
+    }) as ChildProfile;
+
+  const titleOf = (id: string) => milestones.find((m) => m.id === id)!.title;
+  const passedFor = (months: number) =>
+    milestones.filter((m) => months > Number(m.monthRange.split('-')[1]));
+
+  it('足月寶寶：用實際月齡，列出已會的與走過的區間裡還沒記錄的', () => {
+    const section = buildDevelopmentSection(baby(), AT)!;
+
+    expect(section.corrected).toBe(false);
+    expect(section.ageMonths).toBe(7);
+    expect(section.achieved).toEqual([
+      { title: titleOf('m0-1-physical-1'), range: '0-2 個月', date: '2026-05-20' },
+      { title: titleOf('m0-1-motor-1'), range: '0-2 個月', date: undefined },
+    ]);
+    // 7 個月走過 0-2、3-4、5-6，扣掉勾過的兩項。
+    expect(section.notYetRecorded).toHaveLength(passedFor(7).length - 2);
+    expect(section.notYetRecorded.some((item) => item.range === '5-6 個月')).toBe(true);
+    expect(section.notYetRecorded.some((item) => item.range === '7-9 個月')).toBe(false);
+    expect(developmentHeading(section)).toBe('發展（7 個月）');
+  });
+
+  it('早產寶寶：用矯正月齡，5-6 個月那一段還沒走過，不會被列成還沒記錄', () => {
+    const section = buildDevelopmentSection(baby({ gestationalAgeWeeks: 32 }), AT)!;
+
+    expect(section.corrected).toBe(true);
+    expect(section.ageMonths).toBe(5);
+    expect(section.notYetRecorded).toHaveLength(passedFor(5).length - 2);
+    expect(section.notYetRecorded.some((item) => item.range === '5-6 個月')).toBe(false);
+    expect(developmentHeading(section)).toBe('發展（依矯正年齡 5 個月）');
+  });
+
+  it('分享出去的文字帶著這一段，而且不打分數、不下結論', () => {
+    const { result } = renderHook(() =>
+      useClinicSummary(baby({ gestationalAgeWeeks: 32 }), [], null),
+    );
+    const text = buildClinicSummaryText(result.current.data!, '');
+
+    expect(text).toContain('■ 發展（依矯正年齡');
+    expect(text).toContain(`・${titleOf('m0-1-physical-1')}（0-2 個月）：2026年5月20日`);
+    expect(text).toContain('沒有記錄不代表還不會');
+    expect(text).not.toMatch(/遲緩|落後|%|分數/);
+  });
+
+  it('孕期檔案沒有這一段', () => {
+    expect(buildDevelopmentSection(baby({ isPregnancy: true }), AT)).toBeUndefined();
   });
 });

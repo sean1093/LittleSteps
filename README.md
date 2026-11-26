@@ -128,7 +128,9 @@ they used to give no hint that a product existed around them.
 - **Weaning guide** — stage-based weaning plus the 4×3 allergen-introduction method and a per-food trial log
 - **Care guide** — age-appropriate care and safety
 - **Baby wiki** — 15 common health issues
-- **Clinic summary** — generates a summary to hand to a paediatrician
+- **Clinic summary** — generates a summary to hand to a paediatrician, including a
+  development section: milestones ticked, with dates, and those not yet recorded in the
+  bands the child has passed (by corrected age for a preterm baby), with no score or verdict
 - **Weekly / monthly report** — trends and development insight
 - **Current child, named where you log** — the daily log, growth charts and milestone
   screens name the child they are about; with more than one eligible child that name

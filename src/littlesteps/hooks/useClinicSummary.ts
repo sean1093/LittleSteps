@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { ChildProfile, DailyLog, FeedingData, SleepData, DiaperData } from '../../types';
+import type { ChildProfile, DailyLog, FeedingData, SleepData, DiaperData, MonthRange } from '../../types';
 import { useGrowthTracking } from './useGrowthTracking';
 import {
   getRecentLogs,
@@ -10,6 +10,8 @@ import {
 import { calculateAgeDisplay, calculateVaccineSummary } from '../../common/utils/summaryCalculator';
 import { correctedAgeMonths, gestationalAgeLabel, isCorrecting } from '../../common/correctedAge';
 import { vaccineSchedules } from '../data/vaccines';
+import { milestones, monthRanges } from '../data/milestones';
+import { isPregnancyProfile } from '../../common/pregnancy';
 import { careTaskTemplates } from '../../littleexplorer/data/careTasks';
 import { prenatalCheckupSchedule } from '../../littlebloom/data/prenatalCheckups';
 import { buildHealthTimeline, type HealthEvent } from '../../common/health/healthTimeline';
@@ -76,6 +78,15 @@ export interface ClinicSummaryData {
    */
   unrecordedNationalDoses?: number;
 
+  /**
+   * 發展：勾過的里程碑，以及已經走過的月齡區間裡還沒記錄的那些。
+   *
+   * 只列事實，不打分數、不算百分比、不下「落後」的結論——那是醫師看完孩子
+   * 之後的判斷，不是一份勾選紀錄做得出來的。還沒記錄也不等於還不會：家長
+   * 可能只是沒打開過這一頁。孕期檔案沒有這一段。
+   */
+  development?: DevelopmentSection;
+
   // 7-day daily summary
   weekSummary: {
     avgFeedingCount: number;
@@ -99,6 +110,79 @@ export interface ClinicSummaryData {
   };
 
   generatedAt: string; // ISO timestamp
+}
+
+export interface DevelopmentSection {
+  /** 拿來挑「已經走過的區間」的月齡；早產兒是矯正月齡。 */
+  ageMonths: number;
+  corrected: boolean;
+  achieved: Array<{ title: string; range: string; date?: string }>;
+  notYetRecorded: Array<{ title: string; range: string }>;
+}
+
+const RANGE_LABEL = new Map(monthRanges.map((range) => [range.value, range.label]));
+const RANGE_ORDER = new Map(monthRanges.map((range, index) => [range.value, index]));
+
+/** 區間的上界：「3-4」是 4。孩子的月齡超過它，這個區間就走過了。 */
+function rangeUpperBound(range: MonthRange): number {
+  return Number(range.split('-')[1]);
+}
+
+/**
+ * 看診摘要的發展段落。
+ *
+ * 「走過的區間」用矯正月齡判斷：32 週出生、實際 7 個月的寶寶，該對照的是
+ * 5 個月的進度，用實際月齡會把 5-6 個月那一段整個列成「還沒記錄」——在最
+ * 擔心的家庭要拿給醫師看的那一頁上。與里程碑頁挑區間的規則相同。
+ */
+export function buildDevelopmentSection(
+  child: ChildProfile,
+  at: Date = new Date(),
+): DevelopmentSection | undefined {
+  if (isPregnancyProfile(child)) return undefined;
+
+  const ageMonths = correctedAgeMonths(child, at);
+  // Firebase 不存空物件：沒勾過任何里程碑的孩子讀回來沒有這個欄位。
+  const progress = child.milestoneProgress ?? {};
+  const byRange = (a: MonthRange, b: MonthRange) =>
+    (RANGE_ORDER.get(a) ?? 0) - (RANGE_ORDER.get(b) ?? 0);
+
+  const achieved = milestones
+    .filter((milestone) => progress[milestone.id]?.achieved)
+    .sort((a, b) => {
+      const range = byRange(a.monthRange, b.monthRange);
+      if (range !== 0) return range;
+      // 同一區間裡照日期排，沒記日期的排最後，跟疫苗那一段一樣。
+      const dateA = progress[a.id]?.achievedDate;
+      const dateB = progress[b.id]?.achievedDate;
+      if (!dateA || !dateB) return dateA ? -1 : dateB ? 1 : 0;
+      return dateA.localeCompare(dateB);
+    })
+    .map((milestone) => ({
+      title: milestone.title,
+      range: RANGE_LABEL.get(milestone.monthRange) ?? milestone.monthRange,
+      date: progress[milestone.id]?.achievedDate,
+    }));
+
+  const notYetRecorded = milestones
+    .filter(
+      (milestone) =>
+        ageMonths > rangeUpperBound(milestone.monthRange) && !progress[milestone.id]?.achieved,
+    )
+    .sort((a, b) => byRange(a.monthRange, b.monthRange))
+    .map((milestone) => ({
+      title: milestone.title,
+      range: RANGE_LABEL.get(milestone.monthRange) ?? milestone.monthRange,
+    }));
+
+  return { ageMonths, corrected: isCorrecting(child, at), achieved, notYetRecorded };
+}
+
+/** 段落標題那一行：矯正時要說，醫師才知道對照的是哪一個年齡。 */
+export function developmentHeading(section: DevelopmentSection): string {
+  return section.corrected
+    ? `發展（依矯正年齡 ${section.ageMonths} 個月）`
+    : `發展（${section.ageMonths} 個月）`;
 }
 
 /**
@@ -318,6 +402,7 @@ export function useClinicSummary(
       administeredVaccines,
       nextVaccine,
       unrecordedNationalDoses,
+      development: buildDevelopmentSection(currentChild),
       weekSummary,
       generatedAt: new Date().toISOString(),
     };
@@ -389,6 +474,25 @@ export function buildClinicSummaryText(data: ClinicSummaryData, notes: string): 
     lines.push(
       `尚有 ${data.unrecordedNationalDoses} 劑公費疫苗沒有記錄，沒有記錄不代表沒打，可對照兒童健康手冊補登`
     );
+  }
+
+  if (data.development) {
+    const development = data.development;
+    lines.push('', `■ ${developmentHeading(development)}`);
+    if (development.achieved.length === 0) {
+      lines.push('已會的里程碑：尚無記錄');
+    } else {
+      lines.push('已會的里程碑：');
+      development.achieved.forEach((item) => {
+        lines.push(`・${item.title}（${item.range}）：${item.date ? formatDate(item.date) : '日期未記錄'}`);
+      });
+    }
+    if (development.notYetRecorded.length > 0) {
+      lines.push('已過的月齡區間裡還沒記錄的（沒有記錄不代表還不會）：');
+      development.notYetRecorded.forEach((item) => {
+        lines.push(`・${item.title}（${item.range}）`);
+      });
+    }
   }
 
   // 每一行都自己帶分母。醫師讀到的是「三天記錄算出來的平均」還是「七天」，
