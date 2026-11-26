@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { WikiArticle } from '../../types';
 import { babyWikiArticles } from '../../littlesteps/data/babyWiki';
+import { pregnancyWikiArticles } from '../../littlebloom/data/wiki';
 import { matchesKeyword } from './matchesKeyword';
 
 const article = (over: Partial<WikiArticle<string>> = {}): WikiArticle<string> => ({
@@ -70,5 +71,34 @@ describe('matchesKeyword', () => {
         .map((entry) => entry.id);
       expect(ids, query).toContain(id);
     }
+  });
+
+  it('ignores how the parent spells it: 台/臺, spaces inside a word, listed variants (#164)', () => {
+    const ids = (articles: readonly WikiArticle<string>[], query: string) =>
+      articles.filter((entry) => matchesKeyword(entry, query)).map((entry) => entry.id);
+    const containing = (articles: readonly WikiArticle<string>[], text: string) =>
+      articles.filter((entry) => JSON.stringify(entry).includes(text)).map((entry) => entry.id);
+
+    // The baby wiki writes 「4 個月」; a phone keyboard types 4個月.
+    const fourMonths = containing(babyWikiArticles, '4 個月');
+    expect(fourMonths.length).toBeGreaterThan(0);
+    expect(ids(babyWikiArticles, '4個月')).toEqual(expect.arrayContaining(fourMonths));
+
+    // The weekly guide spells it 子癇前症, the pregnancy wiki 子癲前症.
+    const preeclampsia = containing(pregnancyWikiArticles, '子癲前症');
+    expect(preeclampsia.length).toBeGreaterThan(0);
+    expect(ids(pregnancyWikiArticles, '子癇前症')).toEqual(expect.arrayContaining(preeclampsia));
+
+    const abdominal = containing(pregnancyWikiArticles, '腹痛');
+    expect(abdominal.length).toBeGreaterThan(0);
+    expect(ids(pregnancyWikiArticles, '肚子痛')).toEqual(expect.arrayContaining(abdominal));
+
+    expect(matchesKeyword(article({ summary: '臺灣常見' }), '台灣')).toBe(true);
+  });
+
+  it('still needs every term of a multi-term query after normalizing', () => {
+    expect(matchesKeyword(article(), '高燒 抽搐')).toBe(true);
+    expect(matchesKeyword(article(), '4個月 抽搐')).toBe(false);
+    expect(matchesKeyword(article({ summary: '4 個月大時高燒' }), '4個月 抽搐')).toBe(true);
   });
 });

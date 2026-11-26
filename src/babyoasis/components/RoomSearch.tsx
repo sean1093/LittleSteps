@@ -3,6 +3,7 @@ import { MapPin, Search, X } from 'lucide-react';
 import type { NursingRoom } from '../../types';
 import type { ServiceTheme } from '../../common/ui/serviceTheme';
 import EmptyState from '../../common/ui/EmptyState';
+import { matchesAllTerms, normalizeSearch, singleSearchTerm } from '../../common/normalizeSearch';
 import {
   ACCESS_LABEL,
   accessOf,
@@ -86,7 +87,8 @@ interface RoomSearchProps {
  * 同一個問題的兩種問法。
  *
  * 關鍵字比對名稱、地址、縣市與鄉鎮市區四個欄位：家長記得的常常是路名或區名，
- * 甚至只記得「大遠百」而地址才寫著它所在的路。3,844 筆用最單純的
+ * 甚至只記得「大遠百」而地址才寫著它所在的路。兩邊都經過 normalizeSearch：手機
+ * 鍵盤打的是「台中」，資料寫的多半是「臺中」；「桃園火車站」也要找得到「桃園站」。3,844 筆用最單純的
  * filter 就夠（實測整份掃完不到 1 ms），不需要 debounce 之類的機制。
  *
  * 場所類型只能單選：多選要另外給一組圖例說明「現在選了哪三類」，而那個圖例
@@ -111,18 +113,24 @@ export default function RoomSearch({
   useEffect(() => {
     onPickerOpenChange?.(pickerOpen);
   }, [pickerOpen, onPickerOpenChange]);
-  const keyword = query.trim().toLowerCase();
+  const keyword = query.trim();
+
+  // 四個欄位先正規化一次（台／臺、大小寫、空白），不必每打一個字就把 3,844 筆
+  // 重算一遍。關鍵字仍是一整個詞：「台北 車站」是一個地名，不拆成兩個條件。
+  const searchable = useMemo(
+    () =>
+      rooms.map((room) => ({
+        room,
+        fields: [room.name, room.address, room.city, room.district ?? ''].map(normalizeSearch),
+      })),
+    [rooms],
+  );
 
   const matches = useMemo(() => {
-    if (keyword === '') return rooms;
-    return rooms.filter(
-      (room) =>
-        room.name.toLowerCase().includes(keyword) ||
-        room.address.toLowerCase().includes(keyword) ||
-        room.city.toLowerCase().includes(keyword) ||
-        (room.district?.toLowerCase().includes(keyword) ?? false),
-    );
-  }, [rooms, keyword]);
+    const terms = singleSearchTerm(keyword);
+    if (terms.length === 0) return rooms;
+    return searchable.filter(({ fields }) => matchesAllTerms(fields, terms)).map(({ room }) => room);
+  }, [rooms, searchable, keyword]);
 
   const { city, district, category, excludeInternal } = filters;
   const hasFilter = city !== null || district !== null || category !== null || excludeInternal;
