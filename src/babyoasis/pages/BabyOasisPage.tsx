@@ -81,8 +81,8 @@ const STATION_ICON = L.divIcon({
 });
 
 /**
- * 群集標記的圖示：內容與 leaflet.markercluster 的預設值完全相同，只多一個
- * data-testid。
+ * 群集標記的圖示：內容與 leaflet.markercluster 的預設值相同，多一個
+ * data-testid 與一段只給螢幕閱讀器的名稱。
  *
  * 群集是外掛在執行時動態產生的 DivIcon，既不是按鈕也沒有可及名稱，E2E 要
  * 確認「地圖上真的有畫出群集」時沒有別的選法（見 docs/E2E_TEST_PLAN.md §6）。
@@ -90,12 +90,18 @@ const STATION_ICON = L.divIcon({
  *
  * 這段 HTML 是字串，在 Tailwind 的掃描範圍外，樣式仍由外掛自己的 CSS 負責。
  */
-const CLUSTER_ICON = (cluster: { getChildCount: () => number }) => {
+export const CLUSTER_ICON = (cluster: { getChildCount: () => number }) => {
   const count = cluster.getChildCount();
   const size = count < 10 ? 'small' : count < 100 ? 'medium' : 'large';
 
+  // Leaflet 把可以按的標記畫成 role="button"，名稱取自裡面的文字，於是螢幕
+  // 閱讀器只念「按鈕 246」，沒說 246 個什麼。看得到的數字對輔助科技藏起來，
+  // 另給一段完整的名稱。
+  //
+  // `sr-only` 是 Tailwind 的 utility，寫在字串裡也有效：這個檔案在 content
+  // 的掃描範圍內，class 名稱照樣會被產生（LoadingBar 用的是同一個）。
   return L.divIcon({
-    html: `<div data-testid="oasis-map-cluster"><span>${count}</span></div>`,
+    html: `<div data-testid="oasis-map-cluster"><span aria-hidden="true">${count}</span><span class="sr-only">${count} 處哺乳室</span></div>`,
     className: `marker-cluster marker-cluster-${size}`,
     iconSize: L.point(40, 40),
   });

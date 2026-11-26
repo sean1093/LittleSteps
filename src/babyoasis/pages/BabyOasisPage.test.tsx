@@ -5,7 +5,7 @@ import userEvent, { type UserEvent } from '@testing-library/user-event';
 import type { NursingRoom } from '../../types';
 import { ToastProvider } from '../../common/ui/toast';
 import { savePreferences } from '../../common/preferences';
-import BabyOasisPage from './BabyOasisPage';
+import BabyOasisPage, { CLUSTER_ICON } from './BabyOasisPage';
 
 /**
  * BabyOasis 的頁面測試。守的是三件家長看得見的事：
@@ -527,5 +527,31 @@ describe('地圖標記的名稱', () => {
     await renderReady();
     const titles = screen.getAllByTestId('marker').map((marker) => marker.dataset.title);
     expect(titles.sort()).toEqual(ROOMS.map((room) => room.name).sort());
+  });
+});
+
+describe('群集標記', () => {
+  // 上面把 react-leaflet-cluster 整個換掉了，iconCreateFunction 在這裡不會被
+  // 呼叫，所以直接拿圖示的 HTML，放進 Leaflet 替可以按的標記畫的那種按鈕裡。
+  const clusterButton = (count: number) => {
+    const icon = CLUSTER_ICON({ getChildCount: () => count });
+    const button = document.createElement('div');
+    button.setAttribute('role', 'button');
+    button.innerHTML = String(icon.options.html);
+    document.body.appendChild(button);
+    return button;
+  };
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('念得出是幾處哺乳室，而不是只有一個數字', () => {
+    clusterButton(246);
+    expect(screen.getByRole('button', { name: '246 處哺乳室' })).toBeInTheDocument();
+  });
+
+  it('看得到的數字還是那個數字', () => {
+    expect(clusterButton(7).querySelector('[aria-hidden="true"]')).toHaveTextContent(/^7$/);
   });
 });
