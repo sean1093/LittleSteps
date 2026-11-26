@@ -76,6 +76,40 @@ const ROOMS: NursingRoom[] = [
   },
 ];
 
+/**
+ * 同一個地方的兩種寫法（#164）。和 ROOMS 分開放，其他測試數的筆數才不會跟著變。
+ */
+const SPELLING_ROOMS: NursingRoom[] = [
+  {
+    // 政府資料多半寫「臺中」，但也有寫成「台中」的：兩種寫法各放一筆。
+    id: 'txg-a',
+    name: '臺中市政府',
+    address: '臺中市西屯區臺灣大道三段 99 號',
+    city: '臺中市',
+    district: '西屯區',
+    latitude: 24.1615,
+    longitude: 120.6467,
+  },
+  {
+    id: 'txg-b',
+    name: '台中國家歌劇院',
+    address: '台中市西屯區惠來路二段 101 號',
+    city: '臺中市',
+    district: '西屯區',
+    latitude: 24.1627,
+    longitude: 120.6403,
+  },
+  {
+    id: 'tyn-tra',
+    name: '交通部臺灣鐵路管理局桃園站',
+    address: '桃園市桃園區武陵里中正路1號',
+    city: '桃園市',
+    district: '桃園區',
+    latitude: 24.9892,
+    longitude: 121.3137,
+  },
+];
+
 const theme = SERVICE_THEME.babyoasis;
 
 /**
@@ -143,6 +177,29 @@ describe('RoomSearch', () => {
 
     expect(await screen.findByRole('button', { name: /新光三越天母店/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /夢時代/ })).not.toBeInTheDocument();
+  });
+
+  it('台中與臺中找到的是同一批，不看資料用哪個字', async () => {
+    const user = userEvent.setup();
+    render(<Harness rooms={[...ROOMS, ...SPELLING_ROOMS]} />);
+
+    for (const query of ['台中', '臺中']) {
+      await user.clear(searchBox());
+      await user.type(searchBox(), query);
+      expect(await screen.findByRole('button', { name: /臺中市政府/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /台中國家歌劇院/ })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /SOGO/ })).not.toBeInTheDocument();
+    }
+  });
+
+  it('打「桃園火車站」找得到資料裡叫「桃園站」的那一處', async () => {
+    const user = userEvent.setup();
+    render(<Harness rooms={[...ROOMS, ...SPELLING_ROOMS]} />);
+
+    await user.type(searchBox(), '桃園火車站');
+
+    expect(await screen.findByRole('button', { name: /臺灣鐵路管理局桃園站/ })).toBeInTheDocument();
+    expect(screen.queryByText('找不到符合的哺乳室')).not.toBeInTheDocument();
   });
 
   it('真的沒有相符的才說找不到', async () => {
