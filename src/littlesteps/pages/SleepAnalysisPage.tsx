@@ -4,7 +4,7 @@ import { User } from 'firebase/auth';
 import { Star } from 'lucide-react';
 import { ChildProfile } from '../../types';
 import { useDailyLogs } from '../hooks/useDailyLogs';
-import { calculateAge } from '../../common/utils/dateHelpers';
+import { correctedAgeMonths, isCorrecting } from '../../common/correctedAge';
 import {
   calculateSleepStats,
   calculateSleepRegularity,
@@ -43,9 +43,15 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
     return calculateSleepRegularity(sleepLogs);
   }, [sleepLogs]);
 
+  /*
+    睡眠建議看的是發展，所以早產兒用矯正年齡：32 週出生、實際 7 個月的寶寶，
+    矯正後才 5 個月，該對照的是 3-6 個月那一段，不是 6-12 個月。足月或沒填
+    出生週數時，矯正月齡就是實際月齡。
+  */
   const ageInMonths = useMemo(() => {
-    return currentChild ? calculateAge(currentChild.birthday) : 0;
+    return currentChild ? correctedAgeMonths(currentChild) : 0;
   }, [currentChild]);
+  const correcting = currentChild ? isCorrecting(currentChild) : false;
 
   const recommendation = useMemo(() => {
     return getSleepRequirementForAge(ageInMonths);
@@ -220,7 +226,8 @@ export default function SleepAnalysisPage({ currentChild, user }: SleepAnalysisP
             <motion.div variants={listItem} className="panel mb-4">
               <h2 className="mb-2">睡眠時長對比</h2>
               <p className="text-sm text-ink-muted mb-4">
-                {ageInMonths} 個月大寶寶建議：{recommendation.totalHours}
+                {correcting ? `依矯正年齡 ${ageInMonths} 個月建議` : `${ageInMonths} 個月大寶寶建議`}
+                ：{recommendation.totalHours}
               </p>
               <SimpleBarChart data={comparisonData} />
               {stats.daysWithRecords < stats.daysInPeriod && (
