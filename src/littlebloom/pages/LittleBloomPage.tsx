@@ -4,7 +4,12 @@ import { Baby, Book, Calendar } from 'lucide-react';
 import type { ChildProfile, Gender, PrenatalCheckupProgress } from '../../types';
 import { PREGNANCY_TOTAL_WEEKS, pregnancyGuides, trimesterOf } from '../data/pregnancyGuides';
 import { prenatalCheckupSchedule } from '../data/prenatalCheckups';
-import { resolvePrenatalItems, weeksPregnant } from '../utils/prenatalSchedule';
+import {
+  formatGestation,
+  formatGuideWeek,
+  pregnancyPosition,
+  resolvePrenatalItems,
+} from '../utils/prenatalSchedule';
 import BloomShell from '../components/BloomShell';
 import AddPregnancyModal from '../components/AddPregnancyModal';
 import WeeklyGuide from '../components/WeeklyGuide';
@@ -104,12 +109,11 @@ export default function LittleBloomPage({
     }
   };
 
-  // weeksPregnant 回傳已完成整週；顯示上習慣說「第 N 週」，故 +1。
+  // 和產檢時程試算、公開的每週指南同一支算法：已完成幾週又幾天是醫師說的週數，
+  // 指南的「第 N 週」是整週 + 1、最多第 40 週。
   // 舊版用 Math.abs 算天數差，未來的末次月經日會被算成正的週數。
-  const displayWeek = useMemo(() => {
-    if (!lmp) return 0;
-    return Math.min(weeksPregnant(lmp) + 1, PREGNANCY_TOTAL_WEEKS);
-  }, [lmp]);
+  const position = useMemo(() => (lmp ? pregnancyPosition(lmp) : null), [lmp]);
+  const displayWeek = position?.guideWeek ?? 0;
 
   // 舊版是 `find(...) || pregnancyGuides[0]`，而資料只有 1-4 週，
   // 於是第 5 週以後的人全部被自信地告知「懷孕第 1 週：準備懷孕」。
@@ -187,12 +191,15 @@ export default function LittleBloomPage({
   }
 
   return (
-    <BloomShell title="孕期陪伴" subtitle={`第 ${displayWeek} 週 · 預產期 ${formatDate(dueDate)}`}>
+    <BloomShell title="孕期陪伴" subtitle={`預產期 ${formatDate(dueDate)}`}>
       <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-4">
         <motion.section variants={listItem} className="panel text-center">
           <p className={`text-sm ${THEME.muted}`}>{TRIMESTER_LABEL[trimesterOf(displayWeek)]}</p>
-          <p className={`text-4xl font-bold my-2 ${THEME.ink}`}>第 {displayWeek} 週</p>
+          {position && (
+            <p className={`text-3xl font-bold my-2 ${THEME.ink}`}>{formatGestation(position)}</p>
+          )}
           <p className={`text-sm ${THEME.muted}`}>
+            {position && `${formatGuideWeek(position)} · `}
             還有 {Math.max(PREGNANCY_TOTAL_WEEKS - displayWeek, 0)} 週見面
           </p>
         </motion.section>

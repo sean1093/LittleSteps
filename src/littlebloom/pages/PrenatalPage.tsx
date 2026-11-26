@@ -7,7 +7,7 @@ import {
   prenatalItemKindLabels,
 } from '../data/prenatalCheckups';
 import type { PrenatalItemKind } from '../data/prenatalCheckups';
-import { resolvePrenatalItems, weeksPregnant } from '../utils/prenatalSchedule';
+import { formatGestation, pregnancyPosition, resolvePrenatalItems } from '../utils/prenatalSchedule';
 import type { PrenatalItemStatus, ResolvedPrenatalItem } from '../utils/prenatalSchedule';
 import { buildPrenatalIcs, outstandingPrenatalItems } from '../utils/prenatalCalendar';
 import BloomShell from '../components/BloomShell';
@@ -102,7 +102,8 @@ export default function PrenatalPage({
     [items, currentChild?.createdAt],
   );
 
-  const weeks = lmp ? weeksPregnant(lmp) : 0;
+  // 和孕期陪伴首頁同一句週數，不另外 +1。
+  const position = lmp ? pregnancyPosition(lmp) : null;
 
   // 與 LittleBloomPage 同一個理由：出生後 lmp 仍在，只有 status 變成 archived。
   if (currentChild && lmp && !isPregnancyProfile(currentChild)) {
@@ -372,7 +373,7 @@ export default function PrenatalPage({
   return (
     <BloomShell
       title="產檢時程"
-      subtitle={`第 ${weeks + 1} 週 · 預產期 ${formatDate(currentChild?.pregnancyData?.dueDate)}`}
+      subtitle={`${position ? `${formatGestation(position)} · ` : ''}預產期 ${formatDate(currentChild?.pregnancyData?.dueDate)}`}
       backTo="littlebloom"
     >
       <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-4">

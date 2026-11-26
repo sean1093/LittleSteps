@@ -4,8 +4,12 @@ import WeeklyGuide from '../components/WeeklyGuide';
 import ToolCallout from '../../common/tools/ToolCallout';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { PREGNANCY_TOTAL_WEEKS } from '../data/pregnancyGuides';
-import { lmpFromDueDate, weeksPregnant } from '../utils/prenatalSchedule';
-import { toLocalDateKey } from '../../common/utils/dateHelpers';
+import {
+  formatGestation,
+  formatGuideWeek,
+  lmpFromDueDate,
+  pregnancyPosition,
+} from '../utils/prenatalSchedule';
 
 /**
  * The weekly pregnancy guide, public: enter a due date, read that week, step to
@@ -17,28 +21,6 @@ import { toLocalDateKey } from '../../common/utils/dateHelpers';
  * URL, not in `preferences.ts`, not in any storage.
  */
 
-/** Where the due date puts the pregnancy today. */
-type Position =
-  | { kind: 'week'; week: number }
-  | { kind: 'too-early' }
-  | { kind: 'past-term' };
-
-function positionOf(dueDate: string): Position | null {
-  if (!dueDate) return null;
-  const lmp = lmpFromDueDate(dueDate);
-  // A half-typed or impossible date shifts to NaN parts; show nothing for it.
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(lmp)) return null;
-  // A last period still in the future: the due date is more than 40 weeks away.
-  if (lmp > toLocalDateKey()) return { kind: 'too-early' };
-  // Past term only once the due date itself is behind us. On the due date
-  // weeksPregnant is already 40, which would read as week 41 below.
-  if (dueDate < toLocalDateKey()) return { kind: 'past-term' };
-  // weeksPregnant counts completed weeks; "week N" in the guide is one more.
-  // Capped at 40 the way the signed-in hub caps it.
-  const week = Math.min(weeksPregnant(lmp) + 1, PREGNANCY_TOTAL_WEEKS);
-  return { kind: 'week', week };
-}
-
 export default function WeeklyGuideToolPage() {
   const theme = SERVICE_THEME.littlebloom;
   const [dueDate, setDueDate] = useState('');
@@ -46,9 +28,11 @@ export default function WeeklyGuideToolPage() {
   // a new date always opens on its own week.
   const [browsedWeek, setBrowsedWeek] = useState<number | null>(null);
 
-  const position = positionOf(dueDate);
-  const currentWeek = position?.kind === 'week' ? position.week : null;
-  const fallbackWeek = position?.kind === 'past-term' ? PREGNANCY_TOTAL_WEEKS : 1;
+  // Where the due date puts the pregnancy today, from the helper the checkup
+  // calculator and the signed-in hub read too, so all three say the same week.
+  const position = dueDate ? pregnancyPosition(lmpFromDueDate(dueDate)) : null;
+  const currentWeek = position?.status === 'in-term' ? position.guideWeek : null;
+  const fallbackWeek = position?.status === 'past-term' ? PREGNANCY_TOTAL_WEEKS : 1;
   const week = browsedWeek ?? currentWeek ?? fallbackWeek;
 
   return (
@@ -73,15 +57,17 @@ export default function WeeklyGuideToolPage() {
               className="w-full min-h-tap px-4 py-3 bg-white border border-ink/15 rounded-2xl text-ink"
             />
           </div>
-          {position?.kind === 'week' && (
-            <p className={`text-sm font-medium ${theme.ink}`}>現在大約是懷孕第 {position.week} 週。</p>
+          {position?.status === 'in-term' && (
+            <p className={`text-sm font-medium ${theme.ink}`}>
+              今天是{formatGestation(position)}，{formatGuideWeek(position)}。
+            </p>
           )}
-          {position?.kind === 'too-early' && (
+          {position?.status === 'too-early' && (
             <p role="status" className={`text-sm leading-relaxed ${theme.body}`}>
               這個預產期離現在超過 {PREGNANCY_TOTAL_WEEKS} 週，請確認日期。下面從第 1 週開始。
             </p>
           )}
-          {position?.kind === 'past-term' && (
+          {position?.status === 'past-term' && (
             <p role="status" className={`text-sm leading-relaxed ${theme.body}`}>
               這個預產期已經過了。37 至 42 週都屬正常生產期，請依產檢醫師的安排追蹤。下面是第{' '}
               {PREGNANCY_TOTAL_WEEKS} 週。
