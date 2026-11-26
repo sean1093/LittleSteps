@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import AppBar from '../ui/AppBar';
 import EmptyState from '../ui/EmptyState';
@@ -34,7 +34,15 @@ const theme = SERVICE_THEME.littlesteps;
 export default function JoinPage() {
   const store = useChildStoreContext();
   const user = useOptionalAuth()?.user ?? null;
-  const [code] = useState(pendingJoinCode);
+  const [code, setCode] = useState(pendingJoinCode);
+  // A second link pasted into a tab already on /join changes only the
+  // fragment: captureJoinLink (installed in main.tsx, so it runs first) takes
+  // the new code, and the page follows it instead of the one it mounted with.
+  useEffect(() => {
+    const follow = () => setCode(pendingJoinCode());
+    window.addEventListener('hashchange', follow);
+    return () => window.removeEventListener('hashchange', follow);
+  }, []);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
