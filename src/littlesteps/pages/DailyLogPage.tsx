@@ -194,8 +194,12 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
         這顆鍵不開表單，所以存完之後畫面上唯一的變化是時間軸多了一列——而時間軸
         在摺線以下。沒有這句話，家長分不出「存了」和「沒按到」，於是再按一次。
         說的是真的存進去的內容，不是一句「已儲存」。
+
+        也要說記給了誰：雙胞胎的家長剛餵完老二，這顆鍵不開表單、沒有「幫誰記」
+        的標題，回報裡不寫名字就分不出這一筆落在哪個孩子身上。
       */
-      toast.show(`已記錄：${describeRepeatedLog(log)}`, 'success');
+      const who = currentChild.name.trim() ? `（${currentChild.name.trim()}）` : '';
+      toast.show(`已記錄${who}：${describeRepeatedLog(log)}`, 'success');
     } catch (error) {
       reportWriteFailure(error, '記錄失敗，請稍後再試');
     }
