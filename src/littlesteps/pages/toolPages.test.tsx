@@ -57,6 +57,19 @@ describe('疫苗時程試算', () => {
     expect(container.textContent).not.toMatch(/逾期|過期|漏打了/);
   });
 
+  it('announces a summary of the result in a polite status region', async () => {
+    const user = userEvent.setup();
+    render(<VaccineScheduleToolPage />);
+    // Mounted before there is anything to say, so the first result is read too.
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+
+    await user.type(screen.getByLabelText('寶寶生日'), daysFromToday(-400));
+
+    const upcoming = screen.getByRole('heading', { name: /^接下來要打的/ }).textContent!;
+    const past = screen.getByRole('heading', { name: /^建議日期已過的/ }).textContent!;
+    expect(screen.getByRole('status')).toHaveTextContent(`${upcoming}；${past}`);
+  });
+
   it('tells the visitor the birthday is not kept', () => {
     render(<VaccineScheduleToolPage />);
     expect(screen.getByText(/生日不會被存下來/)).toBeInTheDocument();
@@ -81,6 +94,40 @@ describe('生長百分位試算', () => {
     // The sentence that keeps a number from reading as a grade.
     expect(within(result).getByText(/百分位不是分數/)).toBeInTheDocument();
     expect(within(result).queryByRole('heading', { name: '身高' })).not.toBeInTheDocument();
+  });
+
+  it('takes focus and the view to the result heading after a successful submit', async () => {
+    const user = userEvent.setup();
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    try {
+      render(<GrowthPercentileToolPage />);
+
+      await fill(user, /月齡/, '6');
+      await fill(user, /體重/, '7.3');
+      // Typing alone moves nothing.
+      expect(scrollIntoView).not.toHaveBeenCalled();
+      await user.click(screen.getByRole('button', { name: '算百分位' }));
+
+      expect(screen.getByRole('heading', { name: '計算結果' })).toHaveFocus();
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+      // A jump, not a smooth scroll: an explicit 'smooth' would override reduced motion.
+      expect(scrollIntoView.mock.calls[0][0]).not.toMatchObject({ behavior: 'smooth' });
+    } finally {
+      delete (Element.prototype as Partial<Element>).scrollIntoView;
+    }
+  });
+
+  it('leaves focus alone when the submit is refused', async () => {
+    const user = userEvent.setup();
+    render(<GrowthPercentileToolPage />);
+
+    await fill(user, /月齡/, '6');
+    const button = screen.getByRole('button', { name: '算百分位' });
+    await user.click(button);
+
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(button).toHaveFocus();
   });
 
   it('asks for a measurement instead of answering with nothing', async () => {
@@ -229,6 +276,16 @@ describe('孕期每週指南', () => {
 
     expect(screen.getByRole('heading', { name: titleOf(21) })).toBeInTheDocument();
     expect(screen.getByText('今天是懷孕 20 週又 3 天，看第 21 週的內容。')).toBeInTheDocument();
+  });
+
+  it('reads the week line out through a polite status region', async () => {
+    const user = userEvent.setup();
+    render(<WeeklyGuideToolPage />);
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+
+    await user.type(screen.getByLabelText('預產期'), daysFromToday(280 - (20 * 7 + 3)));
+
+    expect(screen.getByRole('status')).toHaveTextContent('今天是懷孕 20 週又 3 天，看第 21 週的內容。');
   });
 
   it('steps to the next and previous week, and back to this one', async () => {

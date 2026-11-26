@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { Gender, MeasurementType } from '../../types';
 import ChoiceChips from '../../common/ui/ChoiceChips';
 import ToolCallout from '../../common/tools/ToolCallout';
@@ -57,6 +57,21 @@ export default function GrowthPercentileToolPage() {
     headCircumference: '',
   });
   const [result, setResult] = useState<GrowthToolResult | null>(null);
+  // 送出後結果畫在按鈕下面、常在螢幕外；手機鍵盤開著時看起來像什麼都沒發生，
+  // 報讀器也停在按鈕上。所以送出成功後把焦點與畫面帶到結果的標題。
+  // 只在送出時這麼做：每次送出換一個號碼，effect 只認號碼，不認輸入。
+  const [submission, setSubmission] = useState(0);
+  const resultHeadingRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    if (submission === 0) return;
+    const heading = resultHeadingRef.current;
+    if (!heading) return;
+    heading.focus({ preventScroll: true });
+    // 不用 behavior: 'smooth'：明寫的話會蓋過減少動態效果的偏好，而直接跳到
+    // 結果本來就是這裡要的。
+    heading.scrollIntoView?.({ block: 'start' });
+  }, [submission]);
 
   const number = (text: string) => (text.trim() === '' ? undefined : Number(text));
 
@@ -72,6 +87,7 @@ export default function GrowthPercentileToolPage() {
         headCircumference: number(values.headCircumference),
       }),
     );
+    setSubmission((count) => count + 1);
   };
 
   return (
@@ -159,7 +175,15 @@ export default function GrowthPercentileToolPage() {
         </form>
 
         {result?.ok && (
-          <section aria-label="計算結果" className="space-y-3">
+          <section aria-labelledby="growth-tool-result" className="space-y-3">
+            <h2
+              id="growth-tool-result"
+              ref={resultHeadingRef}
+              tabIndex={-1}
+              className="scroll-mt-20 focus:outline-none"
+            >
+              計算結果
+            </h2>
             {result.corrected && (
               <p className="text-sm text-ink leading-relaxed">
                 依矯正月齡約 {Math.round(result.ageMonths)} 個月對照（實際 {result.givenMonths} 個月）。
