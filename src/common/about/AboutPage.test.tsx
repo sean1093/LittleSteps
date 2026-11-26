@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import AboutPage from './AboutPage';
 import { COVERAGE, DATA_SOURCES, DEVICE_STORE_DESCRIBED } from './dataSources';
 import { savePreferences } from '../preferences';
+import { SHARING_REMOVAL } from '../landing/serviceCopy';
 
 /**
  * What a parent can see and reach on the page. The claims themselves are
@@ -128,6 +129,11 @@ describe('AboutPage', () => {
     await user.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByText(/唯一的授權邊界/)).toBeInTheDocument();
+  });
+
+  it('makes the same sharing promise the share sheet makes', () => {
+    render(<AboutPage />);
+    expect(screen.getByText(SHARING_REMOVAL, { exact: false })).toBeInTheDocument();
   });
 
   it('has a way back to the entry point', () => {

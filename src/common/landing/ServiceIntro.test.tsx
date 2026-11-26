@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ServiceIntro from './ServiceIntro';
-import { SERVICE_INTRO, STAGE_RANGE, STAGED_SERVICES } from './serviceCopy';
+import { SERVICE_INTRO, SHARING_REMOVAL, STAGE_RANGE, STAGED_SERVICES } from './serviceCopy';
 import { MAX_CHILDREN } from '../childLimits';
 import { requiresAuth, serviceOf, SERVICE_HOME } from '../routePolicy';
 import { SERVICE_THEME } from '../ui/serviceTheme';
@@ -113,7 +113,8 @@ describe.each(STAGED_SERVICES)('ServiceIntro: %s', (service) => {
     expect(container.textContent).not.toMatch(/僅限本人存取|永久免費|企業級加密/);
     const link = screen.getByRole('link', { name: /這份紀錄屬於你們家/ });
     expect(link).toHaveTextContent('分享代碼');
-    expect(link).toHaveTextContent('可以被移除');
+    // The same promise the share sheet makes, read from the one shared sentence.
+    expect(link).toHaveTextContent(SHARING_REMOVAL);
 
     await user.click(link);
     expect(window.location.pathname).toBe('/about');

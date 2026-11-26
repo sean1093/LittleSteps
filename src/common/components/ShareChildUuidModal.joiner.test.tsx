@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import ShareChildUuidModal from './ShareChildUuidModal';
 import type { ChildProfile } from '../../types';
+import { SHARING_REMOVAL } from '../landing/serviceCopy';
 
 /**
  * The share window as seen by someone who JOINED a record their partner
@@ -53,5 +54,22 @@ describe('ShareChildUuidModal, as a member who did not create the record', () =>
 
     expect(screen.getByRole('button', { name: '移除其他 1 個帳號的存取權' })).toBeInTheDocument();
     expect(screen.queryByText(/不能從這裡移除/)).not.toBeInTheDocument();
+  });
+
+  it('makes the sharing promise, and the promise keeps the creator the sheet cannot remove', () => {
+    // The landing page, the intro pages and the about page all read this
+    // sentence. Seen by a member who joined, the sheet offers to remove the
+    // grandmother but not the creator — so a promise that "any member can be
+    // removed" would be a claim the sheet cannot keep.
+    renderModal({ creator: true, joiner: true, grandma: true });
+
+    expect(screen.getByText(SHARING_REMOVAL, { exact: false })).toBeInTheDocument();
+    const removable = Number(
+      screen.getByRole('button', { name: /移除其他 \d+ 個帳號/ }).textContent?.match(/\d+/)?.[0],
+    );
+    const othersOnList = 2;
+    expect(removable).toBeLessThan(othersOnList);
+    // One of the others is out of reach, and the promise names who.
+    expect(SHARING_REMOVAL).toMatch(/建立這份紀錄的人不會被移除/);
   });
 });

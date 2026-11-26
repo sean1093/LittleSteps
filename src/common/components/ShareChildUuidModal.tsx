@@ -4,6 +4,7 @@ import ModalFrame from './ModalFrame';
 import { confirmDelete } from '../ui/confirmDelete';
 import { goTo } from '../navigate';
 import { useOptionalAuth } from '../../contexts/AuthContext';
+import { SHARING_REMOVAL } from '../landing/serviceCopy';
 
 interface ShareChildUuidModalProps {
   isOpen: boolean;
@@ -104,7 +105,7 @@ export default function ShareChildUuidModal({
         <p className="font-bold text-ink">
           目前有 {memberCount} 個帳號可以看到{child.name}的紀錄（包含你）
         </p>
-        <p className="text-sm text-ink-muted mt-1">加入的人都能修改紀錄，也能移除其他帳號。</p>
+        <p className="text-sm text-ink-muted mt-1">加入的人都能修改紀錄。{SHARING_REMOVAL}</p>
       </div>
 
       <div className="card bg-warm-white flex items-center justify-between gap-3 mb-4">

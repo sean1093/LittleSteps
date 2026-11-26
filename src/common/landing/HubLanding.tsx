@@ -15,6 +15,7 @@ import {
   GUIDE_LINKS,
   SERVICE_GROUPS,
   SERVICE_PITCH,
+  SHARING_REMOVAL,
   STAGED_SERVICES,
   STAGE_RANGE,
   TOOL_FIGURE,
@@ -78,7 +79,7 @@ const STAGE_RULE: Record<StagedService, string> = {
 
 const TRUST_POINTS = [
   '要讀寫孩子的紀錄一定要登入，沒有訪客模式。',
-  '用分享代碼把另一半加進來，之後隨時可以關掉代碼、移除成員。',
+  `用分享代碼把另一半加進來；${SHARING_REMOVAL}`,
   '紀錄不販售、不交換、不用於廣告，也不拿來訓練任何模型。',
   '整份紀錄可以匯出成一個檔案，孩子和帳號都刪得掉。',
 ];

@@ -257,3 +257,19 @@ export const CALCULATORS: { page: Page; title: string; line: string }[] = [
     line: '填健檢量到的身高、體重、頭圍，對照 WHO 生長標準，並說明這個數字該怎麼看。',
   },
 ];
+
+/**
+ * What a family member can do about someone else's access, said once.
+ *
+ * The landing page, the intro pages, the about page and the share sheet all
+ * make this promise, and they used to make it four ways — three of them said
+ * any member could be removed while the share sheet could not remove the
+ * person who created the record. Each surface now reads this sentence, and
+ * `ShareChildUuidModal.joiner.test.tsx` holds it to what the sheet can do.
+ *
+ * Every word has to be true of the share sheet, not of `database.rules.json`:
+ * the rules allow more than the sheet offers, and a parent only ever meets
+ * the sheet.
+ */
+export const SHARING_REMOVAL =
+  '之後隨時可以關掉代碼、移除其他加入的帳號，只有建立這份紀錄的人不會被移除。';
