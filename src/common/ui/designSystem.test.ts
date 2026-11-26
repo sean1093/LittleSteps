@@ -479,11 +479,12 @@ describe('鍵盤可達性', () => {
       `只掃到 ${BACKDROPS.length} 片遮罩：${BACKDROPS.map(at).join(', ')}`,
     ).toBeGreaterThanOrEqual(KNOWN_BACKDROPS.length);
 
-    // 屬性段要真的跨行吃到底：WikiArticleCard 那個標籤有四行。
+    // 屬性段要真的跨行吃到底：副食品三階段那個標籤有五行。（原本拿知識庫文章卡
+    // 當例子，它改成標題裡的原生 <button> 之後就不再用 pressable。）
     const card = PRESSABLE.find(
-      (tag) => tag.file === 'src/common/components/wiki/WikiArticleCard.tsx',
+      (tag) => tag.file === 'src/littlesteps/components/food/FoodGuideStages.tsx',
     );
-    expect(card, '找不到 WikiArticleCard 的 pressable').toBeDefined();
+    expect(card, '找不到 FoodGuideStages 的 pressable').toBeDefined();
     expect(card?.attrs, '屬性只吃到第一行，跨行標籤會被判成沒有鍵盤路徑').toContain('className');
   });
 

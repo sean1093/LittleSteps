@@ -23,10 +23,12 @@ export class WikiBrowserPage {
   /**
    * The collapsed article cards, which are the list a parent scrolls.
    *
-   * `WikiArticleCard` is a `div` carrying `pressable()`, so every card is a
-   * `role="button"` with `aria-expanded` — the one state that separates the
-   * cards from the category chips (`aria-pressed`) and the clear button
-   * (neither). Expanding a card moves it from this locator to `openArticle`.
+   * Each `WikiArticleCard` is an `article` whose title heading holds a
+   * disclosure `button` with `aria-expanded` — the one state that separates it
+   * from the category chips (`aria-pressed`) and the clear button (neither).
+   * Expanding a card moves it from this locator to `openArticle`. Clicking the
+   * card anywhere on its header row lands on that button, which stretches over
+   * the row.
    */
   readonly articles: Locator;
 
@@ -34,8 +36,9 @@ export class WikiBrowserPage {
   readonly openArticle: Locator;
 
   /**
-   * The open article's header row: the only part that closes it. The body is
-   * deliberately not a tap target, so a reader's thumb cannot shut the article.
+   * The open article's disclosure button, in its title heading: the only part
+   * that closes it besides 收起. The body is deliberately not a tap target, so a
+   * reader's thumb cannot shut the article.
    */
   readonly openHeader: Locator;
 
@@ -61,7 +64,9 @@ export class WikiBrowserPage {
     this.search = page.getByRole('searchbox');
     this.clearSearch = page.getByRole('button', { name: '清除搜尋' });
     this.categoryRow = page.getByTestId(SCROLL_ROW.wikiCategories);
-    this.articles = page.getByRole('button', { expanded: false });
+    this.articles = page
+      .getByRole('article')
+      .filter({ has: page.getByRole('button', { expanded: false }) });
     this.openHeader = page.getByRole('button', { expanded: true });
     this.openArticle = page.getByRole('article').filter({ has: this.openHeader });
     this.crossWikiHeading = page.getByRole('heading', { name: '其他階段也有相關文章' });

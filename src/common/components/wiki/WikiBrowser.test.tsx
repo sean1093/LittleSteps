@@ -61,9 +61,12 @@ function renderBrowser(wikiPage?: WikiPage) {
 /** The whole article: its header row and, once open, everything under it. */
 const card = (title: string) => screen.getByRole('article', { name: title });
 
-/** The header row, which is the only part that opens and closes the article. */
+/**
+ * The disclosure button inside the article's title heading: the only control
+ * that opens and closes the article.
+ */
 const header = (title: string) =>
-  screen.getByRole('heading', { name: title }).closest('[role="button"]') as HTMLElement;
+  within(screen.getByRole('heading', { level: 3, name: title })).getByRole('button');
 
 describe('WikiBrowser: an open article', () => {
   it('puts the see-a-doctor signs before causes and steps', async () => {
@@ -260,5 +263,58 @@ describe('WikiBrowser: reading an open article', () => {
     await user.click(header('發燒判斷'));
 
     expect(within(card('發燒判斷')).queryByRole('button', { name: '分享這篇' })).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * A screen-reader user moves through the list by heading and hears each
+ * article's name, not its whole summary (#167).
+ */
+describe('WikiBrowser: headings and the disclosure', () => {
+  it('exposes every article title as a level-3 heading under a level-2 one', () => {
+    renderBrowser();
+
+    expect(screen.getByRole('heading', { level: 2 })).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent),
+    ).toEqual(['發燒判斷', '尿布疹']);
+  });
+
+  it('names each toggle by the title alone and keeps the summary out of it', () => {
+    renderBrowser();
+
+    const toggle = screen.getByRole('button', { name: '發燒判斷', expanded: false });
+    expect(toggle).toBe(header('發燒判斷'));
+    expect(toggle).not.toHaveTextContent('怎麼量、什麼時候就醫。');
+    expect(within(card('發燒判斷')).getByText('怎麼量、什麼時候就醫。')).toBeInTheDocument();
+  });
+
+  it('labels the opened body with the heading and points the toggle at it', async () => {
+    const user = renderBrowser();
+    await user.click(header('發燒判斷'));
+
+    const body = screen.getByRole('region', { name: '發燒判斷' });
+    expect(header('發燒判斷')).toHaveAttribute('aria-controls', body.id);
+    expect(within(body).getByRole('heading', { name: '處理方式' })).toBeInTheDocument();
+  });
+
+  it('opens and closes from the keyboard with Enter and Space', async () => {
+    const user = renderBrowser();
+    header('發燒判斷').focus();
+
+    await user.keyboard('{Enter}');
+    expect(header('發燒判斷')).toHaveAttribute('aria-expanded', 'true');
+
+    header('發燒判斷').focus();
+    await user.keyboard(' ');
+    expect(header('發燒判斷')).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('puts no second control inside the toggle', () => {
+    renderBrowser();
+
+    for (const title of ['發燒判斷', '尿布疹']) {
+      expect(within(header(title)).queryAllByRole('button')).toHaveLength(0);
+    }
   });
 });

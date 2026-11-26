@@ -241,6 +241,9 @@ export default function WikiBrowser<
         </div>
       )}
 
+      {/* 頁首是 h1、每篇文章是 h3，中間要有一層 h2，標題導覽才不會跳級。畫面上
+          這裡已經有分類列與篇數，再多一行看得見的標題只是重複，所以只給輔助科技。 */}
+      <h2 className="sr-only">文章列表</h2>
       <p className={`text-xs ${theme.muted}`}>共 {filtered.length} 篇文章</p>
 
       {filtered.length === 0 ? (
