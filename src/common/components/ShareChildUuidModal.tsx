@@ -5,6 +5,9 @@ import { confirmDelete } from '../ui/confirmDelete';
 import { goTo } from '../navigate';
 import { useOptionalAuth } from '../../contexts/AuthContext';
 import { SHARING_REMOVAL } from '../landing/serviceCopy';
+import { isPregnancyProfile } from '../pregnancy';
+import { shareText } from '../share';
+import { joinLinkFor } from '../joinLink';
 import { MEMBER_NAME_MAX, UNNAMED_MEMBER, memberRows, type MemberRow } from '../memberNames';
 
 interface ShareChildUuidModalProps {
@@ -33,13 +36,15 @@ export default function ShareChildUuidModal({
   setMemberName,
   setJoinOpen,
 }: ShareChildUuidModalProps) {
-  const [pending, setPending] = useState<'copy' | 'join' | 'remove' | 'name' | null>(null);
+  const [pending, setPending] = useState<'copy' | 'link' | 'join' | 'remove' | 'name' | null>(null);
   /** 正在移除的是誰，按鈕上的「移除中…」只出現在那一列。 */
   const [removingUid, setRemovingUid] = useState<string | null>(null);
   /** 改名字的輸入框；null 是沒在改。 */
   const [nameDraft, setNameDraft] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  /** 連結交出去之後按鈕上說什麼；系統分享面板與剪貼簿是兩種結果。 */
+  const [linkDone, setLinkDone] = useState<'shared' | 'copied' | null>(null);
   const user = useOptionalAuth()?.user ?? null;
 
   if (!child) return null;
@@ -47,22 +52,30 @@ export default function ShareChildUuidModal({
   const memberCount = Object.keys(child.members).length;
   const rows = memberRows(child, user?.uid ?? null);
   const myRow = rows.find((row) => row.isMe);
+  // 孕期檔案的代碼叫「孕期檔案代碼」：同一張視窗講「寶寶代碼」，另一半會以為
+  // 自己拿錯了東西（見 #150）。
+  const pregnancy = isPregnancyProfile(child);
+  const codeName = pregnancy ? '孕期檔案代碼' : '寶寶代碼';
   // 開關直接讀資料庫來的值，不留一份本地狀態：寫入失敗時它就不會停在
   // 資料庫沒有的位置上。
   const joinOpen = child.joinOpen === true;
   const busy = pending !== null;
+
+  /**
+   * 先確定代碼真的能用，才把它交到家長手上：順序反過來的話，寫入失敗的人
+   * 手上會有一組貼出去也加不進來的代碼（或連結），而且看不出哪裡不對。
+   */
+  const ensureJoinOpen = async () => {
+    if (!joinOpen) await setJoinOpen(child.id, true);
+  };
 
   const handleCopy = async () => {
     setError(null);
     setPending('copy');
     let opened = joinOpen;
     try {
-      // 先確定代碼真的能用，才把它交到家長手上：順序反過來的話，寫入失敗的人
-      // 手上會有一組貼出去也加不進來的代碼，而且看不出哪裡不對。
-      if (!opened) {
-        await setJoinOpen(child.id, true);
-        opened = true;
-      }
+      await ensureJoinOpen();
+      opened = true;
       await navigator.clipboard.writeText(child.id);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -74,6 +87,36 @@ export default function ShareChildUuidModal({
       );
     } finally {
       setPending(null);
+    }
+  };
+
+  /**
+   * 加入連結：/join#代碼。有系統分享面板（手機上通常第一個就是 LINE）就用它，
+   * 沒有就複製到剪貼簿。訊息裡不放孩子的名字——那段文字會留在聊天室裡。
+   */
+  const handleShareLink = async () => {
+    setError(null);
+    setPending('link');
+    try {
+      await ensureJoinOpen();
+    } catch {
+      setError('開放加入沒有成功，連結現在還不能用，請再試一次');
+      setPending(null);
+      return;
+    }
+    const outcome = await shareText(
+      'LittleSteps',
+      pregnancy
+        ? '邀請你一起記錄孕期。打開連結、用 Google 登入，確認之後按「加入」。'
+        : '邀請你一起記錄寶寶的成長。打開連結、用 Google 登入，確認之後按「加入」。',
+      joinLinkFor(child.id),
+    );
+    setPending(null);
+    if (outcome === 'failed') {
+      setError('連結沒有傳出去，請再試一次，或改用下面的代碼');
+    } else if (outcome !== 'cancelled') {
+      setLinkDone(outcome);
+      setTimeout(() => setLinkDone(null), 2000);
     }
   };
 
@@ -132,7 +175,7 @@ export default function ShareChildUuidModal({
   };
 
   return (
-    <ModalFrame isOpen={isOpen} onClose={onClose} title="分享寶寶資料">
+    <ModalFrame isOpen={isOpen} onClose={onClose} title={pregnancy ? '分享孕期檔案' : '分享寶寶資料'}>
       <div className="bg-primary-soft rounded-2xl p-4 mb-4">
         <p className="font-bold text-ink">
           目前有 {memberCount} 個帳號可以看到{child.name}的紀錄（包含你）
@@ -257,9 +300,26 @@ export default function ShareChildUuidModal({
         </button>
       </div>
 
+      <button
+        type="button"
+        onClick={handleShareLink}
+        disabled={busy}
+        className="btn-primary w-full mb-4 disabled:opacity-60"
+      >
+        {pending === 'link'
+          ? '處理中…'
+          : linkDone === 'shared'
+            ? '已傳出加入連結'
+            : linkDone === 'copied'
+              ? '已複製加入連結'
+              : joinOpen
+                ? '傳送加入連結'
+                : '開放加入並傳送連結'}
+      </button>
+
       <div className="mb-3">
         <label htmlFor="childCode" className="block text-sm font-medium text-ink mb-2">
-          寶寶代碼
+          {codeName}
         </label>
         <input
           id="childCode"
@@ -275,7 +335,7 @@ export default function ShareChildUuidModal({
         type="button"
         onClick={handleCopy}
         disabled={busy}
-        className="btn-primary w-full disabled:opacity-60"
+        className="btn-secondary w-full disabled:opacity-60"
       >
         {pending === 'copy'
           ? '處理中…'
@@ -295,14 +355,19 @@ export default function ShareChildUuidModal({
       <div className="bg-secondary-soft border border-secondary/40 rounded-2xl p-4 mt-4 mb-4">
         <h3 className="text-ink mb-1.5">家人怎麼加入？</h3>
         <ol className="list-decimal list-inside space-y-1 text-sm text-ink-muted">
-          <li>把代碼傳給家人（Line、訊息都可以）</li>
-          <li>家人在「新增寶寶」選「加入寶寶」</li>
-          <li>貼上代碼就能一起管理</li>
+          <li>按「傳送加入連結」，用 LINE 或訊息傳給家人</li>
+          <li>家人打開連結，用 Google 登入</li>
+          <li>家人確認之後按「加入」，就能一起記錄</li>
         </ol>
+        <p className="text-sm text-ink-muted mt-2">
+          {pregnancy
+            ? `連結打不開的話，把${codeName}傳給對方，在「孕期陪伴」選「加入家人的孕期檔案」貼上。`
+            : `連結打不開的話，把${codeName}傳給對方，在「新增寶寶」選「加入寶寶」貼上。`}
+        </p>
       </div>
 
       <p className="text-sm text-ink-muted">
-        代碼就是這份寶寶資料的編號，換不了新的一組。要收回分享，就把對方從上面的名單移除——移除時會一併關掉「開放用代碼加入」，流出去的舊代碼就再也加不進來。
+        {codeName}就是這份{pregnancy ? '孕期檔案' : '寶寶資料'}的編號，換不了新的一組，加入連結裡帶的也是它。要收回分享，就把對方從上面的名單移除——移除時會一併關掉「開放用代碼加入」，流出去的舊代碼就再也加不進來。
       </p>
 
       {/* 把代碼交出去的這一刻，是家長最想知道「這份資料到底怎麼被保護」的時候。 */}

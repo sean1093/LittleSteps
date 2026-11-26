@@ -179,10 +179,15 @@ export default function AddChildModal({
     }
   };
 
+  // 只有孕期與加入兩頁時（LittleBloom 的入口），加入的對象是一份孕期檔案，
+  // 不是寶寶：照著分享視窗的叫法講「孕期檔案代碼」，家人才對得起來。
+  const pregnancyOnly = modes.includes('pregnancy') && !modes.includes('create');
+  const joinNoun = pregnancyOnly ? '孕期檔案' : '寶寶';
+
   const MODE_LABELS: Record<ChildModalMode, string> = {
     create: '寶寶',
     pregnancy: '懷孕中',
-    join: '加入寶寶',
+    join: `加入${joinNoun}`,
   };
 
   // 只有一種選擇時不畫分頁——LittleBloom 只建孕期檔案，一顆孤零零的
@@ -196,7 +201,7 @@ export default function AddChildModal({
       ? '新增寶寶'
       : mode === 'pregnancy'
         ? '新增孕期'
-        : '加入寶寶';
+        : `加入${joinNoun}`;
 
   const submitLabel = editingChild
     ? '儲存修改'
@@ -204,7 +209,7 @@ export default function AddChildModal({
       ? '新增寶寶'
       : mode === 'pregnancy'
         ? '開始追蹤孕期'
-        : '加入寶寶';
+        : `加入${joinNoun}`;
 
   return (
     <ModalFrame isOpen={isOpen} onClose={onClose} title={title} closeDisabled={saving}>
@@ -355,7 +360,7 @@ export default function AddChildModal({
         ) : (
           <div>
             <label htmlFor="childUuid" className={LABEL}>
-              寶寶代碼
+              {joinNoun}代碼
             </label>
             <input
               type="text"

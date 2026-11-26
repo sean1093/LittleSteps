@@ -102,6 +102,51 @@ describe('LittleBloomPage', () => {
     expect(screen.queryByText(/第 \d+ 週$/)).not.toBeInTheDocument();
   });
 
+  it('還沒有孕期檔案時，另一半可以用代碼加入，而不是只能再建一份', async () => {
+    // 只看得到「新增孕期檔案」的另一半會建出一份重複的檔案，還佔掉一個免費名額。
+    const user = userEvent.setup();
+    const onJoinPregnancy = vi.fn(async () => {});
+    const onAddPregnancy = vi.fn(async () => {});
+    render(
+      <LittleBloomPage
+        currentChild={null}
+        progress={{}}
+        onRecordBirth={noop}
+        onAddPregnancy={onAddPregnancy}
+        onJoinPregnancy={onJoinPregnancy}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: '加入家人的孕期檔案' }));
+
+    // 開在加入那一頁，叫法跟分享視窗一致：孕期檔案代碼，不是寶寶代碼。
+    const dialog = screen.getByRole('dialog');
+    const field = within(dialog).getByLabelText('孕期檔案代碼');
+    expect(within(dialog).queryByText('寶寶代碼')).toBeNull();
+    // 分頁與送出鈕同名（照 AddChildModal 既有的寫法），所以用 Enter 送出。
+    await user.type(field, 'abc-123{Enter}');
+
+    expect(onJoinPregnancy).toHaveBeenCalledWith('abc-123');
+    expect(onAddPregnancy).not.toHaveBeenCalled();
+  });
+
+  it('新增孕期檔案照舊開在填預產期那一頁', async () => {
+    const user = userEvent.setup();
+    render(
+      <LittleBloomPage
+        currentChild={null}
+        progress={{}}
+        onRecordBirth={noop}
+        onAddPregnancy={noopAdd}
+        onJoinPregnancy={vi.fn(async () => {})}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: '新增孕期檔案' }));
+
+    expect(within(screen.getByRole('dialog')).getByLabelText(/預產期/)).toBeInTheDocument();
+  });
+
   it('下一項產檢來自真實時程，不是寫死的假資料', () => {
     render(<LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} onAddPregnancy={noopAdd} />);
     // 舊版寫死「幸福婦產科 2026-04-15」給每一位使用者。

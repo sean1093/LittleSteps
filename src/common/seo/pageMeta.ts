@@ -36,6 +36,10 @@ const PAGE_META: Record<Page, PageMeta> = {
     description:
       '孩子的紀錄存在哪裡、誰看得到、我們用它做什麼，以及每一頁的內容出自哪一份政府或 WHO 的公開資料。',
   },
+  join: {
+    title: '加入家人的紀錄｜LittleSteps',
+    description: '家人邀請你一起記錄孩子的成長。登入之後確認加入，就能和家人看同一份紀錄。',
+  },
   littlesteps: {
     title: '寶寶成長｜0-1 歲里程碑、疫苗與日常記錄｜LittleSteps',
     description: '記錄 0-1 歲寶寶的發展里程碑、疫苗接種、副食品與每日餵奶睡眠，並可產生看診摘要。',

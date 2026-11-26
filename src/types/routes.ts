@@ -23,6 +23,10 @@ export const ROUTE_PATH = {
   // 關於資料：孩子的紀錄存在哪裡、誰看得到，以及每一頁的內容出自哪一份公開
   // 資料。和 home 一樣不屬於任何服務。
   about: '/about',
+  // 用分享連結加入家人的紀錄。代碼放在 fragment（/join#代碼）裡，不在路徑
+  // 也不在 query：fragment 不會送到伺服器，進來的那一刻就從網址列拿掉（見
+  // common/joinLink）。需要登入，不屬於任何服務。
+  join: '/join',
   littlesteps: '/littlesteps',
   'littlesteps/dashboard': '/littlesteps/dashboard',
   'littlesteps/milestones': '/littlesteps/milestones',

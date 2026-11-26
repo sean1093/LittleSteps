@@ -277,8 +277,9 @@ write in the product.
 mark a new page should fail closed. Public pages are the entry point, the about
 page, the three knowledge bases, the care guide, the sleep guide, the solid-food
 guide, the three calculators (vaccine schedule, prenatal schedule, growth
-percentile), the weekly pregnancy guide by due date, LittleOuting, BabyOasis and LittleGuard. Everything else needs an
-account.
+percentile), the weekly pregnancy guide by due date, LittleOuting, BabyOasis and
+LittleGuard. Everything else needs an account — including `/join`, the share
+link's confirm screen, because it writes an account into a child's member list.
 
 A calculator takes a date or a few numbers and answers in the browser: it reads
 and writes no child's record, and what is typed never leaves the page's memory.
@@ -374,6 +375,20 @@ What that adds up to, asserted by `npm run test:rules` against the emulator:
   the member list included. This is a deliberate trade-off: two parents who can
   each take the other off a shared record is worth more here than a hierarchy
   of roles neither of them asked for.
+
+The share sheet hands out a link, `/join#<code>`, through the system share
+sheet (LINE, on most phones) or the clipboard, with the code still shown for
+pasting by hand. The code rides in the fragment, which never reaches a server
+or a link-preview fetcher, and `src/common/joinLink.ts` lifts it out of the
+address bar before the first render — Analytics reads the document URL for
+`page_location` — and holds it in memory only, never in browser storage. A
+signed-out visitor sees an intro at the same URL; once signed in, the page
+joins only when they press 加入, and the join reads `childIndex` alone until the
+membership exists. A sign-in that reloads the page (the redirect flow in
+in-app browsers) loses the in-memory code, and the page asks for the link
+again. LittleBloom's empty state offers the same join by code, so a partner
+arriving there no longer creates a duplicate pregnancy profile, and a
+pregnancy profile's code is called 孕期檔案代碼 on the sheet.
 
 The share sheet shows that list as people, not as a count. Each member has a
 name in `children/$childId/memberNames/$uid` — their sign-in display name when
@@ -692,6 +707,8 @@ src/
 │   ├── ui/                  design system: serviceTheme, AppBar, EmptyState, motion
 │   ├── components/          Sidebar, ModalFrame, modals, AppHomeButton, wiki browser
 │   ├── landing/             entry point + per-service intro pages
+│   ├── join/                the share link's confirm screen (/join#code)
+│   ├── joinLink.ts          lifts the code out of the URL at start-up
 │   ├── hooks/               useChildStore and the Firebase child hooks
 │   ├── utils/               dates, summaries
 │   ├── routePolicy.ts       the public allowlist
