@@ -4,12 +4,14 @@ import userEvent from '@testing-library/user-event';
 import VaccineScheduleToolPage from './VaccineScheduleToolPage';
 import GrowthPercentileToolPage from './GrowthPercentileToolPage';
 import CheckupScheduleToolPage from '../../littlebloom/pages/CheckupScheduleToolPage';
+import WeeklyGuideToolPage from '../../littlebloom/pages/WeeklyGuideToolPage';
+import { pregnancyGuides } from '../../littlebloom/data/pregnancyGuides';
 import { prenatalCheckupSchedule } from '../../littlebloom/data/prenatalCheckups';
 import { vaccineSchedules } from '../data/vaccines';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
 
 /**
- * The three public calculators. Each takes a date or a few numbers and answers
+ * The public calculators. Each takes a date or a few numbers and answers
  * on the page, signed out, with nothing saved.
  */
 const daysFromToday = (days: number) => {
@@ -187,6 +189,81 @@ describe('產檢時程試算', () => {
     await user.type(screen.getByLabelText('預產期'), daysFromToday(21));
 
     expect(screen.getByText(/建議週數已經過了。有沒有做過、需不需要補做，請問產檢醫師/)).toBeInTheDocument();
+  });
+});
+
+describe('孕期每週指南', () => {
+  const titleOf = (week: number) => pregnancyGuides.find((guide) => guide.week === week)!.title;
+
+  it('opens on the week the due date puts the pregnancy in', async () => {
+    const user = userEvent.setup();
+    render(<WeeklyGuideToolPage />);
+    expect(screen.queryByRole('heading', { name: titleOf(1) })).not.toBeInTheDocument();
+
+    // 20 completed weeks and 3 days: "week 21".
+    await user.type(screen.getByLabelText('預產期'), daysFromToday(280 - (20 * 7 + 3)));
+
+    expect(screen.getByRole('heading', { name: titleOf(21) })).toBeInTheDocument();
+    expect(screen.getByText('現在大約是懷孕第 21 週。')).toBeInTheDocument();
+  });
+
+  it('steps to the next and previous week, and back to this one', async () => {
+    const user = userEvent.setup();
+    render(<WeeklyGuideToolPage />);
+    await user.type(screen.getByLabelText('預產期'), daysFromToday(280 - (20 * 7 + 3)));
+
+    await user.click(screen.getByRole('button', { name: '下一週' }));
+    expect(screen.getByRole('heading', { name: titleOf(22) })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '上一週' }));
+    await user.click(screen.getByRole('button', { name: '上一週' }));
+    expect(screen.getByRole('heading', { name: titleOf(20) })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '回到本週' }));
+    expect(screen.getByRole('heading', { name: titleOf(21) })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '回到本週' })).not.toBeInTheDocument();
+  });
+
+  it('stops at week 1 and week 40 instead of stepping off the guide', async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(<WeeklyGuideToolPage />);
+    await user.type(screen.getByLabelText('預產期'), daysFromToday(280 - 2));
+    expect(screen.getByRole('heading', { name: titleOf(1) })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '上一週' })).toBeDisabled();
+    unmount();
+
+    render(<WeeklyGuideToolPage />);
+    await user.type(screen.getByLabelText('預產期'), daysFromToday(2));
+    expect(screen.getByRole('heading', { name: titleOf(40) })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '下一週' })).toBeDisabled();
+  });
+
+  it('says so when the due date is out of range rather than guessing a week', async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(<WeeklyGuideToolPage />);
+    await user.type(screen.getByLabelText('預產期'), daysFromToday(300));
+    expect(screen.getByRole('status')).toHaveTextContent('請確認日期');
+    unmount();
+
+    render(<WeeklyGuideToolPage />);
+    await user.type(screen.getByLabelText('預產期'), daysFromToday(-20));
+    expect(screen.getByRole('status')).toHaveTextContent('這個預產期已經過了');
+  });
+
+  it('keeps the due date nowhere but the page', async () => {
+    const user = userEvent.setup();
+    localStorage.clear();
+    sessionStorage.clear();
+    const due = daysFromToday(150);
+    render(<WeeklyGuideToolPage />);
+    await user.type(screen.getByLabelText('預產期'), due);
+
+    expect(screen.getByText(/日期不會被存下來/)).toBeInTheDocument();
+    const stored = [localStorage, sessionStorage].flatMap((store) =>
+      Array.from({ length: store.length }, (_, i) => store.getItem(store.key(i)!) ?? ''),
+    );
+    expect(stored.join('\n')).not.toContain(due);
+    expect(window.location.href).not.toContain(due);
   });
 });
 

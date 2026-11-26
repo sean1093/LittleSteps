@@ -64,7 +64,7 @@ they used to give no hint that a product existed around them.
 | 🛡️ | **LittleGuard** | any | single board + drawer |
 
 ### LittleBloom — pregnancy companion
-- **Weekly pregnancy guide** — week-by-week body changes and what to watch for
+- **Weekly pregnancy guide** — week-by-week body changes and what to watch for, with previous and next week; also public at `/littlebloom/weekly-guide`, from a due date that is never stored
 - **Prenatal schedule** — the 14 government-funded prenatal checkups, with dates and clinics recorded
 - **Pregnancy knowledge base** — 25 articles: causes, what to do, when to see a doctor, including which vaccines pregnancy needs — influenza, Tdap, COVID-19 and the maternal RSV vaccine — with each one's funding status and the week window for Tdap
 - **Birth registration** — converts a pregnancy profile into a baby profile, which is what moves a family from LittleBloom to LittleSteps
@@ -256,13 +256,15 @@ write in the product.
 mark a new page should fail closed. Public pages are the entry point, the about
 page, the three knowledge bases, the care guide, the sleep guide, the solid-food
 guide, the three calculators (vaccine schedule, prenatal schedule, growth
-percentile), LittleOuting, BabyOasis and LittleGuard. Everything else needs an
+percentile), the weekly pregnancy guide by due date, LittleOuting, BabyOasis and LittleGuard. Everything else needs an
 account.
 
 A calculator takes a date or a few numbers and answers in the browser: it reads
 and writes no child's record, and what is typed never leaves the page's memory.
 Each uses the same calculation as the tracker behind sign-in, so the two cannot
-disagree. The solid-food guide is public as a whole; only its trial log is
+disagree. The public weekly pregnancy guide works the same way: it reads only
+`src/littlebloom/data/pregnancyGuides.ts` and shares its week view, with the
+previous/next control, with the signed-in LittleBloom hub. The solid-food guide is public as a whole; only its trial log is
 loaded, lazily, after sign-in.
 
 The about page at `/about` says all of this in a parent's words: where a child's

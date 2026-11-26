@@ -235,7 +235,7 @@ export default function HubLanding({
           initial="hidden"
           animate="visible"
           variants={stagger}
-          className="grid grid-cols-1 md:grid-cols-3 gap-3"
+          className="grid grid-cols-1 sm:grid-cols-2 gap-3"
         >
           {CALCULATORS.map(({ page, title, line }) => (
             <motion.li key={page} variants={listItem}>

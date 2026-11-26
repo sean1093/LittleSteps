@@ -112,7 +112,7 @@ export const SERVICE_INTRO: Record<StagedService, ServiceIntroCopy> = {
   littlebloom: {
     promise: '14 次公費產檢什麼時候做、這一週身體會怎樣，先幫妳排好。',
     features: [
-      { title: '每週孕期指南', detail: '依懷孕週數，看這一週的身體變化和該注意的事。' },
+      { title: '每週孕期指南', detail: '記住預產期，每次打開就是這一週，前後週也能翻。' },
       { title: '產檢時程', detail: '公費產檢各在第幾週，做完的記下日期與院所。' },
       { title: '出生登記', detail: '寶寶出生後登記一次，孕期檔案直接變成寶寶檔案。' },
     ],
@@ -126,6 +126,11 @@ export const SERVICE_INTRO: Record<StagedService, ServiceIntroCopy> = {
         title: '產檢時程試算',
         detail: '填預產期，算出每一次產檢與篩檢在哪幾天。',
         page: 'littlebloom/checkup-schedule',
+      },
+      {
+        title: '孕期每週指南',
+        detail: '填預產期，看這一週的身體變化和該注意的事。',
+        page: 'littlebloom/weekly-guide',
       },
     ],
   },
@@ -215,9 +220,10 @@ export const GUIDE_LINKS: { page: Page; title: string }[] = [
 /**
  * The calculators: a date or a few numbers in, an answer out, nothing stored.
  *
- * They are the public face of three things that used to exist only behind
- * sign-in: the vaccine tracker, the prenatal schedule and the growth chart.
- * Each answers a question a parent searches for with nothing but a birthday,
+ * They are the public face of four things that used to exist only behind
+ * sign-in: the vaccine tracker, the prenatal schedule, the weekly pregnancy
+ * guide and the growth chart. Each answers a question a parent searches for
+ * with nothing but a date or a measurement,
  * and each ends by saying what signing in adds — which is a better reason to
  * sign in than any line on this page.
  *
@@ -239,6 +245,11 @@ export const CALCULATORS: { page: Page; title: string; line: string }[] = [
     page: 'littlebloom/checkup-schedule',
     title: '產檢時程試算',
     line: '填預產期，每一次產檢與篩檢各在第幾週、哪幾天。',
+  },
+  {
+    page: 'littlebloom/weekly-guide',
+    title: '孕期每週指南',
+    line: '填預產期，看這一週寶寶與身體的變化、該注意的事，前後週都能翻。',
   },
   {
     page: 'littlesteps/growth-percentile',
