@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { User } from 'firebase/auth';
 import type { ChildProfile, FoodTrackingProgress } from '../../types';
 import type * as FoodTracking from '../hooks/useFoodTracking';
 import { toLocalDateKey } from '../../common/utils/dateHelpers';
@@ -9,9 +10,11 @@ import ComplementaryFoodPage from './ComplementaryFoodPage';
 /**
  * 副食品頁的行為特性測試（characterization test）。
  *
- * 這一頁把六個檢視全部內嵌在同一個檔案裡，之後會拆成各自的元件。這組測試
- * 只驗「使用者看得到什麼、點了會去哪裡」，不碰內部怎麼組裝，所以拆檔前後
- * 應該一字不改地通過——它存在的意義就是證明拆檔沒改到行為。
+ * 這組測試只驗「使用者看得到什麼、點了會去哪裡」，不碰內部怎麼組裝。
+ *
+ * 指南是公開的，追蹤區要登入而且要有一個已出生的寶寶，並且是 lazy 載入的：
+ * 所以預設的 renderPage 以「登入、有寶寶」的家長進場，等追蹤區到了才交回。
+ * 沒登入、沒寶寶、孕期檔案三種訪客各自在最後一組。
  *
  * 檢視之間用 AnimatePresence mode="wait" 切換：舊的先退場，新的才進場。
  * 所以每次互動之後都得用 findBy* 等，不能用 getBy* 直接抓。
@@ -69,9 +72,20 @@ const VIEWS = {
   'guide-safety': '專業提醒與禁忌',
 } as const;
 
-const renderPage = () => {
+const parent = { uid: 'u1' } as User;
+
+const pregnancy: ChildProfile = {
+  ...child,
+  id: 'p1',
+  name: '小芽',
+  isPregnancy: true,
+};
+
+/** 登入、有已出生寶寶的家長；追蹤區是 lazy 的，等它到了才交回。 */
+const renderPage = async () => {
   const user = userEvent.setup();
-  render(<ComplementaryFoodPage currentChild={child} user={null} />);
+  render(<ComplementaryFoodPage currentChild={child} user={parent} />);
+  await screen.findByRole('heading', { name: VIEWS.home });
   return user;
 };
 
@@ -86,8 +100,8 @@ beforeEach(() => {
 });
 
 describe('進到這一頁的第一眼', () => {
-  it('停在主頁，看得到追蹤區與四張知識庫卡片', () => {
-    renderPage();
+  it('停在主頁，看得到追蹤區與四張知識庫卡片', async () => {
+    await renderPage();
     expect(screen.getByRole('heading', { name: VIEWS.home })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '副食品知識庫' })).toBeInTheDocument();
     for (const title of ['開始使用指南', '發展階段', '菜單建議', '安全須知']) {
@@ -95,8 +109,8 @@ describe('進到這一頁的第一眼', () => {
     }
   });
 
-  it('主頁不顯示返回鍵——沒有上一層可回', () => {
-    renderPage();
+  it('主頁不顯示返回鍵——沒有上一層可回', async () => {
+    await renderPage();
     expect(screen.queryByRole('button', { name: /返回主頁/ })).toBeNull();
   });
 });
@@ -108,7 +122,7 @@ describe('知識庫四張卡片各自通到一個檢視', () => {
     ['菜單建議', VIEWS['guide-menu']],
     ['安全須知', VIEWS['guide-safety']],
   ])('點「%s」會看到「%s」', async (card, expected) => {
-    const user = renderPage();
+    const user = await renderPage();
     await user.click(screen.getByRole('heading', { name: card }));
 
     expect(await screen.findByRole('heading', { name: expected })).toBeInTheDocument();
@@ -117,7 +131,7 @@ describe('知識庫四張卡片各自通到一個檢視', () => {
   });
 
   it('返回主頁會回到主頁，而且返回鍵跟著消失', async () => {
-    const user = renderPage();
+    const user = await renderPage();
     await user.click(screen.getByRole('heading', { name: '安全須知' }));
     await screen.findByRole('heading', { name: VIEWS['guide-safety'] });
 
@@ -129,7 +143,7 @@ describe('知識庫四張卡片各自通到一個檢視', () => {
   });
 
   it('可以從一個檢視換到另一個，內容不會疊加', async () => {
-    const user = renderPage();
+    const user = await renderPage();
     await user.click(screen.getByRole('heading', { name: '菜單建議' }));
     await screen.findByRole('heading', { name: VIEWS['guide-menu'] });
 
@@ -144,7 +158,7 @@ describe('知識庫四張卡片各自通到一個檢視', () => {
 
 describe('發展階段的收合', () => {
   it('階段預設收合，點開才展開', async () => {
-    const user = renderPage();
+    const user = await renderPage();
     await user.click(screen.getByRole('heading', { name: '發展階段' }));
     await screen.findByRole('heading', { name: VIEWS['guide-stages'] });
 
@@ -158,7 +172,7 @@ describe('發展階段的收合', () => {
 
 describe('兩張參考表用 bottom sheet 開', () => {
   it.each(['怎麼試新食材', '手指食物指南'])('「%s」可以開、也可以關', async (label) => {
-    const user = renderPage();
+    const user = await renderPage();
     await user.click(screen.getByRole('button', { name: label }));
 
     expect(await screen.findByRole('button', { name: '關閉' })).toBeInTheDocument();
@@ -170,7 +184,7 @@ describe('兩張參考表用 bottom sheet 開', () => {
 
 describe('追蹤區的兩個入口', () => {
   it('「我的食物清單」進到追蹤檢視，分頁列兩個選項都在', async () => {
-    const user = renderPage();
+    const user = await renderPage();
     await user.click(screen.getByRole('button', { name: /我的食物清單/ }));
 
     await goneEventually(VIEWS.home);
@@ -179,7 +193,7 @@ describe('追蹤區的兩個入口', () => {
   });
 
   it('「試新食材」也進到同一個追蹤檢視', async () => {
-    const user = renderPage();
+    const user = await renderPage();
     await user.click(screen.getByRole('button', { name: /^試新食材/ }));
 
     await goneEventually(VIEWS.home);
@@ -187,7 +201,7 @@ describe('追蹤區的兩個入口', () => {
   });
 
   it('從追蹤區也能返回主頁', async () => {
-    const user = renderPage();
+    const user = await renderPage();
     await user.click(screen.getByRole('button', { name: /我的食物清單/ }));
     await goneEventually(VIEWS.home);
 
@@ -199,7 +213,7 @@ describe('追蹤區的兩個入口', () => {
 describe('新增食物寫入失敗時', () => {
   it('表單不關，錯誤顯示在表單裡，打好的名稱還在', async () => {
     addFoodTrial.mockRejectedValue(new Error('權限不足，無法寫入'));
-    const user = renderPage();
+    const user = await renderPage();
 
     await user.click(screen.getByRole('button', { name: /我的食物清單/ }));
     await user.click(await screen.findByRole('button', { name: /記錄新食物嘗試/ }));
@@ -216,7 +230,7 @@ describe('新增食物寫入失敗時', () => {
 describe('讀不到食物記錄時', () => {
   it('追蹤頁說讀不到，而不是說還沒記過', async () => {
     readState.error = true;
-    const user = renderPage();
+    const user = await renderPage();
 
     await user.click(screen.getByRole('button', { name: /我的食物清單/ }));
 
@@ -244,7 +258,7 @@ describe('記錄今天嘗試', () => {
   it('兩種形狀並存的紀錄同一天不重複算，多記一天只寫今天那一條 leaf', async () => {
     readState.foodProgress = mixed;
     updateFoodTrial.mockResolvedValue(undefined);
-    const user = renderPage();
+    const user = await renderPage();
 
     await user.click(screen.getByRole('button', { name: /^試新食材/ }));
     expect(await screen.findByText('進度：2 / 3 天')).toBeInTheDocument();
@@ -279,7 +293,7 @@ describe('編輯食物記錄', () => {
     // 掉；而清空的欄位送成 undefined 會在寫入前被濾掉，備註根本刪不掉（#104）。
     readState.foodProgress = rice;
     updateFoodTrial.mockResolvedValue(undefined);
-    const user = renderPage();
+    const user = await renderPage();
 
     await user.click(screen.getByRole('button', { name: /我的食物清單/ }));
     await user.click(await screen.findByRole('button', { name: /米糊/ }));
@@ -291,5 +305,74 @@ describe('編輯食物記錄', () => {
     expect(updateFoodTrial).toHaveBeenCalledWith('c1', 'f1', { notes: null });
     // 寫入成功就把表單收起來。
     await goneEventually('編輯食物記錄');
+  });
+});
+
+describe('還不能記錄的訪客', () => {
+  const PROMPT = '記下寶寶試過哪些食材';
+
+  /** 追蹤區不該出現：沒有概況、沒有通往追蹤檢視的入口。 */
+  const expectNoTracker = () => {
+    expect(screen.queryByRole('heading', { name: VIEWS.home })).toBeNull();
+    expect(screen.queryByRole('button', { name: /我的食物清單/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^試新食材/ })).toBeNull();
+  };
+
+  it('沒登入：指南照常能讀，追蹤區換成一張提示卡', async () => {
+    const user = userEvent.setup();
+    render(<ComplementaryFoodPage currentChild={null} user={null} onSignIn={vi.fn()} />);
+
+    expect(screen.getByRole('heading', { name: PROMPT })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '副食品知識庫' })).toBeInTheDocument();
+    expectNoTracker();
+
+    await user.click(screen.getByRole('heading', { name: '安全須知' }));
+    expect(
+      await screen.findByRole('heading', { name: VIEWS['guide-safety'] }),
+    ).toBeInTheDocument();
+    // 提示卡屬於主頁，讀指南時不跟著。
+    await goneEventually(PROMPT);
+
+    await user.click(screen.getByRole('button', { name: '怎麼試新食材' }));
+    expect(await screen.findByRole('button', { name: '關閉' })).toBeInTheDocument();
+  });
+
+  it('沒登入：按提示卡上的按鈕就是登入', async () => {
+    const onSignIn = vi.fn();
+    const user = userEvent.setup();
+    render(<ComplementaryFoodPage currentChild={null} user={null} onSignIn={onSignIn} />);
+
+    await user.click(screen.getByRole('button', { name: '用 Google 登入，開始記錄' }));
+    expect(onSignIn).toHaveBeenCalledTimes(1);
+  });
+
+  it('登入了但還沒有寶寶：說先新增寶寶，不再叫人登入', () => {
+    render(<ComplementaryFoodPage currentChild={null} user={parent} onSignIn={vi.fn()} />);
+
+    expect(screen.getByRole('heading', { name: PROMPT })).toBeInTheDocument();
+    expect(screen.getByText('先新增寶寶，就可以開始記錄。')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /登入/ })).toBeNull();
+    expectNoTracker();
+  });
+
+  it('孕期檔案：指南能讀，追蹤等寶寶出生', async () => {
+    const user = userEvent.setup();
+    render(<ComplementaryFoodPage currentChild={pregnancy} user={parent} onSignIn={vi.fn()} />);
+
+    expect(screen.getByText('寶寶出生後就可以開始記錄。')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /登入/ })).toBeNull();
+    expectNoTracker();
+
+    await user.click(screen.getByRole('heading', { name: '開始使用指南' }));
+    expect(
+      await screen.findByRole('heading', { name: VIEWS['guide-overview'] }),
+    ).toBeInTheDocument();
+  });
+
+  it('登入、有已出生的寶寶：提示卡不在，追蹤區在', async () => {
+    await renderPage();
+
+    expect(screen.queryByRole('heading', { name: PROMPT })).toBeNull();
+    expect(screen.getByRole('button', { name: /我的食物清單/ })).toBeInTheDocument();
   });
 });

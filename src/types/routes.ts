@@ -36,9 +36,14 @@ export const ROUTE_PATH = {
   'littlesteps/baby-wiki': '/littlesteps/baby-wiki',
   'littlesteps/clinic-summary': '/littlesteps/clinic-summary',
   'littlesteps/report': '/littlesteps/report',
+  // 試算工具：公開、不存任何東西。各自掛在它所對應的追蹤功能那個服務底下，
+  // 頁首與配色就跟著那個服務走。
+  'littlesteps/vaccine-schedule': '/littlesteps/vaccine-schedule',
+  'littlesteps/growth-percentile': '/littlesteps/growth-percentile',
   littlebloom: '/littlebloom',
   'littlebloom/prenatal': '/littlebloom/prenatal',
   'littlebloom/wiki': '/littlebloom/wiki',
+  'littlebloom/checkup-schedule': '/littlebloom/checkup-schedule',
   littleexplorer: '/littleexplorer',
   'littleexplorer/reminders': '/littleexplorer/reminders',
   'littleexplorer/diary': '/littleexplorer/diary',

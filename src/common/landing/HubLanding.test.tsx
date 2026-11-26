@@ -4,6 +4,9 @@ import userEvent from '@testing-library/user-event';
 import HubLanding from './HubLanding';
 import {
   ANYTIME_SERVICES,
+  CALCULATORS,
+  CALCULATORS_HEADING,
+  GUIDE_LINKS,
   SERVICE_GROUPS,
   SERVICE_PITCH,
   STAGE_RANGE,
@@ -158,8 +161,13 @@ describe('HubLanding: signed out', () => {
     render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={vi.fn()} />);
 
     const headings = screen.getAllByRole('heading', { level: 2 }).map((node) => node.textContent);
-    expect(headings.slice(0, 2)).toEqual(SERVICE_GROUPS.map((group) => group.title));
+    const [tools, staged] = SERVICE_GROUPS;
+    expect(headings[0]).toBe(tools.title);
     expect(headings[0]).toContain('不用登入');
+    // The calculators need no account either, so they also come before the
+    // services that do.
+    expect(headings.indexOf(CALCULATORS_HEADING.title)).toBeLessThan(headings.indexOf(staged.title));
+    expect(headings.indexOf(tools.title)).toBeLessThan(headings.indexOf(CALCULATORS_HEADING.title));
 
     for (const id of ANYTIME_SERVICES) {
       expect(requiresAuth(id), `${id} would bounce to an intro page`).toBe(false);
@@ -193,6 +201,35 @@ describe('HubLanding: signed out', () => {
     await user.click(screen.getByRole('link', { name: `${first.title} ${first.count} 篇` }));
     expect(window.location.pathname).toBe(ROUTE_PATH[first.page]);
     window.history.replaceState(null, '', '/');
+  });
+
+  it('offers each calculator as a link to a page that really needs no account', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', '/');
+    render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={vi.fn()} />);
+
+    expect(CALCULATORS.length).toBeGreaterThan(0);
+    for (const { page, title, line } of CALCULATORS) {
+      // The section says "no sign-in"; a calculator behind the gate would make it a lie.
+      expect(requiresAuth(page), `${page} is behind sign-in`).toBe(false);
+      const link = screen.getByRole('heading', { name: title }).closest('a');
+      expect(link, title).toHaveAttribute('href', ROUTE_PATH[page]);
+      expect(link, title).toHaveTextContent(line);
+    }
+
+    const [first] = CALCULATORS;
+    await user.click(screen.getByText(first.line));
+    expect(window.location.pathname).toBe(ROUTE_PATH[first.page]);
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('links to the public guides beside the knowledge bases', () => {
+    render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={vi.fn()} />);
+
+    for (const { page, title } of GUIDE_LINKS) {
+      expect(requiresAuth(page), `${page} is behind sign-in`).toBe(false);
+      expect(screen.getByRole('link', { name: title })).toHaveAttribute('href', ROUTE_PATH[page]);
+    }
   });
 
   it('says the staged services need an account', () => {

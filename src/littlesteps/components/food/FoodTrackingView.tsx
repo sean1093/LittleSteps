@@ -1,5 +1,4 @@
 import { Calendar, List } from 'lucide-react';
-import type { User } from 'firebase/auth';
 import type { FoodTrialRecord } from '../../../types';
 import type { FoodStats } from '../../hooks/useFoodTracking';
 import FoodTrackingTab from './FoodTrackingTab';
@@ -15,7 +14,6 @@ interface FoodTrackingViewProps {
   onEditFood: (food: FoodTrialRecord) => void;
   onDeleteFood: (foodId: string) => void;
   onAddTrialDate: (foodId: string) => void;
-  user: User | null;
 }
 
 const tabClass = (isActive: boolean) => `
@@ -33,7 +31,6 @@ export default function FoodTrackingView({
   onEditFood,
   onDeleteFood,
   onAddTrialDate,
-  user,
 }: FoodTrackingViewProps) {
   return (
     <div className="space-y-4">
@@ -64,7 +61,6 @@ export default function FoodTrackingView({
           onAddFood={onAddFood}
           onEditFood={onEditFood}
           onDeleteFood={onDeleteFood}
-          user={user}
         />
       )}
 

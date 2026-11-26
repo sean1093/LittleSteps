@@ -28,6 +28,9 @@ import { SERVICE_THEME } from './common/ui/serviceTheme';
 const DashboardPage = lazy(() => import('./littlesteps/pages/DashboardPage'));
 const MilestonesPage = lazy(() => import('./littlesteps/pages/MilestonesPage'));
 const CareGuidePage = lazy(() => import('./littlesteps/pages/CareGuidePage'));
+const VaccineScheduleToolPage = lazy(() => import('./littlesteps/pages/VaccineScheduleToolPage'));
+const GrowthPercentileToolPage = lazy(() => import('./littlesteps/pages/GrowthPercentileToolPage'));
+const CheckupScheduleToolPage = lazy(() => import('./littlebloom/pages/CheckupScheduleToolPage'));
 const VaccineTrackingPage = lazy(() => import('./littlesteps/pages/VaccineTrackingPage'));
 const ComplementaryFoodPage = lazy(() => import('./littlesteps/pages/ComplementaryFoodPage'));
 const GrowthChartsPage = lazy(() => import('./littlesteps/pages/GrowthChartsPage'));
@@ -237,6 +240,12 @@ function AppContent() {
       case 'littlesteps/complementary-food':
         title += '副食品指南';
         break;
+      case 'littlesteps/vaccine-schedule':
+        title += '疫苗時程試算';
+        break;
+      case 'littlesteps/growth-percentile':
+        title += '生長百分位試算';
+        break;
       case 'littlesteps/daily-log':
         title += '快速日誌';
         break;
@@ -388,7 +397,14 @@ function AppContent() {
           theme={SERVICE_THEME.littlesteps}
           title={getPageTitle()}
           // 這一頁是關於誰的。服務首頁不放：那裡還沒進到任何一個孩子的頁面。
-          subtitle={currentPage !== 'littlesteps' ? currentChild?.name : undefined}
+          subtitle={
+            currentPage !== 'littlesteps' &&
+            // 試算工具不是關於哪一個孩子的：填進去的可以是任何人的生日。
+            currentPage !== 'littlesteps/vaccine-schedule' &&
+            currentPage !== 'littlesteps/growth-percentile'
+              ? currentChild?.name
+              : undefined
+          }
           leading={
             <button
               onClick={() => setSidebarOpen(true)}
@@ -484,6 +500,8 @@ function AppContent() {
         {currentPage === 'littlesteps/care-guide' && (
           <CareGuidePage />
         )}
+        {currentPage === 'littlesteps/vaccine-schedule' && <VaccineScheduleToolPage />}
+        {currentPage === 'littlesteps/growth-percentile' && <GrowthPercentileToolPage />}
         {currentPage === 'littlesteps/vaccine-tracking' && (
           <PregnancyGate currentChild={currentChild}>
             <VaccineTrackingPage
@@ -494,12 +512,13 @@ function AppContent() {
           </PregnancyGate>
         )}
         {currentPage === 'littlesteps/complementary-food' && (
-          <PregnancyGate currentChild={currentChild}>
-            <ComplementaryFoodPage
-              currentChild={currentChild}
-              user={user}
-            />
-          </PregnancyGate>
+          // 公開頁：指南誰都能看，所以不包 PregnancyGate。「我的追蹤」只在登入且
+          // 孩子已經出生時才由頁面自己掛載。
+          <ComplementaryFoodPage
+            currentChild={currentChild}
+            user={user}
+            onSignIn={signInWithGoogle}
+          />
         )}
         {currentPage === 'littlesteps/daily-log' && (
           <PregnancyGate currentChild={currentChild}>
@@ -560,6 +579,7 @@ function AppContent() {
           />
         )}
         {currentPage === 'littlebloom/wiki' && <LittleBloomWikiPage />}
+        {currentPage === 'littlebloom/checkup-schedule' && <CheckupScheduleToolPage />}
 
         {/* LittleExplorer Routes */}
         {currentPage === 'littleexplorer' && (

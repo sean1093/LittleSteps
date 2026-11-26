@@ -56,12 +56,20 @@ describe('Sidebar', () => {
       />,
     );
 
-    for (const label of ['睡眠指南', '照顧重點', '寶寶百科']) {
+    for (const label of [
+      '睡眠指南',
+      '照顧重點',
+      '寶寶百科',
+      '副食品指南',
+      '疫苗時程試算',
+      '生長百分位試算',
+    ]) {
       expect(screen.getByRole('button', { name: new RegExp(label) })).toBeInTheDocument();
     }
 
-    // 里程碑、疫苗、副食品三頁的清單看似是參考資料，但整頁的主體是某個孩子的
-    // 勾選紀錄，白名單裡沒有它們。列出來只會讓人點進去被彈回介紹頁。
+    // 里程碑與疫苗追蹤的清單看似是參考資料，但整頁的主體是某個孩子的勾選
+    // 紀錄，白名單裡沒有它們。列出來只會讓人點進去被彈回介紹頁。（副食品指南
+    // 已經公開：指南誰都能看，試吃紀錄那一塊才需要登入。）
     for (const label of [
       '成長總覽',
       '快速日誌',
@@ -70,17 +78,16 @@ describe('Sidebar', () => {
       '看診摘要',
       '里程碑追蹤',
       '疫苗追蹤',
-      '副食品指南',
       '睡眠分析',
     ]) {
       expect(screen.queryByRole('button', { name: new RegExp(label) })).toBeNull();
     }
 
-    // 三列導覽加一顆關閉鈕。多出任何一顆就是又有人在選單裡自己判斷權限。
-    expect(screen.getAllByRole('button')).toHaveLength(4);
+    // 六列導覽加一顆關閉鈕。多出任何一顆就是又有人在選單裡自己判斷權限。
+    expect(screen.getAllByRole('button')).toHaveLength(7);
   });
 
-  it('登入後十二頁全部列得出來', () => {
+  it('登入後十四頁全部列得出來', () => {
     render(
       <Sidebar
         isOpen
@@ -91,6 +98,6 @@ describe('Sidebar', () => {
       />,
     );
 
-    expect(screen.getAllByRole('button')).toHaveLength(13);
+    expect(screen.getAllByRole('button')).toHaveLength(15);
   });
 });

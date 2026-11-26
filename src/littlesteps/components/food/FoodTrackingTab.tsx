@@ -17,7 +17,6 @@ interface FoodTrackingTabProps {
   onAddFood: () => void;
   onEditFood: (food: FoodTrialRecord) => void;
   onDeleteFood: (foodId: string) => void;
-  user: any; // User from firebase/auth
 }
 
 export default function FoodTrackingTab({
@@ -26,7 +25,6 @@ export default function FoodTrackingTab({
   onAddFood,
   onEditFood,
   onDeleteFood,
-  user,
 }: FoodTrackingTabProps) {
   const [filter, setFilter] = useState<'all' | 'safe' | 'allergy'>('all');
 
@@ -118,13 +116,6 @@ export default function FoodTrackingTab({
         <Plus className="w-5 h-5" />
         記錄新食物嘗試
       </button>
-
-      {!user && foodTrials.length > 0 && (
-        <div className="card bg-secondary-soft border border-secondary/40 text-sm">
-          <p className="font-medium mb-1">提示：使用 Google 登入保存資料</p>
-          <p className="text-ink-muted">目前使用本地儲存，登入後可跨裝置同步您的食物追蹤記錄。</p>
-        </div>
-      )}
 
       {filteredFoods.length === 0 && (
         <EmptyState

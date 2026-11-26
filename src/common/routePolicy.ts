@@ -30,6 +30,14 @@ const PUBLIC_PAGES: Partial<Record<Page, true>> = {
   'littlesteps/care-guide': true,
   'littlesteps/sleep-training': true,
   'littlebloom/wiki': true,
+  // 副食品指南和照顧重點、睡眠指南是同一類：整頁是參考資料。它底下「我的追蹤」
+  // 那一塊要讀寫孩子的試吃紀錄，只在登入後才掛載（見 ComplementaryFoodPage）。
+  'littlesteps/complementary-food': true,
+  // 三個試算工具：輸入一個日期或幾個數字，在瀏覽器裡算完就結束。不讀也不寫
+  // 任何孩子的紀錄，輸入的東西不離開這一頁的記憶體。
+  'littlesteps/vaccine-schedule': true,
+  'littlesteps/growth-percentile': true,
+  'littlebloom/checkup-schedule': true,
   'littleexplorer/wiki': true,
   // 場館名冊是政府公開資料與查證過的整理，不讀任何孩子的資料。
   littleouting: true,

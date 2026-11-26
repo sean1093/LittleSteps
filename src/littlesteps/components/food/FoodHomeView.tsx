@@ -1,8 +1,7 @@
+import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, List } from 'lucide-react';
 import { stagger, listItem, tap, hoverLift } from '../../../common/ui/motion';
-import type { FoodStats } from '../../hooks/useFoodTracking';
-import type { TrackingTab, ViewMode } from './types';
+import type { ViewMode } from './types';
 
 const GUIDE_CARDS: { view: ViewMode; title: string; description: string }[] = [
   { view: 'guide-overview', title: '開始使用指南', description: '副食品添加原則與時機' },
@@ -12,50 +11,15 @@ const GUIDE_CARDS: { view: ViewMode; title: string; description: string }[] = [
 ];
 
 interface FoodHomeViewProps {
-  stats: FoodStats;
-  onOpenTracking: (tab: TrackingTab) => void;
+  /** 還不能記錄的人在追蹤區的位置上看到的那張卡；能記錄時追蹤區由頁面另外掛。 */
+  prompt?: ReactNode;
   onOpenGuide: (view: ViewMode) => void;
 }
 
-/** 副食品頁的主頁：自己的追蹤概況，加上四張知識庫入口。 */
-export default function FoodHomeView({
-  stats,
-  onOpenTracking,
-  onOpenGuide,
-}: FoodHomeViewProps) {
+/** 副食品頁的主頁：四張知識庫入口。這裡不碰任何一筆孩子的紀錄。 */
+export default function FoodHomeView({ prompt, onOpenGuide }: FoodHomeViewProps) {
   return (
     <div className="space-y-6">
-      <div className="panel bg-mint-soft">
-        <h2 className="mb-1">我的副食品追蹤</h2>
-        <p className="text-sm text-ink-muted mb-4">記錄寶寶的食物嘗試與過敏反應</p>
-
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="bg-white rounded-xl p-3 text-center">
-            <div className="text-2xl font-bold text-ink">{stats.total}</div>
-            <div className="text-sm text-ink-muted mt-1">已試食物</div>
-          </div>
-          <div className="bg-white rounded-xl p-3 text-center">
-            <div className="text-2xl font-bold text-mint-dark">{stats.noAllergy}</div>
-            <div className="text-sm text-ink-muted mt-1">無過敏</div>
-          </div>
-          <div className="bg-white rounded-xl p-3 text-center">
-            <div className="text-2xl font-bold text-butter-dark">{stats.withAllergy}</div>
-            <div className="text-sm text-ink-muted mt-1">有過敏</div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => onOpenTracking('foods')} className="btn-primary w-full text-sm">
-            <List className="w-5 h-5" />
-            <span>我的食物清單</span>
-          </button>
-          <button onClick={() => onOpenTracking('tracker')} className="btn-secondary w-full text-sm">
-            <Calendar className="w-5 h-5" />
-            <span>試新食材</span>
-          </button>
-        </div>
-      </div>
-
       <div>
         <h2 className="mb-3">副食品知識庫</h2>
 
@@ -80,6 +44,10 @@ export default function FoodHomeView({
           ))}
         </motion.div>
       </div>
+
+      {/* 指南在前、登入提示在後：訪客是來查資料的，一進來先看到一顆登入按鈕，
+          等於告訴他這一頁和以前一樣要帳號。 */}
+      {prompt}
     </div>
   );
 }
