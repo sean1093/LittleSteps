@@ -378,13 +378,42 @@ describe('抽屜的資料新舊', () => {
     // spec §7 收的是「可能已經錯的判斷」，折線是數字自己的圖形呈現，不是判斷。
     drawer(cell(), false);
     expect(screen.getByRole('img', { name: /腸病毒最近 8 週/ })).toBeInTheDocument();
-    expect(screen.getByText(/這一週有 35 次因腸病毒就診/)).toBeInTheDocument();
+    expect(screen.getByText(/8\/23–8\/29 那一週有 35 次因腸病毒就診/)).toBeInTheDocument();
 
     await openDetails();
     const body = bodyText();
     expect(body).toContain('169.0/萬');
     expect(body).toContain('35 人次');
     expect(body).toContain('2,071 次門診');
+  });
+
+  it('過期時說出是哪一週，整個抽屜沒有「這一週」', async () => {
+    // 三個月前的數字說「這一週有 35 次」，家長讀到的是現在。腸病毒那一格帶著兩
+    // 種表現，組成的標題與詳細數字也一起打開，三個講到週的地方都在畫面上。
+    render(
+      <DiseaseDrawer
+        disease="腸病毒"
+        cell={cell()}
+        parts={[
+          { disease: '手足口病', cell: cell({ visits: 15 }) },
+          { disease: '疱疹性咽峽炎', cell: cell({ visits: 20 }) },
+        ]}
+        data={data()}
+        county="台北市"
+        age="3~6"
+        showStatus={false}
+        onClose={noop}
+      />,
+    );
+    await openDetails();
+
+    const body = bodyText();
+    expect(body).not.toContain('這一週');
+    expect(
+      screen.getByText('台北市 3-6 歲 8/23–8/29 那一週有 35 次因腸病毒就診，大約是前 8 週平常值的 2.1 倍。'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '8/23–8/29 那一週的組成' })).toBeInTheDocument();
+    expect(screen.getByText('8/23–8/29 那一週').parentElement).toHaveTextContent('169.0/萬（35 人次）');
   });
 });
 

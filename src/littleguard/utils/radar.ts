@@ -99,15 +99,33 @@ export function statusOf(cell: RadarCell): RadarStatus {
   return 'falling';
 }
 
-export function freshnessOf(weekEnd: string, today: Date = new Date()): RadarFreshness {
+/** weekEnd 到今天（UTC 的日曆日）隔了幾天。 */
+function daysSince(weekEnd: string, today: Date): number {
   const end = new Date(`${weekEnd}T00:00:00Z`);
-  const days = Math.floor(
+  return Math.floor(
     (Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()) - end.getTime()) /
       86400000,
   );
+}
+
+export function freshnessOf(weekEnd: string, today: Date = new Date()): RadarFreshness {
+  const days = daysSince(weekEnd, today);
   if (days > FRESHNESS_DAYS.expired) return 'expired';
   if (days > FRESHNESS_DAYS.stale) return 'stale';
   return 'fresh';
+}
+
+/**
+ * 資料實際舊了多久，給過期的橫幅用。
+ *
+ * 以前那句一律說「超過一個月」，三個月前的資料也這樣講——家長讀到的是「一個
+ * 多月」，差了兩倍。兩個月以內講週（過期的門檻是五週，「5 週」比「約 1 個月」
+ * 準），再久講月，四捨五入所以加「約」。
+ */
+export function describeDataAge(weekEnd: string, today: Date = new Date()): string {
+  const days = daysSince(weekEnd, today);
+  if (days < 63) return `${Math.floor(days / 7)} 週`;
+  return `約 ${Math.round(days / 30.44)} 個月`;
 }
 
 export function formatRate(rate: number | null): string {
@@ -216,9 +234,15 @@ export function describeVisits(input: {
   age: string;
   disease: string;
   cell: RadarCell;
+  /**
+   * 資料過期時給「8/23–8/29 那一週」。三個月前的數字說「這一週」，家長會當成
+   * 現在；沒給就是「這一週」，新鮮資料的句子一個字都不變。
+   */
+  week?: string;
 }): string {
-  const { county, age, disease, cell } = input;
-  const head = `${county} ${AGE_LABEL[age] ?? age}這一週有 ${cell.visits} 次因${inSentence(disease)}就診`;
+  const { county, age, disease, cell, week } = input;
+  const when = week === undefined ? '這一週' : ` ${week}`;
+  const head = `${county} ${AGE_LABEL[age] ?? age}${when}有 ${cell.visits} 次因${inSentence(disease)}就診`;
   if (cell.ratio === null) return `${head}，${reasonWithoutRatio(cell)}。`;
   const percent = Math.round(Math.abs(cell.ratio - 1) * 100);
   if (percent < 5) return `${head}，跟前 8 週的平常值差不多。`;

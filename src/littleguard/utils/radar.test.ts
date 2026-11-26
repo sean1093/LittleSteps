@@ -10,6 +10,7 @@ import {
   FORBIDDEN_WORDS,
   statusOf,
   freshnessOf,
+  describeDataAge,
   formatRate,
   formatWeekRange,
   summariseBoard,
@@ -133,6 +134,23 @@ describe('freshnessOf', () => {
 
   it('超過 35 天要收起狀態', () => {
     expect(freshnessOf(weekEnd, new Date('2026-10-04T00:00:00Z'))).toBe('expired');
+  });
+});
+
+describe('describeDataAge', () => {
+  const weekEnd = '2026-08-29';
+
+  it('兩個月以內講週', () => {
+    // 剛過期（36 天）是 5 週，不是「超過一個月」。
+    expect(describeDataAge(weekEnd, new Date('2026-10-04T00:00:00Z'))).toBe('5 週');
+    expect(describeDataAge(weekEnd, new Date('2026-10-30T00:00:00Z'))).toBe('8 週');
+  });
+
+  it('再久講月，四捨五入所以說「約」', () => {
+    expect(describeDataAge(weekEnd, new Date('2026-10-31T00:00:00Z'))).toBe('約 2 個月');
+    // user-test round 1 那天：89 天。
+    expect(describeDataAge(weekEnd, new Date('2026-11-26T00:00:00Z'))).toBe('約 3 個月');
+    expect(describeDataAge(weekEnd, new Date('2027-08-29T00:00:00Z'))).toBe('約 12 個月');
   });
 });
 
@@ -312,6 +330,13 @@ describe('summariseBoard', () => {
 
 describe('describeVisits', () => {
   const args = { county: '台北市', age: '0~2', disease: '類流感' };
+
+  it('給了週就說是哪一週，不說「這一週」；其餘一個字都不變', () => {
+    const visits = cell({ visits: 413, ratio: 1.44 });
+    expect(describeVisits({ ...args, cell: visits, week: '8/23–8/29 那一週' })).toBe(
+      '台北市 0-2 歲 8/23–8/29 那一週有 413 次因類流感就診，比前 8 週的平常值多約 44%。',
+    );
+  });
 
   it('先講人次，再講跟前 8 週的平常值差多少', () => {
     expect(describeVisits({ ...args, cell: cell({ visits: 413, ratio: 1.44 }) })).toBe(

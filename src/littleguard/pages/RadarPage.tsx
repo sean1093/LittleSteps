@@ -16,7 +16,14 @@ import { DISEASE_PART_OF } from '../data/diseases';
 import CountyPicker from '../components/CountyPicker';
 import DiseaseDrawer from '../components/DiseaseDrawer';
 import DiseaseRow from '../components/DiseaseRow';
-import { AGE_LABEL, formatWeekRange, freshnessOf, summariseBoard } from '../utils/radar';
+import {
+  AGE_LABEL,
+  describeDataAge,
+  formatWeekRange,
+  freshnessOf,
+  inSentence,
+  summariseBoard,
+} from '../utils/radar';
 import SuiteNote, { SUITE_NOTES } from '../../common/landing/SuiteNote';
 
 /** 沒記到上次選的縣市時的起點；台北市是最多人一眼認得的那個。 */
@@ -205,7 +212,7 @@ export default function RadarPage() {
             的第一條規則是沒有東西讀起來像警報。 */}
         {freshness === 'expired' && data && (
           <p className={`panel text-sm font-medium ${theme.tint} ${theme.body}`}>
-            這是 {formatWeekRange(data.weekStart, data.weekEnd)} 的數字，已經超過一個月沒更新。現在流行什麼，請看{' '}
+            這是 {formatWeekRange(data.weekStart, data.weekEnd)} 的數字，已經{inSentence(describeDataAge(data.weekEnd))}沒更新。現在流行什麼，請看{' '}
             <a href={NIDSS} className={theme.ink} target="_blank" rel="noreferrer">
               疾管署
             </a>
@@ -284,7 +291,11 @@ export default function RadarPage() {
             </motion.div>
 
             <p className="text-sm text-ink-faint">
-              右邊的人次是這一週該縣市、該年齡層的健保門診就診次數。
+              右邊的人次是
+              {freshness === 'expired'
+                ? ` ${formatWeekRange(data.weekStart, data.weekEnd)} 那一週`
+                : '這一週'}
+              該縣市、該年齡層的健保門診就診次數。
             </p>
           </>
         )}
