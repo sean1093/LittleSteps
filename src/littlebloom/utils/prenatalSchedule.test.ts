@@ -3,6 +3,7 @@ import type { PrenatalCheckupTemplate } from '../data/prenatalCheckups';
 import {
   dueDateFromLmp,
   formatGestation,
+  weeksUntilDue,
   pregnancyPosition,
   resolvePrenatalItems,
   weeksPregnant,
@@ -199,5 +200,16 @@ describe('pregnancyPosition', () => {
   it('不是完整日期就不算', () => {
     expect(pregnancyPosition('')).toBeNull();
     expect(pregnancyPosition('NaN-NaN-NaN')).toBeNull();
+  });
+});
+
+describe('weeksUntilDue', () => {
+  // 20 週又 0 天離 40 週還有整整 20 週；舊的寫法用指南週數去減，少算一週。
+  it('counts whole weeks left from the days left, not from the guide week', () => {
+    expect(weeksUntilDue({ weeks: 20, days: 0 })).toBe(20);
+    expect(weeksUntilDue({ weeks: 20, days: 3 })).toBe(19);
+    expect(weeksUntilDue({ weeks: 39, days: 6 })).toBe(0);
+    expect(weeksUntilDue({ weeks: 40, days: 0 })).toBe(0);
+    expect(weeksUntilDue({ weeks: 41, days: 2 })).toBe(0);
   });
 });
