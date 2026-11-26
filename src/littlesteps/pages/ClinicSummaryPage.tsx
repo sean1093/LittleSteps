@@ -9,7 +9,12 @@ import {
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import type { ChildProfile, DailyLog } from '../../types';
-import { buildClinicSummaryText, genderText, useClinicSummary } from '../hooks/useClinicSummary';
+import {
+  buildClinicSummaryText,
+  developmentHeading,
+  genderText,
+  useClinicSummary,
+} from '../hooks/useClinicSummary';
 import { formatDuration } from '../utils/logHelpers';
 import { shareText } from '../utils/share';
 import { formatDate, formatTime } from '../../common/utils/dateHelpers';
@@ -317,6 +322,52 @@ export default function ClinicSummaryPage({
             </div>
           )}
         </motion.section>
+
+        {/* ===== 發展 =====
+            早產兒的家長帶去回診的，最常是發展的問題。這一段只列勾過什麼、走過的
+            區間裡還沒記錄什麼——不打分數、不下結論，那是醫師看過孩子之後的事。 */}
+        {data.development && (
+          <motion.section variants={listItem} className="panel mb-4">
+            <h2>{developmentHeading(data.development)}</h2>
+
+            <h3 className="mt-4">已會的里程碑</h3>
+            {data.development.achieved.length === 0 ? (
+              <p className="text-ink-muted text-sm mt-2">尚無記錄</p>
+            ) : (
+              <ul className="mt-2 space-y-2">
+                {data.development.achieved.map((item) => (
+                  <li
+                    key={item.title}
+                    className="flex items-baseline justify-between gap-3 text-sm border-b border-ink/5 pb-2 last:border-0"
+                  >
+                    <span className="text-ink">
+                      {item.title}
+                      <span className="text-ink-muted">（{item.range}）</span>
+                    </span>
+                    <span className="text-ink-muted shrink-0">
+                      {item.date ? formatDate(item.date) : '日期未記錄'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {data.development.notYetRecorded.length > 0 && (
+              <>
+                <h3 className="mt-4">已過的月齡區間裡還沒記錄的</h3>
+                <p className="text-sm text-ink-muted mt-1">沒有記錄不代表還不會。</p>
+                <ul className="mt-2 space-y-1 text-sm text-ink">
+                  {data.development.notYetRecorded.map((item) => (
+                    <li key={item.title}>
+                      {item.title}
+                      <span className="text-ink-muted">（{item.range}）</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </motion.section>
+        )}
 
         {/* ===== Section 4: 近 7 天日常摘要 ===== */}
         <motion.section variants={listItem} className="panel mb-4">
