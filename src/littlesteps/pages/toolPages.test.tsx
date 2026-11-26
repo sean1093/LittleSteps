@@ -262,6 +262,21 @@ describe('孕期每週指南', () => {
     expect(screen.getByRole('button', { name: '下一週' })).toBeDisabled();
   });
 
+  it('is still week 40 on the due date itself, and past term only the day after', async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(<WeeklyGuideToolPage />);
+    await user.type(screen.getByLabelText('預產期'), daysFromToday(0));
+    // The past-term state also falls back to week 40's guide, so the heading
+    // alone cannot tell them apart; the notice can.
+    expect(screen.getByRole('heading', { name: titleOf(40) })).toBeInTheDocument();
+    expect(screen.queryByText(/這個預產期已經過了/)).not.toBeInTheDocument();
+    unmount();
+
+    render(<WeeklyGuideToolPage />);
+    await user.type(screen.getByLabelText('預產期'), daysFromToday(-1));
+    expect(screen.getByRole('status')).toHaveTextContent('這個預產期已經過了');
+  });
+
   it('says so when the due date is out of range rather than guessing a week', async () => {
     const user = userEvent.setup();
     const { unmount } = render(<WeeklyGuideToolPage />);

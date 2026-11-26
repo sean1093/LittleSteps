@@ -30,9 +30,12 @@ function positionOf(dueDate: string): Position | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(lmp)) return null;
   // A last period still in the future: the due date is more than 40 weeks away.
   if (lmp > toLocalDateKey()) return { kind: 'too-early' };
+  // Past term only once the due date itself is behind us. On the due date
+  // weeksPregnant is already 40, which would read as week 41 below.
+  if (dueDate < toLocalDateKey()) return { kind: 'past-term' };
   // weeksPregnant counts completed weeks; "week N" in the guide is one more.
-  const week = weeksPregnant(lmp) + 1;
-  if (week > PREGNANCY_TOTAL_WEEKS) return { kind: 'past-term' };
+  // Capped at 40 the way the signed-in hub caps it.
+  const week = Math.min(weeksPregnant(lmp) + 1, PREGNANCY_TOTAL_WEEKS);
   return { kind: 'week', week };
 }
 
