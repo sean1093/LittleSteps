@@ -109,6 +109,12 @@ export default {
           'sand': '#E8DFD3',
           'stone': '#C9C0B5',
           'stone-ink': '#6E655C',        // 5.71:1 — headings and body copy
+          // Muted captions. It was `stone-ink/80`, which renders #898178 on
+          // cream: 3.38:1, under the 4.5:1 that 12–14px text needs. A solid
+          // shade one step lighter than `stone-ink`: 4.62:1 on bloom-cream
+          // (the page background), 5.24:1 on white. Body copy here is only
+          // 5.03:1 on cream, so the step between them is necessarily small.
+          'muted-ink': '#736B62',
           // Accent
           'dusty-blue': '#A8B8C8',
           'dusty-blue-light': '#C4D0DD',
@@ -133,6 +139,11 @@ export default {
           'clay-ink': '#A2523A',         // 5.52:1
           'sand': '#FDF8EE',
           'bark': '#6B5B4E',             // 6.50:1
+          // Muted captions. It was `bark/70`, which renders #978A7E on sand:
+          // 3.17:1. Solid, and lighter than `bark` so captions still sit
+          // below body copy: 4.64:1 on explorer-sand (the page background),
+          // 4.91:1 on white.
+          'muted-ink': '#7D6E61',
         }
       },
       borderRadius: {

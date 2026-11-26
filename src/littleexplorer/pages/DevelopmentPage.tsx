@@ -208,7 +208,7 @@ export default function DevelopmentPage({
           <motion.div variants={listItem} className="space-y-2">
             <AgeBandPicker selected={band} onSelect={setBand} />
             {correcting && currentChild && (
-              <p className="text-xs text-explorer-bark/70">
+              <p className="text-xs text-explorer-muted-ink">
                 已依早產矯正：預設看的是矯正年齡 {ageMonths} 個月（
                 {gestationalAgeLabel(currentChild)}）。
               </p>
