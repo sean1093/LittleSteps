@@ -42,7 +42,8 @@ Services are named in the UI by their Chinese role (孕期陪伴, 寶寶成長,
 service's own header. The English names in the table below are the code names
 used in this repo; "LittleSteps" in the UI means the product.
 
-Sign-in logs `auth_action: login_start` when the button is pressed, separately
+Sign-in logs `auth_action: login_start` when the button starts Google sign-in
+(not when an in-app browser gets the open-in-browser sheet instead), separately
 from `login` when it completes, so the effect of putting the public tools above
 the staged services can be read from sign-in starts rather than assumed.
 
