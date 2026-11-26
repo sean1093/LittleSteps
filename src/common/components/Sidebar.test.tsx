@@ -42,7 +42,7 @@ describe('Sidebar', () => {
       'aria-current',
       'page',
     );
-    expect(screen.getByRole('button', { name: /儀表板/ })).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('button', { name: /成長總覽/ })).not.toHaveAttribute('aria-current');
   });
 
   it('未登入時只列得出路由政策真的放行的頁面', () => {
@@ -63,7 +63,7 @@ describe('Sidebar', () => {
     // 里程碑、疫苗、副食品三頁的清單看似是參考資料，但整頁的主體是某個孩子的
     // 勾選紀錄，白名單裡沒有它們。列出來只會讓人點進去被彈回介紹頁。
     for (const label of [
-      '儀表板',
+      '成長總覽',
       '快速日誌',
       '成長曲線圖',
       '週報月報',

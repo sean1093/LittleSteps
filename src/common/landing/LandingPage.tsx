@@ -67,6 +67,14 @@ interface LandingPageProps {
   childName?: string;
   onSignIn: () => Promise<void>;
   onNavigate: (page: Page) => void;
+  /**
+   * 入口頁的表單剛送出這個帳號的第一個孩子，名單還沒回來。
+   *
+   * 由外面保管而不是放在這個元件的 state：新的孩子一進名單，App 會短暫退回
+   * 載入條，這個元件跟著卸載，自己記的東西到孩子出現時已經沒了。
+   */
+  awaitingFirstChild?: boolean;
+  onAwaitFirstChild?: (awaiting: boolean) => void;
 }
 
 export default function LandingPage({
@@ -79,10 +87,13 @@ export default function LandingPage({
   childName,
   onSignIn,
   onNavigate,
+  awaitingFirstChild = false,
+  onAwaitFirstChild,
 }: LandingPageProps) {
   const store = useOptionalChildStore();
   /* 表單開在哪一個分頁；null 是沒開。拿著家人給的代碼來的人直接開在「加入」。 */
   const [addingChild, setAddingChild] = useState<'create' | 'join' | null>(null);
+
 
   // 登入完成的瞬間帶去這個孩子該去的那一頁，但只在真的有孩子時——否則會落在
   // 一個沒有資料的頁面上，而不是「先新增寶寶」。用 ref 比對前一次的 user 才能
@@ -98,15 +109,45 @@ export default function LandingPage({
     wasSignedIn.current = user !== null;
   }, [user, hasChildren, entryPage, onNavigate]);
 
+  // 在入口頁新增或加入第一個孩子之後，直接帶去那個孩子的頁面。表單原本只是
+  // 關掉、回到入口頁，家長得自己找到「打開紀錄」才看得到剛建好的東西。
+  //
+  // 只管「從沒有孩子變成有孩子」：已經有孩子的家長再加一個，是在帳號視窗裡
+  // 做的，人還在他原本那一頁上，不該被帶走。
+  useEffect(() => {
+    if (!awaitingFirstChild || !hasChildren) return;
+    onAwaitFirstChild?.(false);
+    if (kind === 'hub') onNavigate(entryPage);
+  }, [awaitingFirstChild, hasChildren, kind, entryPage, onNavigate, onAwaitFirstChild]);
+
+  /**
+   * 寫入前就舉旗，失敗再放下：RTDB 的 listener 在寫入的 promise 完成之前就會
+   * 收到新名單，等 await 回來才舉，孩子已經出現過了。
+   */
+  const fromHub = async (write: (() => Promise<void>) | undefined) => {
+    const first = kind === 'hub' && !hasChildren;
+    if (first) onAwaitFirstChild?.(true);
+    try {
+      await write?.();
+    } catch (error) {
+      if (first) onAwaitFirstChild?.(false);
+      throw error;
+    }
+  };
+
+  const joinChild = store?.joinChild;
   const addChildModal = (
     <AddChildModal
       isOpen={addingChild !== null}
       initialMode={addingChild ?? undefined}
       onClose={() => setAddingChild(null)}
+      // 入口頁寫著「懷孕中也可以：填預產期」，所以表單要有那一頁。沒有的話，
+      // 預產期只能填進「寶寶生日」，建出來的是一份寶寶檔案。
+      modes={['create', 'pregnancy', 'join']}
       onSave={(name, birthday, gender, _isPregnancy, dueDate, gestationalAge) =>
-        store?.addChild(name, birthday, gender, dueDate, gestationalAge)
+        fromHub(store ? () => store.addChild(name, birthday, gender, dueDate, gestationalAge) : undefined)
       }
-      onJoin={store?.joinChild}
+      onJoin={joinChild && ((uuid) => fromHub(() => joinChild(uuid)))}
     />
   );
 

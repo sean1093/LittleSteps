@@ -77,7 +77,9 @@ export const DATA_SOURCES: DataSource[] = [
   {
     agency: '衛生福利部與國民健康署',
     dataset: '孕產婦、嬰幼兒衛教資料與兒童預防保健服務',
-    what: '三個百科的文章內容、孕期指南、兒童健檢與發展篩檢的時程',
+    // 寶寶百科另外對照了疾病管制署與美國兒科學會（AAP）的家長衛教頁；後者不是
+    // 政府網域，所以不列成一張來源卡，而是在這裡照實寫出來。
+    what: '三個百科的文章內容、孕期指南、兒童健檢與發展篩檢的時程。寶寶百科另外對照疾病管制署與美國兒科學會（AAP）的衛教資料',
     sourceUrl: 'https://www.hpa.gov.tw/',
     // The three wikis were checked on 2026-08-27 and 2026-09-04; the earlier
     // day is the honest one for a card that covers all of them.

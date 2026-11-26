@@ -1,5 +1,11 @@
 import { WikiCategory } from '../../types';
-import { babyWikiArticles, wikiCategoryLabels, babyWikiCategoryColors } from '../data/babyWiki';
+import {
+  babyWikiArticles,
+  babyWikiVerifiedOn,
+  wikiCategoryLabels,
+  babyWikiCategoryColors,
+} from '../data/babyWiki';
+import { SUITE_NOTES } from '../../common/landing/SuiteNote';
 import WikiBrowser from '../../common/components/wiki/WikiBrowser';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 
@@ -41,6 +47,8 @@ export default function BabyWikiPage() {
           theme={SERVICE_THEME.littlesteps}
           crossSearchService="littlesteps"
           wikiPage="littlesteps/baby-wiki"
+          verifiedNote={`內容查證於 ${babyWikiVerifiedOn}，對照國民健康署、疾病管制署與美國兒科學會的衛教資料。`}
+          suiteNote={SUITE_NOTES.babyWiki}
         />
       </div>
     </div>

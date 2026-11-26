@@ -3,7 +3,12 @@ import type { User } from 'firebase/auth';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Page } from '../../types/routes';
-import LandingPage, { landingKindFor, isStandaloneLanding } from './LandingPage';
+import { useState } from 'react';
+import { fireEvent } from '@testing-library/react';
+import LandingPage, { landingKindFor, isStandaloneLanding, type LandingKind } from './LandingPage';
+import { ChildStoreValueProvider } from '../contexts/ChildStoreContext';
+import { SIGNED_OUT_CHILD_STORE } from '../contexts/signedOutChildStore';
+import type { ChildStore } from '../hooks/useChildStore';
 
 const signedIn = { uid: 'u1' } as User;
 
@@ -213,6 +218,140 @@ describe('入口頁上已登入的家長', () => {
 
     await user.click(screen.getByRole('button', { name: '新增寶寶' }));
     expect(screen.getByLabelText('寶寶姓名')).toBeInTheDocument();
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+});
+
+describe('入口頁的新增表單', () => {
+  // 入口頁寫著「懷孕中也可以：填預產期，就從孕期開始記」，表單卻只有「寶寶」
+  // 與「加入寶寶」兩頁——預產期只能填進「寶寶生日」，建出來的是一份寶寶檔案。
+  it('有「懷孕中」這一頁，填得了預產期', async () => {
+    const user = userEvent.setup();
+    render(
+      <LandingPage
+        kind="hub"
+        page="home"
+        user={signedIn}
+        hasChildren={false}
+        entryPage="home"
+        onSignIn={vi.fn()}
+        onNavigate={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: '新增寶寶' }));
+    await user.click(screen.getByRole('button', { name: '懷孕中' }));
+
+    expect(screen.getByLabelText('預產期')).toBeInTheDocument();
+  });
+});
+
+/**
+ * 在入口頁建好或加入第一個孩子之後，直接到那個孩子的頁面。表單原本只是關掉，
+ * 家長回到入口頁，得自己找到「打開紀錄」。
+ */
+describe('從入口頁新增第一個孩子之後', () => {
+  const setup = (kind: LandingKind = 'hub', startWithChild = false) => {
+    const onNavigate = vi.fn();
+    const addChild = vi.fn().mockResolvedValue(undefined);
+    const joinChild = vi.fn().mockResolvedValue(undefined);
+    const store: ChildStore = { ...SIGNED_OUT_CHILD_STORE, addChild, joinChild };
+
+    // 旗標由外面保管（實際上是 App），這裡用一個最小的外殼代替。
+    function Harness({ hasChildren, entryPage }: { hasChildren: boolean; entryPage: Page }) {
+      const [awaiting, setAwaiting] = useState(false);
+      return (
+        <ChildStoreValueProvider store={store}>
+          <LandingPage
+            kind={kind}
+            page={kind === 'hub' ? 'home' : 'littlesteps'}
+            user={signedIn}
+            hasChildren={hasChildren}
+            entryPage={entryPage}
+            childName={hasChildren ? '小明' : undefined}
+            onSignIn={vi.fn()}
+            onNavigate={onNavigate}
+            awaitingFirstChild={awaiting}
+            onAwaitFirstChild={setAwaiting}
+          />
+        </ChildStoreValueProvider>
+      );
+    }
+
+    const view = render(<Harness hasChildren={startWithChild} entryPage="home" />);
+    const childArrives = (entryPage: Page) =>
+      view.rerender(<Harness hasChildren entryPage={entryPage} />);
+    return { onNavigate, addChild, joinChild, childArrives, user: userEvent.setup() };
+  };
+
+  it('建好寶寶就到寶寶成長的總覽', async () => {
+    const { onNavigate, addChild, childArrives, user } = setup();
+
+    await user.click(screen.getByRole('button', { name: '新增寶寶' }));
+    await user.type(screen.getByLabelText('寶寶姓名'), '小明');
+    fireEvent.change(screen.getByLabelText('寶寶生日'), { target: { value: '2026-01-15' } });
+    await user.click(
+      screen.getAllByRole('button', { name: '新增寶寶' }).find((b) => b.getAttribute('type') === 'submit')!,
+    );
+    await waitFor(() => expect(addChild).toHaveBeenCalled());
+    expect(onNavigate).not.toHaveBeenCalled();
+
+    childArrives('littlesteps/dashboard');
+    await waitFor(() => expect(onNavigate).toHaveBeenCalledWith('littlesteps/dashboard'));
+    expect(onNavigate).toHaveBeenCalledTimes(1);
+  });
+
+  it('填預產期建的是孕期檔案，到的是孕期陪伴', async () => {
+    const { onNavigate, addChild, childArrives, user } = setup();
+
+    await user.click(screen.getByRole('button', { name: '新增寶寶' }));
+    await user.click(screen.getByRole('button', { name: '懷孕中' }));
+    fireEvent.change(screen.getByLabelText('預產期'), { target: { value: '2027-03-01' } });
+    await user.click(screen.getByRole('button', { name: '開始追蹤孕期' }));
+
+    // 第四個參數是預產期：少了它，資料層建出來的是寶寶檔案。
+    await waitFor(() =>
+      expect(addChild).toHaveBeenCalledWith('寶寶', '2027-03-01', undefined, '2027-03-01', undefined),
+    );
+
+    childArrives('littlebloom');
+    await waitFor(() => expect(onNavigate).toHaveBeenCalledWith('littlebloom'));
+  });
+
+  it('用代碼加入之後也一樣', async () => {
+    const { onNavigate, joinChild, childArrives, user } = setup();
+
+    await user.click(screen.getByRole('button', { name: /用代碼加入/ }));
+    await user.type(screen.getByLabelText('寶寶代碼'), 'uuid-1');
+    await user.click(
+      screen.getAllByRole('button', { name: '加入寶寶' }).find((b) => b.getAttribute('type') === 'submit')!,
+    );
+    await waitFor(() => expect(joinChild).toHaveBeenCalledWith('uuid-1'));
+
+    childArrives('littleexplorer');
+    await waitFor(() => expect(onNavigate).toHaveBeenCalledWith('littleexplorer'));
+  });
+
+  it('寫入失敗就不等了：之後孩子從別處出現也不會被帶走', async () => {
+    const { onNavigate, addChild, childArrives, user } = setup();
+    addChild.mockRejectedValueOnce(new Error('PERMISSION_DENIED'));
+
+    await user.click(screen.getByRole('button', { name: '新增寶寶' }));
+    await user.click(screen.getByRole('button', { name: '懷孕中' }));
+    fireEvent.change(screen.getByLabelText('預產期'), { target: { value: '2027-03-01' } });
+    await user.click(screen.getByRole('button', { name: '開始追蹤孕期' }));
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+
+    childArrives('littlebloom');
+    await waitFor(() => expect(screen.getByRole('button', { name: '打開紀錄' })).toBeInTheDocument());
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it('沒送過表單時，孩子出現（例如另一台裝置建的）不會把人帶走', async () => {
+    const { onNavigate, childArrives } = setup();
+
+    childArrives('littlesteps/dashboard');
+    await waitFor(() => expect(screen.getByRole('button', { name: '打開紀錄' })).toBeInTheDocument());
     expect(onNavigate).not.toHaveBeenCalled();
   });
 });

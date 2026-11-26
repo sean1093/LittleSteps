@@ -369,7 +369,7 @@ export const babyWikiArticles: BabyWikiArticle[] = [
   {
     id: 'fever-assessment',
     title: '發燒判斷',
-    summary: '了解嬰幼兒發燒的正確量測方式、處理原則與何時需要就醫。',
+    summary: '未滿 3 個月體溫 38°C 以上要立即就醫。耳溫、肛溫、腋溫怎麼量才準，退燒藥什麼時候用，哪些情況不能等。',
     category: 'fever',
     causes: [
       '病毒或細菌感染（最常見原因）',

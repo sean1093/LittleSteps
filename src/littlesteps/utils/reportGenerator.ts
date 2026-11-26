@@ -114,13 +114,17 @@ function coefficientOfVariation(values: number[]): number {
 }
 
 /**
- * Get the score label in Traditional Chinese
+ * 分數的標籤。
+ *
+ * 這三個分數算的是變異係數——每天的數字有多接近，不是寶寶好不好。原本的標籤
+ * 是「很棒！／不錯／尚可／需注意」，等於把「這週奶量起伏大」講成「這週表現差」，
+ * 而猛長期、長牙、打完疫苗的那一週本來就會起伏。標籤只描述量到的東西。
  */
 function getScoreLabel(score: number): string {
-  if (score >= 80) return '很棒！';
-  if (score >= 60) return '不錯';
-  if (score >= 40) return '尚可';
-  return '需注意';
+  if (score >= 80) return '很規律';
+  if (score >= 60) return '大致規律';
+  if (score >= 40) return '變動較大';
+  return '變動大';
 }
 
 /**
@@ -492,7 +496,7 @@ export function generateSummaryText(report: WeeklyReport): string {
   if (report.sleep.avgDailyHours > 0) {
     const sleepComment =
       report.sleep.avgDailyHours < report.sleep.recommendedHours
-        ? '，略低於建議值，建議觀察作息'
+        ? '，比建議範圍少一些'
         : '，符合建議範圍';
     parts.push(`睡眠時數平均 ${report.sleep.avgDailyHours} 小時${sleepComment}`);
   }
@@ -500,9 +504,11 @@ export function generateSummaryText(report: WeeklyReport): string {
   // Poop summary
   if (report.poop.avgDailyCount > 0) {
     if (report.poop.longestGap > 48) {
-      parts.push(`排便間隔最長達 ${Math.round(report.poop.longestGap)} 小時，需留意`);
+      parts.push(`排便間隔最長 ${Math.round(report.poop.longestGap)} 小時`);
     } else {
-      parts.push('排便規律正常');
+      // 這裡檢查的只有「最長間隔不超過 48 小時」，所以只說這件事；「正常」是
+      // 這個數字下不了的結論。
+      parts.push('排便間隔在 2 天內');
     }
   }
 

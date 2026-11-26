@@ -421,13 +421,21 @@ export function useFirebaseChildren(userId: string | null) {
     });
   };
 
-  const updateMilestoneProgress = async (childId: string, milestoneId: string, achieved: boolean) => {
+  // achievedDate (YYYY-MM-DD) is optional and defaults to today, so every
+  // existing caller is unchanged. It exists because a parent often records a
+  // first roll-over days after it happened; stamping today made the record wrong.
+  const updateMilestoneProgress = async (
+    childId: string,
+    milestoneId: string,
+    achieved: boolean,
+    achievedDate?: string,
+  ) => {
     if (!userId) throw new Error('User not authenticated');
 
     const progressRef = ref(database, `children/${childId}/milestoneProgress/${milestoneId}`);
     await set(progressRef, removeUndefined({
       achieved,
-      achievedDate: achieved ? toLocalDateKey() : undefined,
+      achievedDate: achieved ? (achievedDate || toLocalDateKey()) : undefined,
     }));
   };
 

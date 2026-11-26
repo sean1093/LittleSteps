@@ -23,7 +23,8 @@ import DaySelector from '../components/dailylog/DaySelector';
 import OpenSleepCard from '../components/dailylog/OpenSleepCard';
 import NightWakingsPrompt from '../components/dailylog/NightWakingsPrompt';
 import ChildSwitcher from '../../common/components/ChildSwitcher';
-import RepeatLastLog from '../components/dailylog/RepeatLastLog';
+import RepeatLastLog, { describeRepeatedLog } from '../components/dailylog/RepeatLastLog';
+import LastEventLines from '../components/dailylog/LastEventLines';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem } from '../../common/ui/motion';
@@ -171,6 +172,12 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
         createdByName: user?.displayName ?? undefined,
       });
       showDay(new Date(now));
+      /*
+        這顆鍵不開表單，所以存完之後畫面上唯一的變化是時間軸多了一列——而時間軸
+        在摺線以下。沒有這句話，家長分不出「存了」和「沒按到」，於是再按一次。
+        說的是真的存進去的內容，不是一句「已儲存」。
+      */
+      toast.show(`已記錄：${describeRepeatedLog(log)}`, 'success');
     } catch (error) {
       reportWriteFailure(error, '記錄失敗，請稍後再試');
     }
@@ -291,7 +298,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
           <EmptyState
             theme={SERVICE_THEME.littlesteps}
             title="還沒有選擇寶寶"
-            description="請先在側邊欄選擇或新增寶寶"
+            description="請點右上角的帳號按鈕新增或選擇寶寶。"
           />
         </div>
       </div>
@@ -378,6 +385,16 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
           </motion.div>
         )}
 
+        {/*
+          「上次什麼時候餵的」排在記錄鍵上面：那是決定要不要按記錄鍵之前先問的事。
+          只在看今天時顯示——翻到上週的某一天，「2 小時前」說的不是那一天。
+        */}
+        {isToday && (lastFeeding || lastDiaper) && (
+          <motion.div variants={listItem} className="card mb-4">
+            <LastEventLines lastFeeding={lastFeeding} lastDiaper={lastDiaper} />
+          </motion.div>
+        )}
+
         {/* 記錄鍵排在統計前面。這一頁一天要用八次以上，多半是單手；它原本排在
             第四塊，每一次都得先滑過三個只能看的數字才按得到。 */}
         <motion.div variants={listItem} className="mb-6">
@@ -452,6 +469,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
             logType={modalType}
             editingLog={editingLog}
             lastLog={lastLogForForm}
+            childName={currentChild.name}
           />
         )}
       </motion.div>

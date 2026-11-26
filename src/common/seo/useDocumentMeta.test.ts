@@ -40,7 +40,7 @@ describe('useDocumentMeta', () => {
   });
 
   it('lets an open wiki article take over the head, and gives it back afterwards', () => {
-    const article = { id: 'fever-assessment', title: '發燒怎麼判斷', summary: '什麼時候要就醫。' };
+    const article = { id: 'drool-rash', title: '口水疹', summary: '嘴巴周圍的紅疹。' };
     const meta = metaForArticle('littlesteps/baby-wiki', article);
     const canonical = () => document.head.querySelector('link[rel="canonical"]')?.getAttribute('href');
 
@@ -49,9 +49,9 @@ describe('useDocumentMeta', () => {
     setDocumentMetaOverride(meta);
     const { unmount } = renderHook(() => useDocumentMeta('littlesteps/baby-wiki'));
 
-    expect(document.title).toBe('發燒怎麼判斷｜寶寶百科｜LittleSteps');
+    expect(document.title).toBe('口水疹｜寶寶百科｜LittleSteps');
     expect(canonical()).toBe(meta.canonical);
-    expect(canonical()).toContain('/littlesteps/baby-wiki/fever-assessment');
+    expect(canonical()).toContain('/littlesteps/baby-wiki/drool-rash');
 
     act(() => setDocumentMetaOverride(null));
 

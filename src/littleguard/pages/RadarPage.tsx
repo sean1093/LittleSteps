@@ -17,7 +17,7 @@ import CountyPicker from '../components/CountyPicker';
 import DiseaseDrawer from '../components/DiseaseDrawer';
 import DiseaseRow from '../components/DiseaseRow';
 import { AGE_LABEL, formatWeekRange, freshnessOf, summariseBoard } from '../utils/radar';
-import SuiteNote from '../../common/landing/SuiteNote';
+import SuiteNote, { SUITE_NOTES } from '../../common/landing/SuiteNote';
 
 /** 沒記到上次選的縣市時的起點；台北市是最多人一眼認得的那個。 */
 const DEFAULT_COUNTY = '台北市';
@@ -200,9 +200,12 @@ export default function RadarPage() {
             這份資料有點舊了，最新一週是 {formatWeekRange(data.weekStart, data.weekEnd)}。
           </p>
         )}
-        {freshness === 'expired' && (
-          <p className={`panel text-sm ${theme.body}`}>
-            這份資料超過一個月沒更新，最新情況請看{' '}
+        {/* 過期時這一塊要比別的面板醒目：下面每一個數字都是舊的，而它原本長得
+            和「怎麼看這個板」一模一樣。用服務自己的淡底色，不用警示色——這一頁
+            的第一條規則是沒有東西讀起來像警報。 */}
+        {freshness === 'expired' && data && (
+          <p className={`panel text-sm font-medium ${theme.tint} ${theme.body}`}>
+            這是 {formatWeekRange(data.weekStart, data.weekEnd)} 的數字，已經超過一個月沒更新。現在流行什麼，請看{' '}
             <a href={NIDSS} className={theme.ink} target="_blank" rel="noreferrer">
               疾管署
             </a>
@@ -286,7 +289,7 @@ export default function RadarPage() {
           </>
         )}
 
-        <SuiteNote />
+        <SuiteNote note={SUITE_NOTES.radar} />
       </main>
       {open && cells && data && (
         <DiseaseDrawer

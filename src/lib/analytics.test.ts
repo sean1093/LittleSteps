@@ -59,6 +59,10 @@ const ALLOWED: Record<string, string[]> = {
   vaccine_toggle: ['administered'],
   child_profile_action: ['action'],
   auth_action: ['action'],
+  // Activation signals. "A log was added" and "a calendar file was exported
+  // from this entry point" — never which kind of log, how much, or which items.
+  daily_log_action: ['action'],
+  calendar_export: ['source'],
 };
 
 /**
@@ -88,9 +92,14 @@ describe('analytics payloads', () => {
     fb.logMilestoneToggle(true);
     fb.logVaccineToggle(false);
     fb.logChildProfileAction('create');
+    fb.logChildProfileAction('join');
     fb.logAuthEvent('login');
+    fb.logDailyLogAction('add');
+    fb.logCalendarExport('vaccine');
+    fb.logCalendarExport('reminders');
+    fb.logCalendarExport('prenatal');
 
-    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(5));
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(10));
 
     for (const [name, params] of sent()) {
       expect(Object.keys(ALLOWED), `unexpected event ${name}`).toContain(name);
@@ -122,8 +131,11 @@ describe('analytics payloads', () => {
     fb.logPageView('littlesteps/vaccine-tracking');
     fb.logMilestoneToggle(false);
     fb.logVaccineToggle(true);
+    fb.logChildProfileAction('join');
+    fb.logDailyLogAction('add');
+    fb.logCalendarExport('prenatal');
 
-    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(3));
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(6));
 
     for (const [name, params] of sent()) {
       for (const key of Object.keys(params ?? {})) {
@@ -145,6 +157,22 @@ describe('analytics payloads', () => {
     expect(sent()).toEqual([
       ['milestone_toggle', { achieved: true }],
       ['vaccine_toggle', { administered: true }],
+    ]);
+  });
+
+  it('the activation events say that something happened, and nothing about it', async () => {
+    const fb = await loadRealFirebase();
+
+    fb.logChildProfileAction('join');
+    fb.logDailyLogAction('add');
+    fb.logCalendarExport('vaccine');
+
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(3));
+
+    expect(sent()).toEqual([
+      ['child_profile_action', { action: 'join' }],
+      ['daily_log_action', { action: 'add' }],
+      ['calendar_export', { source: 'vaccine' }],
     ]);
   });
 

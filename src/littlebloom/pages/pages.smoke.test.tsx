@@ -305,9 +305,12 @@ describe('PrenatalPage', () => {
     expect(record.completedDate).toBe('2026-08-27');
   });
 
-  it('已完成的項目移到已完成區並可取消', async () => {
+  it('已完成的項目移到已完成區，取消完成收在修改表單裡並先確認', async () => {
     const user = userEvent.setup();
     const onUndo = vi.fn(async (_id: string) => {});
+    // happy-dom 沒有實作 window.confirm，所以是 stub 而不是 spyOn。
+    const confirm = vi.fn((_message?: string) => false);
+    vi.stubGlobal('confirm', confirm);
 
     render(
       <PrenatalPage
@@ -322,8 +325,96 @@ describe('PrenatalPage', () => {
     const doneSection = doneHeading.closest('section')!;
     expect(within(doneSection).getByText(/已於 2026年5月25日 完成/)).toBeInTheDocument();
 
+    // 列上只有「修改」：取消完成會刪掉日期、院所與備註，不該是一碰就發生的事。
+    expect(within(doneSection).queryByRole('button', { name: '取消完成' })).not.toBeInTheDocument();
+    await user.click(within(doneSection).getByRole('button', { name: '修改' }));
+
+    // 家長按了取消：什麼都不刪。
+    await user.click(within(doneSection).getByRole('button', { name: '取消完成' }));
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(confirm.mock.calls[0][0]).toContain('這次產檢的完成記錄');
+    expect(onUndo).not.toHaveBeenCalled();
+
+    confirm.mockReturnValue(true);
     await user.click(within(doneSection).getByRole('button', { name: '取消完成' }));
     expect(onUndo).toHaveBeenCalledWith('prenatal-visit-1');
+    vi.unstubAllGlobals();
+  });
+
+  it('存過的院所與備註印在已完成的那一列上', () => {
+    render(
+      <PrenatalPage
+        currentChild={pregnant()}
+        progress={{
+          'prenatal-visit-1': {
+            completedDate: '2026-05-25',
+            clinicName: '仁愛婦幼',
+            notes: '下次要空腹',
+          },
+        }}
+        onComplete={noop}
+        onUndo={noop}
+      />,
+    );
+
+    expect(screen.getByText(/已於 2026年5月25日 完成 · 仁愛婦幼/)).toBeInTheDocument();
+    expect(screen.getByText('下次要空腹')).toBeInTheDocument();
+  });
+
+  it('修改會帶著存過的內容打開同一張表單，儲存時送出改過的值', async () => {
+    const user = userEvent.setup();
+    const onComplete = vi.fn(
+      async (_id: string, _record: { completedDate: string; clinicName?: string; notes?: string }) => {},
+    );
+
+    render(
+      <PrenatalPage
+        currentChild={pregnant()}
+        progress={{
+          'prenatal-visit-1': {
+            completedDate: '2026-05-25',
+            clinicName: '仁愛婦幼',
+            notes: '下次要空腹',
+          },
+        }}
+        onComplete={onComplete}
+        onUndo={noop}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: '修改' }));
+    expect(screen.getByLabelText('完成日期')).toHaveValue('2026-05-25');
+    expect(screen.getByPlaceholderText('院所（選填）')).toHaveValue('仁愛婦幼');
+    expect(screen.getByPlaceholderText('備註（選填）')).toHaveValue('下次要空腹');
+
+    await user.clear(screen.getByPlaceholderText('院所（選填）'));
+    await user.type(screen.getByPlaceholderText('院所（選填）'), '和平婦產科');
+    await user.click(screen.getByRole('button', { name: '儲存' }));
+
+    expect(onComplete).toHaveBeenCalledWith('prenatal-visit-1', {
+      completedDate: '2026-05-25',
+      clinicName: '和平婦產科',
+      notes: '下次要空腹',
+    });
+  });
+
+  it('匯出按鈕寫出還沒做的項數；全部做完就不顯示', () => {
+    const outstanding = resolvePrenatalItems(LMP, prenatalCheckupSchedule, {}, NOW).length;
+    const { unmount } = render(
+      <PrenatalPage currentChild={pregnant()} progress={{}} onComplete={noop} onUndo={noop} />,
+    );
+    expect(
+      screen.getByRole('button', { name: `匯出未完成的 ${outstanding} 項到行事曆` }),
+    ).toBeInTheDocument();
+    unmount();
+
+    const allDone = Object.fromEntries(
+      prenatalCheckupSchedule.map((template) => [template.id, { completedDate: '2026-08-01' }]),
+    );
+    render(
+      <PrenatalPage currentChild={pregnant()} progress={allDone} onComplete={noop} onUndo={noop} />,
+    );
+    expect(screen.queryByRole('button', { name: /到行事曆$/ })).not.toBeInTheDocument();
   });
 
   it('沒有孕期資料時說明原因', () => {
@@ -467,7 +558,10 @@ describe('PrenatalPage', () => {
       />,
     );
 
+    vi.stubGlobal('confirm', vi.fn(() => true));
+    await user.click(screen.getByRole('button', { name: '修改' }));
     await user.click(screen.getByRole('button', { name: '取消完成' }));
+    vi.unstubAllGlobals();
 
     expect(onUndo).toHaveBeenCalledWith('prenatal-visit-1');
     expect(screen.getByRole('alert')).toHaveTextContent('取消失敗');

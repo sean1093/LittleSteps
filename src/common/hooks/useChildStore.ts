@@ -234,7 +234,8 @@ export function useChildStore(user: User | null): ChildStore {
     }
     try {
       await firebaseChildren.joinChild(childUuid, childCount);
-      logChildProfileAction('create'); // Creating a reference to an existing child.
+      // 加入不是建立：兩者混在一起，就看不出有多少孩子是第二位照顧者帶進來的。
+      logChildProfileAction('join');
     } catch (error) {
       console.error('加入寶寶失敗:', error);
       throw error;
@@ -367,12 +368,31 @@ export function useChildStore(user: User | null): ChildStore {
 
   const recordBirth = async (birthday: string, gender?: Gender) => {
     if (!user || !pregnancyChild) return;
+    // 先記下來：寫入一成功 listener 就會送新的名單進來，pregnancyChild 可能
+    // 已經換成別的檔案。
+    const born = pregnancyChild;
     try {
-      await firebaseChildren.recordBirth(pregnancyChild.id, birthday, gender);
+      await firebaseChildren.recordBirth(born.id, birthday, gender);
       logChildProfileAction('update');
     } catch (error) {
       console.error('登記出生失敗:', error);
       throw error;
+    }
+
+    // 選到剛出生的這一個。出生之後它不再是「進行中的孕期」，孕期陪伴改看
+    // currentChild 有沒有帶著封存的孕期資料（見 resolvePregnancyChild）；
+    // 選取還停在哥哥姊姊身上的話，那一頁會說「還沒有孕期檔案」，剛登記的
+    // 新生兒看起來就像不見了。
+    //
+    // 直接呼叫資料層而不是 store 的 setCurrentChild：這不是家長自己切換，
+    // 不該記成一次 switch。失敗也不往上丟——出生已經寫進去了，讓表單說
+    // 「儲存失敗」會叫家長再登記一次；選取可以從帳號視窗手動換。
+    if (currentChildId !== born.id) {
+      try {
+        await firebaseChildren.setCurrentChild(born.id);
+      } catch (error) {
+        console.error('登記出生後切換寶寶失敗:', error);
+      }
     }
   };
 

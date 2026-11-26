@@ -39,7 +39,7 @@ interface VaccineTrackingPageProps {
 /**
  * 四種付費狀態各自長什麼樣。
  *
- * disc 是月齡圓圈的底色，badge 是名稱旁的標籤，note 是條件那一行的底色。
+ * badge 是名稱旁的標籤，note 是條件那一行的底色。
  * 三者同色系，家長掃一眼圓圈就知道這一劑要不要錢，不必逐張讀標籤。
  * 全部取自 tailwind.config.js 的 token；文字一律用 -dark（>=4.5:1）。
  *
@@ -48,25 +48,21 @@ interface VaccineTrackingPageProps {
  */
 const FUNDING_UI: Record<
   VaccineFunding,
-  { disc: string; badge: string; note: string }
+  { badge: string; note: string }
 > = {
   national: {
-    disc: 'bg-mint-dark',
     badge: 'bg-mint-light text-mint-dark',
     note: 'bg-mint-soft text-mint-dark',
   },
   'nhi-conditional': {
-    disc: 'bg-secondary-dark',
     badge: 'bg-secondary-light text-secondary-dark',
     note: 'bg-secondary-soft text-secondary-dark',
   },
   'self-paid': {
-    disc: 'bg-butter-dark',
     badge: 'bg-butter-light text-butter-dark',
     note: 'bg-butter-soft text-butter-dark',
   },
   'local-varies': {
-    disc: 'bg-primary-dark',
     badge: 'bg-primary-light text-primary-dark',
     note: 'bg-primary-soft text-primary-dark',
   },
@@ -397,7 +393,7 @@ export default function VaccineTrackingPage({
                     {/* Month Header */}
                     <div className="flex items-center gap-2 mb-3">
                       <h3 className="bg-mint-light text-mint-dark px-4 py-1.5 rounded-full whitespace-nowrap">
-                        {month} 個月
+                        {month === 0 ? '出生' : `${month} 個月`}
                       </h3>
                       <span className="text-sm text-ink-muted whitespace-nowrap">({vaccines.length} 項)</span>
                       <div className="flex-1 h-px bg-ink/10" />
@@ -420,16 +416,10 @@ export default function VaccineTrackingPage({
 
                         return (
                           <motion.div key={vaccine.id} layout variants={listItem} className="card">
-                            {/* Age Badge & Vaccine Header */}
-                            <div className="flex items-start gap-3 mb-3">
-                              <div className={`
-                                w-16 h-16 rounded-full flex-shrink-0 flex flex-col items-center justify-center text-white font-bold
-                                ${funding.disc}
-                              `}>
-                                <div className="text-lg leading-none">{vaccine.ageInMonths || 0}</div>
-                                <div className="text-xs font-normal opacity-90 mt-0.5">個月</div>
-                              </div>
-
+                            {/* 月齡已經寫在上面那一列的標題；原本每張卡片左邊再放一顆
+                                64px 的月齡圓牌，同一個月的每一劑都一樣。經費類別由
+                                名稱旁的標籤說明。 */}
+                            <div className="mb-3">
                               <div className="flex-1 min-w-0">
                                 <h3 className="leading-tight mb-1">{vaccine.name}</h3>
 

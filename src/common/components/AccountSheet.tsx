@@ -82,8 +82,40 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
     setEditingChild(null);
   };
 
+  /**
+   * 「刪除」有兩種後果，確認視窗要講對的那一種。判斷照抄資料層
+   * （useFirebaseChildren 的 deleteChild）：我是建立者，或名單上只剩我，整份
+   * 紀錄就對所有成員消失；否則只是把我自己移出名單，紀錄留給其他家人。
+   *
+   * 這裡原本只說「所有里程碑進度也會一併刪除」——對建立者少講了日誌、成長、
+   * 疫苗與日記，也沒講另一半會跟著失去它；對加入的人則是講錯了，他什麼都
+   * 刪不掉。兩種誤解都發生在一個回不來的動作上。
+   */
+  const confirmRemoveChild = (child: ChildProfile): boolean => {
+    const others = Object.keys(child.members ?? {}).filter((uid) => uid !== user?.uid);
+    const wholeRecordGoes = child.createdBy === user?.uid || others.length === 0;
+
+    if (!wholeRecordGoes) {
+      // 被刪掉的只有我的成員資格。window.confirm 全站只准出現在 confirmDelete
+      // 裡（confirmDelete.test 盯著），所以這一句也走它，用第三個參數講清楚
+      // 留下來的是什麼、之後怎麼回來。
+      return confirmDelete(
+        `你在「${child.name}」的成員資格`,
+        undefined,
+        '紀錄會留給其他家人，你之後需要分享代碼才能再加入。',
+      );
+    }
+
+    return confirmDelete(
+      `${child.name}的整份紀錄`,
+      '日誌、成長記錄、疫苗、里程碑與日記',
+      others.length > 0 ? '共用的家人也會一起失去這份紀錄。' : undefined,
+    );
+  };
+
   const handleDeleteChild = (id: string) => {
-    if (confirmDelete('這位寶寶的資料', '所有里程碑進度')) {
+    const child = childProfiles.find((profile) => profile.id === id);
+    if (child && confirmRemoveChild(child)) {
       store?.deleteChild(id);
       setShowChildModal(false);
       setEditingChild(null);

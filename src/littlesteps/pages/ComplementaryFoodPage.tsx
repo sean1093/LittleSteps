@@ -130,7 +130,7 @@ export default function ComplementaryFoodPage({
         <div className="grid grid-cols-2 gap-2 mb-6">
           <button onClick={() => setShowAllergyTest(true)} className="btn-secondary w-full text-sm">
             <TestTube className="w-4 h-4" />
-            <span>4x3 試敏法</span>
+            <span>怎麼試新食材</span>
           </button>
           <button onClick={() => setShowFingerFood(true)} className="btn-secondary w-full text-sm">
             <Hand className="w-4 h-4" />

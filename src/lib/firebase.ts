@@ -326,8 +326,26 @@ export const logVaccineToggle = (administered: boolean) => {
   logEvent('vaccine_toggle', { administered });
 };
 
-export const logChildProfileAction = (action: 'create' | 'update' | 'delete' | 'switch') => {
+// 'join' 與 'create' 分開記：加入家人已有的紀錄，跟建立一份新的，是兩種不同的
+// 開始方式。以前加入也記成 create，於是分不出第二位照顧者有沒有真的進來。
+export const logChildProfileAction = (
+  action: 'create' | 'join' | 'update' | 'delete' | 'switch',
+) => {
   logEvent('child_profile_action', { action });
+};
+
+/**
+ * 啟用的訊號：家長有沒有記下第一筆日誌、有沒有把提醒帶進自己的行事曆。
+ *
+ * 跟上面兩個 toggle 同一條界線——只記「發生了」。日誌事件不帶類型、奶量或
+ * 時間，匯出事件只說是從哪一個入口按的，不說匯出了哪幾項、哪一天。
+ */
+export const logDailyLogAction = (action: 'add') => {
+  logEvent('daily_log_action', { action });
+};
+
+export const logCalendarExport = (source: 'vaccine' | 'reminders' | 'prenatal') => {
+  logEvent('calendar_export', { source });
 };
 
 export const logAuthEvent = (action: 'login_start' | 'login' | 'logout' | 'login_failed') => {

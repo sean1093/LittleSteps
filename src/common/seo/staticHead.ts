@@ -30,6 +30,7 @@ const REPLACEABLE = [
   /<meta\s+property="og:title"[^>]*>\s*/g,
   /<meta\s+property="og:description"[^>]*>\s*/g,
   /<meta\s+property="og:url"[^>]*>\s*/g,
+  /<meta\s+property="og:type"[^>]*>\s*/g,
   /<meta\s+property="twitter:title"[^>]*>\s*/g,
   /<meta\s+property="twitter:description"[^>]*>\s*/g,
   /<meta\s+property="twitter:url"[^>]*>\s*/g,
@@ -42,7 +43,7 @@ const REPLACEABLE = [
 const jsonLdScript = (node: JsonLd) =>
   `<script type="application/ld+json">${JSON.stringify(node).replace(/</g, '\\u003c')}</script>`;
 
-function headFrom(meta: ResolvedMeta, jsonLd: JsonLd[]): string {
+function headFrom(meta: ResolvedMeta, jsonLd: JsonLd[], ogType: 'website' | 'article' = 'website'): string {
   return [
     `<title>${escapeHtml(meta.title)}</title>`,
     `<meta name="description" content="${escapeHtml(meta.description)}" />`,
@@ -51,6 +52,8 @@ function headFrom(meta: ResolvedMeta, jsonLd: JsonLd[]): string {
     `<meta property="og:title" content="${escapeHtml(meta.title)}" />`,
     `<meta property="og:description" content="${escapeHtml(meta.description)}" />`,
     `<meta property="og:url" content="${meta.canonical}" />`,
+    // 文章頁告訴分享預覽它是一篇文章，其餘頁面是網站的一頁。
+    `<meta property="og:type" content="${ogType}" />`,
     `<meta property="twitter:title" content="${escapeHtml(meta.title)}" />`,
     `<meta property="twitter:description" content="${escapeHtml(meta.description)}" />`,
     `<meta property="twitter:url" content="${meta.canonical}" />`,
@@ -83,7 +86,7 @@ export function headForArticle(entry: WikiArticlePage): string {
       { name: entry.wikiName, url: ROUTE_PATH[entry.page] },
       { name: entry.article.title, url: path },
     ]),
-  ]);
+  ], 'article');
 }
 
 function renderWithHead(template: string, head: string): string {

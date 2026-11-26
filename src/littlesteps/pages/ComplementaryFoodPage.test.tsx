@@ -157,7 +157,7 @@ describe('發展階段的收合', () => {
 });
 
 describe('兩張參考表用 bottom sheet 開', () => {
-  it.each(['4x3 試敏法', '手指食物指南'])('「%s」可以開、也可以關', async (label) => {
+  it.each(['怎麼試新食材', '手指食物指南'])('「%s」可以開、也可以關', async (label) => {
     const user = renderPage();
     await user.click(screen.getByRole('button', { name: label }));
 
@@ -175,15 +175,15 @@ describe('追蹤區的兩個入口', () => {
 
     await goneEventually(VIEWS.home);
     expect(screen.getByRole('button', { name: /我的食物清單/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /4×3 追蹤/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /試新食材/ })).toBeInTheDocument();
   });
 
-  it('「4×3 追蹤」也進到同一個追蹤檢視', async () => {
+  it('「試新食材」也進到同一個追蹤檢視', async () => {
     const user = renderPage();
-    await user.click(screen.getByRole('button', { name: /4×3 追蹤/ }));
+    await user.click(screen.getByRole('button', { name: /試新食材/ }));
 
     await goneEventually(VIEWS.home);
-    expect(screen.getByRole('button', { name: /4×3 追蹤/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /試新食材/ })).toBeInTheDocument();
   });
 
   it('從追蹤區也能返回主頁', async () => {
@@ -245,8 +245,8 @@ describe('記錄今天嘗試', () => {
     updateFoodTrial.mockResolvedValue(undefined);
     const user = renderPage();
 
-    await user.click(screen.getByRole('button', { name: /4×3 追蹤/ }));
-    expect(await screen.findByText(/進度：3 \/ 9 天/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /試新食材/ }));
+    expect(await screen.findByText('已觀察 3 天，沒有反應就可以試下一種')).toBeInTheDocument();
 
     // 卡片本身也是 role=button（pressable），名字含裡面那顆按鈕的字；精確比對才抓得到按鈕。
     await user.click(screen.getByRole('button', { name: '記錄今天嘗試' }));

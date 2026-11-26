@@ -12,6 +12,12 @@ interface ExplorerShellProps {
   /** 已格式化的年齡字串，例：2歲3個月 */
   ageLabel?: string;
   reminderBadge?: number;
+  /**
+   * 這一頁自己的名字。只有幼兒百科需要：它是公開頁，從搜尋進來的人看到頁首寫
+   * 「幼兒期陪伴／小小探險家」，不知道自己在哪——另外兩個知識庫的頁首都是
+   * 知識庫的名字。給了就當標題，服務名退到副標。
+   */
+  title?: string;
   children: ReactNode;
 }
 
@@ -30,6 +36,7 @@ export default function ExplorerShell({
   childName,
   ageLabel,
   reminderBadge,
+  title,
   children,
 }: ExplorerShellProps) {
   const theme = SERVICE_THEME.littleexplorer;
@@ -39,8 +46,8 @@ export default function ExplorerShell({
     <div className={`min-h-dscreen ${theme.pageBg}`}>
       <AppBar
         theme={theme}
-        title={theme.role}
-        subtitle={subtitle}
+        title={title ?? theme.role}
+        subtitle={title ? theme.role : subtitle}
         actions={
           /* explorer-sand (#FDF8EE) is almost white, so the default neutral
              tint would disappear against the bar. */

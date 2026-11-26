@@ -22,6 +22,9 @@ const mocks = vi.hoisted(() => ({
   readChildExport: vi.fn(),
   deleteAccount: vi.fn().mockResolvedValue(true),
   deleteAccountData: vi.fn().mockResolvedValue(undefined),
+  deleteChild: vi.fn(),
+  // 第一個孩子的建立者與成員名單；刪除確認的措辭取決於這兩件事。
+  firstChildAccess: { createdBy: 'u1', members: { u1: true } as Record<string, true> },
 }));
 
 vi.mock('../utils/download', () => ({ downloadFile: vi.fn() }));
@@ -36,7 +39,7 @@ vi.mock('../hooks/useChildStore', () => ({
         milestoneProgress: {},
         vaccineProgress: {},
         createdAt: '2025-02-27T00:00:00.000Z',
-        createdBy: 'u1',
+        ...mocks.firstChildAccess,
       },
       {
         id: 'c2',
@@ -53,7 +56,7 @@ vi.mock('../hooks/useChildStore', () => ({
     addChild: vi.fn(),
     joinChild: vi.fn(),
     updateChild: vi.fn(),
-    deleteChild: vi.fn(),
+    deleteChild: mocks.deleteChild,
     readChildExport: mocks.readChildExport,
     deleteAccountData: mocks.deleteAccountData,
   }),
@@ -88,6 +91,7 @@ const openSheet = async (service: 'littlesteps' | 'littleexplorer' | 'babyoasis'
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.firstChildAccess = { createdBy: 'u1', members: { u1: true } };
 });
 
 describe('每個服務都碰得到帳號', () => {
@@ -311,5 +315,68 @@ describe('刪除帳號', () => {
 
     await waitFor(() => expect(mocks.deleteAccountData).toHaveBeenCalled());
     expect(mocks.deleteAccount).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * 「刪除這位寶寶」有兩種後果：整份紀錄對所有人消失，或只是自己離開。確認
+ * 視窗原本兩種都只說「所有里程碑進度也會一併刪除」——對建立者講得太少，對
+ * 加入的人則是講錯了。
+ */
+describe('刪除寶寶前的確認', () => {
+  const askToDelete = async () => {
+    const user = await openSheet('littlesteps');
+    await user.click(await screen.findByRole('button', { name: '編輯 小豆 的資料' }));
+    await user.click(await screen.findByRole('button', { name: '刪除這位寶寶的資料' }));
+    return vi.mocked(window.confirm).mock.calls[0][0] as string;
+  };
+
+  it('只有自己在用：講出整份紀錄有哪些，不提家人', async () => {
+    window.confirm = vi.fn(() => true);
+    const message = await askToDelete();
+
+    expect(message).toContain('小豆的整份紀錄');
+    expect(message).toContain('日誌、成長記錄、疫苗、里程碑與日記');
+    expect(message).toContain('無法復原');
+    expect(message).not.toContain('家人');
+    expect(mocks.deleteChild).toHaveBeenCalledWith('c1');
+  });
+
+  it('自己建立、和家人共用：說清楚家人也會失去它', async () => {
+    mocks.firstChildAccess = { createdBy: 'u1', members: { u1: true, u2: true } };
+    window.confirm = vi.fn(() => true);
+    const message = await askToDelete();
+
+    expect(message).toContain('小豆的整份紀錄');
+    expect(message).toContain('共用的家人也會一起失去這份紀錄。');
+    expect(message).toContain('無法復原');
+  });
+
+  it('加入別人建立的寶寶：只是把自己移出，不說成刪除', async () => {
+    mocks.firstChildAccess = { createdBy: 'u2', members: { u1: true, u2: true } };
+    window.confirm = vi.fn(() => true);
+    const message = await askToDelete();
+
+    expect(message).toContain('你在「小豆」的成員資格');
+    expect(message).toContain('紀錄會留給其他家人，你之後需要分享代碼才能再加入。');
+    // 沒有任何紀錄被刪掉，所以整份紀錄那一套說法一個字都不該出現。
+    expect(message).not.toContain('整份紀錄');
+    expect(message).not.toContain('日誌');
+    expect(mocks.deleteChild).toHaveBeenCalledWith('c1');
+  });
+
+  it('建立者已經離開、名單上只剩自己：整份紀錄會消失，照實說', async () => {
+    mocks.firstChildAccess = { createdBy: 'u2', members: { u1: true } };
+    window.confirm = vi.fn(() => true);
+    const message = await askToDelete();
+
+    expect(message).toContain('小豆的整份紀錄');
+    expect(message).not.toContain('成員資格');
+  });
+
+  it('按取消就什麼都不做', async () => {
+    window.confirm = vi.fn(() => false);
+    await askToDelete();
+    expect(mocks.deleteChild).not.toHaveBeenCalled();
   });
 });

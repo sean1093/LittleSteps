@@ -45,10 +45,8 @@ export const foodStages: FoodStage[] = [
       "每餐量約60-250ml，總奶量維持500cc以上",
       "可先嘗試一半打泥、一半不打泥",
       "觀察吞嚥狀況後慢慢調整成「粥不打泥」",
-      "腸胃消化功能提升，可「開葷」加入蛋白質",
-      "可加入雞、豬、牛、魚、蛋黃、豆腐",
-      "可開始使用高湯熬粥",
-      "為好消化，一歲前肉類仍建議打泥"
+      "雞、豬、牛、魚、蛋、豆腐從開始吃副食品就可以給，這個階段繼續增加種類",
+      "可開始使用高湯熬粥"
     ],
     warnings: [
       "嚴禁餵食蜂蜜（有肉毒桿菌風險）",
@@ -179,6 +177,12 @@ export const fruitAllergyLevels: FoodAllergyLevel[] = [
 ];
 
 // 試敏菜單與月份推薦
+// 肉、魚、蛋、豆腐與常見過敏原排在 6 個月那一列，並寫明「開始吃副食品後」：這張表原本
+// 把它們排到 7 個月與 10 個月，和同一個檔案的原則卡（不需延後過敏原、6 個月後優先補鐵）
+// 互相矛盾。不放在 4 個月那一列，是因為那樣讀起來像「4 個月就給蝦和堅果」，而原則卡說的
+// 是約 6 個月開始、不早於滿 4 個月。
+// 來源（2026-11-26 查證）：AAP「Starting Solid Foods」
+// https://www.healthychildren.org/English/ages-stages/baby/feeding-nutrition/Pages/Starting-Solid-Foods.aspx
 export const monthlyFoodMenus: MonthlyFoodMenu[] = [
   {
     month: "4個月",
@@ -202,8 +206,10 @@ export const monthlyFoodMenus: MonthlyFoodMenu[] = [
   },
   {
     month: "6個月",
-    focus: "嘗試不同質地與微量辛香料",
+    focus: "開始吃副食品後（約 6 個月）就可以給肉、魚、蛋、豆腐與常見過敏原，煮到全熟、打成泥；堅果只給粉或泥。也可以嘗試不同質地與微量辛香料",
     foods: [
+      "雞肉", "白肉魚片（鯛魚、比目魚、鱸魚）", "猪肉", "牛肉", "豆腐（高敏）", "蛋黃（高敏）",
+      "核桃（磨粉或打泥，高敏）", "蝦子（高敏）",
       "米豆",
       "甜菜根", "茭白筍", "菠菜（高敏）", "茄子（高敏）", "蕃茄（高敏）",
       "芭樂", "香瓜", "蜜李", "木瓜（高敏）",
@@ -212,9 +218,8 @@ export const monthlyFoodMenus: MonthlyFoodMenu[] = [
   },
   {
     month: "7個月",
-    focus: "正式開葷（肉類、高湯與蛋白質）",
+    focus: "肉、魚、蛋、豆腐從開始吃副食品（約 6 個月）就可以給，煮到全熟、打成泥；這些是鐵的主要來源",
     foods: [
-      "雞肉", "白肉魚片（鯛魚、比目魚、鱸魚）", "猪肉", "牛肉", "豆腐（高敏）", "蛋黃（高敏）",
       "芹菜", "山芹菜", "韭黃", "韭菜", "絲瓜", "瓠瓜", "大黃瓜", "小黃瓜",
       "菱角", "秋葵", "苦瓜", "毛豆（高敏）", "皇帝豆（高敏）", "豌豆仁（高敏）",
       "雞骨高湯", "魚骨高湯", "猪骨高湯", "蒜頭雞湯",
@@ -240,10 +245,10 @@ export const monthlyFoodMenus: MonthlyFoodMenu[] = [
   },
   {
     month: "10個月以上",
-    focus: "多元口感與易過敏水果",
+    focus: "常見過敏原（蛋、花生、堅果、魚蝦）不需要等到這時候；堅果只能給粉或泥，不給整顆",
     foods: [
-      "核桃（高敏）", "雪蓮子/鷹嘴豆（高敏）", "百合（高敏）", "栗子（高敏）",
-      "芋頭（高敏）", "竹筍（高敏）", "牛蒡（高敏）", "蝦子（高敏）",
+      "雪蓮子/鷹嘴豆（高敏）", "百合（高敏）", "栗子（高敏）",
+      "芋頭（高敏）", "竹筍（高敏）", "牛蒡（高敏）",
       "鳳梨（高敏）", "水蜜桃（高敏）", "芒果（高敏）", "檸檬（高敏）", "奇異果（高敏）", "柳丁（高敏）"
     ]
   }
@@ -301,7 +306,7 @@ export const foodPrinciples: FoodPrinciple[] = [
   },
   {
     id: "natural-foods",
-    title: "一歲前除蜂蜜外都可嘗試",
+    title: "一歲前不給蜂蜜、不以鮮奶當主食，其餘天然食物都可嘗試",
     description: "什麼天然食物都可以添加，除非吃了產生過敏症狀。少量多樣化最重要",
     icon: "Leaf"
   }
@@ -346,25 +351,26 @@ export const foodWarnings: FoodWarning[] = [
   }
 ];
 
-// 4x3 試敏法
+// 每 3–5 天試一種新食材
+// 原本的「4x3 試敏法」一種食材要 9 天（小量 3 天、增量 3 天、再觀察 3 天），
+// 照做的話 6 個月大的寶寶半年試不到 20 種食物；AAP 的說法是每 3 到 5 天一種。
+// 來源（2026-11-26 查證）：AAP「Starting Solid Foods」
+// https://www.healthychildren.org/English/ages-stages/baby/feeding-nutrition/Pages/Starting-Solid-Foods.aspx
 export const allergyTestingMethod = {
-  name: "4x3 試敏法",
+  name: "每 3–5 天試一種新食材",
+  // 一種新食材要觀察幾天；追蹤器該讀這裡，而不是自己乘出天數。
+  observeDays: { min: 3, max: 5 },
   description: "早期接觸（4-9個月內）反而能建立免疫耐受性，降低未來過敏機率",
   steps: [
     {
       step: 1,
-      title: "小量試3天",
+      title: "先給一小口",
       description: "第一天給一小口，觀察是否有紅疹、腹瀉、嘔吐"
     },
     {
       step: 2,
-      title: "增量試3天",
-      description: "若無反應，第二天增加份量，持續觀察"
-    },
-    {
-      step: 3,
-      title: "觀察3天",
-      description: "停止新食材，觀察是否有延遲性過敏"
+      title: "沒有反應再加量",
+      description: "若無反應，第二天起增加份量，持續觀察；3 到 5 天都沒事，再換下一種新食材"
     }
   ],
   principle: "每次只試「一種」新食材。若出現嘴唇或臉腫、呼吸困難、聲音沙啞、反覆嘔吐或全身起疹，立刻撥 119，之後要不要再試由醫師決定；輕微的反應先記錄下來並暫停該食材，回診時問醫師"
@@ -571,6 +577,20 @@ export const infantFoodRestrictions: FoodRestrictionCategory[] = [
   {
     category: "需注意事項",
     items: [
+      // 來源（2026-11-26 查證）：AAP「Why Formula Instead of Cow's Milk?」
+      // https://www.healthychildren.org/English/ages-stages/baby/formula-feeding/Pages/Why-Formula-Instead-of-Cows-Milk.aspx
+      {
+        food: "鮮奶當飲料",
+        ageLimit: "1 歲前",
+        reason: "不能取代母乳或配方奶；少量入菜、優格、起司可以"
+      },
+      // 來源（2026-11-26 查證）：AAP「Starting Solid Foods」
+      // https://www.healthychildren.org/English/ages-stages/baby/feeding-nutrition/Pages/Starting-Solid-Foods.aspx
+      {
+        food: "果汁",
+        ageLimit: "1 歲前",
+        reason: "不需要，也不建議"
+      },
       {
         food: "鹽巴調味",
         ageLimit: "1歲前不建議",

@@ -55,7 +55,13 @@ const sleepInProgress = (date: string, hour = '20'): DailyLog => {
 const poop = (date: string, hour = '09'): DailyLog =>
   makeLog('diaper', `${date}T${hour}:00:00+08:00`, { type: 'poop' });
 
+const pee = (date: string, hour = '09'): DailyLog =>
+  makeLog('diaper', `${date}T${hour}:00:00+08:00`, { type: 'pee' });
+
 const idsOf = (alerts: { id: string }[]) => alerts.map((alert) => alert.id);
+
+/** 餵奶間隔的提醒只給未滿 3 個月的寶寶。 */
+const NEWBORN_MONTHS = 1;
 
 describe('alertEngine', () => {
   beforeEach(() => {
@@ -187,7 +193,11 @@ describe('alertEngine', () => {
     });
 
     it('still reports a gap since the last feed, which is a real-time fact', () => {
-      const alerts = detectFeedingAlerts([feeding(TODAY, 120, '01')], AGE_MONTHS);
+      // 01:00 餵奶，08:30 還記了一片尿布：家長在記，只是八小時沒有餵奶紀錄。
+      const alerts = detectFeedingAlerts(
+        [feeding(TODAY, 120, '01'), pee(TODAY, '08')],
+        NEWBORN_MONTHS,
+      );
 
       expect(alerts).toHaveLength(1);
       expect(alerts[0].id).toBe('feeding-long-gap');
@@ -195,7 +205,53 @@ describe('alertEngine', () => {
     });
 
     it('reports no gap when the baby was fed within the last six hours', () => {
-      expect(detectFeedingAlerts([feeding(TODAY, 120, '08')], AGE_MONTHS)).toEqual([]);
+      expect(
+        detectFeedingAlerts([feeding(TODAY, 120, '08'), pee(TODAY, '08')], NEWBORN_MONTHS),
+      ).toEqual([]);
+    });
+
+    /*
+      The alert measures time since the last LOGGED feed. A parent who simply
+      stopped logging was being told, every time they opened the app, that
+      their baby had not eaten for days.
+    */
+    describe('only while the parent is still logging', () => {
+      it('stays silent when the last feed is also the last thing ever logged', () => {
+        expect(detectFeedingAlerts([feeding(TODAY, 120, '01')], NEWBORN_MONTHS)).toEqual([]);
+      });
+
+      it('does not count a log older than the feed as evidence', () => {
+        const logs = [pee(TODAY, '00'), feeding(TODAY, 120, '01')];
+
+        expect(detectFeedingAlerts(logs, NEWBORN_MONTHS)).toEqual([]);
+      });
+
+      it('stays silent when the newer log is itself more than 24 hours old', () => {
+        // 06-13 餵奶，06-14 08:59 記了尿布——距離現在 24 小時又 1 分鐘，之後就沒再記。
+        const stale = makeLog('diaper', `${YESTERDAY}T08:59:00+08:00`, { type: 'pee' });
+        const logs = [feeding('2026-06-13', 120, '20'), stale];
+
+        expect(detectFeedingAlerts(logs, NEWBORN_MONTHS)).toEqual([]);
+      });
+
+      it('speaks when the newer log is exactly 24 hours old', () => {
+        const logs = [feeding('2026-06-13', 120, '20'), pee(YESTERDAY, '09')];
+
+        expect(idsOf(detectFeedingAlerts(logs, NEWBORN_MONTHS))).toEqual(['feeding-long-gap']);
+      });
+    });
+
+    describe('only for a baby under three months', () => {
+      const logs = () => [feeding(TODAY, 120, '01'), pee(TODAY, '08')];
+
+      it('fires at two months', () => {
+        expect(idsOf(detectFeedingAlerts(logs(), 2))).toEqual(['feeding-long-gap']);
+      });
+
+      it('is silent from three months on', () => {
+        expect(detectFeedingAlerts(logs(), 3)).toEqual([]);
+        expect(detectFeedingAlerts(logs(), AGE_MONTHS)).toEqual([]);
+      });
     });
 
     /*
@@ -209,7 +265,8 @@ describe('alertEngine', () => {
         amount: 140,
         duration: 20,
       });
-      const alerts = detectFeedingAlerts([feeding(TODAY, 120, '01'), pumped], AGE_MONTHS);
+      // 擠奶不是一餐，但它證明她還在記——所以提醒照樣要響。
+      const alerts = detectFeedingAlerts([feeding(TODAY, 120, '01'), pumped], NEWBORN_MONTHS);
 
       expect(idsOf(alerts)).toContain('feeding-long-gap');
     });
@@ -230,20 +287,46 @@ describe('alertEngine', () => {
   });
 
   describe('detectPoopAlerts', () => {
-    it('warns after 48 hours without a poop', () => {
-      const alerts = detectPoopAlerts([poop('2026-06-13', '08')]);
-
-      expect(alerts).toHaveLength(1);
-      expect(alerts[0].id).toBe('poop-no-poop-48h');
-      expect(alerts[0].severity).toBe('warning');
+    it('says nothing at 48 hours: a couple of days between stools is common', () => {
+      // 06-13 08:00 之後 49 小時，家長今天還在記。
+      expect(detectPoopAlerts([poop('2026-06-13', '08'), pee(TODAY, '08')])).toEqual([]);
     });
 
-    it('escalates past 72 hours', () => {
-      const alerts = detectPoopAlerts([poop('2026-06-12', '08')]);
+    it('says nothing at exactly 72 hours', () => {
+      expect(detectPoopAlerts([poop('2026-06-12', '09'), pee(TODAY, '08')])).toEqual([]);
+    });
+
+    it('raises one warning past 72 hours, naming the signs that do need a doctor', () => {
+      const alerts = detectPoopAlerts([poop('2026-06-12', '08'), pee(TODAY, '08')]);
 
       expect(alerts).toHaveLength(1);
       expect(alerts[0].id).toBe('poop-no-poop-72h');
-      expect(alerts[0].severity).toBe('danger');
+      expect(alerts[0].severity).toBe('warning');
+      expect(alerts[0].message).toBe(
+        '已 73 小時沒有排便紀錄。便便軟、吃得好、精神好，幾天一次也常見；便硬、解便時哭、肚子脹、吐或帶血，請就醫。',
+      );
+    });
+
+    it('never escalates to danger, however long it has been', () => {
+      const alerts = detectPoopAlerts([poop('2026-06-05', '08'), pee(TODAY, '08')]);
+
+      expect(alerts.map((alert) => alert.severity)).toEqual(['warning']);
+    });
+
+    it('stays silent when the stool is the last thing the parent logged', () => {
+      expect(detectPoopAlerts([poop('2026-06-12', '08')])).toEqual([]);
+    });
+
+    it('stays silent when logging stopped more than 24 hours ago', () => {
+      const stale = makeLog('diaper', `${YESTERDAY}T08:59:00+08:00`, { type: 'pee' });
+
+      expect(detectPoopAlerts([poop('2026-06-10', '08'), stale])).toEqual([]);
+    });
+
+    it('speaks when the newest log is exactly 24 hours old', () => {
+      const alerts = detectPoopAlerts([poop('2026-06-10', '08'), pee(YESTERDAY, '09')]);
+
+      expect(idsOf(alerts)).toEqual(['poop-no-poop-72h']);
     });
 
     it('says nothing when there has never been a poop to measure from', () => {
@@ -252,13 +335,12 @@ describe('alertEngine', () => {
   });
 
   describe('getActiveAlerts', () => {
-    it('puts danger before warning', () => {
+    it('reports the stool and sleep warnings together, neither as danger', () => {
       const logs = [poop('2026-06-12', '08'), sleep(YESTERDAY, 360), feeding(TODAY, 120, '08')];
 
-      expect(idsOf(getActiveAlerts(logs, AGE_MONTHS))).toEqual([
-        'poop-no-poop-72h',
-        'sleep-below-recommended',
-      ]);
+      const alerts = getActiveAlerts(logs, AGE_MONTHS);
+      expect(idsOf(alerts)).toEqual(['poop-no-poop-72h', 'sleep-below-recommended']);
+      expect(alerts.every((alert) => alert.severity === 'warning')).toBe(true);
     });
 
     it('returns nothing on a well-recorded, unremarkable day', () => {

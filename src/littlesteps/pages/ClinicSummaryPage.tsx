@@ -111,7 +111,7 @@ export default function ClinicSummaryPage({
           <EmptyState
             theme={SERVICE_THEME.littlesteps}
             title="尚未建立寶寶檔案"
-            description="請從左上角選單新增寶寶資料"
+            description="請點右上角的帳號按鈕新增或選擇寶寶。"
           />
         </div>
       </div>

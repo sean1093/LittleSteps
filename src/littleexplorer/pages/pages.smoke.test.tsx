@@ -128,6 +128,60 @@ describe('DevelopmentPage', () => {
     expect(screen.getByText(/已依早產矯正/)).toBeInTheDocument();
   });
 
+  it('「這週可以試試」給的是第一個還沒勾的項目的點子；換到別的年齡段就收起來', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const panel = screen.getByRole('heading', { name: '這週可以試試' }).closest('section')!;
+    expect(within(panel).getByText(/^來自：/)).toBeInTheDocument();
+
+    // 翻到下一段是在預習，那一段的練習不是「這週」的事。
+    await user.click(screen.getByRole('button', { name: '2 歲 6 個月-3 歲' }));
+    expect(screen.queryByRole('heading', { name: '這週可以試試' })).not.toBeInTheDocument();
+  });
+
+  it('這個年齡段全勾了就說都會了，不再塞練習', () => {
+    const allDone = Object.fromEntries(
+      developmentCheckItems
+        .filter((item) => item.ageBand === '24-30')
+        .map((item) => [item.id, { achieved: true }]),
+    );
+    render(
+      <DevelopmentPage onAddChild={noopAddChild}
+        currentChild={child()}
+        progress={allDone}
+        toothProgress={{}}
+        onToggleTooth={noop}
+        onToggleCheck={noop}
+        onQuickDiary={noop}
+      />,
+    );
+
+    const panel = screen.getByRole('heading', { name: '這週可以試試' }).closest('section')!;
+    expect(
+      within(panel).getByText('這個階段的都會了，可以看下一個階段在玩什麼。'),
+    ).toBeInTheDocument();
+    expect(within(panel).queryByText(/^來自：/)).not.toBeInTheDocument();
+  });
+
+  it('警訊開頭講明對的是這個階段結束時的年齡', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /什麼時候該諮詢醫師/ }));
+    expect(
+      screen.getByText('到了這個階段結束時（2 歲半），如果還有下面任何一項：'),
+    ).toBeInTheDocument();
+  });
+
+  it('每日記錄的入口通往寶寶成長的日誌', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /記午睡、吃飯和尿布/ }));
+    expect(window.location.pathname).toBe('/littlesteps/daily-log');
+  });
+
   it('足月寶寶看不到矯正說明', () => {
     renderPage();
     expect(screen.queryByText(/已依早產矯正/)).not.toBeInTheDocument();
@@ -462,8 +516,19 @@ describe('RemindersPage', () => {
     expect(within(doneSection).getByText(target.template.title)).toBeInTheDocument();
     expect(within(doneSection).getByText('已於 2026年8月1日 完成')).toBeInTheDocument();
 
+    // happy-dom 不提供 window.confirm，需自行注入才能觀察二次確認。
+    const confirmStub = vi.fn((_message?: string) => false);
+    vi.stubGlobal('confirm', confirmStub);
+
+    // 取消完成會刪掉日期、院所與備註：家長說不要，就什麼都不動。
+    await user.click(within(doneSection).getByRole('button', { name: '取消完成' }));
+    expect(confirmStub).toHaveBeenCalledTimes(1);
+    expect(onUndoTask).not.toHaveBeenCalled();
+
+    confirmStub.mockReturnValue(true);
     await user.click(within(doneSection).getByRole('button', { name: '取消完成' }));
     expect(onUndoTask).toHaveBeenCalledWith(target.template.id);
+    vi.unstubAllGlobals();
   });
 
   it('沒有取消回呼時，已完成的項目仍然看得到，只是沒有取消鍵', () => {

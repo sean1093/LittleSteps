@@ -51,7 +51,7 @@ export default function FoodHomeView({
           </button>
           <button onClick={() => onOpenTracking('tracker')} className="btn-secondary w-full text-sm">
             <Calendar className="w-5 h-5" />
-            <span>4×3 追蹤</span>
+            <span>試新食材</span>
           </button>
         </div>
       </div>

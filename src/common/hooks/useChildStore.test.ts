@@ -4,6 +4,7 @@ import type { User } from 'firebase/auth';
 import type { ChildProfile } from '../../types';
 import { CHILD_LIMIT_MESSAGE } from '../childLimits';
 import { useChildStore } from './useChildStore';
+import { logChildProfileAction } from '../../lib/firebase';
 import { SIGNED_OUT_CHILD_STORE } from '../contexts/signedOutChildStore';
 
 // Login is mandatory, so the store is Firebase-only. Mock the Firebase-backed
@@ -144,6 +145,74 @@ describe('useChildStore (Firebase mode)', () => {
       undefined,
     );
     expect(h.firebaseChildren.joinChild).toHaveBeenCalledWith('uuid-1', 1);
+  });
+
+  // 第二胎：選取中的是哥哥姊姊。登記出生只寫了那份孕期檔案，沒有選它——
+  // 出生之後它不再是「進行中的孕期」，resolvePregnancyChild 退回 currentChild，
+  // 而 currentChild 是沒有孕期資料的老大，孕期陪伴於是說「還沒有孕期檔案」。
+  describe('登記出生', () => {
+    it('選取中的是另一個孩子時，登記完就選到剛出生的那一個', async () => {
+      h.userChildren = listing([child(), bump()], 'c1');
+      const { result } = renderHook(() => useChildStore(user));
+
+      await act(async () => {
+        await result.current.recordBirth('2026-11-20', 'female');
+      });
+
+      expect(h.firebaseChildren.recordBirth).toHaveBeenCalledWith('p1', '2026-11-20', 'female');
+      expect(h.firebaseChildren.setCurrentChild).toHaveBeenCalledWith('p1');
+    });
+
+    it('選了之後，孕期陪伴認得出這個剛出生的孩子', () => {
+      // 資料層寫完之後的樣子：孕期封存、選取指向新生兒。
+      const born = child({
+        ...bump(),
+        isPregnancy: false,
+        pregnancyData: { ...bump().pregnancyData!, status: 'archived' },
+      });
+      h.userChildren = listing([child(), born], 'p1');
+      const { result } = renderHook(() => useChildStore(user));
+
+      expect(result.current.pregnancyChild?.id).toBe('p1');
+    });
+
+    it('登記失敗時不動選取', async () => {
+      h.userChildren = listing([child(), bump()], 'c1');
+      h.firebaseChildren.recordBirth.mockRejectedValueOnce(new Error('PERMISSION_DENIED'));
+      const { result } = renderHook(() => useChildStore(user));
+
+      await act(async () => {
+        await expect(result.current.recordBirth('2026-11-20')).rejects.toThrow();
+      });
+
+      expect(h.firebaseChildren.setCurrentChild).not.toHaveBeenCalled();
+    });
+
+    it('出生已經寫進去了：選取那一步失敗不算登記失敗', async () => {
+      h.userChildren = listing([child(), bump()], 'c1');
+      h.firebaseChildren.setCurrentChild.mockRejectedValueOnce(new Error('offline'));
+      const { result } = renderHook(() => useChildStore(user));
+
+      await act(async () => {
+        await expect(result.current.recordBirth('2026-11-20')).resolves.toBeUndefined();
+      });
+    });
+  });
+
+  it('加入記成 join，不是 create——兩種開始方式要分得出來', async () => {
+    h.userChildren = listing([]);
+    const { result } = renderHook(() => useChildStore(user));
+
+    await act(async () => {
+      await result.current.joinChild('uuid-1');
+    });
+    expect(logChildProfileAction).toHaveBeenCalledWith('join');
+    expect(logChildProfileAction).not.toHaveBeenCalledWith('create');
+
+    await act(async () => {
+      await result.current.addChild('小華', '2026-02-02');
+    });
+    expect(logChildProfileAction).toHaveBeenLastCalledWith('create');
   });
 
   it('enforces the 2-child free-tier limit without calling Firebase', async () => {

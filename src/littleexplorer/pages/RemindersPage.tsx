@@ -26,6 +26,7 @@ import ExplorerShell from '../components/ExplorerShell';
 import NoChildNotice from '../components/NoChildNotice';
 import AgeBandPicker from '../components/AgeBandPicker';
 import { goTo } from '../../common/navigate';
+import { confirmDelete } from '../../common/ui/confirmDelete';
 import { CARE_TASK_LOCATION_LIMIT, CARE_TASK_NOTES_LIMIT } from '../../common/recordLimits';
 
 const THEME = SERVICE_THEME.littleexplorer;
@@ -194,6 +195,8 @@ export default function RemindersPage({
 
   const undoTask = async (taskId: string) => {
     if (!onUndoTask || saving) return;
+    // 取消完成會把日期、院所與備註一起刪掉，沒有地方找回來，所以先問。
+    if (!confirmDelete('這一項的完成記錄')) return;
     setSaving(true);
     setFailure(null);
     try {

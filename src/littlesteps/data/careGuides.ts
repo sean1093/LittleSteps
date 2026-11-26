@@ -41,6 +41,15 @@ export const generalSafetyItems: GeneralSafetyItem[] = [
 ];
 
 // 按月齡分組的照顧重點
+// 第 1、2、3 個月各放一次未滿 3 個月的發燒規則：家長一次只看當月那一張卡。
+// 來源（2026-11-26 查證）：AAP「Fever and Your Baby」
+// https://www.healthychildren.org/English/health-issues/conditions/fever/Pages/Fever-and-Your-Baby.aspx
+// 趴著玩的時間長度
+// 來源（2026-11-26 查證）：AAP「Back to Sleep, Tummy to Play」
+// https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/Back-to-Sleep-Tummy-to-Play.aspx
+// 滿 1 歲的鮮奶上限
+// 來源（2026-11-26 查證）：AAP「Why Formula Instead of Cow's Milk?」
+// https://www.healthychildren.org/English/ages-stages/baby/formula-feeding/Pages/Why-Formula-Instead-of-Cows-Milk.aspx
 export const monthlyCareGuides: MonthlyCareGuide[] = [
   // 第 1-3 個月：生理適應與感官啟蒙
   {
@@ -50,7 +59,8 @@ export const monthlyCareGuides: MonthlyCareGuide[] = [
     highlights: [
       "臍帶脫落前保持乾燥（洗澡後用 95% 酒精消毒乾燥）",
       "新生兒脫皮是正常的，不需過度擦乳液",
-      "一週洗澡 2-3 次即可"
+      "一週洗澡 2-3 次即可",
+      "未滿 3 個月體溫 38°C 以上，即使精神還好也要立刻就醫，不要先自行退燒"
     ]
   },
   {
@@ -60,7 +70,8 @@ export const monthlyCareGuides: MonthlyCareGuide[] = [
     highlights: [
       "進入「腸絞痛」高發期，餵奶後務必拍嗝",
       "每天做 2-3 次排氣操（空中腳踏車）",
-      "此時開始會社會性微笑，多給予眼神交流"
+      "此時開始會社會性微笑，多給予眼神交流",
+      "未滿 3 個月體溫 38°C 以上，即使精神還好也要立刻就醫，不要先自行退燒"
     ]
   },
   {
@@ -68,9 +79,10 @@ export const monthlyCareGuides: MonthlyCareGuide[] = [
     title: "抬頭與感官發展",
     category: "physiological",
     highlights: [
-      "清醒時趴著練抬頭（Tummy Time），大人全程在旁，每天數次、每次 1-2 分鐘；睡覺一律仰睡",
+      "清醒時趴著玩，大人全程在旁；一天合計慢慢拉到 30 分鐘，分很多次也可以。睡覺一律仰睡",
       "加強頸部肌肉發展",
-      "白天拉開窗簾、晚上關燈，建立晝夜節律"
+      "白天拉開窗簾、晚上關燈，建立晝夜節律",
+      "未滿 3 個月體溫 38°C 以上，即使精神還好也要立刻就醫，不要先自行退燒"
     ]
   },
 
@@ -102,7 +114,8 @@ export const monthlyCareGuides: MonthlyCareGuide[] = [
     highlights: [
       "正式進入副食品規律期（一天 1-2 次）",
       "開始練習坐姿，周圍需墊軟墊",
-      "早晚用紗布巾擦拭牙齦與新牙"
+      "早晚用紗布巾擦拭牙齦與新牙",
+      "拿硬頁書或布書給他，咬書也算在看書；指著圖說名字就好"
     ]
   },
 
@@ -146,7 +159,7 @@ export const monthlyCareGuides: MonthlyCareGuide[] = [
     highlights: [
       "提供手指食物（如煮軟的紅蘿蔔條、香蕉切片）",
       "訓練手眼協調與咀嚼能力",
-      "應減少奶量，增加固體食物比例"
+      "固體食物逐漸增加，奶量自然減少，不需刻意減"
     ]
   },
   {
@@ -166,7 +179,8 @@ export const monthlyCareGuides: MonthlyCareGuide[] = [
     highlights: [
       "滿週歲後，飲食應改為「正餐為主、奶為輔」（早晚奶）",
       "可開始練習拿湯匙",
-      "嘗試與大人共餐（去油去鹽）"
+      "嘗試與大人共餐（去油去鹽）",
+      "滿 1 歲可開始喝全脂鮮奶，一天不超過約 480 ml"
     ]
   }
 ];

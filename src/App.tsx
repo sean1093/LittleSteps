@@ -1,5 +1,5 @@
 import { useState, useEffect, Suspense, lazy } from 'react';
-import { Menu, Home } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { pageFromPath, type Page, type LittleStepsPage } from './types/routes';
 import { entryPageForChild, serviceForStage, stageOfChild } from './common/stageEntry';
 import { goTo, subscribeToNavigation } from './common/navigate';
@@ -87,6 +87,15 @@ function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>(() => pageFromPath(window.location.pathname));
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // 入口頁的表單剛送出第一個孩子，名單還沒回來。這個旗標住在這裡而不是
+  // LandingPage 裡：名單一多出一個 id，childrenLoading 會短暫變回 true，下面
+  // 整個畫面換成載入條，LandingPage 跟著卸載——放在它自己的 state 裡，等孩子
+  // 真的出現時旗標已經不在了。
+  const [awaitingFirstChild, setAwaitingFirstChild] = useState(false);
+  // 家長在名單回來之前自己走開了，就不要等他下次回到入口頁時把他帶走。
+  useEffect(() => {
+    if (currentPage !== 'home') setAwaitingFirstChild(false);
+  }, [currentPage]);
 
 
   // Get daily logs for current child
@@ -203,14 +212,11 @@ function AppContent() {
       return SERVICE_THEME.littleexplorer.role;
     }
 
-    // 服務首頁的標題是服務的角色名「寶寶成長」，不是英文代號；其餘每一頁的標題是頁名本身，有孩子時前面加
-    // 「誰的」。這裡原本沒有孩子時把頁名直接接在 wordmark 後面，於是未登入的
-    // 訪客——也就是從搜尋進到百科的每一個人——看到的是「LittleSteps寶寶…」，
-    // 在 390px 上頁名幾乎整個被截掉。
+    // 服務首頁的標題是服務的角色名「寶寶成長」，不是英文代號；其餘每一頁的
+    // 標題就是頁名本身。「誰的」放在副標（見下面的 AppBar）：這裡原本組成
+    // 「{名字} 的 里程碑追蹤」，而這一列還有四顆 44px 的按鈕，在 390px 上被
+    // 截掉的正好是後半段的頁名——家長看得到孩子的名字，看不到自己在哪一頁。
     let title = currentPage === 'littlesteps' ? SERVICE_THEME.littlesteps.role : '';
-    if (currentChild && currentPage !== 'littlesteps') {
-      title = `${currentChild.name} 的 `;
-    }
 
     switch (currentPage) {
       case 'littlesteps':
@@ -343,6 +349,8 @@ function AppContent() {
       user={user}
       hasChildren={childProfiles.length > 0}
       entryPage={entryPageForChild(currentChild)}
+      awaitingFirstChild={awaitingFirstChild}
+      onAwaitFirstChild={setAwaitingFirstChild}
       currentService={serviceForStage(stageOfChild(currentChild))}
       childName={currentChild?.name}
       onSignIn={signInWithGoogle}
@@ -378,6 +386,8 @@ function AppContent() {
         <AppBar
           theme={SERVICE_THEME.littlesteps}
           title={getPageTitle()}
+          // 這一頁是關於誰的。服務首頁不放：那裡還沒進到任何一個孩子的頁面。
+          subtitle={currentPage !== 'littlesteps' ? currentChild?.name : undefined}
           leading={
             <button
               onClick={() => setSidebarOpen(true)}
@@ -389,14 +399,8 @@ function AppContent() {
           }
           actions={
             <>
-              <button
-                onClick={() => navigateToPage('littlesteps')}
-                className="btn-icon bg-ink/5 hover:bg-ink/10"
-                title="寶寶成長首頁"
-                aria-label="寶寶成長首頁"
-              >
-                <Home className="w-5 h-5" />
-              </button>
+              {/* 這裡原本還有一顆「寶寶成長首頁」。它跟左邊選單的第一列去的是
+                  同一個地方，卻佔掉標題 44px，所以拿掉了。 */}
               <AccountButton service="littlesteps" />
               <AppHomeButton />
             </>

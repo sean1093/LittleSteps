@@ -4,6 +4,7 @@ import { GESTATIONAL_AGE_RANGE, type GestationalAge } from '../correctedAge';
 import { CHILD_NAME_LIMIT } from '../recordLimits';
 import ModalFrame from './ModalFrame';
 import { ChildJoinError } from '../childJoinError';
+import { toLocalDateKey } from '../utils/dateHelpers';
 
 export type ChildModalMode = 'create' | 'join' | 'pregnancy';
 
@@ -139,11 +140,21 @@ export default function AddChildModal({
     return { weeks, days };
   };
 
+  // 編輯孕期檔案時，「生日」那一格裝的是預產期，本來就該在未來。
+  const birthdayIsDueDate = editingChild?.isPregnancy === true;
+  const today = toLocalDateKey();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (mode === 'create') {
       if (name && birthday) {
+        // 未來的生日其實是預產期。照樣存成寶寶檔案的話，孕期陪伴認不得它，
+        // 寶寶成長則替一個還沒出生的孩子算月齡。YYYY-MM-DD 可以直接比字串。
+        if (!birthdayIsDueDate && birthday > today) {
+          setError('寶寶還沒出生？請改選「懷孕中」，填預產期。');
+          return;
+        }
         const gestationalAge = readGestationalAge();
         if (gestationalAge === 'invalid') {
           setError(
@@ -154,9 +165,12 @@ export default function AddChildModal({
         void runWrite(() => onSave(name, birthday, gender || undefined, undefined, undefined, gestationalAge));
       }
     } else if (mode === 'pregnancy') {
-      if (name && dueDate) {
+      // 小名標的是選填，所以條件只有預產期。這裡原本連小名一起要求，還沒取名
+      // 的家長按下送出什麼都不會發生，也沒有任何提示。名字欄位在資料裡不能空，
+      // 沒取名就先叫「寶寶」，之後在編輯裡改得掉。
+      if (dueDate) {
         // 孕期檔案的 birthday 存的就是預產期。
-        void runWrite(() => onSave(name, dueDate, undefined, true, dueDate));
+        void runWrite(() => onSave(name.trim() || '寶寶', dueDate, undefined, true, dueDate));
       }
     } else if (mode === 'join') {
       if (childUuid && onJoin) {
@@ -238,7 +252,7 @@ export default function AddChildModal({
               <label htmlFor="childBirthday" className={LABEL}>
                 {/* 孕期檔案的這個欄位存的是預產期。標成「寶寶生日」會讓家長
                     以為填錯了，或者不敢改。 */}
-                {editingChild?.isPregnancy ? '預產期' : '寶寶生日'}
+                {birthdayIsDueDate ? '預產期' : '寶寶生日'}
               </label>
               <input
                 type="date"
@@ -246,6 +260,8 @@ export default function AddChildModal({
                 value={birthday}
                 onChange={(e) => setBirthday(e.target.value)}
                 className={FIELD}
+                // 日期選擇器先擋一次；送出時還會再比，因為手打的日期不受 max 管。
+                max={birthdayIsDueDate ? undefined : today}
                 required
               />
             </div>
@@ -318,7 +334,7 @@ export default function AddChildModal({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className={FIELD}
-                placeholder="例如: 小花苞"
+                placeholder="還沒取名可以留空"
                 maxLength={CHILD_NAME_LIMIT}
               />
             </div>

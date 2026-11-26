@@ -7,22 +7,30 @@ import MonthPicker from '../components/shared/MonthPicker';
 import CategoryFilter from '../components/food/CategoryFilter';
 import MilestoneCard from '../components/milestone/MilestoneCard';
 import MilestoneModal from '../components/milestone/MilestoneModal';
+import MilestonePaceNote from '../components/milestone/MilestonePaceNote';
 import ChildSwitcher from '../../common/components/ChildSwitcher';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem, fadeInUp } from '../../common/ui/motion';
 import { monthRangeForChild } from '../utils/ageDefaults';
+import { confirmDelete } from '../../common/ui/confirmDelete';
 
 interface MilestonesPageProps {
   currentChild?: ChildProfile | null;
   progress: MilestoneProgress;
   onToggleMilestone: (id: string) => void;
+  /**
+   * 明講狀態與日期的寫法：補登幾天前就會的事、或改掉填錯的日期。toggle 只會
+   * 「反過來」而且一律蓋今天，兩件事都做不到。沒接上時視窗就不顯示日期欄。
+   */
+  onSetMilestone?: (id: string, achieved: boolean, achievedDate?: string) => void;
 }
 
 export default function MilestonesPage({
   currentChild,
   progress,
   onToggleMilestone,
+  onSetMilestone,
 }: MilestonesPageProps) {
   // 從孩子現在的月齡起跑，而不是從 0-2 個月。停在出生那一段對任何滿三個月
   // 以上的寶寶都是錯的起點，家長每次進來都得自己滑過去。
@@ -57,6 +65,15 @@ export default function MilestonesPage({
   const selectedMilestone = useMemo(() => {
     return milestones.find(m => m.id === selectedMilestoneId) || null;
   }, [selectedMilestoneId]);
+
+  /*
+    取消打勾會把「第一次看到」的日期一起刪掉，而那個日期正是這一頁要留下來的
+    東西，所以先問。打勾不必問：勾錯了再取消就好。
+  */
+  const toggle = (id: string, title: string) => {
+    if (progress[id]?.achieved && !confirmDelete(`「${title}」第一次看到的日期`)) return;
+    onToggleMilestone(id);
+  };
 
   return (
     <div className="screen">
@@ -93,7 +110,7 @@ export default function MilestonesPage({
                     milestone={milestone}
                     isCompleted={progress[milestone.id]?.achieved || false}
                     achievedDate={progress[milestone.id]?.achievedDate}
-                    onToggle={() => onToggleMilestone(milestone.id)}
+                    onToggle={() => toggle(milestone.id, milestone.title)}
                     onClick={() => setSelectedMilestoneId(milestone.id)}
                   />
                 </motion.div>
@@ -112,6 +129,8 @@ export default function MilestonesPage({
             </motion.div>
           )}
         </AnimatePresence>
+
+        {filteredMilestones.length > 0 && <MilestonePaceNote className="mt-4 px-1" />}
       </div>
 
       <MilestoneModal
@@ -120,7 +139,12 @@ export default function MilestonesPage({
         onClose={() => setSelectedMilestoneId(null)}
         isCompleted={selectedMilestone ? progress[selectedMilestone.id]?.achieved || false : false}
         achievedDate={selectedMilestone ? progress[selectedMilestone.id]?.achievedDate : undefined}
-        onToggle={() => selectedMilestone && onToggleMilestone(selectedMilestone.id)}
+        onToggle={() => selectedMilestone && toggle(selectedMilestone.id, selectedMilestone.title)}
+        onSetAchieved={
+          onSetMilestone && selectedMilestone
+            ? (date) => onSetMilestone(selectedMilestone.id, true, date)
+            : undefined
+        }
       />
     </div>
   );
