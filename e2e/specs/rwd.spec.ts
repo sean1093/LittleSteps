@@ -83,6 +83,9 @@ for (const route of PUBLIC_ROUTES) {
  * of cards, and the vaccine calculator opens on one date field with nothing
  * else until a birthday is typed; neither has a chip or a tag on first paint.
  * (The other two calculators open on a chip group, so they are measured.)
+ *
+ * The weekly pregnancy guide joined the same way: it opens on one due-date
+ * field and shows no week, and so no chip, until a date is typed.
  */
 const ROUTES_WITH_NOTHING_TO_MEASURE = new Set([
   'home',
@@ -90,6 +93,7 @@ const ROUTES_WITH_NOTHING_TO_MEASURE = new Set([
   'about',
   'littlesteps/complementary-food',
   'littlesteps/vaccine-schedule',
+  'littlebloom/weekly-guide',
 ]);
 
 for (const route of PUBLIC_ROUTES) {
