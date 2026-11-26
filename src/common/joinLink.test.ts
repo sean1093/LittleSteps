@@ -102,6 +102,30 @@ describe('captureJoinLink', () => {
   });
 });
 
+describe('currentLinkWithJoinCode', () => {
+  // The in-app browser sheet reopens or copies this page so Google sign-in can
+  // run in a real browser. On /join the address bar no longer holds the code,
+  // so the link it uses must put the code back.
+  it('puts the code back on /join, next to any query', async () => {
+    window.history.replaceState(null, '', `/join?openExternalBrowser=1#${CODE}`);
+    const link = await loadJoinLink();
+    link.captureJoinLink();
+
+    const reopened = new URL(link.currentLinkWithJoinCode());
+    expect(reopened.pathname).toBe('/join');
+    expect(reopened.hash).toBe(`#${CODE}`);
+    expect(reopened.searchParams.get('openExternalBrowser')).toBe('1');
+  });
+
+  it('leaves every other page, and a /join with no code, as it is', async () => {
+    const link = await loadJoinLink();
+    window.history.replaceState(null, '', '/join');
+    expect(link.currentLinkWithJoinCode()).toBe(window.location.href);
+    window.history.replaceState(null, '', '/littlesteps/baby-wiki?x=1');
+    expect(link.currentLinkWithJoinCode()).toBe(window.location.href);
+  });
+});
+
 describe('the code never reaches analytics', () => {
   it('is gone from every field the join visit sends', async () => {
     vi.stubEnv('VITE_FIREBASE_ANALYTICS_DISABLED', '');
