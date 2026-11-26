@@ -89,7 +89,8 @@ export default function MilestonesPage({
       <div className="screen-body">
         <ChildSwitcher service="littlesteps" className="mb-4" />
 
-        {correcting && currentChild && (
+        {/* 家長自己挑了別的月齡區間，畫面就不是依矯正年齡排的了，這一行跟著收起來。 */}
+        {correcting && pickedMonth === null && currentChild && (
           <p className="text-sm text-ink-muted mb-2">
             依矯正年齡 {correctedAgeMonths(currentChild)} 個月顯示
           </p>
