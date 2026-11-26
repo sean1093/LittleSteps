@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import type { Gender, MeasurementType } from '../../types';
 import ChoiceChips from '../../common/ui/ChoiceChips';
 import ToolCallout from '../../common/tools/ToolCallout';
+import { GESTATIONAL_AGE_RANGE, TERM_WEEKS } from '../../common/correctedAge';
 import {
   GROWTH_TOOL_MAX_MONTHS,
   growthPercentiles,
@@ -37,6 +38,9 @@ const LABEL: Record<MeasurementType, string> = {
 
 const ERROR: Record<Exclude<GrowthToolResult, { ok: true }>['reason'], string> = {
   age: `月齡請填 0 到 ${GROWTH_TOOL_MAX_MONTHS} 之間的數字。這份 WHO 標準涵蓋到滿 3 歲。`,
+  weeks: `出生週數請填 ${GESTATIONAL_AGE_RANGE.minWeeks} 到 ${GESTATIONAL_AGE_RANGE.maxWeeks} 之間的整數；不確定可以留白。`,
+  'before-term':
+    '換算成矯正月齡後，寶寶還沒到預產期。這份世界衛生組織的標準從足月出生開始，還不適用；請以醫院的早產兒生長曲線為準。',
   'no-measurement': '體重、身高、頭圍至少填一項。',
   implausible: '這個數字看起來不像這個年齡會量到的，請確認單位：體重是公斤，身高與頭圍是公分。',
 };
@@ -46,6 +50,7 @@ const INPUT = 'w-full min-h-tap px-4 py-3 bg-white border border-ink/15 rounded-
 export default function GrowthPercentileToolPage() {
   const [gender, setGender] = useState<Gender>('female');
   const [ageMonths, setAgeMonths] = useState('');
+  const [weeks, setWeeks] = useState('');
   const [values, setValues] = useState<Record<MeasurementType, string>>({
     weight: '',
     height: '',
@@ -61,6 +66,7 @@ export default function GrowthPercentileToolPage() {
       growthPercentiles({
         gender,
         ageMonths: ageMonths.trim() === '' ? Number.NaN : Number(ageMonths),
+        gestationalWeeks: number(weeks),
         weight: number(values.weight),
         height: number(values.height),
         headCircumference: number(values.headCircumference),
@@ -95,8 +101,28 @@ export default function GrowthPercentileToolPage() {
               onChange={(event) => setAgeMonths(event.target.value)}
               className={INPUT}
             />
+          </div>
+
+          {/* 原本只有一行小字請早產兒家長自己算矯正月齡。32 週出生、7 個月大的
+              寶寶照實際月齡填，三項都會落在曲線最外側——正是 correctedAge.ts
+              要避免的假警報。換算交給同一套規則，家長只要填出生週數。 */}
+          <div>
+            <label htmlFor="growth-tool-weeks" className="block text-sm font-medium text-ink mb-1">
+              出生週數（選填）
+            </label>
+            <input
+              id="growth-tool-weeks"
+              type="number"
+              inputMode="numeric"
+              min={GESTATIONAL_AGE_RANGE.minWeeks}
+              max={GESTATIONAL_AGE_RANGE.maxWeeks}
+              step={1}
+              value={weeks}
+              onChange={(event) => setWeeks(event.target.value)}
+              className={INPUT}
+            />
             <p className="text-xs text-ink-muted mt-1">
-              早產兒在 2 歲前請用矯正月齡（從預產期起算）。
+              早產（未滿 {TERM_WEEKS} 週）的寶寶，2 歲前會自動換算成矯正月齡再對照。
             </p>
           </div>
 
@@ -134,6 +160,11 @@ export default function GrowthPercentileToolPage() {
 
         {result?.ok && (
           <section aria-label="計算結果" className="space-y-3">
+            {result.corrected && (
+              <p className="text-sm text-ink leading-relaxed">
+                依矯正月齡約 {Math.round(result.ageMonths)} 個月對照（實際 {result.givenMonths} 個月）。
+              </p>
+            )}
             <ul className="space-y-3">
               {result.readings.map((reading) => (
                 <li key={reading.type} className="card">

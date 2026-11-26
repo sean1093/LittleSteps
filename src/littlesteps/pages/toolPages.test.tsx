@@ -115,6 +115,30 @@ describe('生長百分位試算', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('請確認單位');
   });
+  it('reads a preterm baby at the corrected age and says so', async () => {
+    const user = userEvent.setup();
+    render(<GrowthPercentileToolPage />);
+
+    await fill(user, /月齡/, '7');
+    await fill(user, /出生週數/, '32');
+    await fill(user, /體重/, '7');
+    await user.click(screen.getByRole('button', { name: '算百分位' }));
+
+    const result = screen.getByRole('region', { name: '計算結果' });
+    expect(within(result).getByText('依矯正月齡約 5 個月對照（實際 7 個月）。')).toBeInTheDocument();
+  });
+
+  it('says nothing about correction for a baby born at term', async () => {
+    const user = userEvent.setup();
+    render(<GrowthPercentileToolPage />);
+
+    await fill(user, /月齡/, '7');
+    await fill(user, /出生週數/, '38');
+    await fill(user, /體重/, '7.5');
+    await user.click(screen.getByRole('button', { name: '算百分位' }));
+
+    expect(screen.getByRole('region', { name: '計算結果' })).not.toHaveTextContent('矯正');
+  });
 });
 
 describe('產檢時程試算', () => {

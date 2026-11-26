@@ -13,6 +13,8 @@ import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem, fadeInUp } from '../../common/ui/motion';
 import { monthRangeForChild } from '../utils/ageDefaults';
+import { correctedAgeMonths, isCorrecting } from '../../common/correctedAge';
+import { isPregnancyProfile } from '../../common/pregnancy';
 import { confirmDelete } from '../../common/ui/confirmDelete';
 
 interface MilestonesPageProps {
@@ -51,6 +53,13 @@ export default function MilestonesPage({
   const selectedMonth = pickedMonth ?? derivedMonth;
   const pickMonth = (value: MonthRange) =>
     setPickedMonth(value === derivedMonth ? null : value);
+  /*
+    monthRangeForChild 依矯正年齡挑區間，卻什麼都沒說：32 週出生、7 個月大的
+    寶寶打開來是 4-6 個月那一段，家長只會以為 app 把年齡算錯了。矯正時就寫一行
+    說明，足月或沒填出生週數的孩子什麼都不多出來。
+  */
+  const correcting =
+    !!currentChild && !isPregnancyProfile(currentChild) && isCorrecting(currentChild);
   const [selectedCategory, setSelectedCategory] = useState<Category>("all");
   const [selectedMilestoneId, setSelectedMilestoneId] = useState<string | null>(null);
 
@@ -79,6 +88,12 @@ export default function MilestonesPage({
     <div className="screen">
       <div className="screen-body">
         <ChildSwitcher service="littlesteps" className="mb-4" />
+
+        {correcting && currentChild && (
+          <p className="text-sm text-ink-muted mb-2">
+            依矯正年齡 {correctedAgeMonths(currentChild)} 個月顯示
+          </p>
+        )}
 
         <div className="mb-4">
           <MonthPicker ranges={monthRanges} selected={selectedMonth} onChange={pickMonth} />

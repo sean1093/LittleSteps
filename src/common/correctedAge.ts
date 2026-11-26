@@ -50,7 +50,9 @@ export type GestationalAge = { weeks?: number; days?: number };
 const MS_PER_DAY = 86_400_000;
 
 /** 出生週數換算成天數；沒填或超出合理範圍時回 null。 */
-function gestationDays(child: CorrectableChild): number | null {
+function gestationDays(
+  child: Pick<CorrectableChild, 'gestationalAgeWeeks' | 'gestationalAgeDays'>,
+): number | null {
   const weeks = child.gestationalAgeWeeks;
   if (weeks === undefined || !Number.isFinite(weeks)) return null;
   if (weeks < GESTATIONAL_AGE_RANGE.minWeeks || weeks > GESTATIONAL_AGE_RANGE.maxWeeks) return null;
@@ -133,4 +135,22 @@ export function growthAgeMonths(child: CorrectableChild, at: Date): number {
     (target.getMonth() - birth.getMonth()) +
     (target.getDate() - birth.getDate()) / 30
   );
+}
+
+/**
+ * 只知道「滿幾個月」、不知道生日時的矯正月齡（帶小數）。公開的生長百分位試算
+ * 只問月齡，沒有生日可算，但足月線、矯正量與 24 個月的停止點必須和上面同一套
+ * ——否則同一個孩子在試算頁與登入後的成長曲線上會落在不同的月齡。
+ *
+ * 足月、沒填、超出合理範圍或已過矯正期時回傳原本的月齡。可能是負數：寶寶還沒
+ * 到預產期，該怎麼處理交給呼叫端。
+ */
+export function correctedMonthsFromAge(ageMonths: number, gestation: GestationalAge): number {
+  const days = gestationDays({
+    gestationalAgeWeeks: gestation.weeks,
+    gestationalAgeDays: gestation.days,
+  });
+  if (days === null || days >= TERM_WEEKS * 7) return ageMonths;
+  const corrected = ageMonths - (GESTATION_DAYS - days) / 30.4375;
+  return corrected > CORRECTION_UNTIL_MONTHS ? ageMonths : corrected;
 }
