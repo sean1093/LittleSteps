@@ -197,7 +197,10 @@ they used to give no hint that a product existed around them.
   geocoding Taiwanese street addresses was tested and rejected (see below)
 
 ### BabyOasis — nursing-room map
-- **3,852 nursing rooms across all 22 counties**, from MOHW open data
+- **3,844 nursing rooms across all 22 counties**, from MOHW open data. A room
+  the source registers twice under the same name and address, once with the
+  village and once without or once with 台 and once with 臺, is kept once at
+  build time; a different address is always a different room
 - Locate-me search returning the nearest 8 within 10 km, with real distances
 - **Pick any of the 260 metro and light-rail stations and the map answers "what
   is near this one"** — the nearest 8 rooms within 800 m, with walking
@@ -207,12 +210,12 @@ they used to give no hint that a product existed around them.
   stations, so the station coordinates come from OpenStreetMap (ODbL) rather
   than from the room names. 800 m is measured, not guessed: 235 of the 260
   stations have at least one room inside it, 7.3 on average and 5 at the median
-- County, then district, each district carrying its own room count: the 3,852
+- County, then district, each district carrying its own room count: the 3,844
   rooms sit in 364 districts, so one flat list would be 364 chips
 - Six venue-type chips: malls, stations and airports, hospitals and clinics,
   parks and outdoor spaces, libraries and exhibition halls, family centres and
   social welfare
-- **2,792 of the 3,852 rooms are on the statutory public-venue list**; the other
+- **2,784 of the 3,844 rooms are on the statutory public-venue list**; the other
   1,060 were provided voluntarily. The dataset carries no venue type and both
   kinds look identical on the map, so that list is the only source-backed way
   to tell a shopping centre from a factory canteen

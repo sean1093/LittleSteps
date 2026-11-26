@@ -42,7 +42,7 @@ export class HubPage {
    * One service's entry. Each is a real link wrapping a heading that names the
    * service by its role, so the link is found through that heading rather than
    * through its accessible name, which for a tool starts with its figure
-   * (`3,852 處`) and for a stage with its age range. The role is what tells
+   * (`3,844 處`) and for a stage with its age range. The role is what tells
    * the six apart; the English code names are not on the page.
    */
   card(service: ServiceId): Locator {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { MapPin, Search, X } from 'lucide-react';
 import type { NursingRoom } from '../../types';
 import type { ServiceTheme } from '../../common/ui/serviceTheme';
@@ -16,7 +16,7 @@ import MrtPicker from './MrtPicker';
 import type { MrtStation } from '../data/mrtStations';
 
 /**
- * 一次最多畫幾列。全台 3,852 處，「新光三越」這種關鍵字動輒數十筆，
+ * 一次最多畫幾列。全台 3,844 處，「新光三越」這種關鍵字動輒數十筆，
  * 全畫出來在手機上是滑不完的清單；超過就老實說還有幾處，請家長再具體一點。
  * 和親子好去處的 MAX_RENDERED 同一個數字，兩邊的清單長度感覺才一致。
  */
@@ -67,6 +67,12 @@ interface RoomSearchProps {
    */
   station: MrtStation | null;
   onStationChange: (station: MrtStation | null) => void;
+  /**
+   * 區域或捷運站選單開關時通知外層。選單是 fixed 的 sheet，卻畫在搜尋列那一層
+   * 的疊放脈絡裡；外層得在選單開著時把整層抬到定位鈕、地圖標註與其他 sheet
+   * 之上，否則它們會蓋在選單上。
+   */
+  onPickerOpenChange?: (open: boolean) => void;
   /** 交還給頁面的 selectedRoom：選定的哺乳室同時開詳情、帶動地圖。 */
   onSelect: (room: NursingRoom) => void;
 }
@@ -80,7 +86,7 @@ interface RoomSearchProps {
  * 同一個問題的兩種問法。
  *
  * 關鍵字比對名稱、地址、縣市與鄉鎮市區四個欄位：家長記得的常常是路名或區名，
- * 甚至只記得「大遠百」而地址才寫著它所在的路。3,852 筆用最單純的
+ * 甚至只記得「大遠百」而地址才寫著它所在的路。3,844 筆用最單純的
  * filter 就夠（實測整份掃完不到 1 ms），不需要 debounce 之類的機制。
  *
  * 場所類型只能單選：多選要另外給一組圖例說明「現在選了哪三類」，而那個圖例
@@ -95,10 +101,16 @@ export default function RoomSearch({
   station,
   onStationChange,
   onSelect,
+  onPickerOpenChange,
 }: RoomSearchProps) {
   const [query, setQuery] = useState('');
   const [areaOpen, setAreaOpen] = useState(false);
   const [stationOpen, setStationOpen] = useState(false);
+  const pickerOpen = areaOpen || stationOpen;
+
+  useEffect(() => {
+    onPickerOpenChange?.(pickerOpen);
+  }, [pickerOpen, onPickerOpenChange]);
   const keyword = query.trim().toLowerCase();
 
   const matches = useMemo(() => {
