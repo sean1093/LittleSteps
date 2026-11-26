@@ -27,8 +27,17 @@ function DoseRow({ dose, muted }: { dose: ResolvedVaccineDose; muted?: boolean }
       </p>
       <div className="flex flex-wrap items-center gap-2 mt-1">
         <h3 className="text-ink">{dose.name}</h3>
-        <span className="tag bg-ink/5 text-ink-muted">{FUNDING_LABEL[dose.funding]}</span>
+        {/* 過了來源寫的接種年齡上限，就不能再標「公費」——那等於說還有一劑
+            免費的可以打。 */}
+        <span className="tag bg-ink/5 text-ink-muted">
+          {dose.setAside === 'past-age-limit' ? '已超過接種年齡' : FUNDING_LABEL[dose.funding]}
+        </span>
       </div>
+      {dose.fundingChangesOn && dose.setAside !== 'past-age-limit' && (
+        <p className="text-sm text-ink-muted leading-relaxed mt-1">
+          {formatDate(dose.fundingChangesOn)}起付費方式調整，請以最新公告為準
+        </p>
+      )}
       {dose.eligibility && (
         <p className="text-sm text-ink-muted leading-relaxed mt-1">{dose.eligibility}</p>
       )}

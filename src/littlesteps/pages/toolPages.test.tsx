@@ -30,7 +30,15 @@ describe('疫苗時程試算', () => {
 
     await user.type(screen.getByLabelText('寶寶生日'), daysFromToday(0));
 
-    const dated = vaccineSchedules.filter((vaccine) => vaccine.ageInMonths !== undefined).length;
+    // 一行一劑，但同一次門診擇一的兩種產品（輪狀病毒 2 劑型或 3 劑型）併成
+    // 一行：家長那天只會打其中一種。
+    const datedRows = vaccineSchedules.filter((vaccine) => vaccine.ageInMonths !== undefined);
+    const alternatives = datedRows.filter((vaccine) => vaccine.alternative);
+    const visits = new Set(
+      alternatives.map((v) => `${v.alternative!.group}|${v.ageInMonths}|${v.currentDose ?? 1}`),
+    );
+    const dated = datedRows.length - alternatives.length + visits.size;
+    expect(dated).toBeLessThan(datedRows.length);
     expect(screen.getByRole('heading', { name: `接下來要打的（${dated} 劑）` })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /建議日期已過/ })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: `把這 ${dated} 劑加到行事曆` })).toBeInTheDocument();

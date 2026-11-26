@@ -39,8 +39,13 @@ describe('幼兒期疫苗提醒的涵蓋範圍', () => {
   // 單上的孩子，isScheduledDose 不把它算成待辦，這份清單也就不該要求它有提醒。
   // 今天沒有差別——唯一那一劑在 6 個月，不在 1-3 歲區間——但下一劑落在幼兒期
   // 的條件式公費疫苗會讓這裡索求一個 isScheduledDose 明文禁止的提醒。
+  //
+  // 這裡問的是時程表本身，不是哪一個孩子：沒有年齡、沒有記錄，所以 setAside
+  // 是 null；funding 用資料列上的（已翻牌的那一個），因為提醒要在生效那天
+  // 之前就備好，而不是等那天才發現少了一條。
   const toddlerPublicDoses = vaccineSchedules.filter(
-    (vaccine) => isScheduledDose(vaccine) && isToddlerAge(vaccine.ageInMonths ?? -1),
+    (vaccine) =>
+      isScheduledDose({ ...vaccine, setAside: null }) && isToddlerAge(vaccine.ageInMonths ?? -1),
   );
 
   it('掃描範圍不是空的', () => {

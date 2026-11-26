@@ -19,6 +19,7 @@ import { pressable } from '../../common/ui/pressable';
 import { vaccineMonthForChild } from '../utils/ageDefaults';
 import { isCorrecting } from '../../common/correctedAge';
 import { buildVaccineIcs, outstandingVaccineDoses, FUNDING_LABEL } from '../utils/vaccineCalendar';
+import { fundingOn } from '../utils/vaccineSchedule';
 import { downloadCalendar } from '../../common/utils/icsExport';
 import { logCalendarExport } from '../../lib/firebase';
 import { useDialogA11y } from '../../common/ui/useDialogA11y';
@@ -210,7 +211,10 @@ export default function VaccineTrackingPage({
 
     const allowed = FUNDING_FILTERS.find((o) => o.value === fundingFilter)?.funding ?? [];
     if (allowed.length > 0) {
-      filtered = filtered.filter(v => allowed.includes(v.funding));
+      // 今天的付費方式，不是資料列上的：已翻牌、生效日還沒到的那幾劑，
+      // 在那天之前仍該出現在「自費」底下。
+      const today = new Date();
+      filtered = filtered.filter(v => allowed.includes(fundingOn(v, today)));
     }
 
     if (monthFilter !== 'all') {
@@ -404,7 +408,8 @@ export default function VaccineTrackingPage({
                     {/* Vaccines in this month */}
                     <div className="space-y-3">
                       {vaccines.map((vaccine) => {
-                        const funding = FUNDING_UI[vaccine.funding];
+                        const fundingToday = fundingOn(vaccine);
+                        const funding = FUNDING_UI[fundingToday];
                         const doseNum = vaccine.currentDose || 1;
                         const isAdministered = isDoseAdministered(vaccine.id, doseNum);
                         const doseDate = getDoseDate(vaccine.id, doseNum);
@@ -427,7 +432,7 @@ export default function VaccineTrackingPage({
 
                                 <div className="flex flex-wrap items-center gap-2 text-sm text-ink-muted">
                                   <span>{vaccine.timing}</span>
-                                  <span className={`tag ${funding.badge}`}>{FUNDING_LABEL[vaccine.funding]}</span>
+                                  <span className={`tag ${funding.badge}`}>{FUNDING_LABEL[fundingToday]}</span>
                                 </div>
 
                                 {/* 條件不必點開就看得到：健保給付綁的是早產、先天性

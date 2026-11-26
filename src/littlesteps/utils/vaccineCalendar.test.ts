@@ -137,6 +137,87 @@ describe('buildVaccineIcs', () => {
     expect(description).not.toMatch(/\d{4}-\d{2}-\d{2} 起/);
   });
 
+  it('qualifies the funding line of a row flipped ahead of its start date', () => {
+    // #145 flips rotavirus before 2027-01-01. Exported in December the event
+    // must still lead with self-paid and name the day it changes; exported in
+    // January it is simply publicly funded.
+    const row = schedule({
+      funding: 'national',
+      previousFunding: { funding: 'self-paid', until: '2027-01-01' },
+    });
+    const december = descriptionsOf(
+      unfold(buildVaccineIcs(child, [row], {}, new Date(2026, 11, 1))),
+    )[0];
+    const january = descriptionsOf(
+      unfold(buildVaccineIcs(child, [row], {}, new Date(2027, 0, 1))),
+    )[0];
+
+    expect(december).toMatch(/^DESCRIPTION:自費（2027-01-01 起調整/);
+    expect(january).toMatch(/^DESCRIPTION:公費\\n/);
+  });
+
+  describe('alternative products', () => {
+    const pair = [
+      schedule({
+        id: 'alt-a-2m',
+        name: '合成口服疫苗（甲型） 第1劑',
+        notes: '甲型的說明',
+        alternative: { group: 'alt', groupName: '合成口服疫苗', series: '甲型' },
+      }),
+      schedule({
+        id: 'alt-b-2m',
+        name: '合成口服疫苗（乙型） 第1劑',
+        notes: '乙型的說明',
+        alternative: { group: 'alt', groupName: '合成口服疫苗', series: '乙型' },
+      }),
+    ];
+    const at = new Date(2026, 2, 1);
+
+    it('books one event for a visit where either product will do, carrying both notes', () => {
+      const ics = unfold(buildVaccineIcs(child, pair, {}, at));
+
+      expect(eventCount(ics)).toBe(1);
+      expect(ics).toContain('SUMMARY:小樹：合成口服疫苗 第1劑（甲型或乙型，擇一）');
+      expect(descriptionsOf(ics)[0]).toContain('甲型的說明');
+      expect(descriptionsOf(ics)[0]).toContain('乙型的說明');
+    });
+
+    it('drops the other product once one is recorded', () => {
+      const ics = unfold(
+        buildVaccineIcs(
+          child,
+          [
+            ...pair,
+            schedule({
+              ...pair[1],
+              id: 'alt-b-4m',
+              name: '合成口服疫苗（乙型） 第2劑',
+              ageInMonths: 4,
+              currentDose: 2,
+            }),
+          ],
+          administered('alt-b-2m'),
+          at,
+        ),
+      );
+
+      expect(eventCount(ics)).toBe(1);
+      expect(ics).toContain('SUMMARY:小樹：合成口服疫苗（乙型） 第2劑');
+      expect(ics).not.toContain('甲型');
+    });
+  });
+
+  it('exports nothing the child is already older than the source allows', () => {
+    const ics = buildVaccineIcs(
+      child,
+      [schedule({ maxAgeInMonths: 8 })],
+      {},
+      new Date(2026, 9, 1), // eight and a half months after the birthday
+    );
+
+    expect(eventCount(ics)).toBe(0);
+  });
+
   it('carries the eligibility condition and the note the dose already has', () => {
     const ics = buildVaccineIcs(
       child,
