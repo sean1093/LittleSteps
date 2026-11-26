@@ -9,6 +9,7 @@ import { useStalled } from './common/hooks/useStalled';
 import { recordsStatusOf } from './common/recordsStatus';
 import { splitOverdueByProfileStart } from './common/utils/profileHistory';
 import { logPageView } from './lib/firebase';
+import { stripOpenExternalBrowserParam } from './common/inAppBrowser';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useChildStoreContext, ChildStoreProvider } from './common/contexts/ChildStoreContext';
 import { useCareTasks } from './littleexplorer/hooks/useCareTasks';
@@ -193,7 +194,12 @@ function AppContent() {
   // 必須宣告在 useDocumentMeta 之後：同一個元件的 effect 照宣告順序執行，而
   // logPageView 讀的是 document.title。放在前面，或是像以前那樣在事件處理
   // 函式裡同步呼叫，送出去的就是上一頁的標題。
+  //
+  // 先拿掉 LINE 的 openExternalBrowser：那是請 LINE 換到外部瀏覽器的參數
+  // （見 common/inAppBrowser），到了這裡已經完成任務，不該留在網址列、書籤
+  // 與第一筆 page_view 裡。
   useEffect(() => {
+    stripOpenExternalBrowserParam();
     logPageView(currentPage);
   }, [currentPage]);
 

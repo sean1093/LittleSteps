@@ -231,7 +231,11 @@ OpenStreetMap 的資料。它的每一句宣稱都是 `src/common/about/dataSour
 共用同一個版型（`ServiceIntro`）：先是一句承諾和登入按鈕，再來是登入後做得到
 什麼，最後是不用帳號就讀得到的內容。
 
-- **登入**：Firebase Authentication，Google 登入
+- **登入**：Firebase Authentication，Google 登入。Google 拒絕在 LINE、Facebook、
+  Instagram 的內建瀏覽器裡做 OAuth，而且是在它自己的頁面上拒絕，app 收不到錯誤；
+  所以在那裡按登入會改開一張說明：在 LINE 裡用 `openExternalBrowser=1` 重新載入，
+  LINE 會改用手機的瀏覽器開啟（第一筆 page view 之前 app 就把參數拿掉）；其他
+  App 則複製連結，請家長貼到 Chrome 或 Safari 開啟
 - **資料庫**：Firebase Realtime Database（asia-southeast1）
 - **同步**：跨裝置即時同步
 - **分享**：孩子的檔案透過一組專屬代碼分享給家人，而且分享可以收回 — 見下
@@ -252,7 +256,7 @@ bundle 裡的 Firebase 設定本來就是公開的。Auth 和規則管的是**�
 `database.rules.json` 仍然是唯一決定登入的使用者能碰什麼的邊界。
 
 那個 token 來自 `www.google.com` 上的一支腳本，而這個 app 的家長裡有一部分
-載不到它：擋廣告的擴充套件會拒絕它，`AuthContext.tsx` 的 `isInAppBrowser()`
+載不到它：擋廣告的擴充套件會拒絕它，`src/common/inAppBrowser.ts`
 本來就是為之存在的 LINE、Facebook、Instagram 內建瀏覽器也一樣。
 `@firebase/app-check` 0.11.2 對這件事沒有答案 — 它的載入函式只掛
 `script.onload`，載不進來時 token 的 promise 永遠不會 settle，而資料庫就等在

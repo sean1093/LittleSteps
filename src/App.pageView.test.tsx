@@ -68,6 +68,24 @@ describe('page views', () => {
     expect(pagesLogged()).toEqual(['littlesteps/milestones']);
   }, 20000);
 
+  it("strips LINE's openExternalBrowser before the first page view, keeping the rest", async () => {
+    // LINE reopens a link in the phone's browser when the URL carries
+    // openExternalBrowser=1 (the in-app-browser sign-in sheet adds it). By the
+    // time the page is in that browser the parameter is spent and must not be
+    // in the URL the first page view sees.
+    const searchWhenLogged: string[] = [];
+    logged.mockImplementation(() => {
+      searchWhenLogged.push(window.location.search);
+    });
+    visit('/littlesteps/milestones?openExternalBrowser=1&tab=x#top');
+    render(<App />);
+    await heading(/里程碑追蹤/);
+
+    expect(searchWhenLogged).toEqual(['?tab=x']);
+    expect(window.location.pathname).toBe('/littlesteps/milestones');
+    expect(window.location.hash).toBe('#top');
+  }, 20000);
+
   it('logs once for a navigation through onNavigate', async () => {
     visit('/littlesteps/dashboard');
     render(<App />);
