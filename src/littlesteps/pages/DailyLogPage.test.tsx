@@ -365,11 +365,30 @@ describe('沿用上一筆', () => {
     );
 
     await user.click(screen.getByRole('button', { name: '餵奶 · 配方奶 120 ml' }));
-    expect(await screen.findByText('已記錄：配方奶 120 ml')).toBeInTheDocument();
+    expect(await screen.findByText('已記錄（小豆）：配方奶 120 ml')).toBeInTheDocument();
 
     // 擠奶在按鈕上靠標題說自己是擠奶；回報裡沒有標題，要自己說。
     await user.click(screen.getByRole('button', { name: '擠奶 · 90 ml' }));
-    expect(await screen.findByText('已記錄：擠奶 90 ml')).toBeInTheDocument();
+    expect(await screen.findByText('已記錄（小豆）：擠奶 90 ml')).toBeInTheDocument();
+  });
+
+  /*
+    雙胞胎：一鍵重複不開表單，沒有「幫誰記」的標題，只剩這句回報說得出這一筆
+    記給了誰。名字要是現在選著的那一個，而且寫入也真的落在那個孩子身上。
+  */
+  it('一鍵重複的回報說出記給了哪個孩子', async () => {
+    readState.logs = [feedingLog('b1', 'c2', { feedingType: 'formula', amount: 90 })];
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <DailyLogPage currentChild={childB} user={null} />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: '餵奶 · 配方奶 90 ml' }));
+
+    expect(await screen.findByText('已記錄（小米）：配方奶 90 ml')).toBeInTheDocument();
+    expect(addDailyLog).toHaveBeenCalledWith('c2', expect.objectContaining({ childId: 'c2' }));
   });
 
   it('一鍵重複寫入失敗時不說「已記錄」', async () => {
