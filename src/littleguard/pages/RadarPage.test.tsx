@@ -481,7 +481,7 @@ describe('資料新舊', () => {
   it('一週前的資料照常顯示，不加任何但書', async () => {
     await renderReady();
     expect(screen.queryByText(/有點舊了/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/超過一個月沒更新/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/沒更新/)).not.toBeInTheDocument();
     expect(screen.getAllByText('跟平常差不多').length).toBe(4);
   });
 
@@ -495,7 +495,8 @@ describe('資料新舊', () => {
 
   it('資料超過一個月就收起狀態，只留數字', async () => {
     await renderReady(fixture('2026-06-28', '2026-07-04'));
-    expect(screen.getByText(/超過一個月沒更新/)).toBeInTheDocument();
+    // 今天是 9/3，離 7/4 是 61 天：說實際的 8 週，不是一律「超過一個月」。
+    expect(screen.getByText(/這是 6\/28–7\/4 的數字，已經 8 週沒更新/)).toBeInTheDocument();
     expect(screen.queryByText('跟平常差不多')).not.toBeInTheDocument();
     // 數字還在，四列也還在——收起的是可能已經錯的判斷，不是整塊板。
     expect(renderedDiseases()).toEqual(BOARD);
@@ -513,7 +514,8 @@ describe('資料新舊', () => {
       expect(dialog).not.toHaveTextContent(label);
     });
     // 收起的是判斷，不是數字：那句話、率、分母照給，也還連得出疾管署那一頁。
-    expect(dialog).toHaveTextContent('這一週有 20 次因腸病毒就診');
+    expect(dialog).toHaveTextContent('6/28–7/4 那一週有 20 次因腸病毒就診');
+    expect(dialog).not.toHaveTextContent('這一週');
     await it.click(screen.getByRole('button', { name: '詳細數字' }));
     expect(dialog).toHaveTextContent('100.0/萬');
     expect(dialog).toHaveTextContent('2,000 次門診');

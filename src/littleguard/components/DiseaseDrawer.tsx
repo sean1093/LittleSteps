@@ -12,6 +12,7 @@ import {
   inSentence,
   describeVisits,
   formatRate,
+  formatWeekRange,
   statusOf,
   type DiseaseCell,
 } from '../utils/radar';
@@ -26,7 +27,10 @@ interface Props {
   /** 句子要講得出地方，「這一週有 413 次就診」少了縣市就不知道是哪裡的 413。 */
   county: string;
   age: string;
-  /** 資料過期時只留數字，不顯示可能已經錯的狀態。 */
+  /**
+   * 資料過期時只留數字，不顯示可能已經錯的狀態；講到那些數字時也改說是哪一週，
+   * 不說「這一週」。
+   */
   showStatus: boolean;
   onClose: () => void;
 }
@@ -71,6 +75,12 @@ export default function DiseaseDrawer({
   const geo = describeGeoRatio(cell.geoRatio);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const detailsId = useId();
+  // 過期的資料不能叫「這一週」：數字可能是三個月前的，家長會當成現在。說出是
+  // 哪一週，新鮮的時候照舊說「這一週」，一個字都不動。
+  const expiredWeek = showStatus
+    ? undefined
+    : `${formatWeekRange(data.weekStart, data.weekEnd)} 那一週`;
+  const thisWeek = expiredWeek ?? '這一週';
 
   return (
     <ModalFrame isOpen onClose={onClose} title={disease}>
@@ -79,7 +89,7 @@ export default function DiseaseDrawer({
 
         {parts && parts.length > 0 && (
           <section>
-            <h3 className="text-ink font-medium mb-2">這一週的組成</h3>
+            <h3 className="text-ink font-medium mb-2">{thisWeek}的組成</h3>
             <p className="text-sm text-ink-muted">
               {`${parts.map((part) => part.disease).join('與')}都是${disease}的表現。這份資料裡兩者相加就是${disease}的全部，所以板上只列一項。`}
             </p>
@@ -123,7 +133,7 @@ export default function DiseaseDrawer({
         </section>
 
         <section className="space-y-1">
-          <p className="text-ink">{describeVisits({ county, age, disease, cell })}</p>
+          <p className="text-ink">{describeVisits({ county, age, disease, cell, week: expiredWeek })}</p>
           {geo && <p className="text-ink">{geo}</p>}
           {/* 但書跟著它修飾的那句話。第一層講得出「多約 44%」，就得在同一層說
               清楚那個百分比有多穩——收進「詳細數字」等於把保留意見藏起來。 */}
@@ -156,7 +166,7 @@ export default function DiseaseDrawer({
                 <div className="space-y-3 pt-1">
                   <dl className="text-sm text-ink-muted space-y-1">
                     <div className="flex justify-between gap-3">
-                      <dt>這一週</dt>
+                      <dt>{thisWeek}</dt>
                       <dd className="tabular-nums">
                         {formatRate(cell.rate)}（{cell.visits} 人次）
                       </dd>

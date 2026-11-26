@@ -1,0 +1,42 @@
+name: Disease radar freshness
+
+# Opens one issue when the committed disease radar data is older than the
+# board's stale threshold (FRESHNESS_DAYS.stale, 14 days), rewrites that issue
+# on later runs while it stays stale, and closes it once fresh data is
+# committed.
+#
+# It reads only `weekEnd` from public/data/diseaseRadar.json in the checkout.
+# It never contacts Taiwan CDC: od.cdc.gov.tw refuses GitHub-hosted runners,
+# which is why the refresh itself is manual (see refresh-disease-radar.yml).
+#
+# Schedule and dispatch only, never push or pull_request: data age is not a
+# property of a change, so it must never turn a PR red. A stale result is an
+# issue, not a failed run; the job goes red only when the file cannot be read
+# or the issues API refuses.
+#
+# Thursday 02:17 UTC (10:17 in Taiwan): Taiwan CDC publishes the previous week
+# early on Monday or Tuesday, so by Thursday a missed refresh is a real one.
+on:
+  schedule:
+    - cron: '17 2 * * 4'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Open, update or close the stale-data issue
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { run } = require('./scripts/checkDiseaseRadarFreshness.cjs');
+            const result = await run({ github, context, core });
+            core.info(`Result: ${result}`);

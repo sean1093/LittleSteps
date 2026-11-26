@@ -624,8 +624,17 @@ the `runner` input pointed at a self-hosted runner in Taiwan and the rest of the
 job works unchanged.
 
 Forgetting to update is safe: the board shows which week the data covers, and
-once that is over a month old it says so and collapses every status line,
-leaving only the numbers.
+once that is more than 35 days old it says how old (in weeks, then months),
+collapses every status line and leaves only the numbers, which the drawer then
+attributes to their week (8/23–8/29 那一週) instead of calling it this week.
+
+Forgetting is also noticed. `.github/workflows/disease-radar-freshness.yml`
+runs every Thursday, reads only `weekEnd` from the committed JSON, and once it
+is more than 14 days old (`FRESHNESS_DAYS.stale`) opens one issue, rewrites that
+issue on later runs and closes it when fresh data lands. It never fetches from
+Taiwan CDC and never runs on a pull request. The logic is
+`scripts/checkDiseaseRadarFreshness.cjs`, and a test pins its threshold to the
+board's own.
 
 ---
 
