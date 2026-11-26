@@ -12,7 +12,7 @@ import { CHILD_LIMIT_FREE_SLOT, CHILD_LIMIT_MESSAGE, MAX_CHILDREN } from '../chi
 import { entryPageForChild } from '../stageEntry';
 import { isPregnancyProfile } from '../pregnancy';
 import { toMemberName } from '../memberNames';
-import { clearJoinCode, pendingJoinCode } from '../joinLink';
+import { clearJoinCode, joinPressedFor, noteJoinPressed, pendingJoinCode } from '../joinLink';
 
 const theme = SERVICE_THEME.littlesteps;
 
@@ -29,7 +29,10 @@ const theme = SERVICE_THEME.littlesteps;
  * at start-up. It stays in memory until the parent leaves this page through
  * one of its buttons: joining briefly puts the app back on its loading bar,
  * which unmounts this page, and when it comes back the new record is already
- * on the parent's list, so the page says so and offers to open it.
+ * on the parent's list, so the page says the join worked (joinLink remembers
+ * the press across that remount) and offers to open it.
+ *
+ * The raw code is not shown: a child's id means nothing to a grandparent.
  */
 export default function JoinPage() {
   const store = useChildStoreContext();
@@ -67,11 +70,19 @@ export default function JoinPage() {
 
     const joined = store.childProfiles.find((child) => child.id === code);
     if (joined) {
+      // A join pressed in this visit gets its own success state. 「已經在名單上」
+      // after pressing 「加入」 reads like a mistake; it is kept for arriving
+      // on a link to a record the parent was already a member of.
+      const justJoined = joinPressedFor(joined.id);
       return (
         <EmptyState
           theme={theme}
-          title="你已經在這份紀錄的名單上"
-          description={`${joined.name}的紀錄已經在你的帳號裡了。`}
+          title={justJoined ? '加入好了' : '你已經在這份紀錄的名單上'}
+          description={
+            justJoined
+              ? `${joined.name}的紀錄已經放進你的帳號，現在就能一起記錄。`
+              : `${joined.name}的紀錄已經在你的帳號裡了。`
+          }
           action={{
             label: '打開紀錄',
             onClick: () => {
@@ -99,9 +110,11 @@ export default function JoinPage() {
     const handleJoin = async () => {
       setError(null);
       setPending(true);
+      noteJoinPressed(code);
       try {
         await store.joinChild(code);
       } catch (failure) {
+        noteJoinPressed(null);
         setError(
           failure instanceof ChildJoinError
             ? failure.message
@@ -118,9 +131,6 @@ export default function JoinPage() {
         <p className="text-ink-muted leading-relaxed">
           加入之後，你會出現在這份紀錄的名單上：看得到、也改得了裡面的每一筆紀錄。名單上的其他人會看到你，
           {name ? `名字是「${name}」，之後可以在分享視窗改。` : '你可以之後在分享視窗替自己取名字。'}
-        </p>
-        <p className="text-sm text-ink-muted mt-3">
-          代碼 <span className="font-mono break-all">{code}</span>
         </p>
 
         {error && (

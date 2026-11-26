@@ -43,12 +43,12 @@ const renderPage = (overrides: Partial<ChildStore> = {}) => {
     ...overrides,
   };
   const user = userEvent.setup();
-  render(
+  const view = render(
     <ChildStoreValueProvider store={store}>
       <JoinPage />
     </ChildStoreValueProvider>,
   );
-  return { store, user };
+  return { store, user, unmount: view.unmount };
 };
 
 /** Arrive the way a parent does: on /join with the code in the fragment. */
@@ -139,9 +139,51 @@ describe('JoinPage', () => {
     expect(screen.queryByRole('button', { name: '加入' })).toBeNull();
   });
 
-  it('once on the list, offers to open the record instead of joining again', async () => {
-    // Joining puts the app back on its loading bar for a moment, which remounts
-    // this page; by then the record is already on the parent's list.
+  it('does not show the raw code on the confirm screen', () => {
+    arriveWithCode();
+    renderPage();
+
+    expect(screen.getByRole('heading', { name: '要加入家人的紀錄嗎？' })).toBeInTheDocument();
+    expect(screen.queryByText(CODE, { exact: false })).toBeNull();
+  });
+
+  it('after a join pressed in this visit, says it worked rather than "already on the list"', async () => {
+    arriveWithCode();
+    const first = renderPage();
+    await first.user.click(screen.getByRole('button', { name: '加入' }));
+
+    // Joining puts the app back on its loading bar, which unmounts this page;
+    // it comes back with the record already on the parent's list.
+    first.unmount();
+    const joined = profile({ id: CODE, name: '小豆', members: { mom: true, dad: true } });
+    const { store, user } = renderPage({ childProfiles: [joined] });
+
+    expect(screen.getByRole('heading', { name: '加入好了' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '你已經在這份紀錄的名單上' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '打開紀錄' }));
+    expect(store.setCurrentChild).toHaveBeenCalledWith(CODE);
+  });
+
+  it('a join that failed does not later read as one that worked', async () => {
+    arriveWithCode();
+    const first = renderPage({
+      joinChild: vi.fn(async () => {
+        throw new Error('network');
+      }),
+    });
+    await first.user.click(screen.getByRole('button', { name: '加入' }));
+    await screen.findByRole('alert');
+
+    first.unmount();
+    renderPage({ childProfiles: [profile({ id: CODE, name: '小豆' })] });
+
+    expect(screen.getByRole('heading', { name: '你已經在這份紀錄的名單上' })).toBeInTheDocument();
+  });
+
+  it('arriving already on the list, offers to open the record instead of joining again', async () => {
+    // No 「加入」 was pressed in this visit: the parent followed a link to a
+    // record they were already a member of.
     arriveWithCode();
     const joined = profile({ id: CODE, name: '小豆', members: { mom: true, dad: true } });
     const { store, user } = renderPage({ childProfiles: [joined] });
