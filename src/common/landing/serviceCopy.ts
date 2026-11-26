@@ -122,6 +122,11 @@ export const SERVICE_INTRO: Record<StagedService, ServiceIntroCopy> = {
         detail: '25 篇：成因、怎麼處理、什麼時候該看醫生。',
         page: 'littlebloom/wiki',
       },
+      {
+        title: '產檢時程試算',
+        detail: '填預產期，算出每一次產檢與篩檢在哪幾天。',
+        page: 'littlebloom/checkup-schedule',
+      },
     ],
   },
   littlesteps: {
@@ -143,9 +148,24 @@ export const SERVICE_INTRO: Record<StagedService, ServiceIntroCopy> = {
       },
       { title: '照顧重點', detail: '依月齡整理的照顧與安全注意事項。', page: 'littlesteps/care-guide' },
       {
+        title: '副食品指南',
+        detail: '什麼時候開始、怎麼試新食材、哪些一歲前不能給。',
+        page: 'littlesteps/complementary-food',
+      },
+      {
         title: '睡眠指南',
         detail: '各年齡需要睡多久，以及睡前儀式怎麼安排。',
         page: 'littlesteps/sleep-training',
+      },
+      {
+        title: '疫苗時程試算',
+        detail: '填寶寶生日，算出每一劑建議在哪一天打。',
+        page: 'littlesteps/vaccine-schedule',
+      },
+      {
+        title: '生長百分位試算',
+        detail: '填健檢量到的數字，對照 WHO 生長標準。',
+        page: 'littlesteps/growth-percentile',
       },
     ],
   },
@@ -180,3 +200,49 @@ export const WIKI_LINKS: { page: Page; title: string; count: number }[] = STAGED
       return count ? [{ page, title, count: Number(count[1]) }] : [];
     }),
 );
+
+/**
+ * The public guides, which sit beside the knowledge bases in the "read first"
+ * row. They are reference pages like the wikis, they need no account, and the
+ * landing page had no link to any of them.
+ */
+export const GUIDE_LINKS: { page: Page; title: string }[] = [
+  { page: 'littlesteps/care-guide', title: '照顧重點' },
+  { page: 'littlesteps/complementary-food', title: '副食品指南' },
+  { page: 'littlesteps/sleep-training', title: '睡眠指南' },
+];
+
+/**
+ * The calculators: a date or a few numbers in, an answer out, nothing stored.
+ *
+ * They are the public face of three things that used to exist only behind
+ * sign-in: the vaccine tracker, the prenatal schedule and the growth chart.
+ * Each answers a question a parent searches for with nothing but a birthday,
+ * and each ends by saying what signing in adds — which is a better reason to
+ * sign in than any line on this page.
+ *
+ * No counts in these lines: the number of doses and of checkups is already
+ * claimed once above, and a second copy is where drift starts.
+ */
+export const CALCULATORS_HEADING = {
+  title: '算一下',
+  note: '填一個日期或幾個數字就有答案。不用登入，填的東西不會被存下來。',
+};
+
+export const CALCULATORS: { page: Page; title: string; line: string }[] = [
+  {
+    page: 'littlesteps/vaccine-schedule',
+    title: '疫苗時程試算',
+    line: '填寶寶生日，每一劑疫苗在哪一天打、公費還是自費，可以加到行事曆。',
+  },
+  {
+    page: 'littlebloom/checkup-schedule',
+    title: '產檢時程試算',
+    line: '填預產期，每一次產檢與篩檢各在第幾週、哪幾天。',
+  },
+  {
+    page: 'littlesteps/growth-percentile',
+    title: '生長百分位試算',
+    line: '填健檢量到的身高、體重、頭圍，對照 WHO 生長標準，並說明這個數字該怎麼看。',
+  },
+];

@@ -92,6 +92,16 @@ const PAGE_META: Record<Page, PageMeta> = {
     title: '週報月報｜寶寶照顧數據趨勢｜LittleSteps',
     description: '把每日記錄彙整成週報與月報，看出餵奶、睡眠與尿布的長期趨勢。',
   },
+  'littlesteps/vaccine-schedule': {
+    title: '寶寶疫苗時程試算｜填生日算出每一劑日期｜LittleSteps',
+    description:
+      '填寶寶生日，列出每一劑疫苗建議在哪一天打，標明公費或自費，可以加到行事曆。不用登入，生日不會被存下來。',
+  },
+  'littlesteps/growth-percentile': {
+    title: '寶寶生長百分位試算｜身高體重頭圍｜LittleSteps',
+    description:
+      '填性別、月齡與健檢量到的身高、體重、頭圍，對照 WHO 兒童生長標準算出百分位，並說明百分位該怎麼看。不用登入。',
+  },
   littlebloom: {
     title: '孕期陪伴｜每週身體變化與產檢時程｜LittleSteps',
     description: '依懷孕週數顯示身體變化與本週提醒，管理 14 次公費產檢時程，出生後轉為寶寶檔案。',
@@ -104,6 +114,11 @@ const PAGE_META: Record<Page, PageMeta> = {
     title: '孕期知識庫｜常見孕期狀況與就醫時機｜LittleSteps',
     description:
       '孕吐、妊娠糖尿病、產兆判斷等常見孕期狀況的成因與處理方式。',
+  },
+  'littlebloom/checkup-schedule': {
+    title: '產檢時程試算｜填預產期排出每次產檢｜LittleSteps',
+    description:
+      '填預產期或最後一次月經，列出每一次公費產檢與篩檢各在第幾週、哪幾天，可以加到行事曆。不用登入。',
   },
   littleexplorer: {
     title: '幼兒期陪伴｜1-3 歲發展檢核｜LittleSteps',

@@ -277,6 +277,9 @@ export const logPageView = (pageName: Page) => {
         section = 'nutrition-sleep';
       } else if (feature === 'care-guide') {
         section = 'education';
+      } else if (feature === 'vaccine-schedule' || feature === 'growth-percentile') {
+        // 公開的試算工具，和需要登入的追蹤頁分開算，才看得出有多少人只用工具。
+        section = 'tools';
       } else {
         section = 'landing';
       }

@@ -114,6 +114,26 @@ const MENU_SECTIONS = [
         description: '常見狀況與處理方式'
       }
     ]
+  },
+  // 不用登入的試算。未登入的訪客在這個選單裡只看得到公開頁，這兩項讓他們
+  // 從百科或照顧重點走得到工具；登入的家長有自己的追蹤頁，但偶爾也會想替
+  // 朋友的孩子算一下。
+  {
+    title: '試算工具',
+    items: [
+      {
+        id: 'littlesteps/vaccine-schedule' as const,
+        label: '疫苗時程試算',
+        icon: Syringe,
+        description: '填生日算出每一劑日期'
+      },
+      {
+        id: 'littlesteps/growth-percentile' as const,
+        label: '生長百分位試算',
+        icon: TrendingUp,
+        description: '身高體重頭圍對照 WHO 標準'
+      }
+    ]
   }
 ];
 

@@ -35,6 +35,12 @@ const PUBLIC: Page[] = [
   'littlesteps/baby-wiki',
   'littlesteps/care-guide',
   'littlesteps/sleep-training',
+  // 副食品指南是參考資料；它底下「我的追蹤」只在登入後才掛載。
+  'littlesteps/complementary-food',
+  // 試算工具：算完就結束，不讀不寫任何孩子的紀錄。
+  'littlesteps/vaccine-schedule',
+  'littlesteps/growth-percentile',
+  'littlebloom/checkup-schedule',
   'littlebloom/wiki',
   'littleexplorer/wiki',
   'littleouting',
@@ -54,7 +60,6 @@ const GATED: Page[] = [
   'littlesteps/dashboard',
   'littlesteps/milestones',
   'littlesteps/vaccine-tracking',
-  'littlesteps/complementary-food',
   'littlesteps/daily-log',
   'littlesteps/growth-charts',
   'littlesteps/sleep-analysis',
@@ -126,6 +131,17 @@ describe('requiresAuth', () => {
     expect(requiresAuth('littleexplorer/wiki')).toBe(false);
     expect(requiresAuth('babyoasis')).toBe(false);
     expect(requiresAuth('littleguard')).toBe(false);
+  });
+
+  it('試算工具不需登入，而它們對應的追蹤頁仍然需要', () => {
+    // 工具回答的是「哪一天」「第幾百分位」；追蹤頁記的是這個孩子做了沒。
+    // 把工具公開不能順手把追蹤頁也放出來。
+    expect(requiresAuth('littlesteps/vaccine-schedule')).toBe(false);
+    expect(requiresAuth('littlesteps/vaccine-tracking')).toBe(true);
+    expect(requiresAuth('littlesteps/growth-percentile')).toBe(false);
+    expect(requiresAuth('littlesteps/growth-charts')).toBe(true);
+    expect(requiresAuth('littlebloom/checkup-schedule')).toBe(false);
+    expect(requiresAuth('littlebloom/prenatal')).toBe(true);
   });
 
   it('會讀或寫孩子資料的頁面都需要登入', () => {

@@ -245,8 +245,16 @@ write in the product.
 `src/common/routePolicy.ts` holds a **public allowlist**, deliberately not a
 "needs auth" blocklist: this app stores children's health data, so forgetting to
 mark a new page should fail closed. Public pages are the entry point, the about
-page, the three knowledge bases, the care guide, the sleep guide, LittleOuting,
-BabyOasis and LittleGuard. Everything else needs an account.
+page, the three knowledge bases, the care guide, the sleep guide, the solid-food
+guide, the three calculators (vaccine schedule, prenatal schedule, growth
+percentile), LittleOuting, BabyOasis and LittleGuard. Everything else needs an
+account.
+
+A calculator takes a date or a few numbers and answers in the browser: it reads
+and writes no child's record, and what is typed never leaves the page's memory.
+Each uses the same calculation as the tracker behind sign-in, so the two cannot
+disagree. The solid-food guide is public as a whole; only its trial log is
+loaded, lazily, after sign-in.
 
 The about page at `/about` says all of this in a parent's words: where a child's
 records live, who can read them, what the app does and does not do with them,

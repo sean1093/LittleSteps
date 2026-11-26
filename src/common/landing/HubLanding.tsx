@@ -10,6 +10,9 @@ import type { ServiceId } from '../ui/serviceTheme';
 import { ROUTE_PATH } from '../../types/routes';
 import {
   ANYTIME_SERVICES,
+  CALCULATORS,
+  CALCULATORS_HEADING,
+  GUIDE_LINKS,
   SERVICE_GROUPS,
   SERVICE_PITCH,
   STAGED_SERVICES,
@@ -199,8 +202,58 @@ export default function HubLanding({
                 </a>
               </li>
             ))}
+            {GUIDE_LINKS.map(({ page, title }) => (
+              <li key={page}>
+                <a
+                  href={ROUTE_PATH[page]}
+                  onClick={(event) => {
+                    if (isModifiedClick(event)) return;
+                    event.preventDefault();
+                    goTo(page);
+                  }}
+                  className="inline-flex items-center min-h-tap font-medium text-primary-dark underline underline-offset-2"
+                >
+                  {title}
+                </a>
+              </li>
+            ))}
           </ul>
         </motion.div>
+      </section>
+
+      {/* Tools you open on the way out, above; tools you ask one question of,
+          here. Six cards under one heading was the wall this page used to be,
+          so they are two short groups, and these carry no figure: what they
+          offer is an answer, not a count. */}
+      <section className="space-y-3">
+        <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
+          <h2 className="text-ink">{CALCULATORS_HEADING.title}</h2>
+          <p className="text-sm text-ink-muted mt-1">{CALCULATORS_HEADING.note}</p>
+        </motion.div>
+
+        <motion.ul
+          initial="hidden"
+          animate="visible"
+          variants={stagger}
+          className="grid grid-cols-1 md:grid-cols-3 gap-3"
+        >
+          {CALCULATORS.map(({ page, title, line }) => (
+            <motion.li key={page} variants={listItem}>
+              <a
+                href={ROUTE_PATH[page]}
+                onClick={(event) => {
+                  if (isModifiedClick(event)) return;
+                  event.preventDefault();
+                  goTo(page);
+                }}
+                className="card-tap block h-full"
+              >
+                <h3 className="text-ink">{title}</h3>
+                <p className="text-sm text-ink-muted leading-relaxed mt-1">{line}</p>
+              </a>
+            </motion.li>
+          ))}
+        </motion.ul>
       </section>
 
       <section className="space-y-3">

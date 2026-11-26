@@ -78,8 +78,19 @@ for (const route of PUBLIC_ROUTES) {
  * turned RWD-04 red at both widths — which is precisely the outcome the
  * assertion exists for. Without it the route would have joined silently and
  * contributed two permanently-green instances instead.
+ *
+ * Two more joined with the public tools. The solid-food guide opens on a stack
+ * of cards, and the vaccine calculator opens on one date field with nothing
+ * else until a birthday is typed; neither has a chip or a tag on first paint.
+ * (The other two calculators open on a chip group, so they are measured.)
  */
-const ROUTES_WITH_NOTHING_TO_MEASURE = new Set(['home', 'littlesteps/sleep-training', 'about']);
+const ROUTES_WITH_NOTHING_TO_MEASURE = new Set([
+  'home',
+  'littlesteps/sleep-training',
+  'about',
+  'littlesteps/complementary-food',
+  'littlesteps/vaccine-schedule',
+]);
 
 for (const route of PUBLIC_ROUTES) {
   test(`RWD-04 @p1 ${route} keeps every nowrap label inside its own box`, async ({ page }) => {

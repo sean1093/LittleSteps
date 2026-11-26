@@ -1,119 +1,70 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Hand, TestTube } from 'lucide-react';
-import { User } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 import { allergyTestingMethod, fingerFoodPrinciples } from '../data/complementaryFood';
-import { ChildProfile, FoodTrialInput, FoodTrialRecord } from '../../types';
-import { useFoodTracking } from '../hooks/useFoodTracking';
-import { useFirebaseChildren } from '../../common/hooks/useFirebaseChildren';
-import FoodTrialModal from '../components/food/FoodTrialModal';
+import type { ChildProfile } from '../../types';
+import { isPregnancyProfile } from '../../common/pregnancy';
+import QuietBoundary from '../../common/components/QuietBoundary';
+import LoadingBar from '../../common/ui/LoadingBar';
 import FoodSheet from '../components/food/FoodSheet';
 import FoodHomeView from '../components/food/FoodHomeView';
 import FoodGuideOverview from '../components/food/FoodGuideOverview';
 import FoodGuideStages from '../components/food/FoodGuideStages';
 import FoodGuideMenu from '../components/food/FoodGuideMenu';
 import FoodGuideSafety from '../components/food/FoodGuideSafety';
-import FoodTrackingView from '../components/food/FoodTrackingView';
+import FoodTrackingPrompt, {
+  type FoodTrackingBlocker,
+} from '../components/food/FoodTrackingPrompt';
 import type { TrackingTab, ViewMode } from '../components/food/types';
-import { toLocalDateKey } from '../../common/utils/dateHelpers';
-import { trialDatesOf } from '../utils/foodTrialDates';
-import { foodTrialChanges } from '../utils/foodTrialEdit';
 import { fadeInUp } from '../../common/ui/motion';
-import { useToast } from '../../common/ui/toast';
+
+/*
+  這一頁是公開頁，資料庫 SDK 不能出現在它的靜態匯入路徑上（見 CLAUDE.md
+  與 BUNDLE-01/02）。讀寫食物紀錄的一切都在這個 lazy chunk 裡。
+*/
+const FoodTrackingSection = lazy(() => import('../components/food/FoodTrackingSection'));
 
 interface ComplementaryFoodPageProps {
   currentChild?: ChildProfile | null;
   user: User | null;
+  /** 沒登入的人按下提示卡上的按鈕時呼叫。 */
+  onSignIn?: () => Promise<void> | void;
 }
 
 /**
  * 副食品指南。
  *
- * 這一頁自己不畫任何內容，只做三件事：管六個檢視的狀態、把食物紀錄的
- * 增刪改接到 Firebase、決定現在要渲染哪一個檢視。每個檢視各自一個檔案。
+ * 指南的部分誰都能讀；「我家寶寶試過什麼」要登入，而且要有一個已經出生的
+ * 寶寶。這一頁自己只管現在是哪一個檢視，以及追蹤區該掛、還是該換成一張說明
+ * 差哪一步的提示卡。食物紀錄的讀寫在 FoodTrackingSection。
  */
 export default function ComplementaryFoodPage({
   currentChild,
   user,
+  onSignIn,
 }: ComplementaryFoodPageProps) {
-  const toast = useToast();
-  const [viewMode, setViewMode] = useState<ViewMode>('home');
+  const [requestedView, setViewMode] = useState<ViewMode>('home');
   const [trackingTab, setTrackingTab] = useState<TrackingTab>('foods');
   const [showAllergyTest, setShowAllergyTest] = useState(false);
   const [showFingerFood, setShowFingerFood] = useState(false);
   const [expandedStage, setExpandedStage] = useState<number | null>(null);
-  const [showFoodModal, setShowFoodModal] = useState(false);
-  const [editingFood, setEditingFood] = useState<FoodTrialRecord | null>(null);
-
-  const childId = currentChild?.id || null;
-  const { foodProgress, foodTrials, stats, error } = useFoodTracking(childId, user);
-  const firebaseChildren = useFirebaseChildren(user?.uid || null);
-
-  const handleAddFood = () => {
-    setEditingFood(null);
-    setShowFoodModal(true);
-  };
-
-  const handleEditFood = (food: FoodTrialRecord) => {
-    setEditingFood(food);
-    setShowFoodModal(true);
-  };
 
   /*
-    失敗時不接住：訊息與「表單留在原地」都由 FoodTrialModal 自己處理，
-    這裡再 toast 一次就是同一件事講兩遍。
+    孕期檔案不掛追蹤區：這裡的寫入不看檔案型別，寫進去的食物紀錄會一路留到
+    寶寶出生之後（PregnancyGate 擋的是同一件事，只是它會把整頁指南一起擋掉）。
   */
-  const handleSaveFood = async (foodData: FoodTrialInput) => {
-    if (!childId) {
-      throw new Error('請先選擇寶寶');
-    }
+  const tracked = user && currentChild && !isPregnancyProfile(currentChild)
+    ? { user, child: currentChild }
+    : null;
+  const blocker: FoodTrackingBlocker = !user
+    ? 'signed-out'
+    : !currentChild
+      ? 'no-child'
+      : 'not-born';
 
-    if (editingFood) {
-      // 只送這次真的改到的欄位，而且是跟「打開表單當下那一版」比出來的：整筆
-      // 寫回去會把另一位照顧者同時改的欄位一起蓋掉，被清空的欄位則要寫成
-      // null，省略它等於不碰，家長刪掉的備註就會原封不動留在資料庫裡。
-      await firebaseChildren.updateFoodTrial(
-        childId,
-        editingFood.id,
-        foodTrialChanges(editingFood, foodData),
-      );
-    } else {
-      await firebaseChildren.addFoodTrial(childId, foodData);
-    }
-  };
-
-  const handleDeleteFood = async (foodId: string) => {
-    if (!childId) return;
-
-    try {
-      await firebaseChildren.deleteFoodTrial(childId, foodId);
-    } catch (error) {
-      console.error('刪除食物記錄失敗:', error);
-      toast.show(error instanceof Error ? error.message : '刪除失敗，請稍後再試');
-    }
-  };
-
-  const handleAddTrialDate = async (foodId: string) => {
-    if (!childId) return;
-
-    const today = toLocalDateKey();
-    const food = foodProgress[foodId];
-    if (!food) return;
-
-    // 同一天按兩次不該記成兩次嘗試。
-    if (trialDatesOf(food).includes(today)) return;
-
-    try {
-      // 一天一條 leaf。整個清單重寫的話，兩位照顧者同一天各按一次，後到的那筆
-      // 會連著自己手上的舊清單把對方那一天蓋掉。
-      await firebaseChildren.updateFoodTrial(childId, foodId, {
-        trialDates: { [today]: true },
-      });
-    } catch (error) {
-      console.error('新增嘗試日期失敗:', error);
-      toast.show(error instanceof Error ? error.message : '新增失敗，請稍後再試');
-    }
-  };
+  // 人在追蹤檢視時登出或換成孕期檔案，那個檢視就不存在了，回主頁。
+  const viewMode = !tracked && requestedView === 'my-tracking' ? 'home' : requestedView;
 
   const openTracking = (tab: TrackingTab) => {
     setTrackingTab(tab);
@@ -145,6 +96,33 @@ export default function ComplementaryFoodPage({
           </button>
         )}
 
+        {/*
+          追蹤區掛在換檢視的動畫外面，整頁只掛一次：讀指南時它什麼都不畫，
+          但監聽還在。chunk 載不到時只是少了追蹤區，指南照常能讀。
+        */}
+        {tracked && (
+          <QuietBoundary scope="food tracking">
+            <Suspense
+              fallback={
+                viewMode === 'home' || viewMode === 'my-tracking' ? (
+                  <div className="panel mb-6 flex justify-center">
+                    <LoadingBar />
+                  </div>
+                ) : null
+              }
+            >
+              <FoodTrackingSection
+                currentChild={tracked.child}
+                user={tracked.user}
+                viewMode={viewMode}
+                trackingTab={trackingTab}
+                onTabChange={setTrackingTab}
+                onOpenTracking={openTracking}
+              />
+            </Suspense>
+          </QuietBoundary>
+        )}
+
         {/* viewMode 是這一頁的主要導航（六個檢視），原本硬切換，
             其他小 modal 卻都有動畫。 */}
         <AnimatePresence mode="wait">
@@ -157,8 +135,9 @@ export default function ComplementaryFoodPage({
           >
             {viewMode === 'home' && (
               <FoodHomeView
-                stats={stats}
-                onOpenTracking={openTracking}
+                prompt={
+                  tracked ? undefined : <FoodTrackingPrompt blocker={blocker} onSignIn={onSignIn} />
+                }
                 onOpenGuide={setViewMode}
               />
             )}
@@ -172,43 +151,9 @@ export default function ComplementaryFoodPage({
             {viewMode === 'guide-menu' && <FoodGuideMenu />}
 
             {viewMode === 'guide-safety' && <FoodGuideSafety />}
-
-            {/*
-              讀取失敗時 foodTrials 是空的，直接畫追蹤頁就會說「還沒有食物記錄」，
-              把「讀不到」講成「還沒記過」。
-            */}
-            {viewMode === 'my-tracking' && (
-              error ? (
-                <div className="card">
-                  <p className="text-sm text-ink-muted">讀不到食物記錄，請確認網路後重新載入</p>
-                </div>
-              ) : (
-                <FoodTrackingView
-                  activeTab={trackingTab}
-                  onTabChange={setTrackingTab}
-                  foodTrials={foodTrials}
-                  stats={stats}
-                  onAddFood={handleAddFood}
-                  onEditFood={handleEditFood}
-                  onDeleteFood={handleDeleteFood}
-                  onAddTrialDate={handleAddTrialDate}
-                  user={user}
-                />
-              )
-            )}
           </motion.div>
         </AnimatePresence>
       </div>
-
-      <FoodTrialModal
-        isOpen={showFoodModal}
-        onClose={() => {
-          setShowFoodModal(false);
-          setEditingFood(null);
-        }}
-        onSave={handleSaveFood}
-        editingFood={editingFood}
-      />
 
       <AnimatePresence>
         {showAllergyTest && (

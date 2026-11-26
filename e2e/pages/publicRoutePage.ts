@@ -70,6 +70,14 @@ const CONTENT: Partial<Record<Page, (page: BrowserPage) => Locator>> = {
 
   'littlesteps/care-guide': (page) => page.getByRole('heading', { name: '按月齡照顧重點' }),
   'littlesteps/sleep-training': (page) => page.getByRole('heading', { name: '睡眠時間參考表' }),
+  // The prompt that stands where the tracker would be: it exists only on the
+  // public shell, so it says the guide rendered without the gated part.
+  'littlesteps/complementary-food': (page) =>
+    page.getByRole('heading', { name: '記下寶寶試過哪些食材' }),
+  // The calculators: the field a visitor fills in is the page.
+  'littlesteps/vaccine-schedule': (page) => page.getByLabel('寶寶生日'),
+  'littlesteps/growth-percentile': (page) => page.getByRole('button', { name: '算百分位' }),
+  'littlebloom/checkup-schedule': (page) => page.getByLabel('預產期'),
   // `WikiBrowser`'s search box carries no `aria-label`, so its placeholder is
   // its accessible name.
   'littlesteps/baby-wiki': (page) => page.getByRole('searchbox', { name: '搜尋症狀、關鍵字...' }),
@@ -96,6 +104,11 @@ const READY: Partial<Record<Page, (page: BrowserPage) => Locator>> = {
   about: (page) => page.getByRole('link', { name: '開啟原始資料' }).first(),
   'littlesteps/care-guide': (page) => new CareGuidePage(page).cardTitles.first(),
   'littlesteps/sleep-training': (page) => new SleepGuidePage(page).ritualSteps.first(),
+  'littlesteps/complementary-food': (page) =>
+    page.getByRole('heading', { name: '記下寶寶試過哪些食材' }),
+  'littlesteps/vaccine-schedule': (page) => page.getByLabel('寶寶生日'),
+  'littlesteps/growth-percentile': (page) => page.getByRole('button', { name: '算百分位' }),
+  'littlebloom/checkup-schedule': (page) => page.getByLabel('預產期'),
   'littlesteps/baby-wiki': (page) =>
     new WikiBrowserPage(page, 'littlesteps/baby-wiki').articles.first(),
   'littlebloom/wiki': (page) => new WikiBrowserPage(page, 'littlebloom/wiki').articles.first(),
