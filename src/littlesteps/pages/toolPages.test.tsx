@@ -145,6 +145,41 @@ describe('產檢時程試算', () => {
     expect(fromLmp.length).toBeGreaterThan(0);
   });
 
+  it('sets checkups whose window is open now apart from the ones not started yet', async () => {
+    const user = userEvent.setup();
+    render(<CheckupScheduleToolPage />);
+
+    // 13 weeks and 3 days: the second checkup's window (weeks 12 to 15) is open,
+    // the third's (from week 16) has not started.
+    await user.type(screen.getByLabelText('預產期'), daysFromToday(280 - (13 * 7 + 3)));
+
+    const openNow = screen.getByRole('heading', { name: /^現在可以做（\d+ 項）$/ }).closest('section')!;
+    const upcoming = screen.getByRole('heading', { name: /^接下來的（\d+ 項）$/ }).closest('section')!;
+    expect(within(openNow).getByRole('heading', { name: /第 2 次公費產檢/ })).toBeInTheDocument();
+    expect(within(openNow).queryByRole('heading', { name: /第 3 次公費產檢/ })).not.toBeInTheDocument();
+    expect(within(upcoming).getByRole('heading', { name: /第 3 次公費產檢/ })).toBeInTheDocument();
+    expect(within(upcoming).queryByRole('heading', { name: /第 2 次公費產檢/ })).not.toBeInTheDocument();
+
+    // Both groups still go to the calendar together.
+    const ahead = within(openNow).getAllByRole('listitem').length + within(upcoming).getAllByRole('listitem').length;
+    expect(screen.getByRole('button', { name: `把這 ${ahead} 項加到行事曆` })).toBeInTheDocument();
+  });
+
+  it('names the date the parent actually entered as the basis of the weeks', async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(<CheckupScheduleToolPage />);
+    await user.type(screen.getByLabelText('預產期'), daysFromToday(200));
+    expect(screen.getByText(/週數由填入的預產期往回推算/)).toBeInTheDocument();
+    expect(screen.queryByText(/週數依最後一次月經/)).not.toBeInTheDocument();
+    unmount();
+
+    render(<CheckupScheduleToolPage />);
+    await user.click(screen.getByRole('radio', { name: '最後一次月經' }));
+    await user.type(screen.getByLabelText('最後一次月經的第一天'), daysFromToday(-80));
+    expect(screen.getByText(/週數依最後一次月經的第一天推算/)).toBeInTheDocument();
+    expect(screen.queryByText(/預產期往回推算/)).not.toBeInTheDocument();
+  });
+
   it('does not pretend to know whether a past checkup was done', async () => {
     const user = userEvent.setup();
     render(<CheckupScheduleToolPage />);

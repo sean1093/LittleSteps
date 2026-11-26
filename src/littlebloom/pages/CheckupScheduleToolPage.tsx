@@ -4,7 +4,12 @@ import ChoiceChips from '../../common/ui/ChoiceChips';
 import ToolCallout from '../../common/tools/ToolCallout';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { prenatalCheckupSchedule, prenatalItemKindLabels } from '../data/prenatalCheckups';
-import { lmpFromDueDate, resolvePrenatalItems, weeksPregnant } from '../utils/prenatalSchedule';
+import {
+  lmpFromDueDate,
+  resolvePrenatalItems,
+  weeksPregnant,
+  type ResolvedPrenatalItem,
+} from '../utils/prenatalSchedule';
 import { buildPrenatalIcs } from '../utils/prenatalCalendar';
 import { downloadCalendar } from '../../common/utils/icsExport';
 import { formatDate, toLocalDateKey } from '../../common/utils/dateHelpers';
@@ -41,6 +46,10 @@ export default function CheckupScheduleToolPage() {
   // 那一次產檢多半還能做。
   const ahead = items.filter((item) => item.windowEnd >= todayKey);
   const past = items.filter((item) => item.windowEnd < todayKey);
+  // 還做得到的再分兩組：區間已經開始的「現在可以做」，還沒開始的才是「接下來的」。
+  // 混在同一個標題下，正在區間裡、這幾天就該去做的那一項讀起來像還早。
+  const openNow = ahead.filter((item) => item.windowStart <= todayKey);
+  const upcoming = ahead.filter((item) => item.windowStart > todayKey);
   const week = lastPeriodDate ? weeksPregnant(lastPeriodDate) : null;
 
   const exportAhead = () => {
@@ -81,40 +90,24 @@ export default function CheckupScheduleToolPage() {
 
         {items.length > 0 && (
           <>
-            <section className="space-y-3">
-              <h2>接下來的（{ahead.length} 項）</h2>
-              {ahead.length === 0 ? (
+            {ahead.length === 0 ? (
+              <section className="space-y-3">
+                <h2>接下來的（0 項）</h2>
                 <p className={`text-sm ${theme.muted}`}>這份時程上的項目，可執行的週數都已經過了。</p>
-              ) : (
-                <>
-                  <ul className="space-y-3">
-                    {ahead.map((item) => (
-                      <li key={item.template.id} className="card">
-                        <p className={`text-sm font-semibold ${theme.ink}`}>
-                          第 {item.template.dueWeek} 週
-                          <span className={`font-normal ${theme.muted}`}>
-                            {' '}
-                            · {formatDate(item.windowStart)} 至 {formatDate(item.windowEnd)}
-                          </span>
-                        </p>
-                        <div className="flex flex-wrap items-center gap-2 mt-1">
-                          <h3 className="text-ink">{item.template.title}</h3>
-                          <span className="tag bg-ink/5 text-ink-muted">
-                            {prenatalItemKindLabels[item.template.kind]}
-                          </span>
-                        </div>
-                        <p className="text-sm text-ink-muted leading-relaxed mt-1">
-                          {item.template.description}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                  <button type="button" onClick={exportAhead} className="btn-secondary w-full">
-                    把這 {ahead.length} 項加到行事曆
-                  </button>
-                </>
-              )}
-            </section>
+              </section>
+            ) : (
+              <>
+                {openNow.length > 0 && (
+                  <ScheduleGroup heading={`現在可以做（${openNow.length} 項）`} items={openNow} />
+                )}
+                {upcoming.length > 0 && (
+                  <ScheduleGroup heading={`接下來的（${upcoming.length} 項）`} items={upcoming} />
+                )}
+                <button type="button" onClick={exportAhead} className="btn-secondary w-full">
+                  把這 {ahead.length} 項加到行事曆
+                </button>
+              </>
+            )}
 
             {past.length > 0 && (
               <p className={`text-sm leading-relaxed ${theme.muted}`}>
@@ -123,7 +116,8 @@ export default function CheckupScheduleToolPage() {
             )}
 
             <p className="text-xs text-ink-muted leading-relaxed">
-              週數依最後一次月經的第一天推算，實際時程請以產檢醫師安排為準。項目依衛生福利部國民健康署的孕婦產前檢查時程整理。
+              {basis === 'due' ? '週數由填入的預產期往回推算' : '週數依最後一次月經的第一天推算'}
+              ，實際時程請以產檢醫師安排為準。項目依衛生福利部國民健康署的孕婦產前檢查時程整理。
             </p>
           </>
         )}
@@ -137,5 +131,34 @@ export default function CheckupScheduleToolPage() {
         />
       </div>
     </BloomShell>
+  );
+}
+
+function ScheduleGroup({ heading, items }: { heading: string; items: ResolvedPrenatalItem[] }) {
+  const theme = SERVICE_THEME.littlebloom;
+  return (
+    <section className="space-y-3">
+      <h2>{heading}</h2>
+      <ul className="space-y-3">
+        {items.map((item) => (
+          <li key={item.template.id} className="card">
+            <p className={`text-sm font-semibold ${theme.ink}`}>
+              第 {item.template.dueWeek} 週
+              <span className={`font-normal ${theme.muted}`}>
+                {' '}
+                · {formatDate(item.windowStart)} 至 {formatDate(item.windowEnd)}
+              </span>
+            </p>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <h3 className="text-ink">{item.template.title}</h3>
+              <span className="tag bg-ink/5 text-ink-muted">
+                {prenatalItemKindLabels[item.template.kind]}
+              </span>
+            </div>
+            <p className="text-sm text-ink-muted leading-relaxed mt-1">{item.template.description}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

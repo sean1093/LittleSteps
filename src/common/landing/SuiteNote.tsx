@@ -51,11 +51,14 @@ export const SUITE_NOTES = {
     cta: '看寶寶成長',
     page: 'littlesteps',
   },
+  // The public calculator already answers this with no account. Sending the
+  // reader to the gated hub for it asked for a sign-in the answer does not need.
   pregnancyWiki: {
     title: '公費產檢，哪一週做哪一次',
-    body: '登入後填預產期，每一次產檢的日期就排好了。',
-    cta: '看孕期陪伴',
-    page: 'littlebloom',
+    body: '填預產期，每一次產檢與篩檢的日期就排好了，不用登入。',
+    cta: '開產檢時程試算',
+    page: 'littlebloom/checkup-schedule',
+    forEveryone: true,
   },
   toddlerWiki: {
     title: '這個年齡該會的，孩子會了幾項',

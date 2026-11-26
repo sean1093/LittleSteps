@@ -45,6 +45,16 @@
  *   明顯的胎動，刺激後仍沒反應，建議就醫檢查」，並說明胎動變少時可先輕拍肚子或吃點東西。
  *   兩者不一致時採較新、也較保守的 2 小時。
  *   https://mammy.hpa.gov.tw/Home/NewsKBContent?id=2536&type=01
+ *   同一段文字也在國健署《孕媽咪衛教手冊》（115 年 6 月出版）懷孕中期篇第 35 頁「感受不到
+ *   明顯胎動？」（2026-11-26 查閱，hpa.gov.tw 可開；mammy.hpa.gov.tw 當天連不上）。
+ *   https://www.hpa.gov.tw/Pages/EBook.aspx?nodeid=4839
+ * - 第 20～27 週的胎動警訊（EARLY_REDUCED_MOVEMENT，2026-11-26 查閱）：同一本手冊的
+ *   懷孕中期篇（13 週至未滿 29 週）寫「孕媽咪大約在 16~20 週左右會有第一次被寶寶踢到
+ *   的感覺」「孕媽咪的感覺沒有那麼頻繁」，並寫「如果一天有 2 個小時以上都感受不到明顯的
+ *   胎動，刺激後仍沒反應，建議就醫檢查」。這一段沒有「比平常減少一半」：第一胎在 20 週
+ *   多半才剛感覺到胎動，還沒有「平常」可以比，所以這幾週不用 REDUCED_MOVEMENT。
+ *   https://www.hpa.gov.tw/Pages/EBook.aspx?nodeid=4839
+ *   https://www.hpa.gov.tw/Pages/ashx/GetFile.ashx?lang=c&type=1&sid=2c18aa842e44441888d80311eb6288ed（懷孕中期篇 PDF）
  * - 28 週後每天測 3 回、每回 1–2 小時各至少 10 次胎動；少於平常一半可能缺氧或胎兒窘迫，應盡快就醫
  *   https://mammy.hpa.gov.tw/Home/NewsKBContent?id=1517&type=01（懷孕第 31 週）
  *
@@ -120,6 +130,16 @@ const PREECLAMPSIA_SIGNS =
   '持續頭痛不緩解、視力模糊或看見閃光、上腹或右上腹疼痛、手臉突然水腫（子癇前症警訊）';
 const REDUCED_MOVEMENT =
   '胎動比平常減少一半以上，或超過 2 小時感覺不到明顯胎動，吃點東西、輕拍肚子後仍沒有反應，當天就醫檢查';
+/** 第 20～27 週：還沒有穩定的「平常」可比，只寫手冊中期篇講的那一條。來源見檔頭。 */
+const EARLY_REDUCED_MOVEMENT =
+  '已經感覺得到胎動之後，一天有 2 個小時以上都感受不到明顯胎動，輕拍肚子或吃點東西後仍沒有反應，就醫檢查（這個階段胎動感覺起來不頻繁是正常的）';
+
+/**
+ * 警訊裡提到胎動的，只能是這兩條有出處的常數之一。
+ * 散寫的字串（像以前 20～27 週的「比平常減少一半以上」）不會經過查證。
+ */
+export const MOVEMENT_WARNINGS: readonly string[] = [EARLY_REDUCED_MOVEMENT, REDUCED_MOVEMENT];
+
 const PRETERM_SIGNS =
   '規則子宮收縮（一小時 6 次以上，休息 30 分鐘仍無改善）、落紅，或流出清澈不黏、持續不止的液體';
 const LABOR_SIGNS = '落紅、規則且強度遞增的陣痛、破水，任一出現就盡快就醫';
@@ -396,7 +416,7 @@ export const pregnancyGuides: PregnancyGuide[] = [
       PRETERM_SIGNS,
       '陰道出血（量多或半夜出血可至急診，少量出血可至門診檢查）',
       PREECLAMPSIA_SIGNS,
-      '胎動比平常減少一半以上',
+      EARLY_REDUCED_MOVEMENT,
     ],
   },
   {
@@ -412,7 +432,7 @@ export const pregnancyGuides: PregnancyGuide[] = [
     warningSignals: [
       PRETERM_SIGNS,
       PREECLAMPSIA_SIGNS,
-      '胎動比平常減少一半以上',
+      EARLY_REDUCED_MOVEMENT,
     ],
   },
   {
@@ -428,7 +448,7 @@ export const pregnancyGuides: PregnancyGuide[] = [
     warningSignals: [
       PRETERM_SIGNS,
       PREECLAMPSIA_SIGNS,
-      '胎動比平常減少一半以上',
+      EARLY_REDUCED_MOVEMENT,
     ],
   },
   {
@@ -444,7 +464,7 @@ export const pregnancyGuides: PregnancyGuide[] = [
     warningSignals: [
       PRETERM_SIGNS,
       PREECLAMPSIA_SIGNS,
-      '胎動比平常減少一半以上',
+      EARLY_REDUCED_MOVEMENT,
     ],
   },
   {
@@ -460,7 +480,7 @@ export const pregnancyGuides: PregnancyGuide[] = [
     warningSignals: [
       PRETERM_SIGNS,
       PREECLAMPSIA_SIGNS,
-      '胎動比平常減少一半以上',
+      EARLY_REDUCED_MOVEMENT,
     ],
   },
   {
@@ -476,7 +496,7 @@ export const pregnancyGuides: PregnancyGuide[] = [
     warningSignals: [
       PRETERM_SIGNS,
       PREECLAMPSIA_SIGNS,
-      '胎動比平常減少一半以上',
+      EARLY_REDUCED_MOVEMENT,
     ],
   },
   {
@@ -492,7 +512,7 @@ export const pregnancyGuides: PregnancyGuide[] = [
     warningSignals: [
       PRETERM_SIGNS,
       PREECLAMPSIA_SIGNS,
-      '胎動比平常減少一半以上',
+      EARLY_REDUCED_MOVEMENT,
     ],
   },
   {
@@ -509,7 +529,7 @@ export const pregnancyGuides: PregnancyGuide[] = [
       '分泌物帶血色，或變黃、變綠、濃稠、氣味重並伴隨搔癢灼熱感，盡快就醫',
       PRETERM_SIGNS,
       PREECLAMPSIA_SIGNS,
-      '胎動比平常減少一半以上',
+      EARLY_REDUCED_MOVEMENT,
     ],
   },
   {
@@ -636,7 +656,7 @@ export const pregnancyGuides: PregnancyGuide[] = [
       '行房要溫柔，太激烈的行為可能引發子宮收縮、提高早產風險。',
     ],
     warningSignals: [
-      '35 週前出現規則宮縮且持續增強、落紅、破水或胎動明顯改變，屬早產徵兆，須儘速就醫',
+      '35 週前出現規則宮縮且持續增強、落紅或破水，屬早產徵兆，須儘速就醫',
       REDUCED_MOVEMENT,
       PREECLAMPSIA_SIGNS,
     ],
