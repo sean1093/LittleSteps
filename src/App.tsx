@@ -3,7 +3,12 @@ import { Menu } from 'lucide-react';
 import { pageFromPath, type Page, type LittleStepsPage } from './types/routes';
 import { entryPageForChild, serviceForStage, stageOfChild } from './common/stageEntry';
 import { goTo, subscribeToNavigation } from './common/navigate';
-import { isStandaloneSubApp, wantsDailyLogs, wantsDiaryEntries } from './common/routePolicy';
+import {
+  isStandaloneSubApp,
+  waitsForChildList,
+  wantsDailyLogs,
+  wantsDiaryEntries,
+} from './common/routePolicy';
 import { useDocumentMeta } from './common/seo/useDocumentMeta';
 import { useStalled } from './common/hooks/useStalled';
 import { recordsStatusOf } from './common/recordsStatus';
@@ -297,7 +302,12 @@ function AppContent() {
 
   // RTDB 沒有磁碟快取。已安裝的 PWA 在離線時仍然開得起來（shell 有 precache），
   // 但 onValue 永遠不會回呼，於是載入條會一直轉下去，沒有任何說明。
-  const dataPending = loading || (user !== null && childrenLoading);
+  //
+  // 孩子名單只擋真的要用它的頁（見 waitsForChildList）。百科、試算工具、地圖
+  // 與疫情雷達不收孩子的資料，auth 一確定就畫：否則登入的家長離線時一頁都
+  // 打不開，未登入的反而全部看得到。
+  const dataPending =
+    loading || (user !== null && childrenLoading && waitsForChildList(currentPage));
   const loadStalled = useStalled(dataPending);
 
   // 下面每一個 return 都把它放在同一個位置（外框的兄弟、同一個 key），而不是

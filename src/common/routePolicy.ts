@@ -144,3 +144,23 @@ export const SERVICE_HOME: Record<ServiceId, Page> = {
   babyoasis: 'babyoasis',
   littleguard: 'littleguard',
 };
+
+/**
+ * 已登入時，這一頁要不要等孩子名單回來才畫。
+ *
+ * RTDB 沒有磁碟快取，離線時 onValue 永遠不會回呼，名單就一直在載入。以前
+ * App 在那段時間把每一頁都換成載入條、再換成「連不上伺服器」，於是登入的
+ * 家長離線時連 precache 好的百科與試算工具都打不開，未登入的反而全部看得到。
+ *
+ * 會等的只有真的要用名單的頁：
+ * - 需登入的頁：讀寫某個孩子的紀錄，名單沒回來就不知道是哪一個孩子。
+ * - `home`：入口頁要看有沒有孩子，才知道畫哪一種登入後的版本。
+ * - 副食品指南：公開頁，但「我的追蹤」看 currentChild 決定要掛追蹤區還是
+ *   提示「先新增寶寶」。名單還沒回來時 currentChild 是 null，等於對有孩子的
+ *   家長說他沒有孩子。
+ *
+ * 其餘公開頁不收任何孩子的資料，auth 一確定就畫。
+ */
+export function waitsForChildList(page: Page): boolean {
+  return requiresAuth(page) || page === 'home' || page === 'littlesteps/complementary-food';
+}

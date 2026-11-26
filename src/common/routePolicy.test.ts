@@ -6,6 +6,7 @@ import {
   isStandaloneSubApp,
   requiresAuth,
   serviceOf,
+  waitsForChildList,
   wantsDailyLogs,
   wantsDiaryEntries,
 } from './routePolicy';
@@ -297,6 +298,29 @@ describe('SERVICE_HOME', () => {
   it('首頁都是真的存在的路由', () => {
     for (const id of ALL_SERVICES) {
       expect(ALL_PAGES, id).toContain(SERVICE_HOME[id]);
+    }
+  });
+});
+
+describe('waitsForChildList', () => {
+  it('需登入的頁一律等孩子名單：名單沒回來就不知道是哪一個孩子', () => {
+    for (const page of ALL_PAGES.filter(requiresAuth)) {
+      expect(waitsForChildList(page), page).toBe(true);
+    }
+  });
+
+  it('入口頁與副食品指南也等：前者靠名單選登入後的版本，後者靠它決定追蹤區', () => {
+    expect(waitsForChildList('home')).toBe(true);
+    expect(waitsForChildList('littlesteps/complementary-food')).toBe(true);
+  });
+
+  it('其餘公開頁不等：離線時登入的家長照樣打得開百科與試算工具', () => {
+    const free = ALL_PAGES.filter(
+      (page) => !requiresAuth(page) && page !== 'home' && page !== 'littlesteps/complementary-food',
+    );
+    expect(free.length).toBeGreaterThan(0);
+    for (const page of free) {
+      expect(waitsForChildList(page), page).toBe(false);
     }
   });
 });
