@@ -76,6 +76,20 @@ describe('JoinPage', () => {
     expect(store.joinChild).toHaveBeenCalledWith(CODE);
   });
 
+  it('follows a second link pasted into a tab already on /join', async () => {
+    arriveWithCode();
+    const { store, user } = renderPage();
+    const SECOND = '9b8a7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d';
+
+    // Only the fragment changes; main.tsx's listener captures it first.
+    window.history.replaceState(null, '', `/join#${SECOND}`);
+    captureJoinLink();
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+
+    await user.click(await screen.findByRole('button', { name: '加入' }));
+    expect(store.joinChild).toHaveBeenCalledWith(SECOND);
+  });
+
   it('tells the parent which name the family will see', () => {
     arriveWithCode();
     renderPage();
