@@ -254,8 +254,8 @@ OpenStreetMap 的資料。它的每一句宣稱都是 `src/common/about/dataSour
 - **分享**：孩子的檔案透過一組專屬代碼分享給家人，而且分享可以收回 — 見下
 - **匯出**：一個孩子的整份紀錄 — 檔案本身，加上每一筆日誌、日記與成長紀錄 — 可以
   從帳號視窗下載成一個 JSON 檔 `littlesteps-<孩子>-<日期>.json`，形狀就照下面那張
-  資料庫結構，不需要另外一套格式。唯一沒有帶走的是成員名單：那是其他帳號的 id，
-  不是這位家長的資料
+  資料庫結構，不需要另外一套格式。沒有帶走的是成員名單與成員的名字：那是其他
+  帳號的 id 與其他人的名字，不是這位家長的資料
 - **刪除**：帳號視窗可以刪掉帳號本身 — 只有這位家長一個人是成員的孩子整份消失、
   共用的只退出成員名單、自己的 `users/$uid` 節點，最後是 Firebase Auth 使用者
 - **限制**：免費方案每個帳號 2 個孩子
@@ -301,6 +301,22 @@ App Check token，其他什麼都不受影響。在 App Check 還是監控模式
   的取捨：讓兩個家長各自都能把對方從共用的紀錄上移除，在這裡的價值大於給他們
   一套誰都沒要求過的角色階層。
 
+分享視窗把這份名單列成人，而不是一個數字。每位成員在
+`children/$childId/memberNames/$uid` 有一個名字 — 建檔或加入時是他登入的顯示
+名稱，之後可以在分享視窗改 — 每一列有自己的移除鈕，建立者那一列也有；自己那
+一列寫的是「離開」。移除一個人會在同一筆裡關掉 `joinOpen`，否則對方拿著手上的
+代碼就加回來了。名字受下面這幾條約束，同樣由 `npm run test:rules` 驗證：
+
+- 成員只寫得了自己的名字，1–40 個字的字串。上層的 `.write` 讓成員寫得動孩子
+  底下的一切，所以擋下「寫到別人 uid 底下的名字」的是 `.validate`
+- 名字只跟著成員資格存在：同一筆寫完之後那個 uid 不在名單上，名字就被拒絕。
+  所以加入的人把成員資格與名字放在同一筆，被移除的人也寫不回自己的名字。移除
+  那一側由客戶端負責：`removeMember`、`deleteChild` 與 `deleteAccountData` 在
+  刪成員資格的同一筆裡把名字一起清掉。這一半規則管不到 — `.validate` 不在刪除
+  時執行，也沒有任何規則能走訪一個 map 找出成員已經不在的名字
+- 名字是透過孩子節點讀的，所以非成員一個都讀不到。不存 email，也不存任何其他
+  帳號識別
+
 ### 資料庫結構
 
 ```
@@ -318,6 +334,8 @@ children/$childId          id, name, birthday, gender, createdAt, createdBy,
                            gestationalAgeWeeks, gestationalAgeDays
                                                    早產週數，用來算矯正年齡
                            members/$uid: true      授權
+                           memberNames/$uid        分享視窗上的名字；
+                                                   只寫得了自己的
                            joinOpen                持有代碼的人可以加入嗎？
                            milestoneProgress, vaccineProgress, toothProgress,
                            developmentProgress, prenatalProgress,

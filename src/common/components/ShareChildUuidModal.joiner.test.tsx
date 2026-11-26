@@ -6,14 +6,15 @@ import { SHARING_REMOVAL } from '../landing/serviceCopy';
 
 /**
  * The share window as seen by someone who JOINED a record their partner
- * created. The data layer never removes the creator, so the window must not
- * offer to.
+ * created. The landing page, the intro pages and the about page promise that
+ * anyone on the list can be removed, the creator included; this is where that
+ * promise has to hold.
  */
 vi.mock('../../contexts/AuthContext', () => ({
   useOptionalAuth: () => ({ user: { uid: 'joiner' } }),
 }));
 
-const child = (members: Record<string, true>): ChildProfile =>
+const child = (members: Record<string, true>, memberNames: Record<string, string>): ChildProfile =>
   ({
     id: 'child-1',
     name: '小豆',
@@ -23,53 +24,46 @@ const child = (members: Record<string, true>): ChildProfile =>
     createdAt: '2025-02-27T00:00:00.000Z',
     createdBy: 'creator',
     members,
+    memberNames,
   }) as ChildProfile;
 
-const renderModal = (members: Record<string, true>) =>
+const renderModal = (members: Record<string, true>, memberNames: Record<string, string>) =>
   render(
     <ShareChildUuidModal
       isOpen
       onClose={vi.fn()}
-      child={child(members)}
-      revokeOtherMembers={vi.fn()}
+      child={child(members, memberNames)}
+      removeMember={vi.fn()}
+      setMemberName={vi.fn()}
       setJoinOpen={vi.fn()}
     />,
   );
 
 describe('ShareChildUuidModal, as a member who did not create the record', () => {
-  it('does not offer to remove the creator, and says why nothing can be removed', () => {
-    // Two accounts: the creator and me. The button used to read "remove 1
-    // other account", ran without error, and removed nobody.
-    renderModal({ creator: true, joiner: true });
+  it('offers to remove every other member, the creator included', () => {
+    // The button used to read "remove 1 other account", ran without error,
+    // and removed nobody: the creator was silently kept.
+    renderModal({ creator: true, joiner: true }, { creator: '媽媽', joiner: '爸爸' });
 
-    expect(screen.queryByRole('button', { name: /移除其他/ })).not.toBeInTheDocument();
-    expect(screen.getByText(/建立這份紀錄的人，不能從這裡移除/)).toBeInTheDocument();
-    // The count of who can see the record is still the truth: two.
+    expect(screen.getByText('建立這份紀錄')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '移除媽媽' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '離開這份紀錄' })).toBeInTheDocument();
     expect(screen.getByText(/目前有 2 個帳號/)).toBeInTheDocument();
   });
 
-  it('counts only the accounts it will actually remove', () => {
-    // Creator, me, and a grandmother: one removable, not two.
-    renderModal({ creator: true, joiner: true, grandma: true });
-
-    expect(screen.getByRole('button', { name: '移除其他 1 個帳號的存取權' })).toBeInTheDocument();
-    expect(screen.queryByText(/不能從這裡移除/)).not.toBeInTheDocument();
-  });
-
-  it('makes the sharing promise, and the promise keeps the creator the sheet cannot remove', () => {
-    // The landing page, the intro pages and the about page all read this
-    // sentence. Seen by a member who joined, the sheet offers to remove the
-    // grandmother but not the creator — so a promise that "any member can be
-    // removed" would be a claim the sheet cannot keep.
-    renderModal({ creator: true, joiner: true, grandma: true });
+  it('makes the sharing promise, and claims no more than the remove buttons reach', () => {
+    renderModal(
+      { creator: true, joiner: true, grandma: true },
+      { creator: '媽媽', joiner: '爸爸', grandma: '外婆' },
+    );
 
     expect(screen.getByText(SHARING_REMOVAL, { exact: false })).toBeInTheDocument();
-    const removable = Number(
-      screen.getByRole('button', { name: /移除其他 \d+ 個帳號/ }).textContent?.match(/\d+/)?.[0],
+    // The promise says anyone on the list, the creator included, can go. Each
+    // other member therefore needs a remove button of their own.
+    expect(SHARING_REMOVAL).toMatch(/任何一位移除，包括建立這份紀錄的人/);
+    const removeButtons = screen.getAllByRole('button', { name: /^移除/ });
+    expect(removeButtons.map((button) => button.getAttribute('aria-label')).sort()).toEqual(
+      ['移除外婆', '移除媽媽'].sort(),
     );
-    const othersOnList = 2;
-    expect(removable).toBeLessThan(othersOnList);
-    // One of the others is out of reach, and the promise names who.
-    expect(SHARING_REMOVAL).toMatch(/建立這份紀錄的人不會被移除/);
   });
 });

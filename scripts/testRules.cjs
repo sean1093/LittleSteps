@@ -307,6 +307,95 @@ async function main() {
     mallory.put('children/c6/members/alice', null),
   );
 
+  console.log('\n成員名字：名單上看得到的是人，不是 uid');
+  // children/$id/memberNames/$uid 是每位成員自己取的名字，分享視窗用它列出名單、
+  // 一列一個移除鈕。它是孩子節點的一部分，所以讀取權限跟著 members 走；寫入只有
+  // 本人寫得了自己的那一筆，而且只有在寫完之後自己確實是成員時才成立。上層的
+  // .write 讓成員寫得動孩子底下的一切，所以「只有本人」是 .validate 在守——
+  // validate 不會被上層的授權略過。刪除不跑 validate，這正是要的：移除一位成員
+  // 時，他的名字要在同一筆裡跟著消失。
+  await admin.put(
+    'children/n1',
+    childProfile({
+      id: 'n1',
+      members: { alice: true, mallory: true },
+      memberNames: { alice: '媽媽', mallory: '保母' },
+      joinOpen: true,
+    }),
+  );
+  await expectAllowed('成員改得了自己的名字', alice.put('children/n1/memberNames/alice', '小豆媽'));
+  await expectDenied(
+    '成員寫不了別人的名字（上層 .write 放行，validate 擋下）',
+    alice.put('children/n1/memberNames/mallory', '外人'),
+  );
+  await expectDenied(
+    '整份覆寫孩子時也改不了別人的名字',
+    alice.patch('children/n1', { memberNames: { alice: '小豆媽', mallory: '外人' } }),
+  );
+  await expectDenied(
+    '名字超過 40 字不給寫',
+    alice.put('children/n1/memberNames/alice', 'x'.repeat(41)),
+  );
+  await expectDenied('名字不能是空字串', alice.put('children/n1/memberNames/alice', ''));
+  await expectDenied('名字只能是字串', alice.put('children/n1/memberNames/alice', { email: 'a@example.com' }));
+  await expectAllowed(
+    '改孩子的其他欄位不會被別人的名字擋住',
+    alice.patch('children/n1', { name: '小豆' }),
+  );
+  await expectDenied('非成員讀不到名單上的名字', as('stranger').get('children/n1/memberNames'));
+  await expectDenied(
+    '還沒加入的人不能先把名字寫進去——名字要跟成員資格同一筆',
+    as('grandma').put('children/n1/memberNames/grandma', '阿嬤'),
+  );
+  await expectAllowed(
+    '加入的人把成員資格與名字放在同一筆寫進來（joinChild 的寫法）',
+    as('grandma').patch('children/n1', { 'members/grandma': true, 'memberNames/grandma': '阿嬤' }),
+  );
+  await expectKeys('加入之後，其他成員讀得到這個名字', alice.get('children/n1/memberNames'), {
+    has: ['alice', 'mallory', 'grandma'],
+    lacks: [],
+  });
+  await expectDenied(
+    '分享關掉之後，就算成員資格與名字同一筆也加不進來',
+    (async () => {
+      await alice.put('children/n1/joinOpen', false);
+      return as('daycare').patch('children/n1', { 'members/daycare': true, 'memberNames/daycare': '托嬰' });
+    })(),
+  );
+  await expectAllowed(
+    '移除一位成員：成員資格、名字與關掉加入同一筆（removeMember 的寫法）',
+    alice.patch('children/n1', { 'members/mallory': null, 'memberNames/mallory': null, joinOpen: false }),
+  );
+  await expectDenied('被移除的人讀不到名單了', mallory.get('children/n1/memberNames'));
+  await expectDenied(
+    '被移除的人也寫不回自己的名字',
+    mallory.put('children/n1/memberNames/mallory', '保母'),
+  );
+  await expectAllowed(
+    '建立者也能被另一位成員移除，名字一起走',
+    as('grandma').patch('children/n1', { 'members/alice': null, 'memberNames/alice': null }),
+  );
+  await expectDenied(
+    '最後一位成員連同名字一起走也不行：名單不能歸零',
+    as('grandma').patch('children/n1', { 'members/grandma': null, 'memberNames/grandma': null }),
+  );
+  // 離開是自己那一端的 fan-out：成員資格、名字、自己的 childrenIds 與選取狀態。
+  await admin.put('children/n2', childProfile({
+    id: 'n2',
+    members: { alice: true, mallory: true },
+    memberNames: { alice: '媽媽', mallory: '爸爸' },
+  }));
+  await admin.put('users/mallory/childrenIds/n2', true);
+  await expectAllowed(
+    '自己離開：成員資格、名字與自己的名單同一筆（leave 的寫法）',
+    mallory.patch('', {
+      'children/n2/members/mallory': null,
+      'children/n2/memberNames/mallory': null,
+      'users/mallory/childrenIds/n2': null,
+      'users/mallory/currentChildId': null,
+    }),
+  );
+
   console.log('\n欄位驗證');
   await expectAllowed(
     '部分更新不必重送整份資料',

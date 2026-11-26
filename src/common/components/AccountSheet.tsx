@@ -378,7 +378,8 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
           isOpen={sharingChild !== null}
           onClose={() => setSharingChildId(null)}
           child={sharingChild}
-          revokeOtherMembers={store.revokeOtherMembers}
+          removeMember={store.removeMember}
+          setMemberName={store.setMemberName}
           setJoinOpen={store.setJoinOpen}
         />
       )}
