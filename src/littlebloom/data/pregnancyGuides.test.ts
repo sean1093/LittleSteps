@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { PREGNANCY_TOTAL_WEEKS, pregnancyGuides, trimesterOf } from './pregnancyGuides';
+import {
+  MOVEMENT_WARNINGS,
+  PREGNANCY_TOTAL_WEEKS,
+  pregnancyGuides,
+  trimesterOf,
+} from './pregnancyGuides';
 
 /** 從此週起，胎動減少、子癇前症與早產徵兆都已成立，警訊不得為空。 */
 const WARNING_REQUIRED_FROM = 20;
@@ -61,6 +66,25 @@ describe('pregnancyGuides', () => {
     for (const guide of pregnancyGuides) {
       const mentioned = guide.warningSignals.some((s) => s.includes('胎動'));
       expect(mentioned, `第 ${guide.week} 週`).toBe(guide.week >= 20);
+    }
+  });
+
+  it('提到胎動的警訊都是有出處的常數，不是散寫的字串', () => {
+    // 20～27 週以前是一條沒有出處的「比平常減少一半以上」，和 28 週起有引用的
+    // 那一條各說各話。
+    for (const guide of pregnancyGuides) {
+      for (const signal of guide.warningSignals.filter((s) => s.includes('胎動'))) {
+        expect(MOVEMENT_WARNINGS, `第 ${guide.week} 週：${signal}`).toContain(signal);
+      }
+    }
+  });
+
+  it('28 週前的胎動警訊不拿「平常」當基準', () => {
+    // 第一胎在 20 週多半才剛感覺到胎動，還沒有「平常」可以比。
+    for (const guide of pregnancyGuides.filter((g) => g.week < 28)) {
+      for (const signal of guide.warningSignals.filter((s) => s.includes('胎動'))) {
+        expect(signal, `第 ${guide.week} 週`).not.toMatch(/平常/);
+      }
     }
   });
 

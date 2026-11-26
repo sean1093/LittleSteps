@@ -10,6 +10,7 @@ import { pregnancyWikiArticles } from '../data/wiki';
 import { prenatalCheckupSchedule } from '../data/prenatalCheckups';
 import { dueDateFromLmp, resolvePrenatalItems } from '../utils/prenatalSchedule';
 import { PRENATAL_CLINIC_LIMIT, PRENATAL_NOTES_LIMIT } from '../../common/recordLimits';
+import { requiresAuth } from '../../common/routePolicy';
 
 /**
  * LittleBloom shipped as a shell: no code path wrote pregnancyData, so every
@@ -605,6 +606,14 @@ describe('LittleBloomWikiPage', () => {
 
     await user.type(screen.getByRole('searchbox'), keyword);
     expect(articleCount()).toBeGreaterThan(titleMatches);
+  });
+
+  it('頁尾的產檢時程指向不用登入的試算頁，不是登入後的孕期陪伴', () => {
+    render(<LittleBloomWikiPage />);
+    const note = screen.getByRole('complementary', { name: 'LittleSteps 的其他功能' });
+    const link = within(note).getByRole('link');
+    expect(link).toHaveAttribute('href', '/littlebloom/checkup-schedule');
+    expect(requiresAuth('littlebloom/checkup-schedule')).toBe(false);
   });
 
   it('搜尋無結果時顯示空狀態，而不是一片空白', async () => {
