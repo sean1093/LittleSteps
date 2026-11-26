@@ -144,3 +144,73 @@ describe('兩排篩選器', () => {
     );
   });
 });
+
+/**
+ * #145：輪狀病毒 2027-01-01 起公費，但公告寫「最大不得超過8個月」。
+ *
+ * 提醒、下一劑與試算頁都問 resolveVaccineDoses 的 setAside；這一頁曾經只問
+ * fundingOn，於是 10 個月大、一劑都沒記的孩子在這裡讀到五張「公費」卡片。
+ */
+describe('過了接種年齡上限的那幾劑', () => {
+  const TENTH_MONTH = new Date(2027, 0, 15, 12);
+  const tenMonthOld: ChildProfile = { ...child, birthday: '2026-03-10' };
+
+  const renderAt = () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(TENTH_MONTH);
+    const user = userEvent.setup();
+    render(
+      <VaccineTrackingPage
+        currentChild={tenMonthOld}
+        vaccineProgress={{}}
+        onSetVaccineDose={vi.fn()}
+      />,
+    );
+    return user;
+  };
+
+  /**
+   * 一劑一張卡。換月齡篩選時，前一個篩選留下的卡片還在 AnimatePresence 的
+   * 退場動畫裡，jsdom 不會把它播完，所以同名的卡片只取最後一張。
+   */
+  const rotavirusCards = () => {
+    const byName = new Map<string, HTMLElement>();
+    screen
+      .queryAllByRole('heading', { level: 3 })
+      .filter((h) => h.textContent?.startsWith('口服輪狀病毒疫苗'))
+      .forEach((h) => byName.set(h.textContent!, h.closest('.card') as HTMLElement));
+    return [...byName.values()];
+  };
+
+  it('不標公費，標已超過接種年齡', async () => {
+    const user = renderAt();
+    try {
+      await user.click(screen.getByRole('button', { name: '全部月齡' }));
+
+      const cards = rotavirusCards();
+      expect(cards).toHaveLength(5);
+      cards.forEach((card) => {
+        const tags = Array.from(card.querySelectorAll('.tag')).map((t) => t.textContent);
+        expect(tags).toContain('已超過接種年齡');
+        expect(tags).not.toContain('公費');
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('不列在「公費」篩選底下', async () => {
+    const user = renderAt();
+    try {
+      await user.click(screen.getByRole('button', { name: '全部月齡' }));
+      await user.click(screen.getByRole('button', { name: '公費' }));
+
+      // 前提：篩選真的留下了公費劑次，不是整頁空掉。
+      expect(screen.getAllByRole('heading', { level: 3 }).length).toBeGreaterThan(5);
+      // 被篩掉的卡片先播退場動畫才離開 DOM。
+      await waitFor(() => expect(rotavirusCards()).toEqual([]));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

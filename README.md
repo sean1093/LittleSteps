@@ -85,8 +85,11 @@ they used to give no hint that a product existed around them.
   are alternatives, not five doses. Once a dose of one is recorded the other drops
   out of everything owed; with nothing recorded only one counts, so a two-month-old
   owes two or three doses, never five, and the calculator and calendar export show
-  a visit where either will do as one line. A child older than the announcement's
-  age limit of eight months is never counted as owing one or shown it as free
+  a visit where either will do as one line; the 3-dose product's third dose, which
+  has no partner, says it is needed only if that product is chosen. A child older
+  than the announcement's age limit of eight months is never counted as owing one
+  or shown it as free, the vaccine page included, where such a dose is labelled as
+  past the age limit instead of funded
 - **Publicly funded, but only for a named group** — one of those government-funded
   doses is the extra PCV13 dose at six months for high-risk children. It carries the
   CDC's own condition, so it shows on the vaccine page and in the calendar export but
