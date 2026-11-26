@@ -124,7 +124,7 @@ Two consequences worth knowing before you touch the data layer:
   an account by a child they created for somebody else.
 
 `npm run test:rules` proves all of it against the real Database emulator
-(`scripts/testRules.cjs`, 170 assertions). It needs a JDK. Change
+(`scripts/testRules.cjs`, 173 assertions). It needs a JDK. Change
 `database.rules.json` without running it and you are guessing.
 
 ---

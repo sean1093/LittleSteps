@@ -337,6 +337,9 @@ async function main() {
     alice.put('children/n1/memberNames/alice', 'x'.repeat(41)),
   );
   await expectDenied('名字不能是空字串', alice.put('children/n1/memberNames/alice', ''));
+  await expectDenied('名字不能只有空白', alice.put('children/n1/memberNames/alice', '   '));
+  await expectDenied('名字不能只有全形空白', alice.put('children/n1/memberNames/alice', '　　'));
+  await expectAllowed('名字中間可以有空白', alice.put('children/n1/memberNames/alice', '小豆 媽'));
   await expectDenied('名字只能是字串', alice.put('children/n1/memberNames/alice', { email: 'a@example.com' }));
   await expectAllowed(
     '改孩子的其他欄位不會被別人的名字擋住',

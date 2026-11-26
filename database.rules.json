@@ -47,7 +47,7 @@
         "memberNames": {
           "$memberUid": {
             ".write": "auth != null && $memberUid === auth.uid && newData.parent().parent().child('members').child(auth.uid).val() === true",
-            ".validate": "$memberUid === auth.uid && newData.isString() && newData.val().length >= 1 && newData.val().length <= 40 && newData.parent().parent().child('members').child($memberUid).val() === true"
+            ".validate": "$memberUid === auth.uid && newData.isString() && newData.val().length >= 1 && newData.val().length <= 40 && newData.val().replace(' ', '').replace('　', '').length >= 1 && newData.parent().parent().child('members').child($memberUid).val() === true"
           }
         },
 
