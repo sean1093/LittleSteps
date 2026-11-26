@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import type { ServiceTheme } from './serviceTheme';
@@ -52,12 +53,41 @@ export default function AppBar({
 }: AppBarProps) {
   const column = width === 'wide' ? 'max-w-4xl' : 'max-w-2xl';
 
+  // Anything pinned below the bar reads its height from `--app-bar-h`
+  // (the `top-app-bar` spacing token, 4rem when unset). The row is measured,
+  // not the header, so the 1px border stays out of it as it always has: at
+  // default text with a one-line title this publishes exactly 4rem.
+  const row = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const element = row.current;
+    if (!element || typeof ResizeObserver === 'undefined') return undefined;
+    const root = document.documentElement;
+    const publish = () => {
+      root.style.setProperty('--app-bar-h', `${element.offsetHeight}px`);
+    };
+    publish();
+    const observer = new ResizeObserver(publish);
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty('--app-bar-h');
+    };
+  }, []);
+
   return (
-    <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-sm border-b border-ink/5">
-      {/* Fixed 4rem so anything that has to stick *below* the bar can say
-          `top-16` instead of guessing a pixel value — DiaryPage's month
-          divider used to hardcode `top-[72px]` against the old header. */}
-      <div className={`${column} mx-auto px-4 h-16 flex items-center gap-2`}>
+    <header className="app-bar sticky top-0 z-30 bg-white/90 backdrop-blur-sm border-b border-ink/5">
+      {/* At least 4rem, and exactly 4rem whenever the title fits on one line
+          beside the buttons — which is every page at default text size. It
+          grows when the title needs a second line, or when large text stacks
+          the title under the buttons (`.app-bar-row` in index.css), which is
+          why things pinned below it say `top-app-bar` rather than `top-16`
+          (DiaryPage's month divider once hardcoded `top-[72px]`). Only a bar
+          with trailing actions stacks: a lone back button leaves the title
+          room for two lines beside it even at 200% text on 320px. */}
+      <div
+        ref={row}
+        className={`${actions ? 'app-bar-row' : ''} ${column} mx-auto px-4 min-h-16 flex items-center gap-2`}
+      >
         {leading ??
           (backTo && (
             <button
@@ -72,15 +102,19 @@ export default function AppBar({
             </button>
           ))}
 
-        {/* min-w-0 + truncate: a flex item will not shrink below its content
-            width, so a long title pushes the trailing buttons off a narrow
-            screen instead of ellipsing. */}
-        <div className="min-w-0 flex-1">
-          <h1 className={`text-lg font-bold truncate ${theme.ink}`}>{title}</h1>
+        {/* min-w-0: a flex item will not shrink below its content width, so
+            without it a long title pushes the trailing buttons off a narrow
+            screen. The title then takes up to two lines rather than
+            ellipsing at once: at 200% text a single truncated line was one
+            character wide. The subtitle is a caption and still truncates. */}
+        <div className="app-bar-title min-w-0 flex-1">
+          <h1 className={`text-lg font-bold line-clamp-2 break-words ${theme.ink}`}>{title}</h1>
           {subtitle && <p className={`text-xs truncate ${theme.muted}`}>{subtitle}</p>}
         </div>
 
-        {actions}
+        {/* ml-auto does nothing while the title is flex-1 beside it; once the
+            title stacks onto its own line it keeps the buttons on the right. */}
+        {actions && <div className="ml-auto flex items-center gap-2">{actions}</div>}
       </div>
     </header>
   );

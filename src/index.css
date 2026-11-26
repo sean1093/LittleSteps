@@ -196,3 +196,33 @@
     scroll-behavior: auto !important;
   }
 }
+
+@layer components {
+  /*
+    AppBar at large text. The buttons are sized in rem, so at 200% root font
+    size three of them take 264px of a 320px screen and the title column was
+    left one character wide (or none) — 「疫」 for the vaccine calculator.
+    Wrapping the title inside that column does not help; it needs the row.
+
+    The query is in `em` of the header, which follows the root font size:
+    19em is 304px at 100%, so no phone stacks at default text, while at 150%
+    (456px) and 200% (608px) every phone does. The title then gets a full
+    line under the buttons, the same order a screen reader already reads.
+  */
+  .app-bar {
+    container-type: inline-size;
+  }
+
+  @container (max-width: 19em) {
+    .app-bar-row {
+      flex-wrap: wrap;
+      padding-block: 0.5rem;
+    }
+
+    /* Two classes, so this outranks the `flex-1` utility on the same node. */
+    .app-bar-row > .app-bar-title {
+      order: 1;
+      flex-basis: 100%;
+    }
+  }
+}

@@ -436,7 +436,7 @@ feedbacks/$feedbackId      title, content, userId, timestamp
 | 檔案 | 用途 |
 |---|---|
 | `serviceTheme.ts` | `SERVICE_THEME[id]` — 唯一一個會依服務而變的東西 |
-| `AppBar.tsx` | 唯一的頁面標題列，固定 `h-16`；要黏在它下面的東西用 `top-16` |
+| `AppBar.tsx` | 唯一的頁面標題列，預設字級下高 4rem；標題最多兩行，大字級時會疊到按鈕下面，所以要黏在它下面的東西用 `top-app-bar`，不是 `top-16` |
 | `EmptyState.tsx` | 唯一的「這裡還沒有東西」區塊；除非那個時刻值得，否則**不畫任何 icon** |
 | `motion.ts` | `stagger` `listItem` `fadeInUp` `sheet` `backdrop` `collapse` `tap` `hoverLift` |
 
