@@ -119,7 +119,7 @@ export const SERVICE_INTRO: Record<StagedService, ServiceIntroCopy> = {
     publicContent: [
       {
         title: '孕期知識庫',
-        detail: '25 篇：成因、怎麼處理、什麼時候該看醫生。',
+        detail: '27 篇：成因、怎麼處理、什麼時候該看醫生。',
         page: 'littlebloom/wiki',
       },
       {
@@ -148,7 +148,7 @@ export const SERVICE_INTRO: Record<StagedService, ServiceIntroCopy> = {
     publicContent: [
       {
         title: '寶寶百科',
-        detail: '15 篇常見狀況：怎麼處理、什麼時候該看醫生。',
+        detail: '20 篇常見狀況：怎麼處理、什麼時候該看醫生。',
         page: 'littlesteps/baby-wiki',
       },
       { title: '照顧重點', detail: '依月齡整理的照顧與安全注意事項。', page: 'littlesteps/care-guide' },
@@ -195,7 +195,7 @@ export const SERVICE_INTRO: Record<StagedService, ServiceIntroCopy> = {
  * The three knowledge bases, as the landing page links to them.
  *
  * Derived from `SERVICE_INTRO` so each article count is written in one place.
- * 85 sourced articles are public, and the landing page had no way to reach
+ * 92 sourced articles are public, and the landing page had no way to reach
  * them except through an intro page that leads with a sign-in button.
  */
 export const WIKI_LINKS: { page: Page; title: string; count: number }[] = STAGED_SERVICES.flatMap(

@@ -15,7 +15,7 @@
  * 從網址直接進來的頁面（深連結靜默掉回首頁），或反過來。
  *
  * 路徑而不是 hash：`#/littleexplorer/wiki` 之類的 fragment 不會送到伺服器，
- * 搜尋引擎一律忽略，整個站等於只有一個可索引的網址。85 篇查證過出處的
+ * 搜尋引擎一律忽略，整個站等於只有一個可索引的網址。92 篇查證過出處的
  * 百科文章因此完全搜不到。舊的 hash 連結由 redirectLegacyHash() 接住。
  */
 export const ROUTE_PATH = {
@@ -81,8 +81,8 @@ export function pageFromPath(pathname: string): Page {
  * 三個知識庫。每一篇文章在自己的知識庫底下有一個網址：
  * `/littlesteps/baby-wiki/fever-assessment`。
  *
- * 文章不是 Page：85 篇各佔一個路由鍵的話，PAGE_META、routePolicy 與每一張以
- * Page 為鍵的表都要多 85 列，而它們的答案和所屬的知識庫完全相同。所以文章
+ * 文章不是 Page：92 篇各佔一個路由鍵的話，PAGE_META、routePolicy 與每一張以
+ * Page 為鍵的表都要多 92 列，而它們的答案和所屬的知識庫完全相同。所以文章
  * 網址解析成「知識庫那一頁 + 文章代號」，公開與否、頁面外框都跟著知識庫走。
  */
 export const WIKI_PAGES = ['littlesteps/baby-wiki', 'littlebloom/wiki', 'littleexplorer/wiki'] as const;

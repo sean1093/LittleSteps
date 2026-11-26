@@ -321,3 +321,33 @@ describe('toddler content', () => {
     expect(TODDLER).not.toMatch(/用貼紙記錄乾爽的夜晚/);
   });
 });
+
+/**
+ * The first-two-weeks articles (#156). Judging intake by a millilitre target
+ * is what the panel asked to avoid: wet diapers and weight are what the AAP
+ * pages say to watch, and a number per feed invites comparing babies.
+ */
+describe('first-two-weeks articles', () => {
+  const byId = (id: string) => babyWikiArticles.find((article) => article.id === id);
+
+  it('judges "enough" by diapers and weight, never by millilitres', () => {
+    const enough = text(byId('feeding-enough'));
+    expect(enough).toMatch(/6 片以上的濕尿布/);
+    expect(enough).toMatch(/體重/);
+    // The article may name millilitres only to say not to go by them.
+    expect(enough).not.toMatch(/\d\s*(毫升|ml|c\.c\.|cc)/i);
+    expect(enough).toMatch(/不拿毫升數跟別人比/);
+  });
+
+  it('sends a pale stool to a doctor before 60 days (HPA)', () => {
+    const signs = text(byId('jaundice-stool-card')?.warningSignals);
+    expect(signs).toMatch(/1-6 號/);
+    expect(signs).toMatch(/60 天內/);
+  });
+
+  it('never suggests sunlight for jaundice (AAP)', () => {
+    const jaundice = text(byId('jaundice-stool-card'));
+    expect(jaundice).toMatch(/不是安全的黃疸治療方式/);
+  });
+});
+

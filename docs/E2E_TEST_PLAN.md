@@ -21,7 +21,7 @@ What it structurally cannot see:
 |---|---|
 | **Routing and deep links** | `ROUTE_PATH` is typed, but nothing proves that typing `/littlesteps/daily-log` into the address bar boots the app on that page. Component tests mount a page directly; they never exercise the path parser, the lazy chunk, or the history API. |
 | **The auth gate** | `routePolicy.ts` is a public allowlist, and this app stores children's health data. A unit test asserts the predicate. Only a browser proves that a signed-out visitor at a gated URL sees the intro page **and no child data**, at the same URL, with no redirect. |
-| **Real data files** | The wikis, the venue registers, the nursing-room dataset and the disease radar load real JSON/TS data at runtime — 3,844 nursing rooms, 85 wiki articles. A malformed or missing data file passes typecheck and breaks the page. |
+| **Real data files** | The wikis, the venue registers, the nursing-room dataset and the disease radar load real JSON/TS data at runtime — 3,844 nursing rooms, 92 wiki articles. A malformed or missing data file passes typecheck and breaks the page. |
 | **Lazy chunks and the PWA** | `App.tsx` lazy-loads every page. A broken dynamic import, a stale service worker precache or a bad manifest is invisible until a real navigation happens. |
 | **Layout at 390px and 320px** | `.claude/CLAUDE.md` requires every change to be checked at 390px, and at 320px for anything in a grid. happy-dom has no layout engine: it cannot tell you that a chip row overflows or that a tag wraps. |
 | **Third-party rendering** | Leaflet draws the BabyOasis map imperatively into a real DOM with real sizing. There is no meaningful jsdom assertion about it. |

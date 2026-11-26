@@ -66,7 +66,7 @@ they used to give no hint that a product existed around them.
 ### LittleBloom — pregnancy companion
 - **Weekly pregnancy guide** — week-by-week body changes and what to watch for, with previous and next week; also public at `/littlebloom/weekly-guide`, from a due date that is never stored
 - **Prenatal schedule** — the 14 government-funded prenatal checkups, with dates and clinics recorded
-- **Pregnancy knowledge base** — 25 articles: causes, what to do, when to see a doctor, including which vaccines pregnancy needs — influenza, Tdap, COVID-19 and the maternal RSV vaccine — with each one's funding status and the week window for Tdap
+- **Pregnancy knowledge base** — 27 articles: causes, what to do, when to see a doctor, including postpartum warning signs for the mother, one page on when to go to hospital now, and which vaccines pregnancy needs — influenza, Tdap, COVID-19 and the maternal RSV vaccine — with each one's funding status and the week window for Tdap
 - **Birth registration** — converts a pregnancy profile into a baby profile, which is what moves a family from LittleBloom to LittleSteps
 
 ### LittleSteps — baby growth tracking
@@ -131,7 +131,11 @@ they used to give no hint that a product existed around them.
 - **Corrected age for prematurity** — a birth before 37 weeks shifts growth percentiles, the chart's x-axis, the milestone band (which says so in one line), the dashboard's age-based alerts and the toddler development checks by the weeks the baby was early, until a corrected 24 months. The public growth-percentile calculator takes optional weeks at birth and applies the same rule. Publicly funded vaccines and health checks are deliberately left on the birth date, which is how the MOHW schedules them, and both of those screens say so
 - **Weaning guide** — stage-based weaning plus the 4×3 allergen-introduction method and a per-food trial log
 - **Care guide** — age-appropriate care and safety
-- **Baby wiki** — 15 common health issues
+- **Baby wiki** — 20 articles on common health issues and the first two weeks:
+  newborn jaundice and the stool-colour card (linked to the HPA page, not
+  reproduced), newborn screening, whether a baby is getting enough judged by wet
+  diapers and weight rather than millilitre targets, the 4-month sleep
+  regression and night waking, and a newborn-preparation checklist
 - **Clinic summary** — generates a summary to hand to a paediatrician, including a
   development section: milestones ticked, with dates, and those not yet recorded in the
   bands the child has passed (by corrected age for a preterm baby), with no score or verdict

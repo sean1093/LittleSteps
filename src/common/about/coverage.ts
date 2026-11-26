@@ -12,6 +12,6 @@ export const COVERAGE = [
   { value: 3844, unit: '處哺乳室' },
   { value: 234, unit: '間親子館' },
   { value: 36, unit: '劑疫苗' },
-  { value: 85, unit: '篇百科文章' },
+  { value: 92, unit: '篇百科文章' },
   { value: 7, unit: '種傳染病' },
 ] as const;

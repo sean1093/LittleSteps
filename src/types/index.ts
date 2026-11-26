@@ -607,6 +607,11 @@ export interface WikiArticle<Category extends string = string> {
   warningSignals: string[];
   relatedArticleIds: string[];
   icon: string;
+  /**
+   * 這一篇自己的查證日期，只在比整個知識庫的查證日期新時才填。
+   * 後來加進來的文章逐篇查證過，舊文章沒有因此重新查證，所以不能共用一個日期。
+   */
+  verifiedOn?: string;
 }
 
 // Baby Wiki (寶寶百科) — LittleSteps

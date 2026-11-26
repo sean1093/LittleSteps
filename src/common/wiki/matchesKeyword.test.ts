@@ -51,4 +51,24 @@ describe('matchesKeyword', () => {
       expect(text).toContain('疹');
     }
   });
+
+  it('answers the searches that used to return nothing (#156)', () => {
+    // From user-test round 1: each of these came back 「共 0 篇文章」. Each now
+    // names the article a parent typing it is looking for.
+    const cases: [string, string][] = [
+      ['吃不夠', 'feeding-enough'],
+      ['喝多少', 'feeding-enough'],
+      ['睡眠倒退', 'sleep-regression'],
+      ['夜醒', 'sleep-regression'],
+      ['黃疸', 'jaundice-stool-card'],
+      ['大便卡', 'jaundice-stool-card'],
+      ['新生兒篩檢', 'newborn-screening'],
+    ];
+    for (const [query, id] of cases) {
+      const ids = babyWikiArticles
+        .filter((entry) => matchesKeyword(entry, query))
+        .map((entry) => entry.id);
+      expect(ids, query).toContain(id);
+    }
+  });
 });

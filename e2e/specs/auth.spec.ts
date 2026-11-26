@@ -95,7 +95,7 @@ test('AUTH-03 @p0 every public route renders itself, not an intro page', async (
       // Guards the allowlist against being narrowed by accident. Nothing
       // throws when a public page starts requiring an account — it just
       // quietly stops being readable by a parent who has not signed up, which
-      // for 85 sourced wiki articles is the whole point of them being public.
+      // for 92 sourced wiki articles is the whole point of them being public.
       await expect(publicRoute.content(route)).toBeVisible();
       await expect(intro.signIn).toHaveCount(0);
     });
