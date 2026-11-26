@@ -52,7 +52,7 @@ test('SEO-01 @p0 a gated service root with public pages below it is anchored', a
 
   // The `$` is the whole reason this file is generated rather than written by
   // hand. `/littlesteps` is gated and `/littlesteps/baby-wiki` is not, so an
-  // unanchored `Disallow: /littlesteps` would hide 85 wiki articles — public
+  // unanchored `Disallow: /littlesteps` would hide 92 wiki articles — public
   // reference content — from search entirely. Which roots need the anchor is
   // derived the same way `renderRobotsTxt` derives it, so adding a public page
   // under a gated root is covered without editing this test.
@@ -169,7 +169,7 @@ function disallows(lines: string[], path: string): boolean {
  * question the gated half asks. It is the wrong question for the public half:
  * an unanchored `Disallow: /littlesteps` blocks `/littlesteps/baby-wiki` by
  * prefix, and a whole-line comparison says nothing about it — the public half
- * would pass while 85 wiki articles fell out of every index. So a public path
+ * would pass while 92 wiki articles fell out of every index. So a public path
  * is checked against every line: an unanchored one blocks it when the path is
  * that value or sits under it, and an anchored one only when the two are
  * equal. Returning the offending lines rather than a boolean puts the line

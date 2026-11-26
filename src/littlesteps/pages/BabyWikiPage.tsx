@@ -34,7 +34,7 @@ export default function BabyWikiPage() {
     <div className="screen">
       <div className="screen-body">
         <p className="text-sm text-ink-muted mb-4">
-          常見嬰幼兒照顧問題與處理方式，逐篇對照國民健康署、疾病管制署與美國兒科學會的衛教資料
+          常見嬰幼兒照顧問題與處理方式，逐篇對照國民健康署、疾病管制署、美國兒科學會與世界衛生組織的衛教資料
         </p>
 
         <WikiBrowser
@@ -47,7 +47,7 @@ export default function BabyWikiPage() {
           theme={SERVICE_THEME.littlesteps}
           crossSearchService="littlesteps"
           wikiPage="littlesteps/baby-wiki"
-          verifiedNote={`內容查證於 ${babyWikiVerifiedOn}，對照國民健康署、疾病管制署與美國兒科學會的衛教資料。`}
+          verifiedNote={(article) => `內容查證於 ${article.verifiedOn ?? babyWikiVerifiedOn}，對照國民健康署、疾病管制署、美國兒科學會與世界衛生組織的衛教資料。`}
           suiteNote={SUITE_NOTES.babyWiki}
         />
       </div>

@@ -42,7 +42,7 @@ export default function LittleBloomWikiPage() {
           theme={SERVICE_THEME.littlebloom}
           crossSearchService="littlebloom"
           wikiPage="littlebloom/wiki"
-          verifiedNote={`內容查證於 ${pregnancyWikiVerifiedOn}。`}
+          verifiedNote={(article) => `內容查證於 ${article.verifiedOn ?? pregnancyWikiVerifiedOn}。`}
           suiteNote={SUITE_NOTES.pregnancyWiki}
         />
       </motion.div>

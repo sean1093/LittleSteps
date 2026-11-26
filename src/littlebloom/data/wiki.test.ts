@@ -17,8 +17,8 @@ const CATEGORIES: PregnancyWikiCategory[] = [
 ];
 
 describe('pregnancyWikiArticles', () => {
-  it('共 25 篇，且 id 唯一', () => {
-    expect(pregnancyWikiArticles).toHaveLength(25);
+  it('共 27 篇，且 id 唯一', () => {
+    expect(pregnancyWikiArticles).toHaveLength(27);
     const ids = pregnancyWikiArticles.map((a) => a.id);
     expect(new Set(ids).size).toBe(ids.length);
   });

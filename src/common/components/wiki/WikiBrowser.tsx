@@ -62,20 +62,23 @@ interface WikiBrowserProps<
    * 有給就一併搜其他兩個知識庫，並把結果列在自己的結果下面。
    *
    * 家長的問題不管服務邊界——在幼兒百科搜「發燒」卻看不到寶寶百科那幾篇，
-   * 是把 85 篇查證過的文章切成三份互不相通的直接後果。
+   * 是把 92 篇查證過的文章切成三份互不相通的直接後果。
    */
   crossSearchService?: ServiceId;
   /**
    * 這個知識庫是哪一頁。有給，打開的那一篇就有自己的網址。
    *
    * 文章原本只是頁面裡的一個展開狀態：想把「發燒什麼時候要就醫」傳給另一半，
-   * 只能傳整個百科再請對方自己找；搜尋引擎也只看得到一個網址，85 篇文章共用
+   * 只能傳整個百科再請對方自己找；搜尋引擎也只看得到一個網址，92 篇文章共用
    * 一個標題。現在展開哪一篇，網址列就是那一篇，重新整理或從連結進來都會
    * 落在那一篇上。
    */
   wikiPage?: WikiPage;
-  /** 文末那一行「內容查證於…」。各知識庫自己知道日期與對照了哪些機關。 */
-  verifiedNote?: string;
+  /**
+   * 文末那一行「內容查證於…」。各知識庫自己知道日期與對照了哪些機關。
+   * 給函式時逐篇產生，讓後來加入、各自查證的文章寫出自己的日期。
+   */
+  verifiedNote?: string | ((article: Article) => string);
   /** 頁尾那張卡片要帶家長去哪；省略就是通用的那一句。 */
   suiteNote?: SuiteNoteContent;
 }
@@ -280,7 +283,9 @@ export default function WikiBrowser<
                   })}
                   onOpenRelated={openRelated}
                   onShare={wikiPage ? () => void shareArticle(article) : undefined}
-                  verifiedNote={verifiedNote}
+                  verifiedNote={
+                    typeof verifiedNote === 'function' ? verifiedNote(article) : verifiedNote
+                  }
                 />
               </motion.div>
             ))}
