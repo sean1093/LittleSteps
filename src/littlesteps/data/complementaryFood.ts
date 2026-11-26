@@ -181,7 +181,7 @@ export const fruitAllergyLevels: FoodAllergyLevel[] = [
 // 把它們排到 7 個月與 10 個月，和同一個檔案的原則卡（不需延後過敏原、6 個月後優先補鐵）
 // 互相矛盾。不放在 4 個月那一列，是因為那樣讀起來像「4 個月就給蝦和堅果」，而原則卡說的
 // 是約 6 個月開始、不早於滿 4 個月。
-// 來源（2026-11-26 查證）：AAP「Starting Solid Foods」
+// 來源（2026-11-26 查閱）：AAP「Starting Solid Foods」
 // https://www.healthychildren.org/English/ages-stages/baby/feeding-nutrition/Pages/Starting-Solid-Foods.aspx
 export const monthlyFoodMenus: MonthlyFoodMenu[] = [
   {
@@ -208,7 +208,7 @@ export const monthlyFoodMenus: MonthlyFoodMenu[] = [
     month: "6個月",
     focus: "開始吃副食品後（約 6 個月）就可以給肉、魚、蛋、豆腐與常見過敏原，煮到全熟、打成泥；堅果只給粉或泥。也可以嘗試不同質地與微量辛香料",
     foods: [
-      "雞肉", "白肉魚片（鯛魚、比目魚、鱸魚）", "猪肉", "牛肉", "豆腐（高敏）", "蛋黃（高敏）",
+      "雞肉", "白肉魚片（鯛魚、比目魚、鱸魚）", "豬肉", "牛肉", "豆腐（高敏）", "蛋黃（高敏）",
       "核桃（磨粉或打泥，高敏）", "蝦子（高敏）",
       "米豆",
       "甜菜根", "茭白筍", "菠菜（高敏）", "茄子（高敏）", "蕃茄（高敏）",
@@ -222,7 +222,7 @@ export const monthlyFoodMenus: MonthlyFoodMenu[] = [
     foods: [
       "芹菜", "山芹菜", "韭黃", "韭菜", "絲瓜", "瓠瓜", "大黃瓜", "小黃瓜",
       "菱角", "秋葵", "苦瓜", "毛豆（高敏）", "皇帝豆（高敏）", "豌豆仁（高敏）",
-      "雞骨高湯", "魚骨高湯", "猪骨高湯", "蒜頭雞湯",
+      "雞骨高湯", "魚骨高湯", "豬骨高湯", "蒜頭雞湯",
       "草莓"
     ]
   },
@@ -354,7 +354,7 @@ export const foodWarnings: FoodWarning[] = [
 // 每 3–5 天試一種新食材
 // 原本的「4x3 試敏法」一種食材要 9 天（小量 3 天、增量 3 天、再觀察 3 天），
 // 照做的話 6 個月大的寶寶半年試不到 20 種食物；AAP 的說法是每 3 到 5 天一種。
-// 來源（2026-11-26 查證）：AAP「Starting Solid Foods」
+// 來源（2026-11-26 查閱）：AAP「Starting Solid Foods」
 // https://www.healthychildren.org/English/ages-stages/baby/feeding-nutrition/Pages/Starting-Solid-Foods.aspx
 export const allergyTestingMethod = {
   name: "每 3–5 天試一種新食材",
@@ -577,14 +577,14 @@ export const infantFoodRestrictions: FoodRestrictionCategory[] = [
   {
     category: "需注意事項",
     items: [
-      // 來源（2026-11-26 查證）：AAP「Why Formula Instead of Cow's Milk?」
+      // 來源（2026-11-26 查閱）：AAP「Why Formula Instead of Cow's Milk?」
       // https://www.healthychildren.org/English/ages-stages/baby/formula-feeding/Pages/Why-Formula-Instead-of-Cows-Milk.aspx
       {
         food: "鮮奶當飲料",
         ageLimit: "1 歲前",
         reason: "不能取代母乳或配方奶；少量入菜、優格、起司可以"
       },
-      // 來源（2026-11-26 查證）：AAP「Starting Solid Foods」
+      // 來源（2026-11-26 查閱）：AAP「Starting Solid Foods」
       // https://www.healthychildren.org/English/ages-stages/baby/feeding-nutrition/Pages/Starting-Solid-Foods.aspx
       {
         food: "果汁",

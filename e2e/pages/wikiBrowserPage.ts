@@ -30,8 +30,14 @@ export class WikiBrowserPage {
    */
   readonly articles: Locator;
 
-  /** The one expanded card, if any. */
+  /** The one expanded article — header and body — if any. */
   readonly openArticle: Locator;
+
+  /**
+   * The open article's header row: the only part that closes it. The body is
+   * deliberately not a tap target, so a reader's thumb cannot shut the article.
+   */
+  readonly openHeader: Locator;
 
   /** The heading `CrossWikiResults` renders above its hits. */
   readonly crossWikiHeading: Locator;
@@ -56,7 +62,8 @@ export class WikiBrowserPage {
     this.clearSearch = page.getByRole('button', { name: '清除搜尋' });
     this.categoryRow = page.getByTestId(SCROLL_ROW.wikiCategories);
     this.articles = page.getByRole('button', { expanded: false });
-    this.openArticle = page.getByRole('button', { expanded: true });
+    this.openHeader = page.getByRole('button', { expanded: true });
+    this.openArticle = page.getByRole('article').filter({ has: this.openHeader });
     this.crossWikiHeading = page.getByRole('heading', { name: '其他階段也有相關文章' });
     this.crossWikiHits = page
       .getByRole('button')

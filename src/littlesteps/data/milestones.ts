@@ -2,13 +2,13 @@ import { Milestone, MonthRange } from '../../types';
 
 // 趴著玩的時間、放手坐穩的月齡、滿 1 歲的詞彙量，都對過下面的來源。
 // 「什麼時候該問醫師」不放在 tips：tips 是可以照著做的練習，頁面另有固定的一行。
-// 來源（2026-11-26 查證）：AAP「Back to Sleep, Tummy to Play」
+// 來源（2026-11-26 查閱）：AAP「Back to Sleep, Tummy to Play」
 // https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/Back-to-Sleep-Tummy-to-Play.aspx
-// 來源（2026-11-26 查證）：AAP「Developmental Milestones: 7 Months」
+// 來源（2026-11-26 查閱）：AAP「Developmental Milestones: 7 Months」
 // https://www.healthychildren.org/English/ages-stages/baby/Pages/Developmental-Milestones-7-Months.aspx
-// 來源（2026-11-26 查證）：AAP「Movement: 8 to 12 Months」
+// 來源（2026-11-26 查閱）：AAP「Movement: 8 to 12 Months」
 // https://www.healthychildren.org/English/ages-stages/baby/Pages/Movement-8-to-12-Months.aspx
-// 來源（2026-11-26 查證）：衛生福利部「兒童健康手冊」
+// 來源（2026-11-26 查閱）：衛生福利部「兒童健康手冊」
 // https://www.mohw.gov.tw/cp-16-58340-1.html
 export const milestones: Milestone[] = [
   // --- 0-1 個月：初生適應期 ---

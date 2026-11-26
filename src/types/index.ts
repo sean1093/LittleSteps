@@ -487,7 +487,7 @@ export interface FoodTrialRecord {
   foodName: string;
   category?: string; // 蔬菜、水果、穀類、蛋白質等
   firstTriedDate: string; // YYYY-MM-DD, first time trying this food
-  trialDates?: StoredTrialDates; // 4x3 法則的嘗試日期；形狀見 StoredTrialDates
+  trialDates?: StoredTrialDates; // 試吃這種食材的日期；形狀見 StoredTrialDates
   hasAllergy: boolean;
   allergyReactions?: AllergyReaction[]; // Details if hasAllergy is true
   preference?: FoodPreference; // Baby's preference for this food

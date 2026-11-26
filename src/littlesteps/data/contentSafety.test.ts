@@ -192,7 +192,7 @@ describe('solids: the month table agrees with the principle cards', () => {
     complementaryFood.monthlyFoodMenus.find((menu) => menu.foods.some((food) => pattern.test(food)));
 
   it.each([
-    ['meat', /雞肉|猪肉|豬肉|牛肉/],
+    ['meat', /雞肉|豬肉|牛肉/],
     ['fish', /魚/],
     ['egg', /蛋/],
     ['tofu', /豆腐/],

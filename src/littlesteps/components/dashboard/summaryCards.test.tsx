@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type { DailyLog, DailySummary } from '../../../types';
 import DailyLogSummaryCard from '../dailylog/DailyLogSummaryCard';
 import MilestoneSummaryCard from '../milestone/MilestoneSummaryCard';
+import { milestones } from '../../data/milestones';
 
 /**
  * 儀表板的摘要卡以前把數字講成判決：新生兒的里程碑是「3 / 33」加一條 9% 的
@@ -90,9 +91,9 @@ describe('MilestoneSummaryCard', () => {
     const { container } = render(
       <MilestoneSummaryCard
         milestoneProgress={{
-          m1: { achieved: true, achievedDate: '2026-06-01' },
-          m2: { achieved: true, achievedDate: '2026-06-05' },
-          m3: { achieved: false },
+          [milestones[0].id]: { achieved: true, achievedDate: '2026-06-01' },
+          [milestones[1].id]: { achieved: true, achievedDate: '2026-06-05' },
+          [milestones[2].id]: { achieved: false },
         }}
         onNavigate={() => {}}
       />,

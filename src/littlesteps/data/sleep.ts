@@ -315,9 +315,9 @@ export const sleepTrainingMethods: SleepTrainingMethod[] = [
 ];
 
 // 訓練建議與提醒
-// 來源（2026-11-26 查證）：國民健康署 孕產兒關懷網站「從哄睡到自然入睡！寶寶階段性睡眠習慣養成，該如何做？」
+// 來源（2026-11-26 查閱）：國民健康署 孕產兒關懷網站「從哄睡到自然入睡！寶寶階段性睡眠習慣養成，該如何做？」
 // https://mammy.hpa.gov.tw/Home/NewsKBContent?id=3659&type=01
-// 來源（2026-11-26 查證）：AAP「Getting Your Baby to Sleep」
+// 來源（2026-11-26 查閱）：AAP「Getting Your Baby to Sleep」
 // https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/Getting-Your-Baby-to-Sleep.aspx
 export const trainingTips = {
   timing: {

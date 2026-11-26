@@ -143,12 +143,9 @@ const LocateButton = ({
     aria-busy={isLocating}
     whileTap={tap}
     aria-label="定位我的位置"
-    // 原本只有一顆箭頭圖示。地圖一打開是整個台灣，「找離我最近的」是這一頁
-    // 最常要做的事，而唯一的入口沒有字。
-    className="absolute bottom-32 right-4 z-[1000] h-14 px-4 flex items-center justify-center gap-2 bg-white rounded-full shadow-soft hover:shadow-soft-lg transition-shadow text-sm font-semibold text-secondary-dark"
+    className="absolute bottom-32 right-4 z-[1000] w-14 h-14 flex items-center justify-center bg-white rounded-full shadow-soft hover:shadow-soft-lg transition-shadow"
   >
-    <Navigation className={`w-5 h-5 ${isLocating ? 'animate-spin' : ''}`} />
-    找最近的
+    <Navigation className={`w-6 h-6 text-secondary-dark ${isLocating ? 'animate-spin' : ''}`} />
   </motion.button>
 );
 

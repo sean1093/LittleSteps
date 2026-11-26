@@ -29,6 +29,7 @@ import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem } from '../../common/ui/motion';
 import { useToast } from '../../common/ui/toast';
+import { logDailyLogAction } from '../../lib/firebase';
 
 interface DailyLogPageProps {
   currentChild?: ChildProfile | null;
@@ -148,6 +149,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
         createdBy: user?.uid,
         createdByName: user?.displayName ?? undefined,
       });
+      logDailyLogAction('add');
       setJustClosedSleep(null);
       showDay(new Date(startedAt));
     } catch (error) {
@@ -171,6 +173,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
         createdBy: user?.uid,
         createdByName: user?.displayName ?? undefined,
       });
+      logDailyLogAction('add');
       showDay(new Date(now));
       /*
         這顆鍵不開表單，所以存完之後畫面上唯一的變化是時間軸多了一列——而時間軸
@@ -264,6 +267,7 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
       );
     } else {
       await firebaseChildren.addDailyLog(currentChild.id, completeLogData);
+      logDailyLogAction('add');
     }
 
     // 補記昨天的餵奶時，紀錄不會落在目前這一天。跳到它真正落在的日子，

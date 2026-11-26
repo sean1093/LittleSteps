@@ -42,13 +42,13 @@ export const generalSafetyItems: GeneralSafetyItem[] = [
 
 // 按月齡分組的照顧重點
 // 第 1、2、3 個月各放一次未滿 3 個月的發燒規則：家長一次只看當月那一張卡。
-// 來源（2026-11-26 查證）：AAP「Fever and Your Baby」
+// 來源（2026-11-26 查閱）：AAP「Fever and Your Baby」
 // https://www.healthychildren.org/English/health-issues/conditions/fever/Pages/Fever-and-Your-Baby.aspx
 // 趴著玩的時間長度
-// 來源（2026-11-26 查證）：AAP「Back to Sleep, Tummy to Play」
+// 來源（2026-11-26 查閱）：AAP「Back to Sleep, Tummy to Play」
 // https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/Back-to-Sleep-Tummy-to-Play.aspx
 // 滿 1 歲的鮮奶上限
-// 來源（2026-11-26 查證）：AAP「Why Formula Instead of Cow's Milk?」
+// 來源（2026-11-26 查閱）：AAP「Why Formula Instead of Cow's Milk?」
 // https://www.healthychildren.org/English/ages-stages/baby/formula-feeding/Pages/Why-Formula-Instead-of-Cows-Milk.aspx
 export const monthlyCareGuides: MonthlyCareGuide[] = [
   // 第 1-3 個月：生理適應與感官啟蒙
