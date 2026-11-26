@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import ModalFrame from './ModalFrame';
 import { openInExternalBrowser, type InAppBrowser } from '../inAppBrowser';
+import { currentLinkWithJoinCode } from '../joinLink';
 
 interface InAppBrowserSheetProps {
   /** Which in-app browser the page is in; null keeps the sheet closed. */
@@ -25,7 +26,7 @@ export default function InAppBrowserSheet({ browser, onClose }: InAppBrowserShee
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(currentLinkWithJoinCode());
       setCopyState('copied');
     } catch {
       // Some webviews expose no clipboard at all. The link is then shown so
@@ -56,7 +57,7 @@ export default function InAppBrowserSheet({ browser, onClose }: InAppBrowserShee
           {copyState === 'failed' && (
             <div className="space-y-1">
               <p className="text-sm text-ink-muted">沒辦法自動複製，請長按下面的網址複製：</p>
-              <p className="card text-sm text-ink break-all select-all">{window.location.href}</p>
+              <p className="card text-sm text-ink break-all select-all">{currentLinkWithJoinCode()}</p>
             </div>
           )}
         </div>

@@ -8,6 +8,8 @@
  * real browser before sign-in starts.
  */
 
+import { currentLinkWithJoinCode } from './joinLink';
+
 export type InAppBrowser = 'line' | 'other';
 
 /** LINE's documented query parameter for leaving its webview. */
@@ -41,9 +43,12 @@ export function withOpenExternalBrowser(href: string): string {
   return url.toString();
 }
 
-/** Reloads the current page through LINE's external-browser parameter. */
+/**
+ * Reloads the current page through LINE's external-browser parameter. On a
+ * share link the join code goes along (see currentLinkWithJoinCode).
+ */
 export function openInExternalBrowser(): void {
-  window.location.assign(withOpenExternalBrowser(window.location.href));
+  window.location.assign(withOpenExternalBrowser(currentLinkWithJoinCode()));
 }
 
 /**

@@ -11,9 +11,11 @@ import { ROUTE_PATH } from '../types/routes';
  * tie an Analytics client id to a child.
  *
  * It is held in memory only, never in browser storage: the about page promises
- * that no child's id is kept on the device. The cost is that a sign-in which
- * reloads the page (the redirect flow used in in-app browsers) loses it, and
- * the join page then asks the parent to open the link again — now signed in.
+ * that no child's id is kept on the device. Sign-in runs in a popup, so the
+ * page and the code survive it. An in-app browser cannot sign in at all; its
+ * sheet reopens the page in a real browser with the code put back on the link
+ * (currentLinkWithJoinCode). Anything else that reloads the page loses the
+ * code, and the join page then asks the parent to open the link again.
  */
 
 let pendingCode: string | null = null;
@@ -64,6 +66,23 @@ export function pendingJoinCode(): string | null {
 /** Forget the code: after joining, or when the parent declines. */
 export function clearJoinCode(): void {
   pendingCode = null;
+}
+
+/**
+ * This page's address, with the join code put back if the parent arrived
+ * through a share link.
+ *
+ * The code left the address bar at start-up, so `location.href` on `/join` is
+ * a link to nothing. The in-app browser sheet reopens or copies this page to
+ * get the parent into a real browser where Google sign-in works; without the
+ * code, a grandparent following a link from LINE would land on a join page
+ * that has forgotten which child it was for.
+ */
+export function currentLinkWithJoinCode(href: string = window.location.href): string {
+  const url = new URL(href);
+  const onJoin = url.pathname.replace(/\/+$/, '') === ROUTE_PATH.join;
+  if (onJoin && pendingCode) url.hash = encodeURIComponent(pendingCode);
+  return url.toString();
 }
 
 /** The link the share sheet hands to LINE or the system share sheet. */

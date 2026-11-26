@@ -384,9 +384,11 @@ address bar before the first render — Analytics reads the document URL for
 `page_location` — and holds it in memory only, never in browser storage. A
 signed-out visitor sees an intro at the same URL; once signed in, the page
 joins only when they press 加入, and the join reads `childIndex` alone until the
-membership exists. A sign-in that reloads the page (the redirect flow in
-in-app browsers) loses the in-memory code, and the page asks for the link
-again. LittleBloom's empty state offers the same join by code, so a partner
+membership exists. Sign-in runs in a popup, so the code survives it. In an
+in-app browser such as LINE, where Google refuses to sign anyone in, the sheet
+that reopens the page in a real browser, or copies its link, puts the code
+back on that link. Anything else that reloads the page loses the in-memory
+code, and the page asks for the link again. LittleBloom's empty state offers the same join by code, so a partner
 arriving there no longer creates a duplicate pregnancy profile, and a
 pregnancy profile's code is called 孕期檔案代碼 on the sheet.
 
