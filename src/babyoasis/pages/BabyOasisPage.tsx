@@ -867,16 +867,18 @@ const BabyOasisPage = () => {
       <main className="h-full">
         {/* 搜尋列掛在標題列下方，畫面下緣要留給定位鈕與地圖的資料來源標註。
             搜尋列先前是接在標題列後面自然流下來的，現在標題列在另一層，只好
-            自己定位；top-16 是 AppBar 講好的掛法（見 AppBar.tsx 與 DiaryPage
-            的月份分隔），它對的是 4rem 的本體，不含底下那條 1px 的分隔線，
-            所以搜尋列比先前高 1px。
+            自己定位；top-app-bar 是 AppBar 講好的掛法（見 AppBar.tsx 與
+            DiaryPage 的月份分隔）：它是 AppBar 量出來的本體高度，預設字級下
+            正好 4rem，不含底下那條 1px 的分隔線，所以搜尋列比先前高 1px。
+            大字級時標題會疊到按鈕下面、標題列跟著變高，寫死 top-16 的話搜尋列
+            會壓在標題上。
             外層不吃指標事件，否則搜尋列旁邊的透明留白會把地圖的拖曳攔下來。 */}
         {/* 區域與捷運站選單是 fixed 的 sheet，但畫在這一層的疊放脈絡裡：這層停在
             z-[1000] 時，DOM 順序在後、同為 z-[1000] 的定位鈕與 Leaflet 的資料來源
             標註會蓋在選單上，附近清單（z-[1500]）與場所詳情（z-[2000]）也會。
             選單開著的時候把整層抬到所有 sheet 之上。 */}
         <div
-          className={`absolute top-16 left-0 right-0 ${pickerOpen ? 'z-[2500]' : 'z-[1000]'} max-w-2xl mx-auto px-4 pt-3 pointer-events-none`}
+          className={`absolute top-app-bar left-0 right-0 ${pickerOpen ? 'z-[2500]' : 'z-[1000]'} max-w-2xl mx-auto px-4 pt-3 pointer-events-none`}
         >
           {loadState === 'ready' ? (
             <RoomSearch

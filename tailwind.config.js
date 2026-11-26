@@ -162,6 +162,10 @@ export default {
         // Minimum comfortable touch target. Icon-only buttons were shipping at
         // 28-40px; this gives them one name to reach for.
         tap: '2.75rem', // 44px
+        // The AppBar's height, published by AppBar itself. 4rem at default
+        // text; more when its title wraps or stacks under the buttons at
+        // large text. Pin things below the bar with `top-app-bar`.
+        'app-bar': 'var(--app-bar-h, 4rem)',
       },
       keyframes: {
         // Indeterminate progress: a bar sweeping its track. Replaces the

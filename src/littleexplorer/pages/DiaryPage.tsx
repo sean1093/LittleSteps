@@ -261,11 +261,12 @@ export default function DiaryPage({
 
           {groups.map((group) => (
             <section key={group.key}>
-              {/* AppBar 固定 h-16，月份分隔線就貼在它下緣。
+              {/* 月份分隔線貼在 AppBar 下緣。用 top-app-bar 而不是 top-16：
+                  預設字級下兩者一樣，大字級時 AppBar 會變高。
                   這一層刻意不做入場動畫：sticky 元素若落在有 transform 的
                   祖先裡，動畫期間會連帶被推移。 */}
               <h2
-                className={`sticky top-16 z-10 -mx-4 px-4 py-2 bg-explorer-sand/95 backdrop-blur-sm ${THEME.body}`}
+                className={`sticky top-app-bar z-10 -mx-4 px-4 py-2 bg-explorer-sand/95 backdrop-blur-sm ${THEME.body}`}
               >
                 {group.label}
               </h2>

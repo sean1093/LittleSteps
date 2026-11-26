@@ -531,7 +531,7 @@ Two shadows (`shadow-soft`, `shadow-soft-lg`) and two radii (`rounded-2xl`,
 | File | Purpose |
 |---|---|
 | `serviceTheme.ts` | `SERVICE_THEME[id]` — the only thing that varies per service |
-| `AppBar.tsx` | the one page header, fixed `h-16`; stick things below it at `top-16` |
+| `AppBar.tsx` | the one page header, 4rem tall at default text; the title takes up to two lines and stacks under the buttons at large text, so stick things below it at `top-app-bar`, not `top-16` |
 | `EmptyState.tsx` | the one "nothing here yet" block; draws **no icon** unless the moment earns one |
 | `motion.ts` | `stagger` `listItem` `fadeInUp` `sheet` `backdrop` `collapse` `tap` `hoverLift` |
 
