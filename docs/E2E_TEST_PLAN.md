@@ -21,7 +21,7 @@ What it structurally cannot see:
 |---|---|
 | **Routing and deep links** | `ROUTE_PATH` is typed, but nothing proves that typing `/littlesteps/daily-log` into the address bar boots the app on that page. Component tests mount a page directly; they never exercise the path parser, the lazy chunk, or the history API. |
 | **The auth gate** | `routePolicy.ts` is a public allowlist, and this app stores children's health data. A unit test asserts the predicate. Only a browser proves that a signed-out visitor at a gated URL sees the intro page **and no child data**, at the same URL, with no redirect. |
-| **Real data files** | The wikis, the venue registers, the nursing-room dataset and the disease radar load real JSON/TS data at runtime — 3,852 nursing rooms, 85 wiki articles. A malformed or missing data file passes typecheck and breaks the page. |
+| **Real data files** | The wikis, the venue registers, the nursing-room dataset and the disease radar load real JSON/TS data at runtime — 3,844 nursing rooms, 85 wiki articles. A malformed or missing data file passes typecheck and breaks the page. |
 | **Lazy chunks and the PWA** | `App.tsx` lazy-loads every page. A broken dynamic import, a stale service worker precache or a bad manifest is invisible until a real navigation happens. |
 | **Layout at 390px and 320px** | `.claude/CLAUDE.md` requires every change to be checked at 390px, and at 320px for anything in a grid. happy-dom has no layout engine: it cannot tell you that a chip row overflows or that a tag wraps. |
 | **Third-party rendering** | Leaflet draws the BabyOasis map imperatively into a real DOM with real sizing. There is no meaningful jsdom assertion about it. |
@@ -218,7 +218,7 @@ encodes that as two viewport projects and asserts *invariants*, not images:
   44px in its smaller dimension. Inline links inside prose (the 疾管署 citation,
   a `tel:` link) are excluded, and so is **everything Leaflet draws**, not only
   its attribution: Leaflet marks its interactive markers `role="button"`, so on
-  BabyOasis the 32px and 40px icons of a 3,852-room map are otherwise the
+  BabyOasis the 32px and 40px icons of a 3,844-room map are otherwise the
   entire output of this assertion. The exclusion is `.leaflet-container`, and
   its residual risk is that an app-owned control placed inside a Leaflet popup
   would escape the size check silently; nothing does that today. What is left

@@ -91,7 +91,7 @@ export const SERVICE_PITCH: Record<ServiceId, string> = {
  * however old its dataset is.
  */
 export const TOOL_FIGURE: Record<AnytimeService, string> = {
-  babyoasis: '3,852 處',
+  babyoasis: '3,844 處',
   littleouting: '234 間親子館',
   littleguard: '7 種傳染病',
 };

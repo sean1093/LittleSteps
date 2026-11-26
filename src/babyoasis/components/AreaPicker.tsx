@@ -28,7 +28,7 @@ interface AreaPickerProps {
  * County, then district.
  *
  * A keyword answers "which branch of this store", not "where am I going
- * tomorrow". Two steps rather than one flat list, because 3,852 rooms sit in
+ * tomorrow". Two steps rather than one flat list, because 3,844 rooms sit in
  * 22 counties across more than 300 districts and a flat list is 300 chips.
  *
  * Picking a county keeps the sheet open so a parent can narrow further;

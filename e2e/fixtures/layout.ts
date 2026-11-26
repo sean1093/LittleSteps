@@ -53,7 +53,7 @@ const DESIGN_SYSTEM_CONTROLS = [
  * Everything Leaflet draws: its zoom buttons and attribution, and the markers
  * and cluster icons whose 32px and 40px sizes come from an `L.divIcon` rather
  * than from a design-system class. Leaflet marks its interactive markers
- * `role="button"`, so without this exclusion a map of 3,852 nursing rooms is
+ * `role="button"`, so without this exclusion a map of 3,844 nursing rooms is
  * this assertion's entire output and nothing the design system owns is visible
  * in it.
  *

@@ -620,6 +620,8 @@ const BabyOasisPage = () => {
     指向不同的地方。
   */
   const [station, setStation] = useState<MrtStation | null>(null);
+  /** 區域或捷運站選單開著與否；決定搜尋列那一層要不要抬到其他 sheet 之上。 */
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   // 每次載入配一個序號，只有最新那次能寫進 state：重試時先前那次可能後到，
   // 卸載之後也不該再寫。
@@ -863,7 +865,13 @@ const BabyOasisPage = () => {
             的月份分隔），它對的是 4rem 的本體，不含底下那條 1px 的分隔線，
             所以搜尋列比先前高 1px。
             外層不吃指標事件，否則搜尋列旁邊的透明留白會把地圖的拖曳攔下來。 */}
-        <div className="absolute top-16 left-0 right-0 z-[1000] max-w-2xl mx-auto px-4 pt-3 pointer-events-none">
+        {/* 區域與捷運站選單是 fixed 的 sheet，但畫在這一層的疊放脈絡裡：這層停在
+            z-[1000] 時，DOM 順序在後、同為 z-[1000] 的定位鈕與 Leaflet 的資料來源
+            標註會蓋在選單上，附近清單（z-[1500]）與場所詳情（z-[2000]）也會。
+            選單開著的時候把整層抬到所有 sheet 之上。 */}
+        <div
+          className={`absolute top-16 left-0 right-0 ${pickerOpen ? 'z-[2500]' : 'z-[1000]'} max-w-2xl mx-auto px-4 pt-3 pointer-events-none`}
+        >
           {loadState === 'ready' ? (
             <RoomSearch
               rooms={sortedRooms}
@@ -874,6 +882,7 @@ const BabyOasisPage = () => {
               station={station}
               onStationChange={handleStation}
               onSelect={setSelectedRoom}
+              onPickerOpenChange={setPickerOpen}
             />
           ) : (
             /* 資料沒到就不給搜尋框：對空陣列搜尋每次都回「找不到符合的哺乳室」，

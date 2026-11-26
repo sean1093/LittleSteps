@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { NursingRoom } from '../../types';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
@@ -82,7 +82,15 @@ const theme = SERVICE_THEME.babyoasis;
  * 頁面持有 filters，並且只在頁面篩一次——這支測試因此得把那一層一起演出來，
  * 否則按了 chip 只會改到 state，清單永遠不動。
  */
-function Harness({ rooms, onSelect }: { rooms: NursingRoom[]; onSelect?: (room: NursingRoom) => void }) {
+function Harness({
+  rooms,
+  onSelect,
+  onPickerOpenChange,
+}: {
+  rooms: NursingRoom[];
+  onSelect?: (room: NursingRoom) => void;
+  onPickerOpenChange?: (open: boolean) => void;
+}) {
   const [filters, setFilters] = useState<RoomFilters>(NO_FILTERS);
   // 捷運站是定位點而不是篩選條件，所以它不參與這裡的過濾——頁面也一樣。
   const [station, setStation] = useState<MrtStation | null>(null);
@@ -104,6 +112,7 @@ function Harness({ rooms, onSelect }: { rooms: NursingRoom[]; onSelect?: (room: 
       station={station}
       onStationChange={setStation}
       onSelect={onSelect ?? (() => {})}
+      onPickerOpenChange={onPickerOpenChange}
     />
   );
 }
@@ -248,5 +257,23 @@ describe('RoomSearch', () => {
     expect(chip('臺北市 士林區')).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: /新光三越天母店/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /SOGO 忠孝館/ })).not.toBeInTheDocument();
+  });
+
+  /*
+    選單是 fixed 的 sheet，卻畫在搜尋列那一層裡；頁面靠這個通知在選單開著時把
+    那一層抬到定位鈕與地圖標註之上（#155）。通知漏了，頁面就不知道要抬。
+  */
+  it('捷運站選單開關時通知外層，關掉後也說', async () => {
+    const user = userEvent.setup();
+    const onPickerOpenChange = vi.fn();
+    render(<Harness rooms={ROOMS} onPickerOpenChange={onPickerOpenChange} />);
+    expect(onPickerOpenChange).toHaveBeenLastCalledWith(false);
+
+    await user.click(chip('捷運站'));
+    const dialog = await screen.findByRole('dialog', { name: '選擇捷運站' });
+    expect(onPickerOpenChange).toHaveBeenLastCalledWith(true);
+
+    await user.click(within(dialog).getByRole('button', { name: '關閉' }));
+    expect(onPickerOpenChange).toHaveBeenLastCalledWith(false);
   });
 });

@@ -41,6 +41,9 @@
  * 用法
  *   node scripts/buildNursingRooms.cjs
  *   node scripts/buildNursingRooms.cjs --ods=<本機 ODS 路徑>
+ *   node scripts/buildNursingRooms.cjs --dedupe-only
+ *     不連網，只把已提交的 nursingRooms.json 再過一次 dedupeRooms 並更新
+ *     meta 的筆數；查證日期不動，因為來源沒有重新查證。
  */
 
 const fs = require('fs');
@@ -117,6 +120,29 @@ function normalizeName(value) {
     .replace(/台/g, '臺')
     .replace(/[（）()\s\u3000-]/g, '')
     .trim();
+}
+
+/**
+ * 同名、同一個正規化地址的場所只留一筆。
+ *
+ * 地圖上同一處哺集乳室常登記兩次：一筆地址含村里、一筆不含，或一筆寫台、
+ * 一筆寫臺（例：板橋大觀國中公共托育中心，「浮洲里僑中一街1號」與
+ * 「僑中一街1號」）。比對鍵用 withoutVillage，它已包含 normalizeAddress 的
+ * 台/臺統一。名稱也必須相同——地址不同就是不同的哺集乳室，不猜。
+ *
+ * 留 id 數字較小的那筆，且不重新編號：id 在產出當下就固定，重編會讓既有
+ * 的 id 換到另一個場所上。
+ */
+function dedupeRooms(rooms) {
+  const idNumber = (room) => Number(String(room.id).replace(/^\D+/, ''));
+  const kept = new Map();
+  rooms.forEach((room) => {
+    const key = `${normalizeName(room.name)}@${withoutVillage(room.address)}`;
+    const current = kept.get(key);
+    if (!current || idNumber(room) < idNumber(current)) kept.set(key, room);
+  });
+  const survivors = new Set(kept.values());
+  return rooms.filter((room) => survivors.has(room));
 }
 
 /**
@@ -265,7 +291,6 @@ function main() {
   const output = [];
   let withDetail = 0;
   let withFacilities = 0;
-  let statutoryCount = 0;
 
   rooms.forEach((room) => {
     const key = `${normalizeName(room.name)}@${normalizeAddress(room.address)}`;
@@ -284,7 +309,6 @@ function main() {
       details.statutoryAddresses.has(normalizeAddress(room.address)) ||
       details.statutoryAddresses.has(withoutVillage(room.address)) ||
       details.statutoryNames.has(`${room.city}|${normalizeName(room.name)}`);
-    if (statutory) statutoryCount += 1;
 
     const facility =
       facilities[normalizeAddress(room.address)] || facilities[withoutVillage(room.address)];
@@ -308,17 +332,29 @@ function main() {
     });
   });
 
+  const deduped = dedupeRooms(output);
+  console.log(`  同名同址去重：移除 ${output.length - deduped.length} 筆`);
+  writeOutput(deduped, { generatedAt: new Date(), verifiedOn: null });
+  console.log(`  有開放時間或注意事項 ${withDetail} 筆，有設施明細 ${withFacilities} 筆（去重前）`);
+}
+
+/**
+ * 寫出 nursingRooms.json 與 meta。筆數與 statutoryCount 一律從實際寫出的陣列
+ * 數，不從去重前的累計值帶過來。verifiedOn 為 null 時取今天的本地日期。
+ */
+function writeOutput(output, { generatedAt, verifiedOn }) {
   fs.writeFileSync(OUTPUT, JSON.stringify(output));
+  const statutoryCount = output.filter((room) => room.statutory).length;
 
   // 查證日期取本地日期，不取 UTC：台灣早上八點前跑這支腳本，toISOString()
   // 會給前一天，dataSources.test.ts 那條「不在未來」的檢查反而擋不到它。
-  const now = new Date();
+  const now = generatedAt;
   const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
     .toISOString()
     .slice(0, 10);
   const meta = {
     generatedAt: now.toISOString(),
-    verifiedOn: localDate,
+    verifiedOn: verifiedOn || localDate,
     source: '衛生福利部國民健康署 哺集乳室地圖、依法應設置哺集乳室公共場所名單',
     sourceUrls: [MAP_ENDPOINT, ODS_URL, 'https://data.gov.tw/dataset/23750'],
     license: '政府資料開放授權條款第 1 版；地圖資料依 https://mammy.hpa.gov.tw/Home/CopyRight 標示來源',
@@ -332,10 +368,31 @@ function main() {
     byCity[r.city] = (byCity[r.city] || 0) + 1;
   });
   console.log(`\n輸出 ${output.length} 筆，涵蓋 ${Object.keys(byCity).length} 縣市`);
-  console.log(`  有開放時間或注意事項 ${withDetail} 筆，有設施明細 ${withFacilities} 筆`);
   console.log(`  在依法應設置名單上 ${statutoryCount} 筆`);
   console.log(`  ${path.relative(ROOT, OUTPUT)} ${(fs.statSync(OUTPUT).size / 1024).toFixed(0)} KB`);
   console.log(`  ${path.relative(ROOT, META_OUTPUT)} 查證日期 ${meta.verifiedOn}`);
 }
 
-main();
+/**
+ * 只對已提交的資料去重，不連網。國健署地圖端點不是每個環境都連得到，而
+ * 去重規則改了不該等到下次能抓資料才生效；這條路徑與 main 走同一個
+ * dedupeRooms 與 writeOutput，產出與完整重建去重的那一步一致。
+ * meta 的 generatedAt 與 verifiedOn 沿用原值：來源沒有重新查證。
+ */
+function dedupeCommitted() {
+  const rooms = JSON.parse(fs.readFileSync(OUTPUT, 'utf8'));
+  const previous = JSON.parse(fs.readFileSync(META_OUTPUT, 'utf8'));
+  const deduped = dedupeRooms(rooms);
+  console.log(`同名同址去重：${rooms.length} → ${deduped.length} 筆`);
+  writeOutput(deduped, {
+    generatedAt: new Date(previous.generatedAt),
+    verifiedOn: previous.verifiedOn,
+  });
+}
+
+if (require.main === module) {
+  if (process.argv.includes('--dedupe-only')) dedupeCommitted();
+  else main();
+}
+
+module.exports = { dedupeRooms, normalizeAddress, withoutVillage, normalizeName };
