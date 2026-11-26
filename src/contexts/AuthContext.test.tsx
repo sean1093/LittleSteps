@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ToastProvider } from '../common/ui/toast';
-import { signInWithPopup } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect } from 'firebase/auth';
 import { logAuthEvent } from '../lib/firebase';
+import { openInExternalBrowser } from '../common/inAppBrowser';
 import { AuthProvider, useAuth } from './AuthContext';
 
 /**
@@ -46,6 +47,12 @@ vi.mock('../lib/firebase', () => ({
   auth: { currentUser: mocks.user },
   googleProvider: {},
   logAuthEvent: vi.fn(),
+}));
+
+// jsdom cannot navigate, so the reload LINE needs is observed at its call.
+vi.mock('../common/inAppBrowser', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../common/inAppBrowser')>()),
+  openInExternalBrowser: vi.fn(),
 }));
 
 /** The Firebase SDK throws `FirebaseError`: an `Error` carrying a `code`. */
@@ -193,5 +200,73 @@ describe('signInWithGoogle', () => {
         'login',
       ]),
     );
+  });
+
+  it('uses the popup in a desktop browser', async () => {
+    setUserAgent(
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36',
+    );
+    vi.mocked(signInWithPopup).mockResolvedValueOnce({ user: { uid: 'u1' } } as never);
+
+    await clickSignIn();
+
+    await waitFor(() => expect(vi.mocked(signInWithPopup)).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(signInWithRedirect)).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('in LINE, offers to reopen the page in a real browser instead of starting OAuth', async () => {
+    // Google refuses OAuth inside embedded webviews (disallowed_useragent) on
+    // its own page, where no error reaches the app. Starting either flow here
+    // only shows a parent a Google error page.
+    setUserAgent(
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Safari Line/13.18.0',
+    );
+
+    await clickSignIn();
+
+    const dialog = await screen.findByRole('dialog', { name: '請改用瀏覽器開啟' });
+    expect(vi.mocked(signInWithPopup)).not.toHaveBeenCalled();
+    expect(vi.mocked(signInWithRedirect)).not.toHaveBeenCalled();
+    expect(within(dialog).queryByRole('button', { name: '複製連結' })).not.toBeInTheDocument();
+
+    await userEvent.click(within(dialog).getByRole('button', { name: '用瀏覽器開啟' }));
+    expect(vi.mocked(openInExternalBrowser)).toHaveBeenCalledTimes(1);
+  });
+
+  it('in another in-app browser, offers the link to copy into Chrome or Safari', async () => {
+    setUserAgent(
+      'Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/AP1A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/130.0 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/480.0.0.0;]',
+    );
+    window.history.replaceState(null, '', '/littleguard?d=flu');
+
+    await clickSignIn();
+
+    const dialog = await screen.findByRole('dialog', { name: '請改用瀏覽器開啟' });
+    expect(vi.mocked(signInWithPopup)).not.toHaveBeenCalled();
+    expect(vi.mocked(signInWithRedirect)).not.toHaveBeenCalled();
+    expect(dialog).toHaveTextContent(/Chrome 或 Safari/);
+    expect(within(dialog).queryByRole('button', { name: '用瀏覽器開啟' })).not.toBeInTheDocument();
+
+    // setup() replaces navigator.clipboard, so the spy goes on after it.
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText');
+    await user.click(within(dialog).getByRole('button', { name: '複製連結' }));
+
+    expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/littleguard?d=flu`);
+    expect(await within(dialog).findByRole('button', { name: '已複製連結' })).toBeInTheDocument();
+  });
+
+  it('shows the link itself when the webview has no clipboard', async () => {
+    setUserAgent('Mozilla/5.0 (iPhone) Instagram 300.0');
+
+    await clickSignIn();
+
+    const dialog = await screen.findByRole('dialog', { name: '請改用瀏覽器開啟' });
+    const user = userEvent.setup();
+    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValueOnce(new Error('denied'));
+    await user.click(within(dialog).getByRole('button', { name: '複製連結' }));
+
+    expect(await within(dialog).findByText(window.location.href)).toBeInTheDocument();
   });
 });

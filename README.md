@@ -283,7 +283,12 @@ were going. The three gated services share one template (`ServiceIntro`): the
 promise and the sign-in button first, then what signing in unlocks, then what
 can be read with no account.
 
-- **Auth**: Firebase Authentication, Google sign-in
+- **Auth**: Firebase Authentication, Google sign-in. Google refuses OAuth
+  inside the LINE, Facebook and Instagram in-app browsers, on its own page where
+  the app never sees the error, so there the sign-in button opens a sheet
+  instead: in LINE it reloads the page with `openExternalBrowser=1`, which LINE
+  opens in the phone's browser (the app strips the parameter before the first
+  page view); elsewhere it copies the link to open in Chrome or Safari
 - **Database**: Firebase Realtime Database (asia-southeast1)
 - **Sync**: real-time across devices
 - **Sharing**: a child profile is shared with family via a unique code, and the
@@ -310,7 +315,7 @@ decides what a signed-in user can touch.
 
 The token comes from a script on `www.google.com`, and some of this app's
 parents cannot load it: an ad blocker refuses it, and so do the LINE, Facebook
-and Instagram in-app browsers that `isInAppBrowser()` in `AuthContext.tsx`
+and Instagram in-app browsers that `src/common/inAppBrowser.ts`
 already exists for. `@firebase/app-check` 0.11.2 has no answer for that — its
 loader sets `script.onload` and nothing else, so a failed load leaves the
 token promise pending forever and the database waits on it. `src/lib/firebase.ts`

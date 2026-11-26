@@ -54,7 +54,7 @@ declare global {
  * 沒有 onerror、沒有逾時、沒有重試（dist/esm/index.esm.js:1180-1185）。
  * https://www.google.com/recaptcha/api.js 載不進來時，provider 的 initialized
  * promise 永遠不會 settle，getToken() 就一直等下去——而擋廣告的擴充套件、
- * LINE／Facebook／Instagram 的內建瀏覽器（isInAppBrowser() 就是為這群人存在
+ * LINE／Facebook／Instagram 的內建瀏覽器（common/inAppBrowser 就是為這群人存在
  * 的）正是載不到它的那一群。token 交換失敗 SDK 有處理（退避、請求照樣以未驗
  * 證送出），腳本載不進來則沒有。
  *

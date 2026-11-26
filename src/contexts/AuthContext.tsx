@@ -3,7 +3,6 @@ import {
   User,
   onAuthStateChanged,
   signInWithPopup,
-  signInWithRedirect,
   getRedirectResult,
   reauthenticateWithPopup,
   deleteUser,
@@ -12,6 +11,8 @@ import {
 import { auth, googleProvider, logAuthEvent } from '../lib/firebase';
 import { useToast } from '../common/ui/toast';
 import { goTo } from '../common/navigate';
+import { inAppBrowser, type InAppBrowser } from '../common/inAppBrowser';
+import InAppBrowserSheet from '../common/components/InAppBrowserSheet';
 
 
 interface AuthContextType {
@@ -33,45 +34,32 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-/**
- * 檢測是否在 WebView 環境中（LINE, Facebook, Instagram 等內建瀏覽器）
- * 這些環境不支援 Google OAuth popup，需要使用 redirect 方式
- */
-function isInAppBrowser(): boolean {
-  const ua = navigator.userAgent || navigator.vendor;
-
-  // 檢測常見的 WebView User-Agent
-  const webViewPatterns = [
-    /Line\//i,           // LINE
-    /FBAN|FBAV/i,        // Facebook
-    /Instagram/i,        // Instagram
-    /Twitter/i,          // Twitter
-    /Messenger/i,        // Facebook Messenger
-    /MicroMessenger/i,   // WeChat
-    /WebView/i,          // Generic WebView
-    /wv\)/i,             // Android WebView indicator
-  ];
-
-  return webViewPatterns.some(pattern => pattern.test(ua));
+/** Firebase 的錯誤是 Error 的子類，多帶一個 code 字串。 */
+function authErrorCode(error: unknown): string | undefined {
+  if (typeof error !== 'object' || error === null || !('code' in error)) return undefined;
+  return typeof error.code === 'string' ? error.code : undefined;
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const toast = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  // 在內建瀏覽器裡按登入時，改開這張說明而不是去 Google。
+  const [blockedBrowser, setBlockedBrowser] = useState<InAppBrowser | null>(null);
 
   useEffect(() => {
     // 處理 redirect 登入返回的結果
     const handleRedirectResult = async () => {
       try {
+        // 登入已經不走 redirect 了，這裡接的是舊版本開始、還沒回來的那一次。
         const result = await getRedirectResult(auth);
         if (result?.user) {
           logAuthEvent('login');
           // 遷移會在 onAuthStateChanged 中處理
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Redirect 登入失敗:', error);
-        if (error?.code !== 'auth/popup-closed-by-user') {
+        if (authErrorCode(error) !== 'auth/popup-closed-by-user') {
           logAuthEvent('login_failed');
           toast.show('登入失敗，請稍後再試');
         }
@@ -95,21 +83,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // 這個改動會不會讓人少登入，只看成功數看不出來——少掉的可能是沒按，也可能
     // 是按了卻沒完成。
     logAuthEvent('login_start');
+
+    // LINE、Facebook、Instagram 的內建瀏覽器：Google 在自己的頁面上就拒絕
+    // （disallowed_useragent），我們連錯誤都收不到，家長只看到一頁 Google 的
+    // 錯誤然後離開。所以根本不開始 OAuth，先請家長換到真的瀏覽器。
+    const browser = inAppBrowser();
+    if (browser) {
+      setBlockedBrowser(browser);
+      return;
+    }
+
     try {
-      // 檢測是否在 WebView 中
-      if (isInAppBrowser()) {
-        // 在 WebView 中使用 redirect 方式
-        // redirect 的結果會在 getRedirectResult 中處理
-        await signInWithRedirect(auth, googleProvider);
-      } else {
-        // 一般瀏覽器使用 popup 方式（更好的用戶體驗）
-        await signInWithPopup(auth, googleProvider);
-        logAuthEvent('login');
-      }
-    } catch (error: any) {
+      await signInWithPopup(auth, googleProvider);
+      logAuthEvent('login');
+    } catch (error: unknown) {
       console.error('登入失敗:', error);
       // 忽略用戶取消登入的錯誤
-      if (error?.code !== 'auth/popup-closed-by-user') {
+      if (authErrorCode(error) !== 'auth/popup-closed-by-user') {
         logAuthEvent('login_failed');
         toast.show('登入失敗，請稍後再試');
       }
@@ -154,16 +144,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       await deleteUser(current);
     } catch (error) {
-      // Firebase 的錯誤是 Error 的子類，多帶一個 code 字串。
-      const needsRecentLogin =
-        error instanceof Error && 'code' in error && error.code === 'auth/requires-recent-login';
+      const needsRecentLogin = authErrorCode(error) === 'auth/requires-recent-login';
       if (!needsRecentLogin) {
         console.error('刪除帳號失敗:', error);
         toast.show('帳號還沒刪掉，請稍後再試');
         return false;
       }
 
-      if (isInAppBrowser()) {
+      if (inAppBrowser()) {
         toast.show('為了安全，請重新登入一次，再按一次刪除帳號');
         await leave();
         return false;
@@ -191,7 +179,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     deleteAccount,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      <InAppBrowserSheet browser={blockedBrowser} onClose={() => setBlockedBrowser(null)} />
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
