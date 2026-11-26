@@ -112,6 +112,26 @@ describe('pregnancy vaccination advice', () => {
   });
 });
 
+/**
+ * A reader at week 26 must not conclude that breaking waters only matters near term (#163).
+ */
+describe('when-to-go-now article', () => {
+  const article = pregnancyWikiArticles.find((a) => a.id === 'health-when-to-go-now');
+
+  it('lists waters breaking as a warning signal that does not wait for the due date', () => {
+    const signals = article?.warningSignals ?? [];
+    const waters = signals.filter((s) => s.includes('破水') && !s.includes('接近預產期'));
+    expect(waters).toHaveLength(1);
+    expect(waters[0]).toContain('37 週');
+    expect(waters[0]).toContain('到院');
+  });
+
+  it('keeps the near-term labour signs step', () => {
+    const steps = (article?.solutions ?? []).map((s) => s.detail);
+    expect(steps.some((d) => d.includes('接近預產期') && d.includes('破水'))).toBe(true);
+  });
+});
+
 describe('分類顯示設定', () => {
   it('每個分類都有標籤與配色', () => {
     for (const category of CATEGORIES) {

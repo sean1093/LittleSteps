@@ -710,6 +710,11 @@ export const pregnancyWikiArticles: PregnancyWikiArticle[] = [
   //   減少一半以上，應盡快就醫；產兆：落紅或見血、陣痛或腰酸、破水（陰道流出多量液體），應盡速
   //   至院所待產；孕婦健康手冊於確診懷孕後由產檢院所發給。
   // WHO 另列「破水 6 小時仍未陣痛」為儘快就醫；這裡採孕婦手冊與待產包那篇一致的「破水就到院」。
+  // 來源（2026-11-26 查證）：同上 WHO 指引，C15「Advise on labour signs」——「Advise to go to the
+  //   facility or contact the skilled birth attendant if any of the following signs: … waters have
+  //   broken」，不以接近預產期為條件；居家生產段落並提醒「NOT to wait for waters to stop before going
+  //   to health facility」；新生兒段落以「Preterm (less than 37 weeks」定義早產。
+  // ——所以未滿 37 週破水單獨列一條：孕婦手冊的「接近生產期…破水…到院待產」容易被讀成只有足月才算。
   // 119 為台灣的緊急救護號碼。
   {
     id: 'health-when-to-go-now',
@@ -736,6 +741,7 @@ export const pregnancyWikiArticles: PregnancyWikiArticle[] = [
       '發燒而且虛弱到下不了床：立刻到院',
       '劇烈腹痛：立刻到院',
       '呼吸急促或呼吸困難：立刻到院',
+      '還沒滿 37 週就破水（陰道流出大量液體）：直接到院，不要等它自己停',
       '規律宮縮、陰道水樣或血樣分泌物增加、胎動比平常少一半以上：儘快就醫，可能是早產預兆',
       '發燒、腹痛、覺得身體不對勁，或手指、臉、腿腫脹：儘快就醫',
     ],
