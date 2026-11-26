@@ -5,6 +5,7 @@ import {
   isScheduledDose,
   nextScheduledDose,
   resolveVaccineDoses,
+  type ResolvedVaccineDose,
 } from '../../littlesteps/utils/vaccineSchedule';
 
 /**
@@ -116,15 +117,21 @@ export function calculateVaccineSummary(
   // 分子只認每筆記錄自己那一劑：由目錄反查進度，孤兒 vaccineId 自然被忽略；
   // 同一筆底下殘留的其他劑次鍵也不得重複計入，否則分子會超過分母、突破 100%。
   let administeredCount = 0;
-  let remainingNationalDoses = 0;
   vaccineSchedules.forEach(vaccine => {
     const dose = vaccineProgress[vaccine.id]?.doses[scheduledDoseNumber(vaccine)];
     if (dose?.administered) {
       administeredCount++;
-    } else if (isScheduledDose(vaccine)) {
-      remainingNationalDoses++;
     }
   });
+
+  // 欠幾劑問的是解出來的劑次，不是資料列：今天怎麼付、孩子過了年齡上限沒、
+  // 擇一的產品記了哪一種，都要知道生日與今天才答得出來。資料列拿去問
+  // isScheduledDose 會編譯失敗，就是為了擋住這裡原本那種寫法——
+  // 輪狀病毒翻成公費之後，它會把 2 劑型與 3 劑型共五劑全算成欠的。
+  const resolved = resolveVaccineDoses(birthday, vaccineSchedules, vaccineProgress, today);
+  const remainingNationalDoses = resolved.filter(
+    dose => dose.status !== 'done' && isScheduledDose(dose)
+  ).length;
 
   const administrationRate = totalDoses > 0
     ? Math.round((administeredCount / totalDoses) * 100)
@@ -134,7 +141,7 @@ export function calculateVaccineSummary(
     totalDoses,
     administeredCount,
     administrationRate,
-    nextVaccine: findNextVaccine(vaccineProgress, birthday, today),
+    nextVaccine: findNextVaccine(resolved, today),
     remainingNationalDoses,
   };
 }
@@ -151,14 +158,10 @@ export function calculateVaccineSummary(
  * 現在問的是同一個實作：規則、理由與年齡界線都寫在 nextScheduledDose 上。
  */
 function findNextVaccine(
-  vaccineProgress: VaccineProgress,
-  birthday: string,
+  resolved: ResolvedVaccineDose[],
   today: Date
 ): VaccineSummary['nextVaccine'] {
-  const dose = nextScheduledDose(
-    resolveVaccineDoses(birthday, vaccineSchedules, vaccineProgress, today),
-    today
-  );
+  const dose = nextScheduledDose(resolved, today);
   if (!dose) return undefined;
 
   return {

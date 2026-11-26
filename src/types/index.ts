@@ -54,6 +54,16 @@ export type VaccineFunding =
   /** 各縣市加碼，給付與否看戶籍地衛生局 */
   | 'local-varies';
 
+/** 一組互斥產品裡的一種，見 VaccineSchedule.alternative。 */
+export interface VaccineAlternative {
+  /** 互斥的那一組，例如 "rotavirus" */
+  group: string;
+  /** 合併成一行時用的名稱，例如「口服輪狀病毒疫苗」 */
+  groupName: string;
+  /** 這一列是哪一種，例如「2劑型」 */
+  series: string;
+}
+
 export interface VaccineSchedule {
   id: string;
   name: string;
@@ -67,12 +77,32 @@ export interface VaccineSchedule {
   /**
    * 已公告、但還沒生效的付費方式改變日期（YYYY-MM-DD）。
    *
-   * funding 寫的一律是「今天」怎麼付。政策改變的日期一旦已經公告，資料檔的
+   * funding 寫的一律是「今天」怎麼付——除非這一列帶 previousFunding，見下。政策改變的日期一旦已經公告，資料檔的
    * 查證日期就擋不住它——改變日落在保鮮期內，檔案到那天仍然算「新鮮」，
    * 而 funding 已經是錯的。填了這一欄，測試會在日期過了之後轉紅，把一顆
    * 安靜的定時炸彈換成一條會叫的紅線。
    */
   fundingChangesOn?: string;
+  /**
+   * 已翻牌、但生效日還沒到的付費方式：until（YYYY-MM-DD）之前照這一個付，
+   * 從 until 那天起照 funding 付。讀付費方式的地方一律經過
+   * vaccineSchedule.fundingOn，不要直接讀 funding。
+   *
+   * 為什麼不是等那天再改 funding：改變日之前就要上線的修正，提早翻牌會在那
+   * 幾週對正要帶孩子去打第一劑的家長說「免費」；晚一天翻牌，fundingChangesOn
+   * 的測試就擋下每一個 PR。帶著日期翻牌，兩邊都對，也不必卡在那一天部署。
+   */
+  previousFunding?: { funding: VaccineFunding; until: string };
+  /**
+   * 來源載明的接種年齡上限（月）。孩子今天已經超過這個月齡，這一劑就不再算
+   * 待辦，也不會被說成還能打——判斷寫在 isScheduledDose。只填來源寫出數字的。
+   */
+  maxAgeInMonths?: number;
+  /**
+   * 擇一的產品。同一個 group 底下不同 series 的列是互斥的替代品，不是要全部
+   * 打完的劑次——輪狀病毒的 2 劑型與 3 劑型。哪一種算數見 resolveVaccineDoses。
+   */
+  alternative?: VaccineAlternative;
   /** 這一劑的出處。逐劑標，沒有出處的劑次不該存在。 */
   sourceUrl: string;
   ageInMonths?: number;

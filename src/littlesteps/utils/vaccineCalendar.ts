@@ -5,7 +5,11 @@ import type {
   VaccineSchedule,
 } from '../../types';
 import { buildCalendar, type CalendarEvent } from '../../common/utils/icsExport';
-import { resolveVaccineDoses, type ResolvedVaccineDose } from './vaccineSchedule';
+import {
+  collapseAlternatives,
+  resolveVaccineDoses,
+  type ResolvedVaccineDose,
+} from './vaccineSchedule';
 
 /**
  * How each funding state is worded for a parent.
@@ -27,10 +31,17 @@ const PRODID = '-//LittleSteps//兒童疫苗接種時程//ZH-TW';
 /**
  * The doses a child has not had yet, earliest first.
  *
- * Two kinds of dose are absent. Ones already recorded as administered, and
- * ones with no age in months, which cannot be dated at all — a few self-paid
- * rows only say "at the same visit as the public dose", and inventing a date
- * for those would be worse than leaving them to the app.
+ * Four kinds of dose are absent. Ones already recorded as administered; ones
+ * with no age in months, which cannot be dated at all — a few self-paid rows
+ * only say "at the same visit as the public dose", and inventing a date for
+ * those would be worse than leaving them to the app; ones the child is already
+ * older than the source's age limit for, which can no longer be given; and
+ * the other product of a pair of alternatives once the family has recorded a
+ * dose of one of them.
+ *
+ * While neither alternative is recorded both stay available, folded into one
+ * entry per visit by `collapseAlternatives` — otherwise a calendar would book
+ * two rotavirus products on the same morning.
  *
  * The page counts these to label its export action, and the export serialises
  * exactly the same list, so the number a parent taps is the number they get.
@@ -41,8 +52,13 @@ export function outstandingVaccineDoses(
   progress: VaccineProgress,
   now: Date = new Date(),
 ): ResolvedVaccineDose[] {
-  return resolveVaccineDoses(birthday, schedules, progress, now).filter(
-    (dose) => dose.status !== 'done',
+  return collapseAlternatives(
+    resolveVaccineDoses(birthday, schedules, progress, now).filter(
+      (dose) =>
+        dose.status !== 'done' &&
+        dose.setAside !== 'past-age-limit' &&
+        dose.setAside !== 'other-product-chosen',
+    ),
   );
 }
 
@@ -85,13 +101,23 @@ export function buildVaccineIcs(
       // funding changes on a known date can be after that date. "Self-paid"
       // alone would then be the first and most prominent thing a parent reads
       // about a dose that is no longer self-paid.
-      const funding = vaccine.fundingChangesOn
-        ? `${FUNDING_LABEL[dose.funding]}（${vaccine.fundingChangesOn} 起調整，請以最新公告為準）`
+      //
+      // `dose.funding` is the funding on `now`, and `dose.fundingChangesOn`
+      // covers both an announced change and a row already flipped whose new
+      // funding has not started yet.
+      const funding = dose.fundingChangesOn
+        ? `${FUNDING_LABEL[dose.funding]}（${dose.fundingChangesOn} 起調整，請以最新公告為準）`
         : FUNDING_LABEL[dose.funding];
+
+      // A folded pair of alternatives carries every product's own note: each
+      // has its own last-dose deadline, and the choice is the family's.
+      const rows = (dose.alternativeIds ?? [dose.vaccineId]).map((id) => rowById.get(id)!);
 
       const details = [funding, `建議接種時間：${dose.timing}`];
       if (vaccine.eligibility) details.push(`給付條件：${vaccine.eligibility}`);
-      if (vaccine.notes) details.push(vaccine.notes);
+      rows.forEach((row) => {
+        if (row.notes) details.push(row.notes);
+      });
       details.push(`資料來源：${vaccine.sourceUrl}`);
 
       return {

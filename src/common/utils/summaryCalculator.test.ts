@@ -201,7 +201,14 @@ describe('summaryCalculator', () => {
      * eligibility 的那種是資訊，不是這個孩子欠的劑次。
      */
     const NATIONAL = vaccineSchedules.filter(
-      vaccine => vaccine.funding === 'national' && !vaccine.eligibility
+      vaccine =>
+        vaccine.funding === 'national' &&
+        !vaccine.eligibility &&
+        // 帶來源年齡上限的列（輪狀病毒，公告「最大不得超過8個月」）對下面的
+        // BIRTHDAY 從來不算欠的：2026-01-15 出生，2026-09-15 就過了上限，比
+        // 2027-01-01 公費生效還早。這不是放寬，是這個孩子真的不欠那幾劑；
+        // 上限本身由下面的 #145 測試與 vaccineSchedule.test 另外驗。
+        vaccine.maxAgeInMonths === undefined
     );
 
     /** 最早的公費劑次。 */
@@ -451,6 +458,55 @@ describe('summaryCalculator', () => {
       expect(
         calculateVaccineSummary(progress, BIRTHDAY, at(BIRTHDAY)).nextVaccine
       ).toMatchObject({ id: EARLIEST_NATIONAL.id });
+    });
+
+    describe('#145: rotavirus, publicly funded from 2027-01-01, two alternative products', () => {
+      /**
+       * 同樣是剛滿 2 個月、什麼都沒記：一個在公費生效之前，一個在之後。兩者
+       * 的差額就是輪狀病毒算進「欠的」的劑數——只能是一種產品的 2 或 3 劑，
+       * 不能是兩種產品加起來的 5 劑。
+       */
+      const before = calculateVaccineSummary({}, '2026-09-10', at('2026-11-12'));
+      const after = calculateVaccineSummary({}, '2027-01-10', at('2027-03-12'));
+
+      it('raises the unrecorded count by one product, never by both', () => {
+        const added = after.remainingNationalDoses - before.remainingNationalDoses;
+
+        expect([2, 3]).toContain(added);
+      });
+
+      it('counts nothing for rotavirus before the funding starts', () => {
+        // 生效日之前它仍是自費，這個數字只算公費。
+        const withoutRota = calculateVaccineSummary(
+          administered(vaccineSchedules.filter(v => !v.id.startsWith('rotavirus-'))),
+          '2026-09-10',
+          at('2026-11-12')
+        );
+
+        expect(withoutRota.remainingNationalDoses).toBe(0);
+      });
+
+      it('stops counting the two-dose product once a three-dose dose is recorded', () => {
+        const progress: VaccineProgress = {
+          ...administered(vaccineSchedules.filter(v => !v.id.startsWith('rotavirus-'))),
+          'rotavirus-3dose-2m': { doses: { 1: { administered: true } } },
+        };
+
+        expect(
+          calculateVaccineSummary(progress, '2027-01-10', at('2027-03-12')).remainingNationalDoses
+        ).toBe(2);
+      });
+
+      it('never counts a rotavirus dose for a child past the announced eight months', () => {
+        const summary = calculateVaccineSummary(
+          administered(vaccineSchedules.filter(v => !v.id.startsWith('rotavirus-'))),
+          '2026-05-10',
+          at('2027-02-15')
+        );
+
+        expect(summary.remainingNationalDoses).toBe(0);
+        expect(summary.nextVaccine).toBeUndefined();
+      });
     });
 
     it('offers no next dose once every remaining one is behind the child', () => {

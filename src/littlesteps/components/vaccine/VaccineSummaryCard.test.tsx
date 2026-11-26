@@ -13,8 +13,15 @@ import VaccineSummaryCard from './VaccineSummaryCard';
  * 成待辦」，不是文案本身。
  */
 
-/** 公費常規劑次：帶 eligibility 的那種只給名單上的孩子，不是家長欠的。 */
-const NATIONAL = vaccineSchedules.filter((v) => v.funding === 'national' && !v.eligibility);
+/**
+ * 公費常規劑次：帶 eligibility 的那種只給名單上的孩子，不是家長欠的。
+ *
+ * 帶來源年齡上限的列（輪狀病毒，公告「最大不得超過8個月」）也不算：這裡的
+ * 孩子 2020 年出生，早就過了上限，那幾劑對他從來不是欠的。
+ */
+const NATIONAL = vaccineSchedules.filter(
+  (v) => v.funding === 'national' && !v.eligibility && v.maxAgeInMonths === undefined,
+);
 
 const doseOf = (vaccine: VaccineSchedule): number => vaccine.currentDose ?? 1;
 

@@ -72,11 +72,20 @@ they used to give no hint that a product existed around them.
 ### LittleSteps — baby growth tracking
 - **Growth overview** — one screen summarising milestones, vaccines, sleep, nappies and food
 - **Milestone tracking** — 33 milestones across physical, motor, cognitive and feeding
-- **Vaccine tracking** — 36 doses on Taiwan's MOHW schedule (21 government-funded,
-  1 conditionally reimbursed by the NHI, 14 self-paid), each citing the CDC page it
+- **Vaccine tracking** — 36 doses on Taiwan's MOHW schedule (26 government-funded,
+  1 conditionally reimbursed by the NHI, 9 self-paid), each citing the CDC page it
   came from, with side-effect and emergency guidance. A dose that is due to change
   funding on a known date says so, and a test goes red once that date passes while
-  the row still states the old funding
+  the row still states the old funding. Five of the 26 are rotavirus, flipped ahead
+  of the MOHW's 2027-01-01 start with that date in the data: until then the app
+  reads them as self-paid (21, 1, 14), and every screen, count and export follows
+  the date rather than a redeploy
+- **Rotavirus: one product, within the age limit** — the 2-dose and 3-dose products
+  are alternatives, not five doses. Once a dose of one is recorded the other drops
+  out of everything owed; with nothing recorded only one counts, so a two-month-old
+  owes two or three doses, never five, and the calculator and calendar export show
+  a visit where either will do as one line. A child older than the announcement's
+  age limit of eight months is never counted as owing one or shown it as free
 - **Publicly funded, but only for a named group** — one of those government-funded
   doses is the extra PCV13 dose at six months for high-risk children. It carries the
   CDC's own condition, so it shows on the vaccine page and in the calendar export but

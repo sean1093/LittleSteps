@@ -263,11 +263,82 @@ describe('已公告的付費方式改變', () => {
   it('輪狀病毒的公費化日期寫在資料裡，不是只寫在註解裡', () => {
     // 幼兒百科早就告訴家長 2027 年 1 月 1 日改公費，疫苗頁卻只寫自費。
     // 兩份資料講同一件事就要一起過期，而不是各自過期。
+    //
+    // #145 翻牌之後日期從 fundingChangesOn 搬到 previousFunding.until：
+    // funding 寫公告之後的公費，生效日之前仍照自費（vaccineSchedule.fundingOn）。
+    // 日期還是寫在資料裡，而且五列都要有，一列都不能少。
     const rotavirus = vaccineSchedules.filter((v) => v.id.startsWith('rotavirus-'));
 
     expect(rotavirus.length).toBeGreaterThan(0);
     rotavirus.forEach((v) => {
-      expect(v.fundingChangesOn, `${v.id} 少了公費化日期`).toBe('2027-01-01');
+      expect(v.funding, `${v.id} 還沒翻牌`).toBe('national');
+      expect(v.previousFunding, `${v.id} 少了公費化日期`).toEqual({
+        funding: 'self-paid',
+        until: '2027-01-01',
+      });
+    });
+  });
+});
+
+/**
+ * 已翻牌、但生效日還沒到的付費方式（previousFunding）。
+ *
+ * 和 fundingChangesOn 同一條規矩：一個宣稱要跟得到它的出處。最強的宣稱是
+ * 「從某天起公費」，而 sourceUrl 指的疾管署產品頁沒提這件事。
+ */
+describe('已翻牌、生效日之前照舊的付費方式', () => {
+  const flipped = vaccineSchedules.filter((v) => v.previousFunding);
+
+  it('有這樣的列——不然下面兩條會安靜地永遠通過', () => {
+    expect(flipped.length).toBeGreaterThan(0);
+  });
+
+  it('公告的出處跟著劑次走，寫在家長讀得到的欄位', () => {
+    flipped.forEach((v) => {
+      const shown = `${v.notes ?? ''} ${v.eligibility ?? ''}`;
+      const urls = (shown.match(/https:\/\/\S+/g) ?? []).filter((u) => u !== v.sourceUrl);
+
+      expect(urls, `${v.id} 的付費方式改變沒有附上公告出處`).not.toEqual([]);
+    });
+  });
+
+  it('日期寫成 YYYY-MM-DD，否則比不出生效日前後', () => {
+    flipped.forEach((v) => {
+      expect(v.previousFunding!.until, `${v.id} 的 until 格式不對`).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    });
+  });
+});
+
+/**
+ * 輪狀病毒公費的年齡上限與擇一，逐字對照衛福部公告
+ * （https://www.mohw.gov.tw/cp-16-87058-1.html，2026-11-26 查證）。
+ */
+describe('輪狀病毒：公告的年齡上限與兩種產品擇一', () => {
+  const rotavirus = vaccineSchedules.filter((v) => v.id.startsWith('rotavirus-'));
+
+  it('每一列都帶公告的「最大不得超過8個月」，也寫給家長看', () => {
+    rotavirus.forEach((v) => {
+      expect(v.maxAgeInMonths, v.id).toBe(8);
+      expect(v.notes, v.id).toContain('最小為出生滿6週，最大不得超過8個月');
+    });
+  });
+
+  it('上限不寫進 eligibility——那會讓五劑對每個孩子都不算待辦', () => {
+    rotavirus.forEach((v) => expect(v.eligibility, v.id).toBeUndefined());
+  });
+
+  it('2 劑型與 3 劑型是同一組的兩種產品', () => {
+    const bySeries = new Map<string, string[]>();
+    rotavirus.forEach((v) => {
+      expect(v.alternative?.group, v.id).toBe('rotavirus');
+      const ids = bySeries.get(v.alternative!.series) ?? [];
+      ids.push(v.id);
+      bySeries.set(v.alternative!.series, ids);
+    });
+
+    expect(Object.fromEntries(bySeries)).toEqual({
+      '2劑型': ['rotavirus-2m', 'rotavirus-4m'],
+      '3劑型': ['rotavirus-3dose-2m', 'rotavirus-3dose-4m', 'rotavirus-3dose-6m'],
     });
   });
 });

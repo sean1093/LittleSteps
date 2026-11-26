@@ -1,4 +1,9 @@
-import type { VaccineProgress, VaccineSchedule } from '../../types';
+import type {
+  VaccineAlternative,
+  VaccineFunding,
+  VaccineProgress,
+  VaccineSchedule,
+} from '../../types';
 import { addMonths, parseLocalDate, toLocalDateKey } from '../../common/utils/dateHelpers';
 import {
   resolveScheduleStatus,
@@ -34,6 +39,31 @@ export const DUE_WINDOW_DAYS = 30;
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+/**
+ * 這一劑在某一天怎麼付。
+ *
+ * 帶 previousFunding 的列已經翻牌、但生效日還沒到：until 之前照舊的付，從
+ * until 那天起照 funding 付。顯示付費方式、篩選公費、判斷欠不欠，都經過這裡，
+ * 不要直接讀 VaccineSchedule.funding——那一欄寫的可能是下個月的事。
+ */
+export function fundingOn(
+  vaccine: Pick<VaccineSchedule, 'funding' | 'previousFunding'>,
+  today: Date = new Date(),
+): VaccineFunding {
+  const previous = vaccine.previousFunding;
+  return previous && toLocalDateKey(today) < previous.until ? previous.funding : vaccine.funding;
+}
+
+/**
+ * 時程表上有、但這個孩子不欠的原因。
+ *
+ *   * past-age-limit：孩子今天已經超過來源載明的接種年齡上限。
+ *   * other-product-chosen：同一組擇一產品裡，另一種已經記錄過至少一劑。
+ *   * other-product-counted：同一組一劑都還沒記錄，算數的是另一種。家長還沒
+ *     選，所以這一劑仍然可以選，只是不算進「欠的」。
+ */
+export type DoseSetAside = 'past-age-limit' | 'other-product-chosen' | 'other-product-counted';
+
 export interface ResolvedVaccineDose {
   vaccineId: string;
   /** VaccineSchedule.currentDose；同一支疫苗多劑時用來區分 */
@@ -41,7 +71,13 @@ export interface ResolvedVaccineDose {
   name: string;
   /** 疾管署寫的建議時間，逐字沿用，不改寫成數字 */
   timing: string;
-  funding: VaccineSchedule['funding'];
+  /** 今天的付費方式（fundingOn），不是資料列上的 funding。 */
+  funding: VaccineFunding;
+  /**
+   * 付費方式下一次改變的日期：已公告未生效的 fundingChangesOn，或已翻牌、
+   * 還沒生效的 previousFunding.until。顯示付費方式的地方要一併寫出來。
+   */
+  fundingChangesOn?: string;
   /**
    * 來源寫的給付條件，逐字沿用。有值就代表這一劑只給名單上的孩子，
    * 於是它是資訊而不是待辦——判斷寫在 isScheduledDose。
@@ -52,6 +88,19 @@ export interface ResolvedVaccineDose {
   status: ScheduleStatus;
   /** 已接種且有記日期時才有值 */
   administeredDate?: string;
+  /** 擇一產品的哪一種；不是擇一產品就沒有值 */
+  alternative?: VaccineAlternative;
+  /**
+   * 這個孩子不欠這一劑的原因，沒有就是 null。必填而不是可選：isScheduledDose
+   * 要的是這個欄位，而資料列沒有它——直接拿 VaccineSchedule 去問會編譯失敗，
+   * 而不是安靜地略過年齡上限與擇一。
+   */
+  setAside: DoseSetAside | null;
+  /**
+   * 合併成一行的擇一劑次（collapseAlternatives），依資料順序；第一個就是
+   * vaccineId。
+   */
+  alternativeIds?: string[];
 }
 
 function doseRecord(progress: VaccineProgress, vaccineId: string, doseNumber: number) {
@@ -59,10 +108,43 @@ function doseRecord(progress: VaccineProgress, vaccineId: string, doseNumber: nu
 }
 
 /**
+ * 每一組擇一產品今天算的是哪一種。
+ *
+ * 已經記錄過任何一劑的那一種算數；兩種都有記錄（原則上同廠牌，但不是不可能）
+ * 時取資料裡排前面的。一劑都沒有記錄時也只算一種——資料裡排前面的那一種
+ * ——否則一個 2 個月大的孩子會同時欠 2 劑型與 3 劑型共五劑，而家長只會打
+ * 其中一種。chosen 為 false 代表那是預設，不是家長選的。
+ */
+function countedAlternatives(
+  schedules: VaccineSchedule[],
+  progress: VaccineProgress,
+): Map<string, { series: string; chosen: boolean }> {
+  const counted = new Map<string, { series: string; chosen: boolean }>();
+
+  for (const vaccine of schedules) {
+    const alt = vaccine.alternative;
+    if (!alt || counted.has(alt.group)) continue;
+    if (doseRecord(progress, vaccine.id, vaccine.currentDose ?? 1)?.administered) {
+      counted.set(alt.group, { series: alt.series, chosen: true });
+    }
+  }
+  for (const vaccine of schedules) {
+    const alt = vaccine.alternative;
+    if (alt && !counted.has(alt.group)) {
+      counted.set(alt.group, { series: alt.series, chosen: false });
+    }
+  }
+  return counted;
+}
+
+/**
  * 依出生日展開所有有月齡的劑次，依建議接種日遞增排序。
  *
  * 沒有 ageInMonths 的劑次會被跳過：算不出日期就不該假裝算得出來（自費疫苗
  * 有幾筆只寫「與公費同時」這類相對時程）。
+ *
+ * 付費方式是 today 那一天的（fundingOn）；setAside 寫出這個孩子不欠哪幾劑、
+ * 為什麼——年齡上限以 today 的年齡判斷，擇一產品看 progress 記了哪一種。
  *
  * 完全無 I/O；today 可注入以利測試。
  */
@@ -74,7 +156,9 @@ export function resolveVaccineDoses(
 ): ResolvedVaccineDose[] {
   if (!birthday) return [];
 
-  const todayLocal = parseLocalDate(toLocalDateKey(today));
+  const todayKey = toLocalDateKey(today);
+  const todayLocal = parseLocalDate(todayKey);
+  const counted = countedAlternatives(schedules, progress);
 
   return schedules
     .filter((vaccine) => vaccine.ageInMonths !== undefined)
@@ -89,12 +173,31 @@ export function resolveVaccineDoses(
       // 已接種但沒填日期時給空字串，讓狀態仍然是 done——勾了就是打了。
       const completedDate = record?.administered ? (record.administeredDate ?? '') : undefined;
 
+      const alt = vaccine.alternative;
+      const countedSeries = alt ? counted.get(alt.group) : undefined;
+      let setAside: DoseSetAside | null = null;
+      if (
+        !record?.administered &&
+        vaccine.maxAgeInMonths !== undefined &&
+        todayKey > addMonths(birthday, vaccine.maxAgeInMonths)
+      ) {
+        setAside = 'past-age-limit';
+      } else if (alt && countedSeries && countedSeries.series !== alt.series) {
+        setAside = countedSeries.chosen ? 'other-product-chosen' : 'other-product-counted';
+      }
+
+      const pendingChange =
+        vaccine.previousFunding && todayKey < vaccine.previousFunding.until
+          ? vaccine.previousFunding.until
+          : undefined;
+
       return {
         vaccineId: vaccine.id,
         doseNumber,
         name: vaccine.name,
         timing: vaccine.timing,
-        funding: vaccine.funding,
+        funding: fundingOn(vaccine, today),
+        fundingChangesOn: vaccine.fundingChangesOn ?? pendingChange,
         eligibility: vaccine.eligibility,
         dueDate,
         status: resolveScheduleStatus(
@@ -104,9 +207,61 @@ export function resolveVaccineDoses(
           parseLocalDate(windowEnd),
         ),
         administeredDate: record?.administeredDate,
+        alternative: alt,
+        setAside,
       };
     })
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+}
+
+/**
+ * 把同一天、同一劑次的擇一產品併成一行。
+ *
+ * 一劑都還沒記錄的孩子，2 個月那天有 2 劑型第 1 劑與 3 劑型第 1 劑兩列——
+ * 列成兩行就是告訴家長那天要打兩支（#145 的使用者測試裡真的有人這樣讀）。
+ * 併成一行「第1劑（2劑型或3劑型，擇一）」，留下算數的那一列當底。
+ *
+ * 只併還沒打、而且這一組還沒選定的：選定之後另一種是 other-product-chosen，
+ * 那一列本來就不該出現在清單裡，併進來反而把它帶回來。只有一種有的劑次
+ * （3 劑型的第 3 劑）照原樣留著，它的名字自己說得清楚。
+ */
+export function collapseAlternatives(doses: ResolvedVaccineDose[]): ResolvedVaccineDose[] {
+  const mergeable = (dose: ResolvedVaccineDose) =>
+    dose.alternative !== undefined &&
+    dose.status !== 'done' &&
+    dose.setAside !== 'other-product-chosen';
+  const keyOf = (dose: ResolvedVaccineDose) =>
+    `${dose.alternative!.group}|${dose.dueDate}|${dose.doseNumber}`;
+
+  const groups = new Map<string, ResolvedVaccineDose[]>();
+  doses.filter(mergeable).forEach((dose) => {
+    const list = groups.get(keyOf(dose)) ?? [];
+    list.push(dose);
+    groups.set(keyOf(dose), list);
+  });
+
+  const result: ResolvedVaccineDose[] = [];
+  doses.forEach((dose) => {
+    if (!mergeable(dose)) {
+      result.push(dose);
+      return;
+    }
+    const members = groups.get(keyOf(dose))!;
+    if (members.length === 1) {
+      result.push(dose);
+      return;
+    }
+    if (members[0] !== dose) return;
+
+    const base = members.find((m) => m.setAside === null) ?? dose;
+    const series = members.map((m) => m.alternative!.series).join('或');
+    result.push({
+      ...base,
+      name: `${base.alternative!.groupName} 第${base.doseNumber}劑（${series}，擇一）`,
+      alternativeIds: [base.vaccineId, ...members.filter((m) => m !== base).map((m) => m.vaccineId)],
+    });
+  });
+  return result;
 }
 
 /**
@@ -146,6 +301,17 @@ export const SCHEDULED_FUNDING: VaccineSchedule['funding'] = 'national';
 /**
  * 這一劑算不算「這個孩子欠的」。
  *
+ * 問的是 resolveVaccineDoses 解出來的劑次，不是資料列：付費方式要看今天
+ * （fundingOn），另外兩個原因只有知道這個孩子才答得出來——
+ *
+ *   * 年齡上限：孩子已經超過來源寫的接種年齡，就不能再說他還有一劑公費可打。
+ *   * 擇一產品：輪狀病毒 2 劑型與 3 劑型只打一種。記了其中一種，另一種就不是
+ *     欠的；都沒記，也只算一種——否則 2 個月大的孩子會被說欠五劑。
+ *
+ * 這兩件事都寫在 setAside 裡，原因與誰算數見 resolveVaccineDoses。
+ *
+ * 以下是 funding 與 eligibility 的部分。
+ *
  * 光看 funding 不夠：時程表也講得出「公費，但只給名單上的孩子」——公費加上
  * 一段 eligibility，例如高危險群才多打的那一劑。這個 app 不知道這個孩子在
  * 不在名單上，而兩種預設不是對稱的錯：
@@ -160,9 +326,9 @@ export const SCHEDULED_FUNDING: VaccineSchedule['funding'] = 'national';
  * 與看診摘要都問這一個述詞，不要各自再判斷一次 funding。
  */
 export function isScheduledDose(
-  dose: Pick<VaccineSchedule, 'funding' | 'eligibility'>,
+  dose: Pick<ResolvedVaccineDose, 'funding' | 'eligibility' | 'setAside'>,
 ): boolean {
-  return dose.funding === SCHEDULED_FUNDING && !dose.eligibility;
+  return dose.funding === SCHEDULED_FUNDING && !dose.eligibility && dose.setAside === null;
 }
 
 /**

@@ -6,6 +6,9 @@ import {
   DUE_WINDOW_DAYS,
   OVERDUE_LOOKBACK_DAYS,
   actionableVaccineDoses,
+  collapseAlternatives,
+  fundingOn,
+  isScheduledDose,
   nextScheduledDose,
   resolveVaccineDoses,
 } from './vaccineSchedule';
@@ -413,5 +416,147 @@ describe('真實時程', () => {
     expect(birth?.status).toBe('overdue');
     expect(twelve.length).toBeGreaterThan(0);
     twelve.forEach((dose) => expect(dose.status).toBe('due'));
+  });
+});
+
+/**
+ * #145：輪狀病毒 2027-01-01 起公費，而 2 劑型與 3 劑型是擇一的兩種產品。
+ *
+ * 規則寫在 isScheduledDose，原因寫在 resolveVaccineDoses 的 setAside。這裡用
+ * 真實資料驗，因為要釘的正是那五列翻牌之後的樣子：一個 2 個月大的孩子欠
+ * 2 劑或 3 劑，不是 5 劑；超過公告的 8 個月就不再欠；生效日之前一劑都不欠。
+ */
+describe('輪狀病毒：生效日、擇一與年齡上限', () => {
+  const ROTA = (id: string) => id.startsWith('rotavirus-');
+  const TWO_DOSE = ['rotavirus-2m', 'rotavirus-4m'];
+  const THREE_DOSE = ['rotavirus-3dose-2m', 'rotavirus-3dose-4m', 'rotavirus-3dose-6m'];
+
+  /** 生效日之後出生，2 個月那幾劑剛到期。 */
+  const AFTER_BIRTHDAY = '2027-01-10';
+  const AFTER_TWO_MONTHS = at('2027-03-12');
+
+  const owedRota = (doses: ReturnType<typeof resolveVaccineDoses>) =>
+    doses
+      .filter((d) => ROTA(d.vaccineId) && d.status !== 'done' && isScheduledDose(d))
+      .map((d) => d.vaccineId);
+
+  it('生效日之前仍是自費，而且帶著改變的日期', () => {
+    const doses = resolveVaccineDoses('2026-09-20', vaccineSchedules, {}, at('2026-11-26'));
+    const rota = doses.filter((d) => ROTA(d.vaccineId));
+
+    expect(rota).toHaveLength(5);
+    rota.forEach((d) => {
+      expect(d.funding, d.vaccineId).toBe('self-paid');
+      expect(d.fundingChangesOn, d.vaccineId).toBe('2027-01-01');
+    });
+    expect(owedRota(doses)).toEqual([]);
+  });
+
+  it('生效日當天起是公費，不再帶改變的日期', () => {
+    const doses = resolveVaccineDoses('2026-11-01', vaccineSchedules, {}, at('2027-01-01'));
+
+    doses
+      .filter((d) => ROTA(d.vaccineId))
+      .forEach((d) => {
+        expect(d.funding, d.vaccineId).toBe('national');
+        expect(d.fundingChangesOn, d.vaccineId).toBeUndefined();
+      });
+  });
+
+  it('一劑都沒記錄時只算一種產品：欠 2 劑或 3 劑，從來不是 5 劑', () => {
+    const doses = resolveVaccineDoses(AFTER_BIRTHDAY, vaccineSchedules, {}, AFTER_TWO_MONTHS);
+    const owed = owedRota(doses);
+
+    expect([2, 3]).toContain(owed.length);
+    expect([TWO_DOSE, THREE_DOSE].map((ids) => [...ids].sort())).toContainEqual([...owed].sort());
+
+    const dueNow = actionableVaccineDoses(doses, AFTER_TWO_MONTHS).filter((d) => ROTA(d.vaccineId));
+    expect(dueNow).toHaveLength(1);
+  });
+
+  it('記了 3 劑型第 1 劑之後，2 劑型那兩列再也不算欠的', () => {
+    const progress: VaccineProgress = {
+      'rotavirus-3dose-2m': { doses: { 1: { administered: true, administeredDate: '2027-03-12' } } },
+    };
+    const today = at('2027-05-12');
+    const doses = resolveVaccineDoses(AFTER_BIRTHDAY, vaccineSchedules, progress, today);
+
+    expect(owedRota(doses)).toEqual(['rotavirus-3dose-4m', 'rotavirus-3dose-6m']);
+    TWO_DOSE.forEach((id) => {
+      expect(doses.find((d) => d.vaccineId === id)?.setAside).toBe('other-product-chosen');
+    });
+    expect(
+      actionableVaccineDoses(doses, today).filter((d) => ROTA(d.vaccineId)).map((d) => d.vaccineId),
+    ).toEqual(['rotavirus-3dose-4m']);
+  });
+
+  it('超過公告的 8 個月，就沒有一劑公費輪狀病毒還算欠的', () => {
+    // 生效日之後才 9 個月大、一劑都沒打：公告寫「最大不得超過8個月」。
+    const today = at('2027-02-15');
+    const doses = resolveVaccineDoses('2026-05-10', vaccineSchedules, {}, today);
+    const rota = doses.filter((d) => ROTA(d.vaccineId));
+
+    expect(rota).toHaveLength(5);
+    rota.forEach((d) => {
+      expect(d.funding, d.vaccineId).toBe('national');
+      expect(d.setAside, d.vaccineId).toBe('past-age-limit');
+    });
+    expect(owedRota(doses)).toEqual([]);
+    expect(nextScheduledDose(doses, today)?.vaccineId ?? '').not.toMatch(/^rotavirus-/);
+  });
+
+  it('滿 8 個月那一天還算，過了才不算', () => {
+    const birthday = '2026-06-15';
+    const onLimit = resolveVaccineDoses(birthday, vaccineSchedules, {}, at('2027-02-15'));
+    const dayAfter = resolveVaccineDoses(birthday, vaccineSchedules, {}, at('2027-02-16'));
+
+    expect(onLimit.find((d) => d.vaccineId === 'rotavirus-2m')?.setAside).toBeNull();
+    expect(dayAfter.find((d) => d.vaccineId === 'rotavirus-2m')?.setAside).toBe(
+      'past-age-limit',
+    );
+  });
+});
+
+describe('fundingOn', () => {
+  it('previousFunding 的 until 之前照舊，until 當天起照 funding', () => {
+    const row = vaccine({
+      funding: 'national',
+      previousFunding: { funding: 'self-paid', until: '2027-01-01' },
+    });
+
+    expect(fundingOn(row, at('2026-12-31'))).toBe('self-paid');
+    expect(fundingOn(row, at('2027-01-01'))).toBe('national');
+    expect(fundingOn(vaccine({ funding: 'national' }), at('2026-12-31'))).toBe('national');
+  });
+});
+
+describe('collapseAlternatives', () => {
+  /** 生效日之後出生的孩子，什麼都還沒記。 */
+  const AFTER = '2027-01-10';
+
+  it('同一天、同一劑次的兩種產品併成一行，算數的那一列當底', () => {
+    const doses = collapseAlternatives(
+      resolveVaccineDoses(AFTER, vaccineSchedules, {}, at('2027-01-20')),
+    ).filter((d) => d.vaccineId.startsWith('rotavirus-'));
+
+    expect(doses.map((d) => d.name)).toEqual([
+      '口服輪狀病毒疫苗 第1劑（2劑型或3劑型，擇一）',
+      '口服輪狀病毒疫苗 第2劑（2劑型或3劑型，擇一）',
+      '口服輪狀病毒疫苗（3劑型） 第3劑',
+    ]);
+    expect(doses[0].alternativeIds).toEqual(['rotavirus-2m', 'rotavirus-3dose-2m']);
+    expect(doses[0].setAside).toBeNull();
+  });
+
+  it('選定一種之後不併：另一種不會被帶回清單', () => {
+    const progress: VaccineProgress = {
+      'rotavirus-2m': { doses: { 1: { administered: true } } },
+    };
+    const doses = collapseAlternatives(
+      resolveVaccineDoses(AFTER, vaccineSchedules, progress, at('2027-01-20')),
+    ).filter((d) => d.vaccineId.startsWith('rotavirus-'));
+
+    expect(doses.some((d) => d.alternativeIds)).toBe(false);
+    expect(doses).toHaveLength(5);
   });
 });

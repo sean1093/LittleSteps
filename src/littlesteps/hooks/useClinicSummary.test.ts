@@ -132,8 +132,10 @@ describe('useClinicSummary', () => {
   // 變成常見的情形。這一段若就這樣少一行，醫師讀到的是「沒事要談」。
   describe('沒有下一劑時', () => {
     // 公費常規劑次：帶 eligibility 的那種只給名單上的孩子，不是家長欠的。
+    // 帶來源年齡上限的列（輪狀病毒，「最大不得超過8個月」）對下面這個 7 歲
+    // 的孩子也不是欠的——早就過了上限。
     const NATIONAL_DOSES = vaccineSchedules.filter(
-      (v) => v.funding === 'national' && !v.eligibility,
+      (v) => v.funding === 'national' && !v.eligibility && v.maxAgeInMonths === undefined,
     ).length;
 
     /** 相對於今天推算，測試才不會隨時間過期。 */
