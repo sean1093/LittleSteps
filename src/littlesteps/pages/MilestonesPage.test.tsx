@@ -167,6 +167,15 @@ describe('MilestonesPage corrected age', () => {
     expect(screen.getByText('依矯正年齡 5 個月顯示')).toBeInTheDocument();
   });
 
+  it('drops the line once the parent picks another band, and brings it back on the child\'s own', async () => {
+    const user = userEvent.setup();
+    renderFor(baby(32));
+    await user.click(screen.getByRole('button', { name: '0-2 個月' }));
+    expect(screen.queryByText(/依矯正年齡/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '5-6 個月' }));
+    expect(screen.getByText('依矯正年齡 5 個月顯示')).toBeInTheDocument();
+  });
+
   it('adds nothing for a term baby or one without birth weeks', () => {
     renderFor(baby(38));
     expect(screen.queryByText(/矯正年齡/)).not.toBeInTheDocument();

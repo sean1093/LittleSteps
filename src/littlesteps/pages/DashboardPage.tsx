@@ -91,7 +91,8 @@ export default function DashboardPage({
   /*
     警示用矯正年齡。「超過 6 小時沒餵」只對 3 個月以下的寶寶說話，用實際月齡
     算的話，32 週出生的寶寶在實際 3 個月、矯正還不到 2 個月時就失去這則提醒
-    ——而他正是最需要它的那一個。足月或沒填出生週數時兩者相同。
+    ——而他正是最需要它的那一個。足月或沒填出生週數時不做矯正，但月齡改依曆月計算，
+    與 calculateAge 一致；舊算法是天數除以 30.44，月底出生的寶寶會差到一天。
   */
   const activeAlerts = currentChild
     ? getActiveAlerts(dailyLogs, correctedAgeMonths(currentChild))
