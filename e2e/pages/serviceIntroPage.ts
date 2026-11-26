@@ -57,10 +57,16 @@ export class ServiceIntroPage {
    * The intro heading for the service that owns this route.
    *
    * Derived through `serviceOf` and `SERVICE_THEME` rather than mapping paths
-   * to wordmarks by hand — `serviceOf` returns null only for `home`, which is
-   * public and therefore never reaches an intro page.
+   * to wordmarks by hand. `serviceOf` returns null for `home` and `about`,
+   * which are public and never reach an intro page, and for `join`, the share
+   * link's confirm screen: it belongs to no service because one link may be a
+   * baby's record or a pregnancy's, so its signed-out page is its own intro
+   * (`JoinIntro`), titled by its AppBar.
    */
   heading(route: Page): Locator {
+    if (route === 'join') {
+      return this.page.getByRole('heading', { name: '加入家人的紀錄', exact: true });
+    }
     const service = serviceOf(route);
     if (!service) throw new Error(`no service owns ${route}, so it has no intro page`);
     return this.page.getByRole('heading', { name: SERVICE_THEME[service].role, exact: true });
