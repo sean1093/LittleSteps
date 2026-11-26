@@ -95,9 +95,10 @@ describe('服務獨立性', () => {
   });
 
   it('每個需要建資料的服務都有自己的新增入口', () => {
-    // LittleBloom 建孕期檔案，LittleExplorer 建寶寶檔案。
+    // LittleBloom 建孕期檔案（或用代碼加入家人的那一份，#150），LittleExplorer
+    // 建寶寶檔案。
     const bloom = readFileSync(join(SRC, 'littlebloom/components/AddPregnancyModal.tsx'), 'utf8');
-    expect(bloom).toContain("modes={['pregnancy']}");
+    expect(bloom).toContain("modes={['pregnancy', 'join']}");
 
     const explorer = readFileSync(join(SRC, 'littleexplorer/components/NoChildNotice.tsx'), 'utf8');
     expect(explorer).toContain("modes={['create', 'join']}");

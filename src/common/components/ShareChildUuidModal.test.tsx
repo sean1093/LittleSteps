@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ShareChildUuidModal from './ShareChildUuidModal';
@@ -243,6 +243,93 @@ describe('複製代碼', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('代碼現在還不能用');
     expect(writeText).not.toHaveBeenCalled();
+  });
+});
+
+describe('加入連結', () => {
+  afterEach(() => {
+    // happy-dom 沒有 navigator.share；個別測試自己掛上去的要拿掉。
+    delete (navigator as { share?: unknown }).share;
+  });
+
+  it('先開放加入，再把 /join#代碼 交給系統分享面板（LINE 在那裡）', async () => {
+    const share = vi.fn(async (_data: ShareData) => {});
+    Object.defineProperty(navigator, 'share', { value: share, configurable: true });
+    const { setJoinOpen, user } = renderModal(makeChild());
+
+    await user.click(screen.getByRole('button', { name: '開放加入並傳送連結' }));
+
+    expect(await screen.findByRole('button', { name: '已傳出加入連結' })).toBeInTheDocument();
+    expect(setJoinOpen).toHaveBeenCalledWith('child-1', true);
+    const sent = share.mock.calls[0][0];
+    const url = new URL(String(sent.url));
+    expect(url.pathname).toBe('/join');
+    expect(url.search).toBe('');
+    expect(url.hash).toBe('#child-1');
+    // 訊息會留在聊天室裡：不放孩子的名字。
+    expect(sent.text).not.toContain('小豆');
+  });
+
+  it('開放加入失敗就不交出連結', async () => {
+    const share = vi.fn(async () => {});
+    Object.defineProperty(navigator, 'share', { value: share, configurable: true });
+    const { user } = renderModal(makeChild(), {
+      setJoinOpen: () => Promise.reject(new Error('offline')),
+    });
+
+    await user.click(screen.getByRole('button', { name: '開放加入並傳送連結' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('連結現在還不能用');
+    expect(share).not.toHaveBeenCalled();
+  });
+
+  it('沒有系統分享面板時複製連結', async () => {
+    const { writeText, user } = renderModal(makeChild({ joinOpen: true }));
+
+    await user.click(screen.getByRole('button', { name: '傳送加入連結' }));
+
+    expect(await screen.findByRole('button', { name: '已複製加入連結' })).toBeInTheDocument();
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('/join#child-1'));
+  });
+
+  it('按了取消不算失敗', async () => {
+    const abort = Object.assign(new Error('cancel'), { name: 'AbortError' });
+    Object.defineProperty(navigator, 'share', {
+      value: vi.fn(async () => {
+        throw abort;
+      }),
+      configurable: true,
+    });
+    const { user } = renderModal(makeChild({ joinOpen: true }));
+
+    await user.click(screen.getByRole('button', { name: '傳送加入連結' }));
+
+    expect(await screen.findByRole('button', { name: '傳送加入連結' })).toBeEnabled();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+describe('孕期檔案的叫法', () => {
+  const pregnancy = () =>
+    makeChild({
+      isPregnancy: true,
+      pregnancyData: { childId: 'child-1', dueDate: '2027-03-01', lastPeriodDate: '2026-05-25', status: 'active' },
+    });
+
+  it('代碼叫「孕期檔案代碼」，整張視窗沒有一處叫它寶寶代碼', () => {
+    renderModal(pregnancy());
+
+    expect(screen.getByRole('dialog', { name: '分享孕期檔案' })).toBeInTheDocument();
+    expect(screen.getByLabelText('孕期檔案代碼')).toHaveValue('child-1');
+    expect(screen.getByRole('dialog').textContent).not.toMatch(/寶寶代碼|加入寶寶|新增寶寶/);
+    expect(screen.getByText(/加入家人的孕期檔案/)).toBeInTheDocument();
+  });
+
+  it('寶寶的檔案照舊叫寶寶代碼', () => {
+    renderModal(makeChild());
+
+    expect(screen.getByLabelText('寶寶代碼')).toHaveValue('child-1');
+    expect(screen.getByRole('dialog').textContent).not.toMatch(/孕期檔案代碼/);
   });
 });
 

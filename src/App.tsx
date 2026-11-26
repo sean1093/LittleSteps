@@ -40,6 +40,8 @@ const SleepTrainingPage = lazy(() => import('./littlesteps/pages/SleepTrainingPa
 const DailyLogPage = lazy(() => import('./littlesteps/pages/DailyLogPage'));
 const SleepAnalysisPage = lazy(() => import('./littlesteps/pages/SleepAnalysisPage'));
 const LittleBloomPage = lazy(() => import('./littlebloom/pages/LittleBloomPage'));
+// 登入後才會到這裡：分享連結的確認畫面，會把這個帳號寫進某個孩子的名單。
+const JoinPage = lazy(() => import('./common/join/JoinPage'));
 const LittleBloomWikiPage = lazy(() => import('./littlebloom/pages/LittleBloomWikiPage'));
 const OutingPage = lazy(() => import('./littleouting/pages/OutingPage'));
 const PrenatalPage = lazy(() => import('./littlebloom/pages/PrenatalPage'));
@@ -575,6 +577,7 @@ function AppContent() {
             // 孕期檔案就是「還沒出生的孩子」，所以走同一個 addChild；帶了
             // 預產期，資料層就會標成孕期檔案。共用資料層，不共用畫面。
             onAddPregnancy={(name, dueDate) => addChild(name, dueDate, undefined, dueDate)}
+            onJoinPregnancy={joinChild}
           />
         )}
         {currentPage === 'littlebloom/prenatal' && (
@@ -645,6 +648,7 @@ function AppContent() {
 
         {/* Standalone sub-app routes */}
         {currentPage === 'about' && <AboutPage />}
+        {currentPage === 'join' && <JoinPage />}
         {currentPage === 'littleouting' && <OutingPage />}
         {currentPage === 'babyoasis' && <BabyOasisPage />}
         {currentPage === 'littleguard' && <RadarPage />}

@@ -8,6 +8,7 @@ import EmptyState from '../ui/EmptyState';
 import { SERVICE_THEME, type ServiceId } from '../ui/serviceTheme';
 import HubLanding from './HubLanding';
 import ServiceIntro from './ServiceIntro';
+import JoinIntro from './JoinIntro';
 
 /**
  * 「還沒有內容可看」的所有畫面，集中在這一支。
@@ -103,11 +104,12 @@ export default function LandingPage({
   // 孕期檔案的使用者登入後會落在嬰兒儀表板上。目的地現在由 App 依孩子的階段算出。
   const wasSignedIn = useRef(user !== null);
   useEffect(() => {
-    if (!wasSignedIn.current && user && hasChildren) {
+    // 分享連結例外：登入之後要停在 /join 的確認畫面，不是被帶去自己孩子的頁面。
+    if (!wasSignedIn.current && user && hasChildren && page !== 'join') {
       onNavigate(entryPage);
     }
     wasSignedIn.current = user !== null;
-  }, [user, hasChildren, entryPage, onNavigate]);
+  }, [user, hasChildren, entryPage, onNavigate, page]);
 
   // 在入口頁新增或加入第一個孩子之後，直接帶去那個孩子的頁面。表單原本只是
   // 關掉、回到入口頁，家長得自己找到「打開紀錄」才看得到剛建好的東西。
@@ -152,6 +154,9 @@ export default function LandingPage({
   );
 
   if (kind === 'service-intro') {
+    // 分享連結：同一條連結可能是寶寶或孕期檔案，加入之前看不出來，所以不借
+    // 任何一個服務的介紹頁。網址一樣停在 /join，登入後就是確認畫面。
+    if (page === 'join') return <JoinIntro onSignIn={onSignIn} />;
     const service = serviceOf(page);
     // landingKindFor 只在需登入的頁面回傳 service-intro，而需登入的頁面都屬於
     // 這三個階段服務；型別不知道這件事，所以明講。

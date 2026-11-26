@@ -256,6 +256,10 @@ export const logPageView = (pageName: Page) => {
       feature = 'main-entry';
     } else if (page === 'about') {
       section = 'about';
+    } else if (page === 'join') {
+      // 只記「有人走到加入頁」：代碼在 fragment 裡，進站時就拿掉了，這裡也
+      // 只讀 pathname。
+      section = 'sharing';
     } else if (page.startsWith('littlebloom')) {
       // startsWith, not ===: an equality check dropped littlebloom/wiki into
       // the generic 'main' bucket, so its page views were never attributed.

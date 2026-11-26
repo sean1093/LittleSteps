@@ -28,6 +28,11 @@ interface LittleBloomPageProps {
    * 兩個服務之間共用的是帳號與孩子資料，不是彼此的畫面。
    */
   onAddPregnancy: (name: string, dueDate: string) => Promise<void>;
+  /**
+   * 用家人給的代碼加入一份既有的孕期檔案。另一半登入後走到這裡、只看得到
+   * 「新增」的話，他會再建一份重複的孕期檔案，還佔掉兩個免費名額的一個。
+   */
+  onJoinPregnancy?: (code: string) => Promise<void>;
 }
 
 const THEME = SERVICE_THEME.littlebloom;
@@ -65,8 +70,10 @@ export default function LittleBloomPage({
   progress,
   onRecordBirth,
   onAddPregnancy,
+  onJoinPregnancy,
 }: LittleBloomPageProps) {
-  const [addOpen, setAddOpen] = useState(false);
+  /* 視窗開在哪一個分頁；null 是沒開。 */
+  const [addOpen, setAddOpen] = useState<'pregnancy' | 'join' | null>(null);
   const lmp = currentChild?.pregnancyData?.lastPeriodDate ?? '';
   const dueDate = currentChild?.pregnancyData?.dueDate ?? '';
   const [birthOpen, setBirthOpen] = useState(false);
@@ -157,12 +164,23 @@ export default function LittleBloomPage({
           theme={THEME}
           title="還沒有孕期檔案"
           description={'填入預產期就開始——這裡會依週數顯示身體變化、本週提醒與產檢時程。'}
-          action={{ label: '新增孕期檔案', onClick: () => setAddOpen(true) }}
+          action={{ label: '新增孕期檔案', onClick: () => setAddOpen('pregnancy') }}
         />
+        {onJoinPregnancy && (
+          <button
+            type="button"
+            onClick={() => setAddOpen('join')}
+            className={`btn-ghost w-full mt-2 ${THEME.ink}`}
+          >
+            加入家人的孕期檔案
+          </button>
+        )}
         <AddPregnancyModal
-          isOpen={addOpen}
-          onClose={() => setAddOpen(false)}
+          isOpen={addOpen !== null}
+          initialMode={addOpen ?? undefined}
+          onClose={() => setAddOpen(null)}
           onAdd={onAddPregnancy}
+          onJoin={onJoinPregnancy}
         />
       </BloomShell>
     );

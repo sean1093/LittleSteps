@@ -5,26 +5,39 @@ interface AddPregnancyModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (name: string, dueDate: string) => Promise<void>;
+  /** 用代碼加入家人的孕期檔案；有給才出現「加入」分頁。 */
+  onJoin?: (code: string) => Promise<void>;
+  /** 打開時停在哪一頁：從「加入家人的孕期檔案」進來的人直接開在加入。 */
+  initialMode?: 'pregnancy' | 'join';
 }
 
 /**
  * LittleBloom 自己的「新增孕期檔案」入口。
  *
  * 表單本身用共用的 AddChildModal——孩子資料是跨服務共通的，同一張表單沒有
- * 理由抄兩份。這裡只做兩件事：把分頁限定在孕期，以及換成 LittleBloom 的
- * 配色，讓視窗看起來屬於現在這個服務而不是 LittleSteps。
+ * 理由抄兩份。這裡只做兩件事：把分頁限定在孕期與「加入家人的孕期檔案」，
+ * 以及換成 LittleBloom 的配色，讓視窗看起來屬於現在這個服務而不是 LittleSteps。
+ * 加入那一頁是給另一半的：只看得到「新增」的話，他會再建一份重複的孕期檔案。
  *
  * 在這之前，唯一能新增孕期檔案的地方是 LittleSteps 的側邊欄，所以想用
  * LittleBloom 得先進另一個服務。
  */
-export default function AddPregnancyModal({ isOpen, onClose, onAdd }: AddPregnancyModalProps) {
+export default function AddPregnancyModal({
+  isOpen,
+  onClose,
+  onAdd,
+  onJoin,
+  initialMode,
+}: AddPregnancyModalProps) {
   const theme = SERVICE_THEME.littlebloom;
 
   return (
     <AddChildModal
       isOpen={isOpen}
       onClose={onClose}
-      modes={['pregnancy']}
+      modes={['pregnancy', 'join']}
+      initialMode={initialMode}
+      onJoin={onJoin}
       accent={theme.fill}
       accentText={theme.fillText}
       onSave={(name, _birthday, _gender, _isPregnancy, dueDate) => {

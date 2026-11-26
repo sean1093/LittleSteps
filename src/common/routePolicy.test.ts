@@ -72,6 +72,8 @@ const GATED: Page[] = [
   'littleexplorer',
   'littleexplorer/reminders',
   'littleexplorer/diary',
+  // 分享連結的確認頁：會把這個帳號寫進某個孩子的成員名單。
+  'join',
 ];
 
 /**
@@ -176,7 +178,26 @@ describe('isStandaloneSubApp', () => {
 });
 
 /** 不屬於任何服務的頁面：服務集合首頁，以及講全站資料的關於頁。 */
-const SERVICELESS: Page[] = ['home', 'about'];
+const SERVICELESS: Page[] = ['home', 'about', 'join'];
+
+describe('分享連結 /join', () => {
+  it('需要登入，不在公開白名單上', () => {
+    // 這一頁會把帳號寫進一個孩子的成員名單；沒登入的人看到的是同一個網址上的
+    // 介紹頁，登入後才是確認畫面。
+    expect(requiresAuth('join')).toBe(true);
+    expect(PUBLIC).not.toContain('join');
+  });
+
+  it('不屬於任何服務，也不會被歸到 babyoasis', () => {
+    // 同一條連結可能是寶寶或孕期檔案；serviceOf 最後一行的 fallthrough 會把
+    // 它當成哺乳室地圖的頁面。
+    expect(serviceOf('join')).toBeNull();
+  });
+
+  it('代碼不在路徑裡：/join 本身就是那一頁', () => {
+    expect(pageFromPath('/join')).toBe('join');
+  });
+});
 
 describe('serviceOf', () => {
   it('home 與 about 不屬於任何服務', () => {

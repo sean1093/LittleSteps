@@ -22,6 +22,7 @@ import type { ServiceId } from './ui/serviceTheme';
  */
 // Partial<Record<Page, true>>：key 綁在路由聯集上，改了路由名稱而忘了改這裡
 // 會編譯失敗，而不是安靜地把一頁公開頁變成需登入（或反過來）。
+// `join` 刻意不在這裡：它會把一個帳號寫進某個孩子的成員名單。
 const PUBLIC_PAGES: Partial<Record<Page, true>> = {
   home: true,
   // 這一頁就是寫給還沒決定要不要交出帳號的人看的，擋起來等於自相矛盾。
@@ -63,6 +64,10 @@ export function requiresAuth(page: Page): boolean {
  * believe the two shell-based services are on the other side of this line;
  * they are not. Issue #65 was filed against that comment rather than the code.
  *
+ * The join page (`/join#code`) is on the list for the same reason as the
+ * about page: it belongs to no service, so the LittleSteps chrome would claim
+ * it for one.
+ *
  * The about page is not a LittleSteps page either: it describes all six
  * services and renders its own AppBar. Leaving it out would mount the
  * LittleSteps sidebar on it with a `currentPage` that is not a LittleStepsPage
@@ -80,6 +85,7 @@ export function requiresAuth(page: Page): boolean {
 export function isStandaloneSubApp(page: Page): boolean {
   return (
     page === 'about' ||
+    page === 'join' ||
     page.startsWith('littlebloom') ||
     page.startsWith('littleexplorer') ||
     page === 'littleouting' ||
@@ -89,14 +95,16 @@ export function isStandaloneSubApp(page: Page): boolean {
 }
 
 /**
- * 頁面所屬的服務；`home` 與 `about` 不屬於任何服務，回傳 null。
+ * 頁面所屬的服務；`home`、`about` 與 `join` 不屬於任何服務，回傳 null。
  *
  * 最後一行是 fallthrough 到 babyoasis。一個不屬於任何服務的頁面要是沒有在
  * 這裡明講，不會壞，只會被當成 BabyOasis 的頁面——landingKindFor 與主題查表
  * 都會跟著錯。
  */
 export function serviceOf(page: Page): ServiceId | null {
-  if (page === 'home' || page === 'about') return null;
+  // join 也不屬於任何服務：同一條連結可能是寶寶的檔案，也可能是孕期檔案，
+  // 而加入之前讀不到是哪一種。
+  if (page === 'home' || page === 'about' || page === 'join') return null;
   if (page.startsWith('littlesteps')) return 'littlesteps';
   if (page.startsWith('littlebloom')) return 'littlebloom';
   if (page.startsWith('littleexplorer')) return 'littleexplorer';

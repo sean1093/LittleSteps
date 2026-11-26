@@ -76,6 +76,54 @@ describe('landingKindFor', () => {
   });
 });
 
+describe('分享連結 /join', () => {
+  it('未登入時是介紹頁，網址留在 /join；登入之後交還給確認畫面', () => {
+    expect(landingKindFor('join', null, false)).toBe('service-intro');
+    expect(landingKindFor('join', null, true)).toBe('service-intro');
+    // 登入之後不論有沒有孩子都不擋：沒有孩子的另一半正是這條連結要接的人。
+    expect(landingKindFor('join', signedIn, false)).toBeNull();
+    expect(landingKindFor('join', signedIn, true)).toBeNull();
+  });
+
+  it('介紹頁不借任何一個服務的，網址也不換', async () => {
+    window.history.replaceState(null, '', '/join');
+    const onSignIn = vi.fn(async () => {});
+    render(
+      <LandingPage
+        kind="service-intro"
+        page="join"
+        user={null}
+        hasChildren={false}
+        entryPage="home"
+        onSignIn={onSignIn}
+        onNavigate={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('heading', { level: 1, name: '加入家人的紀錄' })).toBeInTheDocument();
+    expect(screen.getAllByRole('main')).toHaveLength(1);
+    await userEvent.setup().click(screen.getByRole('button', { name: '使用 Google 登入' }));
+    expect(onSignIn).toHaveBeenCalled();
+    expect(window.location.pathname).toBe('/join');
+  });
+
+  it('登入的那一刻不把人帶去自己孩子的頁面', async () => {
+    const onNavigate = vi.fn();
+    const props = {
+      kind: 'service-intro' as const,
+      page: 'join' as const,
+      entryPage: 'littlesteps/dashboard' as const,
+      onSignIn: vi.fn(),
+      onNavigate,
+    };
+    const view = render(<LandingPage {...props} user={null} hasChildren />);
+    view.rerender(<LandingPage {...props} user={signedIn} hasChildren />);
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+});
+
 describe('isStandaloneLanding', () => {
   it('只有服務介紹頁自帶版面', () => {
     expect(isStandaloneLanding('service-intro')).toBe(true);
