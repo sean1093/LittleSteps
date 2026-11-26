@@ -27,6 +27,8 @@ import NightWakingsPrompt from '../components/dailylog/NightWakingsPrompt';
 import ChildSwitcher from '../../common/components/ChildSwitcher';
 import RepeatLastLog, { describeRepeatedLog } from '../components/dailylog/RepeatLastLog';
 import LastEventLines from '../components/dailylog/LastEventLines';
+import ShareTodaySheet from '../components/dailylog/ShareTodaySheet';
+import { buildDailyLogShareText } from '../utils/dailyLogShare';
 import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem } from '../../common/ui/motion';
@@ -52,6 +54,11 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
    * 而接著補夜醒次數的那一筆會把整個 data 寫回去，剛設好的結束時間就沒了。
    */
   const [justClosedSleep, setJustClosedSleep] = useState<DailyLog | null>(null);
+  /**
+   * 要分享出去的那段文字，按下「分享今天的紀錄」那一刻的快照。家長先在表單裡
+   * 讀過一遍才送：送出去的就是讀到的那一份，不會在讀的時候被新進來的紀錄改掉。
+   */
+  const [shareDraft, setShareDraft] = useState<string | null>(null);
 
   // Load data
   /*
@@ -451,6 +458,19 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
           )}
         </motion.div>
 
+        {/* 交班給保母或阿嬤用：只送一段文字，不產生連結或任何讀取的路。 */}
+        {isToday && !error && (
+          <motion.div variants={listItem} className="mb-6">
+            <button
+              type="button"
+              onClick={() => setShareDraft(buildDailyLogShareText(currentChild.name, logs))}
+              className="btn-secondary w-full"
+            >
+              分享今天的紀錄
+            </button>
+          </motion.div>
+        )}
+
         <motion.div variants={listItem}>
           <h2 className="mb-3">{isToday ? '今日記錄' : '這天的記錄'}</h2>
           {/*
@@ -474,6 +494,12 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
 
           </>
         )}
+
+        <ShareTodaySheet
+          isOpen={shareDraft !== null}
+          onClose={() => setShareDraft(null)}
+          text={shareDraft ?? ''}
+        />
 
         {/* 表單留在空窗之外：補記一筆更早的紀錄會觸發重讀，而那時表單還在
             等寫入回來，不能跟著內容一起被卸載。 */}
