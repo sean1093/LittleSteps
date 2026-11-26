@@ -30,13 +30,14 @@ const APP_NAME = 'LittleSteps';
  * whoever reads the file back — a person, a spreadsheet, a future importer —
  * can hold it against `README.md`'s database shape and be right.
  *
- * `members` is the one thing dropped. It is a list of other people's account
- * ids: authorisation, not the parent's data, and of no use outside the app.
+ * `members` and `memberNames` are the two things dropped. They are a list of
+ * other people's account ids and the names those people chose: authorisation
+ * and other people's data, not the parent's, and of no use outside the app.
  */
 export interface ChildExport {
   exportedAt: string;
   app: typeof APP_NAME;
-  child: Omit<ChildProfile, 'members'>;
+  child: Omit<ChildProfile, 'members' | 'memberNames'>;
   dailyLogs: DailyLog[];
   diaryEntries: DiaryEntry[];
   growthRecords: GrowthRecord[];
@@ -52,7 +53,7 @@ export interface ChildExport {
  * `now` is injected for tests only.
  */
 export function buildChildExport(source: ChildExportSource, now: Date = new Date()): ChildExport {
-  const { members: _members, ...child } = source.child;
+  const { members: _members, memberNames: _memberNames, ...child } = source.child;
 
   return {
     exportedAt: now.toISOString(),

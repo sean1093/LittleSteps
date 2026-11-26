@@ -268,8 +268,9 @@ export const CALCULATORS: { page: Page; title: string; line: string }[] = [
  * `ShareChildUuidModal.joiner.test.tsx` holds it to what the sheet can do.
  *
  * Every word has to be true of the share sheet, not of `database.rules.json`:
- * the rules allow more than the sheet offers, and a parent only ever meets
- * the sheet.
+ * a parent only ever meets the sheet. The sheet lists every member with a
+ * remove button, the creator's row included, and offers none on the last
+ * member left, which is what the rules' never-zero-members guard refuses.
  */
 export const SHARING_REMOVAL =
-  '之後隨時可以關掉代碼、移除其他加入的帳號，只有建立這份紀錄的人不會被移除。';
+  '之後隨時可以關掉代碼，也可以把名單上的任何一位移除，包括建立這份紀錄的人，只要名單上還留著一個人。';

@@ -18,6 +18,7 @@ import type { GestationalAge } from '../correctedAge';
 import { useToast } from '../ui/toast';
 import { useUserChildren } from './useUserChildren';
 import { useFirebaseChildren } from './useFirebaseChildren';
+import { toMemberName } from '../memberNames';
 import {
   logMilestoneToggle,
   logVaccineToggle,
@@ -79,10 +80,12 @@ export interface ChildStore {
    */
   deleteAccountData: () => Promise<void>;
   /**
-   * 收回分享：把其他成員移出這個孩子的名單，並關掉加入。分享視窗自己出訊息，
-   * 所以這兩個跟表單那一組一樣往上丟。
+   * 把名單上的一位成員移除（同時關掉加入）；移除的是自己就是離開。分享視窗
+   * 自己出訊息，所以這幾個跟表單那一組一樣往上丟。
    */
-  revokeOtherMembers: (childId: string) => Promise<void>;
+  removeMember: (childId: string, memberUid: string) => Promise<void>;
+  /** 改自己在名單上的名字。裁不出任何字時往上丟，不寫一個規則會拒絕的空字串。 */
+  setMemberName: (childId: string, name: string) => Promise<void>;
   setJoinOpen: (childId: string, open: boolean) => Promise<void>;
   setCurrentChild: (id: string) => Promise<void>;
   toggleDevelopmentCheck: (checkItemId: string) => Promise<void>;
@@ -121,7 +124,7 @@ export function useChildStore(user: User | null): ChildStore {
     loading: childrenLoading,
     childCount,
   } = useUserChildren(user);
-  const firebaseChildren = useFirebaseChildren(user?.uid || null);
+  const firebaseChildren = useFirebaseChildren(user?.uid || null, toMemberName(user?.displayName));
 
   /**
    * currentChildId 可能指著一個已經不存在的孩子：共享的孩子被建立者刪掉之後，
@@ -312,12 +315,28 @@ export function useChildStore(user: User | null): ChildStore {
     }
   };
 
-  const revokeOtherMembers = async (childId: string) => {
+  const removeMember = async (childId: string, memberUid: string) => {
     if (!user) return;
     try {
-      await firebaseChildren.revokeOtherMembers(childId);
+      await firebaseChildren.removeMember(
+        childId,
+        memberUid,
+        childProfiles.map((child) => child.id),
+      );
     } catch (error) {
-      console.error('收回共享失敗:', error);
+      console.error('移除成員失敗:', error);
+      throw error;
+    }
+  };
+
+  const setMemberName = async (childId: string, name: string) => {
+    if (!user) return;
+    const memberName = toMemberName(name);
+    if (!memberName) throw new Error('名字不能空白');
+    try {
+      await firebaseChildren.setMemberName(childId, memberName);
+    } catch (error) {
+      console.error('更新名單上的名字失敗:', error);
       throw error;
     }
   };
@@ -493,7 +512,8 @@ export function useChildStore(user: User | null): ChildStore {
     // 直接轉手，不包一層：這裡沒有什麼要加的，錯誤要原樣讓呼叫端看見。
     readChildExport: firebaseChildren.readChildExport,
     deleteAccountData,
-    revokeOtherMembers,
+    removeMember,
+    setMemberName,
     setJoinOpen,
     setCurrentChild,
     toggleDevelopmentCheck,

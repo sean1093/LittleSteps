@@ -52,7 +52,12 @@ const fullChildDeletePaths = (childId: string): Record<string, null> => ({
   [`childIndex/${childId}`]: null,
 });
 
-export function useFirebaseChildren(userId: string | null) {
+/**
+ * @param memberName 這個帳號在分享名單上的名字，已經照規則裁好（見
+ *   common/memberNames 的 toMemberName）。建檔與加入時跟成員資格同一筆寫進去；
+ *   沒有就不寫，名單上會顯示成「還沒取名字」，本人之後可以在分享視窗補上。
+ */
+export function useFirebaseChildren(userId: string | null, memberName?: string) {
   /**
    * 新增一份檔案：孩子本體、自己的成員資格、（第一個孩子的）選取狀態，
    * 一筆原子寫入。
@@ -85,6 +90,8 @@ export function useFirebaseChildren(userId: string | null) {
       // 授權名單，不是 users/{uid}/childrenIds。建立者必須在同一筆寫入裡就是
       // 成員，否則規則擋下這筆——連他自己都讀不回這個孩子。
       members: { [userId]: true },
+      // 名字跟成員資格同一筆：規則只收「寫完之後自己確實是成員」的名字。
+      memberNames: memberName ? { [userId]: memberName } : undefined,
       // 一律寫成布林值，不留空。規則驗的是 isBoolean，欄位缺著的話分享視窗
       // 讀到的是 undefined，切換開關時就會以為自己在改一個本來存在的設定。
       // 預設關：代碼是 UUID，但 UUID 會流過聊天軟體與截圖。
@@ -169,7 +176,12 @@ export function useFirebaseChildren(userId: string | null) {
     }
 
     try {
-      await set(ref(database, `children/${childUuid}/members/${userId}`), true);
+      // 名字跟成員資格同一筆寫：規則只收「寫完之後自己確實是成員」的名字，
+      // 分開寫的話先寫的那一筆一定被拒。
+      await update(ref(database, `children/${childUuid}`), {
+        [`members/${userId}`]: true,
+        ...(memberName ? { [`memberNames/${userId}`]: memberName } : {}),
+      });
     } catch (error) {
       // 代碼查得到，成員資格卻寫不進去，就只剩一個原因：對方沒有開放加入。
       // 這跟「代碼打錯」是兩件事；講成同一句話，家長會一直去核對一組沒有錯的
@@ -278,6 +290,8 @@ export function useFirebaseChildren(userId: string | null) {
       Object.assign(updates, fullChildDeletePaths(childId));
     } else if (childData) {
       updates[`children/${childId}/members/${userId}`] = null;
+      // 名字跟著成員資格走，否則名單上會留著一個已經不是成員的人的名字。
+      updates[`children/${childId}/memberNames/${userId}`] = null;
     }
 
     await update(ref(database), updates);
@@ -370,7 +384,10 @@ export function useFirebaseChildren(userId: string | null) {
       if (!data) continue;
       const others = Object.keys(data.members ?? {}).filter((uid) => uid !== userId);
       if (others.length === 0) Object.assign(updates, fullChildDeletePaths(childId));
-      else updates[`children/${childId}/members/${userId}`] = null;
+      else {
+        updates[`children/${childId}/members/${userId}`] = null;
+        updates[`children/${childId}/memberNames/${userId}`] = null;
+      }
     }
 
     await update(ref(database), updates);
@@ -381,29 +398,46 @@ export function useFirebaseChildren(userId: string | null) {
   };
 
   /**
-   * 收回分享：把其他成員移出名單，並關掉加入。
+   * 把名單上的一位成員移除；移除的是自己，就是「離開」。
    *
-   * 代碼已經在對方手上，所以「收回」不是換一組代碼而是刪成員；joinOpen 要一起
-   * 關掉，否則對方下一秒就用手上的同一組代碼加回來。同一筆 update，不會只成功
-   * 一半。
+   * 移除別人：成員資格、他的名字與 joinOpen 同一筆。代碼已經在對方手上，所以
+   * 收回不是換一組代碼而是刪成員；joinOpen 沒有一起關掉，對方下一秒就用手上的
+   * 同一組代碼加回來。建立者也移除得掉——規則只要求名單不歸零，而任何成員
+   * 實際上都等於擁有者（README）。
    *
-   * 建立者留著。「收回分享」是把我分享出去的人請出去，不是把當初建檔的人趕走。
-   * 規則現在允許移除任何一位成員（只要名單不歸零），所以這是產品上的決定，
-   * 不再是規則替我們擋著。
+   * 離開：自己的成員資格、名字、childrenIds 與選取狀態，一筆 root fan-out。
+   * 與 deleteChild 不同，即使我是建立者也只是走掉，紀錄留給還在用的家人。
+   * 最後一位成員走不掉——規則擋下，呼叫端也不會給這個選項，那時該做的是刪除。
    */
-  const revokeOtherMembers = async (childId: string) => {
+  const removeMember = async (
+    childId: string,
+    memberUid: string,
+    remainingChildIds: string[] = [],
+  ) => {
     if (!userId) throw new Error('User not authenticated');
 
-    const childSnapshot = await get(ref(database, `children/${childId}`));
-    const childData = childSnapshot.exists() ? (childSnapshot.val() as ChildProfile) : null;
-    if (!childData) throw new Error('找不到這個寶寶的資料，請重新整理後再試');
-
-    const updates: Record<string, unknown> = { joinOpen: false };
-    for (const memberUid of Object.keys(childData.members ?? {})) {
-      if (memberUid === userId || memberUid === childData.createdBy) continue;
-      updates[`members/${memberUid}`] = null;
+    if (memberUid === userId) {
+      await update(ref(database), {
+        [`children/${childId}/members/${userId}`]: null,
+        [`children/${childId}/memberNames/${userId}`]: null,
+        [`users/${userId}/childrenIds/${childId}`]: null,
+        [`users/${userId}/currentChildId`]: remainingChildIds.find((id) => id !== childId) ?? null,
+      });
+      return;
     }
-    await update(ref(database, `children/${childId}`), updates);
+
+    await update(ref(database, `children/${childId}`), {
+      [`members/${memberUid}`]: null,
+      [`memberNames/${memberUid}`]: null,
+      joinOpen: false,
+    });
+  };
+
+  /** 改自己在名單上的名字。只寫得了自己的——規則擋別人的。 */
+  const setMemberName = async (childId: string, name: string) => {
+    if (!userId) throw new Error('User not authenticated');
+
+    await set(ref(database, `children/${childId}/memberNames/${userId}`), name);
   };
 
   const setJoinOpen = async (childId: string, open: boolean) => {
@@ -649,7 +683,8 @@ export function useFirebaseChildren(userId: string | null) {
     deleteChild,
     readChildExport,
     deleteAccountData,
-    revokeOtherMembers,
+    removeMember,
+    setMemberName,
     setJoinOpen,
     setCurrentChild,
     updateMilestoneProgress,

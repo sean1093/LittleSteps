@@ -1,13 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ShareChildUuidModal from './ShareChildUuidModal';
 import type { ChildProfile } from '../../types';
 
+vi.mock('../../contexts/AuthContext', () => ({
+  useOptionalAuth: () => ({ user: { uid: 'u1' } }),
+}));
+
 /**
- * 代碼一旦傳出去就收不回來，除非這扇窗能移除其他帳號並關掉加入。這組測試釘住
- * 那條路：家長看得到有幾個帳號、關得掉加入、移得掉別人，而且寫入失敗時窗不會
- * 關、也不會假裝成功。
+ * 代碼一旦傳出去就收不回來，除非這扇窗能移除成員並關掉加入。這組測試釘住
+ * 那條路：家長看得到名單上是誰、關得掉加入、一次移掉一個人，而且寫入失敗時
+ * 窗不會關、也不會假裝成功。
  */
 
 const makeChild = (overrides: Partial<ChildProfile> = {}): ChildProfile => ({
@@ -23,13 +27,15 @@ const makeChild = (overrides: Partial<ChildProfile> = {}): ChildProfile => ({
 });
 
 const renderModal = (child: ChildProfile, handlers: {
-  revokeOtherMembers?: (childId: string) => Promise<void>;
+  removeMember?: (childId: string, memberUid: string) => Promise<void>;
+  setMemberName?: (childId: string, name: string) => Promise<void>;
   setJoinOpen?: (childId: string, open: boolean) => Promise<void>;
 } = {}) => {
   // setup() 會換掉 navigator.clipboard，所以剪貼簿的 spy 只能掛在它之後。
   const user = userEvent.setup();
   const writeText = vi.spyOn(navigator.clipboard, 'writeText');
-  const revokeOtherMembers = vi.fn(handlers.revokeOtherMembers ?? (async () => {}));
+  const removeMember = vi.fn(handlers.removeMember ?? (async () => {}));
+  const setMemberName = vi.fn(handlers.setMemberName ?? (async () => {}));
   const setJoinOpen = vi.fn(handlers.setJoinOpen ?? (async () => {}));
   const onClose = vi.fn();
 
@@ -38,12 +44,13 @@ const renderModal = (child: ChildProfile, handlers: {
       isOpen
       onClose={onClose}
       child={child}
-      revokeOtherMembers={revokeOtherMembers}
+      removeMember={removeMember}
+      setMemberName={setMemberName}
       setJoinOpen={setJoinOpen}
     />,
   );
 
-  return { revokeOtherMembers, setJoinOpen, onClose, writeText, user };
+  return { removeMember, setMemberName, setJoinOpen, onClose, writeText, user };
 };
 
 beforeEach(() => {
@@ -62,39 +69,120 @@ describe('看得到的人有幾個', () => {
   });
 });
 
-describe('移除其他帳號', () => {
-  it('只有一個帳號時不出現——沒有人可以移除', () => {
-    renderModal(makeChild());
-
-    expect(screen.queryByRole('button', { name: /移除其他/ })).toBeNull();
-  });
-
-  it('確認之後才呼叫 revokeOtherMembers', async () => {
-    window.confirm = vi.fn(() => false);
-    const child = makeChild({ members: { u1: true, u2: true, u3: true } });
-    const { revokeOtherMembers, user } = renderModal(child);
-
-    const button = screen.getByRole('button', { name: '移除其他 2 個帳號的存取權' });
-    await user.click(button);
-    expect(revokeOtherMembers).not.toHaveBeenCalled();
-
-    window.confirm = vi.fn(() => true);
-    await user.click(button);
-    expect(revokeOtherMembers).toHaveBeenCalledWith('child-1');
-  });
-
-  it('寫入被拒時留在原地、只講一次，其他帳號仍然算在裡面', async () => {
-    const child = makeChild({ members: { u1: true, u2: true } });
-    const { user } = renderModal(child, {
-      revokeOtherMembers: () => Promise.reject(new Error('permission denied')),
+describe('名單：看得到是誰，一次移除一個', () => {
+  const family = () =>
+    makeChild({
+      members: { u1: true, u2: true, u3: true },
+      memberNames: { u1: '媽媽', u2: '外婆', u3: '托嬰中心' },
     });
 
-    await user.click(screen.getByRole('button', { name: '移除其他 1 個帳號的存取權' }));
+  it('用每個人自己取的名字列出名單，不印 uid', () => {
+    renderModal(family());
+
+    const list = screen.getByRole('list', { name: '誰看得到' });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(3);
+    expect(within(list).getByText('媽媽（你）')).toBeInTheDocument();
+    expect(within(list).getByText('外婆')).toBeInTheDocument();
+    expect(within(list).getByText('托嬰中心')).toBeInTheDocument();
+    expect(screen.queryByText(/u2|u3/)).toBeNull();
+  });
+
+  it('只移除按下的那一位，外婆留著', async () => {
+    // 王太太要請托嬰中心離開，不是連外婆一起。
+    const { removeMember, user } = renderModal(family());
+
+    await user.click(screen.getByRole('button', { name: '移除托嬰中心' }));
+
+    expect(removeMember).toHaveBeenCalledTimes(1);
+    expect(removeMember).toHaveBeenCalledWith('child-1', 'u3');
+  });
+
+  it('確認之後才移除', async () => {
+    window.confirm = vi.fn(() => false);
+    const { removeMember, user } = renderModal(family());
+
+    await user.click(screen.getByRole('button', { name: '移除外婆' }));
+
+    expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('外婆的存取權'));
+    expect(removeMember).not.toHaveBeenCalled();
+  });
+
+  it('自己那一列是「離開」，離開成功就關窗', async () => {
+    const { removeMember, onClose, user } = renderModal(family());
+
+    await user.click(screen.getByRole('button', { name: '離開這份紀錄' }));
+
+    expect(removeMember).toHaveBeenCalledWith('child-1', 'u1');
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('只剩自己一個時沒有任何移除或離開——名單不能空掉', () => {
+    renderModal(makeChild({ memberNames: { u1: '媽媽' } }));
+
+    expect(screen.queryByRole('button', { name: /移除|離開/ })).toBeNull();
+  });
+
+  it('寫入被拒時留在原地、只講一次，名單上還是那三個人', async () => {
+    const { onClose, user } = renderModal(family(), {
+      removeMember: () => Promise.reject(new Error('permission denied')),
+    });
+
+    await user.click(screen.getByRole('button', { name: '移除外婆' }));
 
     expect(await screen.findAllByRole('alert')).toHaveLength(1);
-    expect(screen.getByRole('alert')).toHaveTextContent('移除沒有成功，其他帳號仍然看得到');
-    expect(screen.getByRole('dialog', { name: '分享寶寶資料' })).toBeInTheDocument();
-    expect(screen.getByText('目前有 2 個帳號可以看到小豆的紀錄（包含你）')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('移除沒有成功，對方仍然看得到');
+    expect(onClose).not.toHaveBeenCalled();
+    expect(within(screen.getByRole('list', { name: '誰看得到' })).getAllByRole('listitem')).toHaveLength(3);
+  });
+
+  it('離開被拒時說的是自己還在名單上，窗不關', async () => {
+    const { onClose, user } = renderModal(family(), {
+      removeMember: () => Promise.reject(new Error('permission denied')),
+    });
+
+    await user.click(screen.getByRole('button', { name: '離開這份紀錄' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('離開沒有成功，你仍然在名單上');
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('還沒取名字的人照樣列出、照樣移除得掉，並說怎麼補上名字', async () => {
+    // 名字這個欄位出現之前就加入的人沒有名字；他們不能因此從名單上消失。
+    const { removeMember, user } = renderModal(
+      makeChild({ members: { u1: true, u2: true }, memberNames: { u1: '媽媽' } }),
+    );
+
+    expect(screen.getByText('還沒取名字的家人')).toBeInTheDocument();
+    expect(screen.getByText(/請對方打開這扇分享視窗/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '移除還沒取名字的家人' }));
+    expect(removeMember).toHaveBeenCalledWith('child-1', 'u2');
+  });
+
+  it('改得了自己的名字，存的是輸入的那一個', async () => {
+    const { setMemberName, user } = renderModal(family());
+
+    await user.click(screen.getByRole('button', { name: '改名字' }));
+    const input = screen.getByLabelText('你在名單上的名字');
+    expect(input).toHaveValue('媽媽');
+    await user.clear(input);
+    await user.type(input, '小豆媽');
+    await user.click(screen.getByRole('button', { name: '儲存' }));
+
+    expect(setMemberName).toHaveBeenCalledWith('child-1', '小豆媽');
+    expect(screen.queryByLabelText('你在名單上的名字')).toBeNull();
+  });
+
+  it('名字沒存到時輸入框留著、打的字也留著', async () => {
+    const { user } = renderModal(family(), {
+      setMemberName: () => Promise.reject(new Error('offline')),
+    });
+
+    await user.click(screen.getByRole('button', { name: '改名字' }));
+    await user.type(screen.getByLabelText('你在名單上的名字'), '2');
+    await user.click(screen.getByRole('button', { name: '儲存' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('名字沒有存到');
+    expect(screen.getByLabelText('你在名單上的名字')).toHaveValue('媽媽2');
   });
 });
 

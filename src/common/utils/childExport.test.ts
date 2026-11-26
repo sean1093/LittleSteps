@@ -43,6 +43,7 @@ const child: ChildProfile = {
   createdAt: '2025-02-27T00:00:00.000Z',
   createdBy: 'u1',
   members: { u1: true, u2: true },
+  memberNames: { u1: '媽媽', u2: '保母阿姨' },
   joinOpen: false,
 };
 
@@ -95,12 +96,12 @@ const source: ChildExportSource = { child, dailyLogs, diaryEntries, growthRecord
 const NOW = new Date('2026-09-07T04:30:00.000Z');
 
 describe('buildChildExport', () => {
-  it('carries every child field except members', () => {
+  it('carries every child field except members and their names', () => {
     const exported = buildChildExport(source, NOW);
 
     // Against the fixture's own key set, not a hand-written list: a field added
     // to ChildProfile later must not be able to fall out of the export unnoticed.
-    const expected = Object.keys(child).filter((key) => key !== 'members');
+    const expected = Object.keys(child).filter((key) => key !== 'members' && key !== 'memberNames');
     expect(Object.keys(exported.child).sort()).toEqual(expected.sort());
     for (const key of expected) {
       expect(exported.child[key as keyof typeof exported.child]).toEqual(
@@ -116,6 +117,13 @@ describe('buildChildExport', () => {
     // The co-parent's uid is only in members, so the serialised file must not
     // name them anywhere the child node used to.
     expect(Object.values(exported.child)).not.toContainEqual(child.members);
+  });
+
+  it('drops the member names: they are what other people chose to be called', () => {
+    const exported = buildChildExport(source, NOW);
+
+    expect('memberNames' in exported.child).toBe(false);
+    expect(JSON.stringify(exported)).not.toContain('保母阿姨');
   });
 
   it('carries every entry of all three collections', () => {

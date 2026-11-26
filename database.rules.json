@@ -44,6 +44,13 @@
           }
         },
 
+        "memberNames": {
+          "$memberUid": {
+            ".write": "auth != null && $memberUid === auth.uid && newData.parent().parent().child('members').child(auth.uid).val() === true",
+            ".validate": "$memberUid === auth.uid && newData.isString() && newData.val().length >= 1 && newData.val().length <= 40 && newData.parent().parent().child('members').child($memberUid).val() === true"
+          }
+        },
+
         "pregnancyData": {
           "childId": { ".validate": "newData.isString() && newData.val().length <= 64" },
           "dueDate": { ".validate": "newData.isString() && newData.val().length <= 10" },

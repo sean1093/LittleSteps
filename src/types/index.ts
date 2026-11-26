@@ -229,6 +229,12 @@ export interface ChildProfile {
    * 另一位移掉，分享才真的是可撤回的。
    */
   members: Record<string, true>;
+  /**
+   * 每位成員在分享視窗名單上的名字，key 是 uid。只有本人寫得了自己的那一筆，
+   * 而且要跟成員資格同在；移除成員時同一筆一起刪。只存名字，不存 email 或任何
+   * 帳號識別。見 common/memberNames。
+   */
+  memberNames?: Record<string, string>;
   /** 拿到代碼的人能不能把自己加進 members。關掉之後，流出去的舊代碼就加入不了。 */
   joinOpen?: boolean;
 }

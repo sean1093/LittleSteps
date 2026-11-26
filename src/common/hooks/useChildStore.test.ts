@@ -21,7 +21,8 @@ const h = vi.hoisted(() => ({
     joinChild: vi.fn().mockResolvedValue(undefined),
     updateChild: vi.fn().mockResolvedValue(undefined),
     deleteChild: vi.fn().mockResolvedValue(undefined),
-    revokeOtherMembers: vi.fn().mockResolvedValue(undefined),
+    removeMember: vi.fn().mockResolvedValue(undefined),
+    setMemberName: vi.fn().mockResolvedValue(undefined),
     setJoinOpen: vi.fn().mockResolvedValue(undefined),
     setCurrentChild: vi.fn().mockResolvedValue(undefined),
     updateMilestoneProgress: vi.fn().mockResolvedValue(undefined),
@@ -530,18 +531,32 @@ describe('useChildStore (Firebase mode)', () => {
     expect(h.firebaseChildren.deleteDiaryEntry).toHaveBeenCalledWith('c1', 'diary_1');
   });
 
-  it('收回共享與分享開關直接轉給資料層，帶著分享視窗指定的那個孩子', async () => {
-    // 收回的對象是分享視窗裡的那個孩子，不一定是當前選取的那一個。
+  it('移除成員、改名字與分享開關直接轉給資料層，帶著分享視窗指定的那個孩子', async () => {
+    // 對象是分享視窗裡的那個孩子，不一定是當前選取的那一個。離開時要知道還剩
+    // 哪些孩子，選取狀態才換得過去。
     h.userChildren = listing([child(), child({ id: 'c2', name: '小樹' })], 'c1');
     const { result } = renderHook(() => useChildStore(user));
 
     await act(async () => {
-      await result.current.revokeOtherMembers('c2');
+      await result.current.removeMember('c2', 'u9');
+      await result.current.setMemberName('c2', '  外婆  ');
       await result.current.setJoinOpen('c2', true);
     });
 
-    expect(h.firebaseChildren.revokeOtherMembers).toHaveBeenCalledWith('c2');
+    expect(h.firebaseChildren.removeMember).toHaveBeenCalledWith('c2', 'u9', ['c1', 'c2']);
+    // 裁過再送：規則不收前後的空白算不算字，這裡統一成名單上看到的樣子。
+    expect(h.firebaseChildren.setMemberName).toHaveBeenCalledWith('c2', '外婆');
     expect(h.firebaseChildren.setJoinOpen).toHaveBeenCalledWith('c2', true);
+  });
+
+  it('名字裁完是空的就往上丟，不寫一個規則會拒絕的空字串', async () => {
+    h.userChildren = listing([child()], 'c1');
+    const { result } = renderHook(() => useChildStore(user));
+
+    await act(async () => {
+      await expect(result.current.setMemberName('c1', '   ')).rejects.toThrow(/名字/);
+    });
+    expect(h.firebaseChildren.setMemberName).not.toHaveBeenCalled();
   });
 
   it('no-ops LittleExplorer mutators when no child is selected', async () => {
@@ -652,7 +667,8 @@ describe('useChildStore 寫入失敗', () => {
       'addDiaryEntry',
       'updateDiaryEntry',
       'deleteDiaryEntry',
-      'revokeOtherMembers',
+      'removeMember',
+      'setMemberName',
       'setJoinOpen',
     ] as const) {
       h.firebaseChildren[method].mockRejectedValueOnce(boom);
@@ -674,12 +690,13 @@ describe('useChildStore 寫入失敗', () => {
       ).rejects.toThrow(boom);
       await expect(result.current.updateDiaryEntry('diary_1', { content: 'x' })).rejects.toThrow(boom);
       await expect(result.current.deleteDiaryEntry('diary_1')).rejects.toThrow(boom);
-      await expect(result.current.revokeOtherMembers('p1')).rejects.toThrow(boom);
+      await expect(result.current.removeMember('p1', 'u9')).rejects.toThrow(boom);
+      await expect(result.current.setMemberName('p1', '外婆')).rejects.toThrow(boom);
       await expect(result.current.setJoinOpen('p1', true)).rejects.toThrow(boom);
     });
 
     expect(alertSpy).not.toHaveBeenCalled();
-    expect(errorSpy).toHaveBeenCalledTimes(11);
+    expect(errorSpy).toHaveBeenCalledTimes(12);
   });
 
   /**

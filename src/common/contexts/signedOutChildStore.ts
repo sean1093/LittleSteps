@@ -32,7 +32,8 @@ export const SIGNED_OUT_CHILD_STORE: ChildStore = {
     throw new Error('User not authenticated');
   },
   deleteAccountData: nothing,
-  revokeOtherMembers: nothing,
+  removeMember: nothing,
+  setMemberName: nothing,
   setJoinOpen: nothing,
   setCurrentChild: nothing,
   toggleDevelopmentCheck: nothing,

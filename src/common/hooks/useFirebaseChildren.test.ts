@@ -67,6 +67,10 @@ vi.mock('firebase/database', () => ({
   },
   update: (target: FakeRef, value: Record<string, unknown>) => {
     if (updateFailure) return Promise.reject(updateFailure);
+    const prefix = target.path ? `${target.path}/` : '';
+    if (Object.keys(value).some((key) => denied.has(`${prefix}${key}`))) {
+      return Promise.reject(new Error('PERMISSION_DENIED'));
+    }
     updates.push({ path: target.path, value });
     return Promise.resolve();
   },
@@ -177,6 +181,25 @@ describe('addChild', () => {
     expect(profile.createdBy).toBe('u1');
   });
 
+  it('建立者的名字跟成員資格同一筆寫進去', async () => {
+    // 規則只收「寫完之後自己確實是成員」的名字，所以它進不了任何晚一步的寫入。
+    const { result } = renderHook(() => useFirebaseChildren('u1', '小豆媽'));
+
+    const childId = await result.current.addChild('小豆', '2025-01-01', 0);
+
+    const profile = updates[0].value[`children/${childId}`] as Record<string, unknown>;
+    expect(profile.memberNames).toEqual({ u1: '小豆媽' });
+  });
+
+  it('沒有名字就不寫名字欄位，而不是寫一個規則會拒絕的空字串', async () => {
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+
+    const childId = await result.current.addChild('小豆', '2025-01-01', 0);
+
+    const profile = updates[0].value[`children/${childId}`] as Record<string, unknown>;
+    expect('memberNames' in profile).toBe(false);
+  });
+
   it('joinOpen 一律寫成 false，不是留空', async () => {
     // 規則驗的是 isBoolean；欄位缺著的話分享視窗讀到 undefined，
     // 切換開關時會以為自己在改一個本來就存在的設定。
@@ -235,11 +258,21 @@ describe('joinChild', () => {
 
     await result.current.joinChild('c1', 0);
 
-    expect(writes.map((write) => write.path)).toEqual([
-      'children/c1/members/u2',
-      'users/u2/childrenIds/c1',
-    ]);
-    expect(writes[0].value).toBe(true);
+    expect(updates[0]).toEqual({ path: 'children/c1', value: { 'members/u2': true } });
+    expect(writes.map((write) => write.path)).toEqual(['users/u2/childrenIds/c1']);
+  });
+
+  it('名字與成員資格同一筆寫進去', async () => {
+    // 規則只收「寫完之後自己確實是成員」的名字：先寫名字一定被拒，後寫則會
+    // 留下一段名單上沒有名字的空窗。
+    const { result } = renderHook(() => useFirebaseChildren('u2', '外婆'));
+
+    await result.current.joinChild('c1', 0);
+
+    expect(updates[0]).toEqual({
+      path: 'children/c1',
+      value: { 'members/u2': true, 'memberNames/u2': '外婆' },
+    });
   });
 
   it('成員資格被拒時說的是「未開放加入」，不是「找不到代碼」', async () => {
@@ -310,6 +343,7 @@ describe('deleteChild', () => {
 
     expect(rootUpdate()).toEqual({
       'children/c1/members/u2': null,
+      'children/c1/memberNames/u2': null,
       'users/u2/childrenIds/c1': null,
       'users/u2/currentChildId': null,
     });
@@ -463,7 +497,9 @@ describe('deleteAccountData', () => {
       'childIndex/c1': null,
       // 還有別人：只交回我的成員資格，孩子留給他們——我是不是建立者都一樣。
       'children/c2/members/u1': null,
+      'children/c2/memberNames/u1': null,
       'children/c3/members/u1': null,
+      'children/c3/memberNames/u1': null,
       'users/u1/childrenIds': null,
       'users/u1/currentChildId': null,
     });
@@ -524,40 +560,67 @@ describe('deleteAccountData', () => {
   });
 });
 
-describe('revokeOtherMembers', () => {
-  it('移除其他成員並關掉加入，自己留著', async () => {
+describe('removeMember', () => {
+  it('移除一位成員：成員資格、名字與關掉加入同一筆，其他人不動', async () => {
     // 代碼已經在對方手上，所以收回不是換代碼而是刪成員；joinOpen 沒有一起關掉，
     // 對方下一秒就用手上的同一組代碼加回來。
     storeChild(['u1', 'u2', 'u3']);
     const { result } = renderHook(() => useFirebaseChildren('u1'));
 
-    await result.current.revokeOtherMembers('c1');
+    await result.current.removeMember('c1', 'u3');
 
-    expect(updates).toHaveLength(1);
-    expect(updates[0].path).toBe('children/c1');
-    expect(updates[0].value).toEqual({
-      joinOpen: false,
-      'members/u2': null,
-      'members/u3': null,
-    });
+    expect(updates).toEqual([
+      {
+        path: 'children/c1',
+        value: { 'members/u3': null, 'memberNames/u3': null, joinOpen: false },
+      },
+    ]);
   });
 
-  it('建立者留在名單上，共同照顧者收回的是自己分享出去的人', async () => {
-    // 規則現在允許移除任何一位成員（只要名單不歸零），所以留下建立者是產品上的
-    // 決定：「收回分享」是把我分享出去的人請出去，不是把當初建檔的人趕走。
+  it('建立者也移除得掉：規則只要求名單不歸零，沒有誰是主帳號', async () => {
     storeChild(['u1', 'u2', 'u3']);
     const { result } = renderHook(() => useFirebaseChildren('u2'));
 
-    await result.current.revokeOtherMembers('c1');
+    await result.current.removeMember('c1', 'u1');
 
-    expect(updates[0].value).toEqual({ joinOpen: false, 'members/u3': null });
+    expect(updates[0].value).toEqual({
+      'members/u1': null,
+      'memberNames/u1': null,
+      joinOpen: false,
+    });
   });
 
-  it('孩子已經不在了就說得出原因，而不是靜靜成功', async () => {
+  it('移除自己就是離開：只交回自己的成員資格與名字，紀錄留給其他人', async () => {
+    // 和 deleteChild 不同：即使我是建立者，離開也只是走掉，不會整份刪掉。
+    storeChild(['u1', 'u2']);
     const { result } = renderHook(() => useFirebaseChildren('u1'));
 
-    await expect(result.current.revokeOtherMembers('c1')).rejects.toThrow(/找不到這個寶寶/);
-    expect(updates).toHaveLength(0);
+    await result.current.removeMember('c1', 'u1', ['c1', 'c2']);
+
+    expect(rootUpdate()).toEqual({
+      'children/c1/members/u1': null,
+      'children/c1/memberNames/u1': null,
+      'users/u1/childrenIds/c1': null,
+      'users/u1/currentChildId': 'c2',
+    });
+    expect(Object.keys(rootUpdate())).not.toContain('children/c1');
+  });
+
+  it('規則拒絕時往上丟，不假裝成功', async () => {
+    updateFailure = new Error('PERMISSION_DENIED');
+    const { result } = renderHook(() => useFirebaseChildren('u1'));
+
+    await expect(result.current.removeMember('c1', 'u2')).rejects.toThrow('PERMISSION_DENIED');
+  });
+});
+
+describe('setMemberName', () => {
+  it('只寫自己的那一筆名字', async () => {
+    const { result } = renderHook(() => useFirebaseChildren('u2'));
+
+    await result.current.setMemberName('c1', '外婆');
+
+    expect(writes).toEqual([{ path: 'children/c1/memberNames/u2', value: '外婆' }]);
   });
 });
 

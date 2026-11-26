@@ -317,8 +317,9 @@ can be read with no account.
 - **Export**: a child's whole record — the profile plus every daily log, diary entry
   and growth measurement — downloads from the account sheet as one JSON file,
   `littlesteps-<child>-<date>.json`, shaped like the database below so it needs no
-  schema of its own. The member list is the one thing left out: it is other
-  accounts' ids, not the parent's data
+  schema of its own. The member list and the members' names are the two things
+  left out: they are other accounts' ids and other people's names, not the
+  parent's data
 - **Deletion**: the account sheet can delete the account itself — every child
   this parent is the only member of, their membership in the shared ones, their
   `users/$uid` node, then the Firebase Auth user
@@ -374,6 +375,26 @@ What that adds up to, asserted by `npm run test:rules` against the emulator:
   each take the other off a shared record is worth more here than a hierarchy
   of roles neither of them asked for.
 
+The share sheet shows that list as people, not as a count. Each member has a
+name in `children/$childId/memberNames/$uid` — their sign-in display name when
+they create or join, which they can change on the sheet — and each row has its
+own remove button, the creator's included; on your own row it reads "leave".
+Removing someone closes `joinOpen` in the same write, or they rejoin with the
+code they already hold. The names are held to this, also by `npm run test:rules`:
+
+- a member writes only their own name, a string of 1–40 characters. The
+  ancestor `.write` lets a member write anything under the child, so it is a
+  `.validate` rule that refuses a name under someone else's uid
+- a name exists only beside a membership: it is refused unless the same write
+  leaves that uid on the member list, so a joiner sends membership and name in
+  one update and a removed member cannot write theirs back. The removing side
+  is the client's: `removeMember`, `deleteChild` and `deleteAccountData` null the
+  name in the same update as the membership. Rules cannot enforce that half —
+  `.validate` never runs on a delete, and no rule can walk a map to find a name
+  whose member has gone
+- the names are read through the child node, so a non-member reads none of them.
+  No email or other account identifier is stored
+
 ### Database shape
 
 ```
@@ -394,6 +415,8 @@ children/$childId          id, name, birthday, gender, createdAt, createdBy,
                            gestationalAgeWeeks, gestationalAgeDays
                                                    preterm, for corrected age
                            members/$uid: true      authorisation
+                           memberNames/$uid        the name on the share
+                                                   sheet; own name only
                            joinOpen                may a code holder join?
                            milestoneProgress, vaccineProgress, toothProgress,
                            developmentProgress, prenatalProgress,

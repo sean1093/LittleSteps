@@ -1,33 +1,43 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { ChildProfile } from '../../types';
 import ModalFrame from './ModalFrame';
 import { confirmDelete } from '../ui/confirmDelete';
 import { goTo } from '../navigate';
 import { useOptionalAuth } from '../../contexts/AuthContext';
 import { SHARING_REMOVAL } from '../landing/serviceCopy';
+import { MEMBER_NAME_MAX, UNNAMED_MEMBER, memberRows, type MemberRow } from '../memberNames';
 
 interface ShareChildUuidModalProps {
   isOpen: boolean;
   onClose: () => void;
   child: ChildProfile | null;
-  /** 失敗時 reject 且不 toast：訊息要留在這扇窗裡，家長才知道剛才那一下沒生效。 */
-  revokeOtherMembers: (childId: string) => Promise<void>;
+  /**
+   * 移除名單上的一位成員；是自己的話就是離開。失敗時 reject 且不 toast：
+   * 訊息要留在這扇窗裡，家長才知道剛才那一下沒生效。
+   */
+  removeMember: (childId: string, memberUid: string) => Promise<void>;
+  setMemberName: (childId: string, name: string) => Promise<void>;
   setJoinOpen: (childId: string, open: boolean) => Promise<void>;
 }
 
 /**
- * 分享代碼就是寶寶資料的 id，換不掉；所以「收回分享」只能是移除其他帳號並關掉
- * 加入。這扇窗是家長唯一看得到、也唯一改得動存取權的地方，因此它先講有幾個帳號
- * 看得到，再給開關與代碼。
+ * 分享代碼就是寶寶資料的 id，換不掉；所以「收回分享」只能是移除成員並關掉
+ * 加入。這扇窗是家長唯一看得到、也唯一改得動存取權的地方，因此它先列出誰
+ * 看得到——用每個人自己取的名字，一列一個移除鈕——再給開關與代碼。
  */
 export default function ShareChildUuidModal({
   isOpen,
   onClose,
   child,
-  revokeOtherMembers,
+  removeMember,
+  setMemberName,
   setJoinOpen,
 }: ShareChildUuidModalProps) {
-  const [pending, setPending] = useState<'copy' | 'join' | 'revoke' | null>(null);
+  const [pending, setPending] = useState<'copy' | 'join' | 'remove' | 'name' | null>(null);
+  /** 正在移除的是誰，按鈕上的「移除中…」只出現在那一列。 */
+  const [removingUid, setRemovingUid] = useState<string | null>(null);
+  /** 改名字的輸入框；null 是沒在改。 */
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const user = useOptionalAuth()?.user ?? null;
@@ -35,13 +45,8 @@ export default function ShareChildUuidModal({
   if (!child) return null;
 
   const memberCount = Object.keys(child.members).length;
-  // 「收回」動得到的人：不含自己，也不含建立這份紀錄的人——資料層刻意留著
-  // 建立者（見 useFirebaseChildren 的 revokeOtherMembers）。按鈕原本寫的是
-  // memberCount - 1，所以加入另一半建立的檔案的人會看到「移除其他 1 個帳號」，
-  // 按下去、確認、沒有錯誤，名單上還是兩個人。
-  const removableCount = Object.keys(child.members).filter(
-    (uid) => uid !== user?.uid && uid !== child.createdBy,
-  ).length;
+  const rows = memberRows(child, user?.uid ?? null);
+  const myRow = rows.find((row) => row.isMe);
   // 開關直接讀資料庫來的值，不留一份本地狀態：寫入失敗時它就不會停在
   // 資料庫沒有的位置上。
   const joinOpen = child.joinOpen === true;
@@ -84,16 +89,43 @@ export default function ShareChildUuidModal({
     }
   };
 
-  const handleRevoke = async () => {
+  const handleRemove = async (row: MemberRow) => {
     // 走共用的刪除確認：全 app 只有這一種攔阻的說法，收回存取權不該長出第二種。
-    if (!confirmDelete(`其他 ${removableCount} 個帳號的存取權`)) return;
+    const confirmed = row.isMe
+      ? confirmDelete('你自己的存取權', undefined, `${child.name}的紀錄會留給名單上的其他人。`)
+      : confirmDelete(`${row.label}的存取權`, undefined, '「開放用代碼加入」會一起關掉。');
+    if (!confirmed) return;
 
     setError(null);
-    setPending('revoke');
+    setPending('remove');
+    setRemovingUid(row.uid);
     try {
-      await revokeOtherMembers(child.id);
+      await removeMember(child.id, row.uid);
+      // 離開之後這份紀錄就不是我的了，窗留著只會顯示一份讀不到的名單。
+      if (row.isMe) onClose();
     } catch {
-      setError('移除沒有成功，其他帳號仍然看得到，請再試一次');
+      setError(
+        row.isMe
+          ? '離開沒有成功，你仍然在名單上，請再試一次'
+          : '移除沒有成功，對方仍然看得到，請再試一次',
+      );
+    } finally {
+      setPending(null);
+      setRemovingUid(null);
+    }
+  };
+
+  const handleSaveName = async (event: FormEvent) => {
+    event.preventDefault();
+    if (nameDraft === null || !nameDraft.trim()) return;
+
+    setError(null);
+    setPending('name');
+    try {
+      await setMemberName(child.id, nameDraft);
+      setNameDraft(null);
+    } catch {
+      setError('名字沒有存到，請再試一次');
     } finally {
       setPending(null);
     }
@@ -107,6 +139,93 @@ export default function ShareChildUuidModal({
         </p>
         <p className="text-sm text-ink-muted mt-1">加入的人都能修改紀錄。{SHARING_REMOVAL}</p>
       </div>
+
+      <section className="mb-4">
+        <h3 id="share-members-heading" className="text-ink mb-2">
+          誰看得到
+        </h3>
+        <ul className="space-y-2" aria-labelledby="share-members-heading">
+          {rows.map((row) => (
+            <li key={row.uid} className="card flex items-center justify-between gap-2 py-2 pr-2">
+              <div className="min-w-0">
+                <p
+                  title={row.label}
+                  className={`font-medium truncate ${row.unnamed ? 'text-ink-muted' : 'text-ink'}`}
+                >
+                  {row.label}
+                  {row.isMe && '（你）'}
+                </p>
+                {row.isCreator && <p className="text-sm text-ink-muted">建立這份紀錄</p>}
+              </div>
+              <div className="flex shrink-0 items-center">
+                {row.isMe && nameDraft === null && (
+                  <button
+                    type="button"
+                    onClick={() => setNameDraft(row.unnamed ? '' : row.label)}
+                    disabled={busy}
+                    className="btn-ghost px-3 text-secondary-dark disabled:opacity-50"
+                  >
+                    改名字
+                  </button>
+                )}
+                {/* 最後一位不給移除：名單空掉的紀錄沒有人讀得到、也刪不掉，規則
+                    同樣擋著。那時要走的路是刪除這份檔案。 */}
+                {memberCount > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(row)}
+                    disabled={busy}
+                    aria-label={row.isMe ? '離開這份紀錄' : `移除${row.label}`}
+                    className="btn-ghost px-3 text-primary-dark hover:bg-primary-light disabled:opacity-50"
+                  >
+                    {removingUid === row.uid ? '處理中…' : row.isMe ? '離開' : '移除'}
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        {nameDraft !== null && myRow && (
+          <form onSubmit={handleSaveName} className="mt-3">
+            <label htmlFor="memberName" className="block text-sm font-medium text-ink mb-2">
+              你在名單上的名字
+            </label>
+            <input
+              id="memberName"
+              type="text"
+              value={nameDraft}
+              maxLength={MEMBER_NAME_MAX}
+              onChange={(event) => setNameDraft(event.target.value)}
+              placeholder="例如：媽媽、外婆、保母阿姨"
+              className="w-full min-h-tap px-4 py-3 rounded-2xl border border-ink/15 bg-white text-ink"
+            />
+            <div className="flex gap-2 mt-2">
+              <button
+                type="submit"
+                disabled={busy || !nameDraft.trim()}
+                className="btn-primary disabled:opacity-60"
+              >
+                {pending === 'name' ? '儲存中…' : '儲存'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setNameDraft(null)}
+                disabled={busy}
+                className="btn-ghost"
+              >
+                取消
+              </button>
+            </div>
+          </form>
+        )}
+
+        {rows.some((row) => row.unnamed && !row.isMe) && (
+          <p className="text-sm text-ink-muted mt-2">
+            「{UNNAMED_MEMBER}」是還沒替自己取名字的人，請對方打開這扇分享視窗按「改名字」。
+          </p>
+        )}
+      </section>
 
       <div className="card bg-warm-white flex items-center justify-between gap-3 mb-4">
         <div className="min-w-0">
@@ -183,7 +302,7 @@ export default function ShareChildUuidModal({
       </div>
 
       <p className="text-sm text-ink-muted">
-        代碼就是這份寶寶資料的編號，換不了新的一組。要收回分享，只能移除其他帳號的存取權——移除時會一併關掉「開放用代碼加入」，流出去的舊代碼就再也加不進來。
+        代碼就是這份寶寶資料的編號，換不了新的一組。要收回分享，就把對方從上面的名單移除——移除時會一併關掉「開放用代碼加入」，流出去的舊代碼就再也加不進來。
       </p>
 
       {/* 把代碼交出去的這一刻，是家長最想知道「這份資料到底怎麼被保護」的時候。 */}
@@ -198,24 +317,6 @@ export default function ShareChildUuidModal({
         看看孩子的紀錄怎麼被保護
       </button>
 
-      {/* 名單上還有別人、卻一個都動不了，只有一種情況：剩下的那一位是建立
-          這份紀錄的人。說出來，否則這裡看起來只是少了一顆按鈕。 */}
-      {memberCount > 1 && removableCount === 0 && (
-        <p className="text-sm text-ink-muted mt-3">
-          另一個帳號是建立這份紀錄的人，不能從這裡移除。
-        </p>
-      )}
-
-      {removableCount > 0 && (
-        <button
-          type="button"
-          onClick={handleRevoke}
-          disabled={busy}
-          className="btn-ghost w-full mt-2 text-primary-dark hover:bg-primary-light disabled:opacity-50"
-        >
-          {pending === 'revoke' ? '移除中…' : `移除其他 ${removableCount} 個帳號的存取權`}
-        </button>
-      )}
     </ModalFrame>
   );
 }
