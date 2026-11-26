@@ -86,6 +86,14 @@ export default function VaccineScheduleToolPage() {
             />
             <p className="text-xs text-ink-muted mt-1">還沒出生的話，先填預產期也可以。</p>
           </div>
+          {/* 結果畫在輸入框下面，報讀器不會知道它出現了。這一區一直都在，換了
+              生日就把摘要讀一次；畫面上已經有同樣的標題，所以只給報讀器。 */}
+          <p role="status" className="sr-only">
+            {result &&
+              `接下來要打的（${result.upcoming.length} 劑）${
+                result.past.length > 0 ? `；建議日期已過的（${result.past.length} 劑）` : ''
+              }`}
+          </p>
         </section>
 
         {result && (

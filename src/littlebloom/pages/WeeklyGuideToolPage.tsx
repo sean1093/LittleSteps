@@ -56,23 +56,28 @@ export default function WeeklyGuideToolPage() {
               }}
               className="w-full min-h-tap px-4 py-3 bg-white border border-ink/15 rounded-2xl text-ink"
             />
+            {/* One polite live region, always mounted, so a screen reader hears
+                the week (or why there is none) each time the date changes. A
+                region that mounts together with its text is often not read. */}
+            <div role="status">
+              {position?.status === 'in-term' && (
+                <p className={`mt-4 text-sm font-medium ${theme.ink}`}>
+                  今天是{formatGestation(position)}，{formatGuideWeek(position)}。
+                </p>
+              )}
+              {position?.status === 'too-early' && (
+                <p className={`mt-4 text-sm leading-relaxed ${theme.body}`}>
+                  這個預產期離現在超過 {PREGNANCY_TOTAL_WEEKS} 週，請確認日期。下面從第 1 週開始。
+                </p>
+              )}
+              {position?.status === 'past-term' && (
+                <p className={`mt-4 text-sm leading-relaxed ${theme.body}`}>
+                  這個預產期已經過了。37 至 42 週都屬正常生產期，請依產檢醫師的安排追蹤。下面是第{' '}
+                  {PREGNANCY_TOTAL_WEEKS} 週。
+                </p>
+              )}
+            </div>
           </div>
-          {position?.status === 'in-term' && (
-            <p className={`text-sm font-medium ${theme.ink}`}>
-              今天是{formatGestation(position)}，{formatGuideWeek(position)}。
-            </p>
-          )}
-          {position?.status === 'too-early' && (
-            <p role="status" className={`text-sm leading-relaxed ${theme.body}`}>
-              這個預產期離現在超過 {PREGNANCY_TOTAL_WEEKS} 週，請確認日期。下面從第 1 週開始。
-            </p>
-          )}
-          {position?.status === 'past-term' && (
-            <p role="status" className={`text-sm leading-relaxed ${theme.body}`}>
-              這個預產期已經過了。37 至 42 週都屬正常生產期，請依產檢醫師的安排追蹤。下面是第{' '}
-              {PREGNANCY_TOTAL_WEEKS} 週。
-            </p>
-          )}
         </section>
 
         {position && (
