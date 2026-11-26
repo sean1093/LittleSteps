@@ -114,6 +114,10 @@ they used to give no hint that a product existed around them.
   the parent, and its Save button stays pinned to the bottom of the sheet. The day's
   stats count wet and dirty nappies separately and total the bottle millilitres
   (formula plus bottled breast milk), with no target or verdict attached
+- **Share today as text** — the daily log builds a plain-text summary of today (feeds,
+  sleeps, nappies and the last of each, pumping left out) for a sitter or grandparent.
+  The parent reads it before it goes out through the share sheet or the clipboard; it
+  carries no link, no token and no birthday
 - **Pumping and bottled breast milk** — a pumping session records volume, minutes and
   optionally which side, and is kept out of every intake total, feed count and feeding
   alert, with its own section in the weekly report. Breast milk given by bottle counts

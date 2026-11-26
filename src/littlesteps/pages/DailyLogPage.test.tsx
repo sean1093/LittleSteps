@@ -839,3 +839,51 @@ describe('上次親餵的那一邊', () => {
     expect(addDailyLog.mock.calls[0][1].data).toMatchObject({ feedingType: 'breast_left' });
   });
 });
+
+/*
+  交班給保母：只送一段文字，家長送出前先看過。沒有連結、沒有任何給非成員的
+  讀取路徑，也不帶生日。
+*/
+describe('分享今天的紀錄', () => {
+  afterEach(() => {
+    Reflect.deleteProperty(navigator, 'share');
+  });
+
+  it('先給家長看文字，按了才交給系統分享，而且只有文字', async () => {
+    const at = new Date();
+    at.setHours(0, 30, 0, 0);
+    readState.logs = [
+      {
+        id: 'f1',
+        childId: 'c1',
+        type: 'feeding',
+        timestamp: at.toISOString(),
+        data: { feedingType: 'formula', amount: 120 },
+        createdAt: at.toISOString(),
+      },
+    ];
+    const share = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'share', { value: share, configurable: true });
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <DailyLogPage currentChild={child} user={null} />
+      </ToastProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: '分享今天的紀錄' }));
+
+    const sheet = await screen.findByRole('dialog', { name: '分享今天的紀錄' });
+    expect(within(sheet).getByText(/00:30 配方奶 120 ml/)).toBeInTheDocument();
+    expect(share).not.toHaveBeenCalled();
+
+    await user.click(within(sheet).getByRole('button', { name: '分享這段文字' }));
+
+    expect(share).toHaveBeenCalledTimes(1);
+    const payload = share.mock.calls[0][0];
+    expect(Object.keys(payload).sort()).toEqual(['text', 'title']);
+    expect(payload.text).toContain('【小豆 今天的紀錄】');
+    expect(payload.text).not.toContain('2026-02-01');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
+});
