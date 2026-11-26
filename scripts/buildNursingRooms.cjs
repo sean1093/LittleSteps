@@ -57,7 +57,7 @@ const OUTPUT = path.join(ROOT, 'public/data/nursingRooms.json');
 /**
  * 資料集的產生日期與出處，另外寫成一個小檔。
  *
- * nursingRooms.json 本身沒有日期：它是一個 3,852 筆的純陣列，BabyOasis 在執行期
+ * nursingRooms.json 本身沒有日期：它是一個 3,844 筆的純陣列，BabyOasis 在執行期
  * 直接 fetch，E2E 也照這個形狀攔截，所以不在它身上包一層。日期放在 src/ 底下
  * 而不是 public/，是為了讓「關於資料」頁和地圖的資料來源標註都能 import 同一份、
  * 永遠寫出同一個查證日期——這正是 mrtStations.json 已經走的路。
