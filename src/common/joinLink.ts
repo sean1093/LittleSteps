@@ -20,6 +20,17 @@ import { ROUTE_PATH } from '../types/routes';
 
 let pendingCode: string | null = null;
 
+/**
+ * The code the parent pressed 「加入」 for in this visit, if any.
+ *
+ * Joining puts the app back on its loading bar, which unmounts the join page,
+ * so the page cannot remember the press in its own state. Without this, the
+ * page that comes back cannot tell "you just joined" from "you were already
+ * on the list" and greets a successful join with the wording of the second.
+ * Memory only, like the code itself, and cleared with it.
+ */
+let pressedJoinCode: string | null = null;
+
 /** What a child id can look like: a UUID today, a push-style key in older data. */
 const CODE = /^[A-Za-z0-9_-]{1,64}$/;
 
@@ -66,6 +77,21 @@ export function pendingJoinCode(): string | null {
 /** Forget the code: after joining, or when the parent declines. */
 export function clearJoinCode(): void {
   pendingCode = null;
+  pressedJoinCode = null;
+}
+
+/**
+ * Note that the parent pressed 「加入」 for this code, or, with null, that the
+ * join failed. Set before the join starts: the page can unmount before the
+ * join's promise settles.
+ */
+export function noteJoinPressed(code: string | null): void {
+  pressedJoinCode = code;
+}
+
+/** Whether 「加入」 was pressed for this code in this visit. */
+export function joinPressedFor(code: string): boolean {
+  return pressedJoinCode === code;
 }
 
 /**
