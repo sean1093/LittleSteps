@@ -116,6 +116,15 @@ export function pregnancyPosition(
   };
 }
 
+/**
+ * 離預產期還有幾個整週。由剩下的天數算，不是 40 減指南週數：指南週數比整週多一，
+ * 拿它來減，20 週又 0 天會說成「還有 19 週」，其實還有整整 20 週。過了預產期是 0。
+ */
+export function weeksUntilDue(position: Pick<PregnancyPosition, 'weeks' | 'days'>): number {
+  const daysLeft = GESTATION_DAYS - (position.weeks * DAYS_PER_WEEK + position.days);
+  return Math.max(Math.floor(daysLeft / DAYS_PER_WEEK), 0);
+}
+
 /** 產檢醫師的說法：「懷孕 20 週又 3 天」。三個畫面都用這一句。 */
 export function formatGestation(position: Pick<PregnancyPosition, 'weeks' | 'days'>): string {
   return `懷孕 ${position.weeks} 週又 ${position.days} 天`;

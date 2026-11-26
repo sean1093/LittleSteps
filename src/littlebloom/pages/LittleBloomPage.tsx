@@ -8,6 +8,7 @@ import {
   formatGestation,
   formatGuideWeek,
   pregnancyPosition,
+  weeksUntilDue,
   resolvePrenatalItems,
 } from '../utils/prenatalSchedule';
 import BloomShell from '../components/BloomShell';
@@ -200,7 +201,7 @@ export default function LittleBloomPage({
           )}
           <p className={`text-sm ${THEME.muted}`}>
             {position && `${formatGuideWeek(position)} · `}
-            還有 {Math.max(PREGNANCY_TOTAL_WEEKS - displayWeek, 0)} 週見面
+            還有 {position ? weeksUntilDue(position) : PREGNANCY_TOTAL_WEEKS} 週見面
           </p>
         </motion.section>
 
