@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { MilestoneProgress } from '../../types';
+import type { ChildProfile, MilestoneProgress } from '../../types';
 import { milestones } from '../data/milestones';
 import MilestonesPage from './MilestonesPage';
 
@@ -141,5 +141,36 @@ describe('MilestonesPage', () => {
   it('says once under the list that pace varies and when to tell a doctor', () => {
     renderPage();
     expect(screen.getByText(/晚一兩個月很常見.*請在兒童健檢時告訴醫師/)).toBeInTheDocument();
+  });
+});
+
+describe('MilestonesPage corrected age', () => {
+  // NOW is 2026-11-26; born 2026-04-26 is 7 months old.
+  const baby = (gestationalAgeWeeks?: number): ChildProfile => ({
+    id: 'c1',
+    name: '小豆',
+    birthday: '2026-04-26',
+    gestationalAgeWeeks,
+    milestoneProgress: {},
+    vaccineProgress: {},
+    createdAt: '2026-04-26T00:00:00.000Z',
+    createdBy: 'u1',
+    members: { u1: true },
+  });
+
+  const renderFor = (child: ChildProfile) =>
+    render(<MilestonesPage currentChild={child} progress={{}} onToggleMilestone={vi.fn()} />);
+
+  it('says which corrected age it is showing for a preterm baby', () => {
+    renderFor(baby(32));
+    // 7 months, 8 weeks early: 5 months corrected.
+    expect(screen.getByText('依矯正年齡 5 個月顯示')).toBeInTheDocument();
+  });
+
+  it('adds nothing for a term baby or one without birth weeks', () => {
+    renderFor(baby(38));
+    expect(screen.queryByText(/矯正年齡/)).not.toBeInTheDocument();
+    renderFor(baby());
+    expect(screen.queryByText(/矯正年齡/)).not.toBeInTheDocument();
   });
 });

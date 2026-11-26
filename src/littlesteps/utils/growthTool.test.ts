@@ -82,4 +82,54 @@ describe('growthPercentiles', () => {
       field: 'height',
     });
   });
+
+  describe('preterm birth', () => {
+    const reading = (input: Parameters<typeof growthPercentiles>[0]) => {
+      const result = growthPercentiles(input);
+      if (!result.ok) throw new Error(`expected a reading, got ${result.reason}`);
+      return result;
+    };
+
+    it('reads a 32-weeker at 7 months at about 5 corrected months', () => {
+      const result = reading({ gender: 'male', ageMonths: 7, gestationalWeeks: 32, weight: 7 });
+
+      expect(result.corrected).toBe(true);
+      expect(result.givenMonths).toBe(7);
+      expect(result.ageMonths).toBeGreaterThan(5);
+      expect(result.ageMonths).toBeLessThan(5.5);
+      // The same weight scores higher against younger peers than against same-age ones.
+      const uncorrected = reading({ gender: 'male', ageMonths: 7, weight: 7 });
+      expect(result.readings[0].percentile).toBeGreaterThan(uncorrected.readings[0].percentile);
+    });
+
+    it('changes nothing for a baby born at term', () => {
+      const plain = reading({ gender: 'female', ageMonths: 7, weight: 7.5, height: 66 });
+      const at38 = reading({ gender: 'female', ageMonths: 7, gestationalWeeks: 38, weight: 7.5, height: 66 });
+
+      expect(at38).toEqual(plain);
+      expect(at38.corrected).toBe(false);
+    });
+
+    it('stops correcting past 24 corrected months, as the signed-in chart does', () => {
+      const result = reading({ gender: 'female', ageMonths: 30, gestationalWeeks: 32, weight: 12 });
+      expect(result.corrected).toBe(false);
+      expect(result.ageMonths).toBe(30);
+    });
+
+    it('refuses a baby not yet at its due date instead of reading it at month zero', () => {
+      expect(growthPercentiles({ gender: 'male', ageMonths: 1, gestationalWeeks: 28, weight: 3 })).toEqual({
+        ok: false,
+        reason: 'before-term',
+      });
+    });
+
+    it('refuses gestational weeks outside 20 to 42', () => {
+      for (const weeks of [12, 45, 32.5]) {
+        expect(growthPercentiles({ gender: 'male', ageMonths: 6, gestationalWeeks: weeks, weight: 7 })).toEqual({
+          ok: false,
+          reason: 'weeks',
+        });
+      }
+    });
+  });
 });
