@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Download, Edit, LogOut, Share2, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -10,7 +10,7 @@ import { backdrop, sheet } from '../ui/motion';
 import { useDialogA11y } from '../ui/useDialogA11y';
 import { goTo } from '../navigate';
 import { SERVICE_THEME, type ServiceId } from '../ui/serviceTheme';
-import { CHILD_LIMIT_MESSAGE, MAX_CHILDREN } from '../childLimits';
+import { CHILD_LIMIT_FREE_SLOT, CHILD_LIMIT_MESSAGE, MAX_CHILDREN } from '../childLimits';
 import AddChildModal from './AddChildModal';
 import ShareChildUuidModal from './ShareChildUuidModal';
 import { confirmDelete } from '../ui/confirmDelete';
@@ -58,6 +58,7 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
   // 刪除帳號要走網路，而且不能來第二次：沒有這個狀態，連按兩下的第二下會對一個
   // 已經刪掉的使用者再刪一次，只換到一則講不出原因的錯誤。
   const [deleting, setDeleting] = useState(false);
+  const childLimitId = useId();
 
   const theme = SERVICE_THEME[service];
   const showChildren = SERVICE_USES_CHILD[service] && store !== null;
@@ -334,11 +335,19 @@ export default function AccountSheet({ service, onClose }: AccountSheetProps) {
                     setShowChildModal(true);
                   }}
                   disabled={!canAddChild}
+                  aria-describedby={canAddChild ? undefined : childLimitId}
                   className="btn-secondary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={canAddChild ? '新增寶寶' : CHILD_LIMIT_MESSAGE}
                 >
                   新增寶寶
                 </button>
+                {/* 原因原本只放在 title：手機不會顯示 title，停用的按鈕也拿不到焦點，
+                    螢幕閱讀器同樣聽不到。所以寫成看得見的字，再用 aria-describedby
+                    綁回按鈕。 */}
+                {!canAddChild && (
+                  <p id={childLimitId} className="text-sm text-ink-muted leading-relaxed">
+                    {CHILD_LIMIT_MESSAGE}。{CHILD_LIMIT_FREE_SLOT}
+                  </p>
+                )}
               </div>
             </div>
           )}

@@ -12,3 +12,12 @@
 export const MAX_CHILDREN = 2;
 
 export const CHILD_LIMIT_MESSAGE = `目前一個帳號最多可以追蹤 ${MAX_CHILDREN} 個寶寶`;
+
+/**
+ * 帳號滿了的時候，接在 CHILD_LIMIT_MESSAGE 後面的那一句：怎麼空出位置。
+ *
+ * 加入別人的紀錄也算一份，所以保母或有三個孩子的家庭最常撞到這裡；只說
+ * 「滿了」，家長看到的是一條死路。離開（分享視窗）或刪除（編輯視窗）任一份
+ * 就會空出位置——這是真的辦得到的事，不是升級。
+ */
+export const CHILD_LIMIT_FREE_SLOT = '離開或刪除其中一份紀錄，就能空出一個位置。';
