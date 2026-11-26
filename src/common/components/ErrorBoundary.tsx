@@ -83,7 +83,11 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
             <div className="card text-center">
               <h2 className="mb-2">這一頁打不開</h2>
               <p className="text-sm text-ink-muted mb-5">
-                現在沒有網路，這一頁還沒存在手機上。連上網路後再開一次。
+                {/* 裝置說自己連著網路時，原因也可能是剛部署完、舊分頁要的檔案不在了，
+                    這時說「沒有網路」是錯的；兩種原因都講，並指向下面的重新載入。 */}
+                {offline
+                  ? '現在沒有網路，這一頁還沒存在手機上。連上網路後再開一次。'
+                  : '這一頁沒能載入：可能是網路不穩，或是 app 剛更新過。按下面的「重新載入」再試一次。'}
               </p>
 
               <div className="flex flex-col gap-2">

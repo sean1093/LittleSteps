@@ -113,15 +113,18 @@ describe('ErrorBoundary', () => {
       );
     };
     const OFFLINE_COPY = '現在沒有網路，這一頁還沒存在手機上。連上網路後再開一次。';
+    const RELOAD_COPY = '這一頁沒能載入：可能是網路不穩，或是 app 剛更新過。按下面的「重新載入」再試一次。';
 
-    it('chunk 沒載進來：說沒有網路，不提紀錄', () => {
+    it('chunk 沒載進來：不提紀錄，也不在連著網路時說沒有網路', () => {
       render(
         <ErrorBoundary scope="littlebloom/wiki">
           <ChunkBoom />
         </ErrorBoundary>,
       );
 
-      expect(screen.getByText(OFFLINE_COPY)).toBeInTheDocument();
+      // jsdom 預設 onLine 為 true：原因也可能是剛部署完，不能一口咬定沒有網路。
+      expect(screen.getByText(RELOAD_COPY)).toBeInTheDocument();
+      expect(screen.queryByText(OFFLINE_COPY)).toBeNull();
       // 未登入的訪客也會看到這一頁；「你的紀錄都還在」對他沒有意義。
       expect(screen.queryByText(/紀錄/)).toBeNull();
       expect(screen.queryByRole('heading', { name: '這一頁出了點問題' })).toBeNull();
