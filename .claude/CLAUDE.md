@@ -80,8 +80,8 @@ one.
 This app stores children's health data, so a page nobody classified must fail
 closed. Only the entry point, the about page, the three knowledge bases, the
 care guide, the sleep guide, the solid-food guide, the three calculators
-(vaccine schedule, prenatal schedule, growth percentile), LittleOuting,
-BabyOasis and LittleGuard are public.
+(vaccine schedule, prenatal schedule, growth percentile), the weekly pregnancy
+guide by due date, LittleOuting, BabyOasis and LittleGuard are public.
 
 A blocked visitor sees that service's intro page **at the same URL** — the path
 is preserved so signing in lands them where they were going. Never redirect.
