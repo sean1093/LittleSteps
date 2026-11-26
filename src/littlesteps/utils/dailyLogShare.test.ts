@@ -89,4 +89,30 @@ describe('buildDailyLogShareText', () => {
     );
     expect(text).not.toMatch(/https?:|www\./);
   });
+
+  // For a sitter's handover, the notes are often the part the parents most want to read.
+  it("appends each entry's note to its own line, trimmed, and adds nothing for an empty note", () => {
+    const text = buildDailyLogShareText(
+      '小豆',
+      [
+        log('f1', 'feeding', at(26, 8, 0), { feedingType: 'formula', amount: 120, notes: '  吐奶 ' }),
+        log('f2', 'feeding', at(26, 11, 0), { feedingType: 'formula', amount: 90, notes: '' }),
+        log('f3', 'feeding', at(26, 13, 0), { feedingType: 'formula', amount: 60, notes: '   ' }),
+        log('s1', 'sleep', at(26, 9, 0), {
+          startTime: at(26, 9, 0),
+          endTime: at(26, 10, 0),
+          duration: 60,
+          notes: '哭很久\n才睡著',
+        }),
+        log('d1', 'diaper', at(26, 7, 0), { type: 'pee', notes: '紅屁屁' }),
+      ],
+      NOW,
+    );
+
+    expect(text).toContain('\n08:00 配方奶 120 ml，吐奶\n');
+    expect(text).toContain('\n11:00 配方奶 90 ml\n');
+    expect(text).toContain('\n13:00 配方奶 60 ml\n');
+    expect(text).toContain('\n09:00–10:00（1小時），哭很久 才睡著\n');
+    expect(text).toContain('\n07:00 小便，紅屁屁\n');
+  });
 });

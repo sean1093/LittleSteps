@@ -65,7 +65,7 @@ they used to give no hint that a product existed around them.
 | 🛡️ | **LittleGuard** | any | single board + drawer |
 
 ### LittleBloom — pregnancy companion
-- **Weekly pregnancy guide** — week-by-week body changes and what to watch for, with previous and next week; also public at `/littlebloom/weekly-guide`, from a due date that is never stored
+- **Weekly pregnancy guide** — week-by-week body changes and what to watch for, with previous and next week, and a link from the week's warning signs to the when-to-go-now article; also public at `/littlebloom/weekly-guide`, from a due date that is never stored
 - **Prenatal schedule** — the 14 government-funded prenatal checkups, with dates and clinics recorded
 - **Pregnancy knowledge base** — 27 articles: causes, what to do, when to see a doctor, including postpartum warning signs for the mother, one page on when to go to hospital now, and which vaccines pregnancy needs — influenza, Tdap, COVID-19 and the maternal RSV vaccine — with each one's funding status and the week window for Tdap
 - **Birth registration** — converts a pregnancy profile into a baby profile, which is what moves a family from LittleBloom to LittleSteps
@@ -117,9 +117,11 @@ they used to give no hint that a product existed around them.
   feeding form says which breast was used last and when, without switching sides for
   the parent, and its Save button stays pinned to the bottom of the sheet. The day's
   stats count wet and dirty nappies separately and total the bottle millilitres
-  (formula plus bottled breast milk), with no target or verdict attached
+  (formula plus bottled breast milk), with no target or verdict attached; a link under
+  them opens the "is the baby getting enough" article, which answers with nappies and weight
 - **Share today as text** — the daily log builds a plain-text summary of today (feeds,
-  sleeps, nappies and the last of each, pumping left out) for a sitter or grandparent.
+  sleeps, nappies and the last of each, each entry with its note, pumping left out) for a
+  sitter or grandparent.
   The parent reads it before it goes out through the share sheet or the clipboard; it
   carries no link, no token and no birthday
 - **Pumping and bottled breast milk** — a pumping session records volume, minutes and

@@ -1,4 +1,4 @@
-import { ROUTE_PATH, type Page } from '../types/routes';
+import { ROUTE_PATH, articlePath, type Page, type WikiPage } from '../types/routes';
 
 /**
  * pushState 不會觸發 popstate，所以自己換頁時得另外發一個事件，App 才知道
@@ -22,6 +22,20 @@ export function goTo(page: Page, options?: { search?: string }): void {
 
   // 比對含 query 的完整網址。只比 pathname 的話，帶著不同關鍵字跳到同一個
   // 知識庫會被當成「已經在那裡了」而直接 return——網址變了、畫面沒動。
+  if (`${window.location.pathname}${window.location.search}` === target) return;
+
+  window.history.pushState(null, '', target);
+  window.dispatchEvent(new Event(NAVIGATION_EVENT));
+}
+
+/**
+ * 換到知識庫裡的某一篇文章，落地時那一篇已經展開。
+ *
+ * 文章不是 Page（見 routes.ts 的 WIKI_PAGES），所以不能走 goTo；網址照
+ * articlePath 組，知識庫掛載時用 articleFromPath 讀回來並展開那一篇。
+ */
+export function goToArticle(page: WikiPage, articleId: string): void {
+  const target = articlePath(page, articleId);
   if (`${window.location.pathname}${window.location.search}` === target) return;
 
   window.history.pushState(null, '', target);

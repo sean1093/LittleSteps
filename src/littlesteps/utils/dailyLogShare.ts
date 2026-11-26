@@ -51,6 +51,19 @@ function diaperLine(log: DailyLog): string {
     .join(' ');
 }
 
+/**
+ * The entry's note after its line, on the same line. For a sitter's handover
+ * the note ("spat up", "cried a long time") is often what the parents most
+ * want to read. Line breaks inside a note are folded so each entry stays one
+ * line; an empty or blank note adds nothing.
+ */
+function withNotes(line: (log: DailyLog) => string) {
+  return (log: DailyLog): string => {
+    const notes = (log.data as { notes?: string }).notes?.replace(/\s+/g, ' ').trim();
+    return notes ? `${line(log)}，${notes}` : line(log);
+  };
+}
+
 /** "11/26 03:12" when the last one was not today, so last night is not read as just now. */
 function when(log: DailyLog, now: Date): string {
   const date = new Date(log.timestamp);
@@ -81,7 +94,7 @@ export function buildDailyLogShareText(
   } else {
     const section = (title: string, items: DailyLog[], line: (log: DailyLog) => string) => {
       if (items.length === 0) return;
-      lines.push('', `${title}（${items.length} 次）`, ...items.map(line));
+      lines.push('', `${title}（${items.length} 次）`, ...items.map(withNotes(line)));
     };
     section('餵奶', feeds, feedingLine);
     section('睡眠', sleeps, sleepLine);

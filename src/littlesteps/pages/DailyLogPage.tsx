@@ -33,6 +33,8 @@ import EmptyState from '../../common/ui/EmptyState';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
 import { stagger, listItem } from '../../common/ui/motion';
 import { useToast } from '../../common/ui/toast';
+import { goToArticle } from '../../common/navigate';
+import { articlePath } from '../../types/routes';
 import { logDailyLogAction } from '../../lib/firebase';
 
 interface DailyLogPageProps {
@@ -460,6 +462,19 @@ export default function DailyLogPage({ currentChild, user }: DailyLogPageProps) 
               <span className="text-ink-muted">（配方奶與瓶餵母乳，不含擠奶）</span>
             </p>
           )}
+          {/* 看著奶量的家長心裡問的是「這樣夠不夠」。這裡不給目標也不下結論——
+              答案在尿布與體重，那篇文章說得比一個數字清楚。親餵沒有奶量，
+              同樣的問題更常出現，所以沒有瓶餵合計時也留著這一行。 */}
+          <a
+            href={articlePath('littlesteps/baby-wiki', 'feeding-enough')}
+            onClick={(event) => {
+              event.preventDefault();
+              goToArticle('littlesteps/baby-wiki', 'feeding-enough');
+            }}
+            className="inline-flex items-center min-h-tap text-sm font-medium text-primary-dark underline underline-offset-2"
+          >
+            寶寶吃夠了嗎？
+          </a>
         </motion.div>
 
         {/* 交班給保母或阿嬤用：只送一段文字，不產生連結或任何讀取的路。 */}

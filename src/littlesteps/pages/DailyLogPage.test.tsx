@@ -906,3 +906,40 @@ describe('分享今天的紀錄', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 });
+
+/*
+  看著奶量的家長要問的是「這樣夠不夠」，答案在那篇文章裡。親餵沒有瓶餵合計，
+  同樣的問題更常出現，所以那一行不在時連結也要在。
+*/
+describe('今日統計下的「寶寶吃夠了嗎？」', () => {
+  afterEach(() => {
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('連到寶寶吃夠了嗎那一篇，點了就換過去', async () => {
+    readState.logs = [
+      {
+        id: 'f1',
+        childId: 'c1',
+        type: 'feeding',
+        timestamp: new Date().toISOString(),
+        data: { feedingType: 'formula', amount: 120 },
+        createdAt: new Date().toISOString(),
+      },
+    ];
+    const user = userEvent.setup();
+    render(<DailyLogPage currentChild={child} user={null} />);
+
+    const link = screen.getByRole('link', { name: '寶寶吃夠了嗎？' });
+    expect(link).toHaveAttribute('href', '/littlesteps/baby-wiki/feeding-enough');
+
+    await user.click(link);
+    expect(window.location.pathname).toBe('/littlesteps/baby-wiki/feeding-enough');
+  });
+
+  it('沒有瓶餵合計時也在', () => {
+    readState.logs = [];
+    render(<DailyLogPage currentChild={child} user={null} />);
+    expect(screen.getByRole('link', { name: '寶寶吃夠了嗎？' })).toBeInTheDocument();
+  });
+});

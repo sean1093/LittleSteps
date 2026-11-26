@@ -1,5 +1,7 @@
 import { PREGNANCY_TOTAL_WEEKS, pregnancyGuides } from '../data/pregnancyGuides';
 import { SERVICE_THEME } from '../../common/ui/serviceTheme';
+import { goToArticle } from '../../common/navigate';
+import { articlePath } from '../../types/routes';
 
 const THEME = SERVICE_THEME.littlebloom;
 
@@ -86,6 +88,18 @@ export default function WeeklyGuide({ week, currentWeek, onWeekChange }: WeeklyG
                 ))}
               </ul>
             </div>
+          )}
+          {guide.warningSignals.length > 0 && (
+            <a
+              href={articlePath('littlebloom/wiki', 'health-when-to-go-now')}
+              onClick={(event) => {
+                event.preventDefault();
+                goToArticle('littlebloom/wiki', 'health-when-to-go-now');
+              }}
+              className={`inline-flex items-center min-h-tap mt-1 text-sm font-medium underline underline-offset-2 ${THEME.ink}`}
+            >
+              孕期什麼狀況要立刻去醫院
+            </a>
           )}
         </>
       )}
