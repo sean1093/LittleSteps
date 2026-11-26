@@ -19,7 +19,7 @@ import { pressable } from '../../common/ui/pressable';
 import { vaccineMonthForChild } from '../utils/ageDefaults';
 import { isCorrecting } from '../../common/correctedAge';
 import { buildVaccineIcs, outstandingVaccineDoses, FUNDING_LABEL } from '../utils/vaccineCalendar';
-import { fundingOn } from '../utils/vaccineSchedule';
+import { fundingOn, resolveVaccineDoses } from '../utils/vaccineSchedule';
 import { downloadCalendar } from '../../common/utils/icsExport';
 import { logCalendarExport } from '../../lib/firebase';
 import { useDialogA11y } from '../../common/ui/useDialogA11y';
@@ -206,15 +206,43 @@ export default function VaccineTrackingPage({
     logCalendarExport('vaccine');
   };
 
+  // 每一劑對這個孩子今天的狀態，和提醒、下一劑、試算頁同一份解析：今天怎麼
+  // 付（fundingOn），以及孩子是不是已經超過來源寫的接種年齡上限（setAside）。
+  // 這一頁原本只問 fundingOn，於是翻牌之後 10 個月大的孩子在這裡讀到五張
+  // 「公費」的輪狀病毒卡片，而試算頁與提醒都知道他已經超過 8 個月。
+  // 沒有生日就解不出年齡，退回只看付費方式。
+  const resolvedByDose = useMemo(() => {
+    const byDose = new Map<string, ReturnType<typeof resolveVaccineDoses>[number]>();
+    if (currentChild?.birthday) {
+      resolveVaccineDoses(currentChild.birthday, vaccineSchedules, vaccineProgress).forEach(
+        (dose) => byDose.set(`${dose.vaccineId}-${dose.doseNumber}`, dose),
+      );
+    }
+    return byDose;
+  }, [currentChild?.birthday, vaccineProgress]);
+
+  /**
+   * 卡片上的付費標籤。過了年齡上限、又還沒接種的那一劑沒有付費方式可言——
+   * 標「公費」等於說還有一劑免費的可以打——所以回傳 null，由呼叫端改寫成
+   * 「已超過接種年齡」。
+   */
+  const fundingStateOf = (vaccine: VaccineSchedule): VaccineFunding | null => {
+    const resolved = resolvedByDose.get(`${vaccine.id}-${vaccine.currentDose ?? 1}`);
+    if (resolved?.setAside === 'past-age-limit') return null;
+    return resolved?.funding ?? fundingOn(vaccine);
+  };
+
   const filteredVaccines = useMemo(() => {
     let filtered = vaccineSchedules;
 
     const allowed = FUNDING_FILTERS.find((o) => o.value === fundingFilter)?.funding ?? [];
     if (allowed.length > 0) {
       // 今天的付費方式，不是資料列上的：已翻牌、生效日還沒到的那幾劑，
-      // 在那天之前仍該出現在「自費」底下。
-      const today = new Date();
-      filtered = filtered.filter(v => allowed.includes(fundingOn(v, today)));
+      // 在那天之前仍該出現在「自費」底下；過了年齡上限的不屬於任何一種。
+      filtered = filtered.filter((v) => {
+        const state = fundingStateOf(v);
+        return state !== null && allowed.includes(state);
+      });
     }
 
     if (monthFilter !== 'all') {
@@ -222,7 +250,7 @@ export default function VaccineTrackingPage({
     }
 
     return filtered;
-  }, [fundingFilter, monthFilter]);
+  }, [fundingFilter, monthFilter, resolvedByDose]);
 
   // Group vaccines by month
   const vaccinesByMonth = useMemo(() => {
@@ -408,8 +436,8 @@ export default function VaccineTrackingPage({
                     {/* Vaccines in this month */}
                     <div className="space-y-3">
                       {vaccines.map((vaccine) => {
-                        const fundingToday = fundingOn(vaccine);
-                        const funding = FUNDING_UI[fundingToday];
+                        const fundingToday = fundingStateOf(vaccine);
+                        const funding = FUNDING_UI[fundingToday ?? fundingOn(vaccine)];
                         const doseNum = vaccine.currentDose || 1;
                         const isAdministered = isDoseAdministered(vaccine.id, doseNum);
                         const doseDate = getDoseDate(vaccine.id, doseNum);
@@ -432,7 +460,11 @@ export default function VaccineTrackingPage({
 
                                 <div className="flex flex-wrap items-center gap-2 text-sm text-ink-muted">
                                   <span>{vaccine.timing}</span>
-                                  <span className={`tag ${funding.badge}`}>{FUNDING_LABEL[fundingToday]}</span>
+                                  {fundingToday === null ? (
+                                    <span className="tag bg-ink/5 text-ink-muted">已超過接種年齡</span>
+                                  ) : (
+                                    <span className={`tag ${funding.badge}`}>{FUNDING_LABEL[fundingToday]}</span>
+                                  )}
                                 </div>
 
                                 {/* 條件不必點開就看得到：健保給付綁的是早產、先天性

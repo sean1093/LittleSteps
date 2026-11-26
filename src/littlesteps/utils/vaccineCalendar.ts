@@ -86,6 +86,18 @@ export function buildVaccineIcs(
 ): string {
   const rowById = new Map(schedules.map((vaccine) => [vaccine.id, vaccine]));
 
+  // Groups of alternative products the family has already chosen between, by
+  // recording a dose of one of them.
+  const chosenGroups = new Set(
+    schedules
+      .filter(
+        (vaccine) =>
+          vaccine.alternative &&
+          progress[vaccine.id]?.doses?.[vaccine.currentDose ?? 1]?.administered,
+      )
+      .map((vaccine) => vaccine.alternative!.group),
+  );
+
   const events = outstandingVaccineDoses(child.birthday, schedules, progress, now)
     .map((dose): CalendarEvent => {
       const vaccine = rowById.get(dose.vaccineId)!;
@@ -115,6 +127,13 @@ export function buildVaccineIcs(
 
       const details = [funding, `建議接種時間：${dose.timing}`];
       if (vaccine.eligibility) details.push(`給付條件：${vaccine.eligibility}`);
+      // A dose only one of the alternatives has (the third dose of the 3-dose
+      // product) has nothing to fold with. Before the family has chosen, it
+      // would otherwise sit in the calendar like a dose every child needs.
+      const alt = vaccine.alternative;
+      if (alt && !dose.alternativeIds && !chosenGroups.has(alt.group)) {
+        details.push(`選擇${alt.series}才需要這一劑`);
+      }
       rows.forEach((row) => {
         if (row.notes) details.push(row.notes);
       });

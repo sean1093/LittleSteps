@@ -182,6 +182,34 @@ describe('buildVaccineIcs', () => {
       expect(descriptionsOf(ics)[0]).toContain('乙型的說明');
     });
 
+    const thirdDose = schedule({
+      id: 'alt-b-6m',
+      name: '合成口服疫苗（乙型） 第3劑',
+      ageInMonths: 6,
+      currentDose: 3,
+      alternative: { group: 'alt', groupName: '合成口服疫苗', series: '乙型' },
+    });
+
+    it('says a dose only one product has is needed only if that product is chosen', () => {
+      // With nothing recorded the third dose of the 3-dose product has no
+      // partner to fold with, and on its own it reads like a dose every child needs.
+      const ics = unfold(buildVaccineIcs(child, [...pair, thirdDose], {}, at));
+      // Events run in due-date order: the folded 2-month visit, then the third
+      // dose. Alarm descriptions are skipped; they only repeat the title.
+      const [visit, third] = descriptionsOf(ics).filter((line) => line.includes('建議接種時間'));
+
+      expect(eventCount(ics)).toBe(2);
+      expect(third).toContain('選擇乙型才需要這一劑');
+      expect(visit).not.toContain('才需要這一劑');
+    });
+
+    it('drops that line once the product is chosen', () => {
+      const ics = unfold(buildVaccineIcs(child, [...pair, thirdDose], administered('alt-b-2m'), at));
+
+      expect(ics).toContain('SUMMARY:小樹：合成口服疫苗（乙型） 第3劑');
+      expect(ics).not.toContain('才需要這一劑');
+    });
+
     it('drops the other product once one is recorded', () => {
       const ics = unfold(
         buildVaccineIcs(
