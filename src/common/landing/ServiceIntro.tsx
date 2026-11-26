@@ -4,7 +4,7 @@ import { MAX_CHILDREN } from '../childLimits';
 import { goTo } from '../navigate';
 import { fadeInUp, listItem, stagger, tap } from '../ui/motion';
 import { SERVICE_THEME } from '../ui/serviceTheme';
-import { SERVICE_INTRO, STAGE_RANGE, type StagedService } from './serviceCopy';
+import { SERVICE_INTRO, SHARING_REMOVAL, STAGE_RANGE, type StagedService } from './serviceCopy';
 
 interface ServiceIntroProps {
   service: StagedService;
@@ -119,7 +119,7 @@ export default function ServiceIntro({ service, onSignIn }: ServiceIntroProps) {
           >
             <span className={`block font-semibold ${theme.body}`}>這份紀錄屬於你們家</span>
             <span className="block text-sm text-ink-muted leading-relaxed mt-0.5">
-              只有你和你用分享代碼邀請的家人看得到，每一位成員都能讀寫，也都可以被移除。看完整說明。
+              只有你和你用分享代碼邀請的家人看得到，每一位成員都能讀寫。{SHARING_REMOVAL}看完整說明。
             </span>
           </a>
         </motion.section>

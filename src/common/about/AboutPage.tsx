@@ -12,6 +12,7 @@ import {
   DEVICE_STORE_DESCRIBED,
   HONEST_GAPS,
 } from './dataSources';
+import { SHARING_REMOVAL } from '../landing/serviceCopy';
 
 /**
  * The one page that says, in a parent's words, where a child's records live,
@@ -123,9 +124,9 @@ export default function AboutPage() {
         </Section>
 
         <Section title="分享給家人，也收得回來">
-          <P>分享代碼要你自己按下才會生效。在那之前，就算代碼被貼到群組裡也加不進來。你隨時可以關掉加入，或把已經加入的帳號移除。</P>
+          <P>分享代碼要你自己按下才會生效。在那之前，就算代碼被貼到群組裡也加不進來。{SHARING_REMOVAL}</P>
           <P>
-            有一件事想先說清楚：加入的家人和你有一樣的權限——可以記錄，也可以把其他人移除。我們沒有做主帳號和副帳號的階級，因為一起帶孩子的兩個大人，通常不需要誰管誰。唯一的限制是名單不能空掉：最後一位成員無法把自己移除，否則這份紀錄會變成沒有人進得去。
+            有一件事想先說清楚：加入的家人和你有一樣的權限——可以記錄，也可以移除其他加入的帳號。我們沒有做主帳號和副帳號的階級，因為一起帶孩子的兩個大人，通常不需要誰管誰。名單也不能空掉：最後一位成員無法把自己移除，否則這份紀錄會變成沒有人進得去。
           </P>
         </Section>
 

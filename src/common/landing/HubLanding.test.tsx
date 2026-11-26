@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import HubLanding from './HubLanding';
+import { SHARING_REMOVAL } from './serviceCopy';
 import {
   ANYTIME_SERVICES,
   CALCULATORS,
@@ -138,6 +139,11 @@ describe('HubLanding: the six services', () => {
 });
 
 describe('HubLanding: signed out', () => {
+  it('makes the same sharing promise the share sheet makes', () => {
+    render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={vi.fn()} />);
+    expect(screen.getByText(SHARING_REMOVAL, { exact: false })).toBeInTheDocument();
+  });
+
   it('has exactly one h1', () => {
     render(<HubLanding onNavigate={vi.fn()} user={null} onSignIn={vi.fn()} />);
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
