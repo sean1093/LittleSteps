@@ -20,6 +20,19 @@ interface ErrorBoundaryProps {
 
 interface ErrorBoundaryState {
   message: string | null;
+  /** 是不是 lazy 頁面的 chunk 沒載進來（見 isChunkLoadError）。 */
+  chunkLoad: boolean;
+}
+
+/**
+ * lazy 頁面的 chunk 沒載進來。Vite 的動態 import 失敗時，各家瀏覽器丟的是
+ * 同一種 TypeError、不同的訊息：Chrome 是 "Failed to fetch dynamically
+ * imported module"，Firefox 是 "error loading dynamically imported module"，
+ * Safari 是 "Importing a module script failed."。
+ */
+function isChunkLoadError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /dynamically imported module|Importing a module script failed/i.test(message);
 }
 
 /**
@@ -32,10 +45,10 @@ interface ErrorBoundaryState {
  * 例外照樣往 console 與 analytics 送，這裡不是把錯誤藏起來，是讓它只損失一頁。
  */
 export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState = { message: null };
+  state: ErrorBoundaryState = { message: null, chunkLoad: false };
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { message: error.message };
+    return { message: error.message, chunkLoad: isChunkLoadError(error) };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
@@ -51,6 +64,54 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     if (this.state.message === null) return this.props.children;
 
     const Frame = this.props.ownsMain ? 'main' : 'div';
+
+    /*
+      離線時點到一頁還沒快取的頁面：chunk 載不進來。原本的畫面說「你的紀錄都
+      還在…重新載入通常就好了」，可是離線重新載入會把整個 app 弄丟，而且對
+      未登入的訪客提紀錄沒有意義。所以這裡改說真正的原因，不叫人重新載入。
+
+      navigator.onLine 為 true 不代表真的連得上（接著 wifi 但沒有對外網路時
+      也是 true），所以 chunk 沒載進來本身就當成沒有網路。但 onLine 為 true
+      時仍然留著重新載入：剛部署完、舊分頁要的 chunk 已經不在了，那時重新
+      載入正是解法。
+    */
+    const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+    if (this.state.chunkLoad || offline) {
+      return (
+        <Frame className="screen">
+          <div className="screen-body">
+            <div className="card text-center">
+              <h2 className="mb-2">這一頁打不開</h2>
+              <p className="text-sm text-ink-muted mb-5">
+                現在沒有網路，這一頁還沒存在手機上。連上網路後再開一次。
+              </p>
+
+              <div className="flex flex-col gap-2">
+                {!offline && (
+                  <button
+                    type="button"
+                    onClick={() => window.location.reload()}
+                    className="btn-primary w-full"
+                  >
+                    <RefreshCw className="w-5 h-5" />
+                    <span>重新載入</span>
+                  </button>
+                )}
+                {/* 這裡壞掉的只是一個沒載進來的 chunk，外框還是好的，用 SPA
+                    換頁就回得去；整頁重新載入在離線時反而回不來。 */}
+                <button
+                  type="button"
+                  onClick={() => goTo('home')}
+                  className={offline ? 'btn-secondary w-full' : 'btn-ghost w-full'}
+                >
+                  回所有服務
+                </button>
+              </div>
+            </div>
+          </div>
+        </Frame>
+      );
+    }
 
     return (
       <Frame className="screen">

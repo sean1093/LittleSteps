@@ -98,6 +98,8 @@ export default function VaccineScheduleToolPage() {
 
         {result && (
           <>
+            {/* 每一劑都標著公費或自費，頁面卻從沒說過這兩個詞是什麼意思。 */}
+            <p className="text-sm text-ink-muted">公費：政府付費。自費：要自己付錢。</p>
             <section className="space-y-3">
               <h2>接下來要打的（{result.upcoming.length} 劑）</h2>
               {result.upcoming.length === 0 ? (

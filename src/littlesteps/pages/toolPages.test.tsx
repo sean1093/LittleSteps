@@ -70,6 +70,17 @@ describe('疫苗時程試算', () => {
     expect(screen.getByRole('status')).toHaveTextContent(`${upcoming}；${past}`);
   });
 
+  it('says what the 公費 and 自費 tags on each dose mean', async () => {
+    const user = userEvent.setup();
+    render(<VaccineScheduleToolPage />);
+
+    await user.type(screen.getByLabelText('寶寶生日'), daysFromToday(0));
+
+    expect(screen.getAllByText('公費').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('自費').length).toBeGreaterThan(0);
+    expect(screen.getByText('公費：政府付費。自費：要自己付錢。')).toBeInTheDocument();
+  });
+
   it('tells the visitor the birthday is not kept', () => {
     render(<VaccineScheduleToolPage />);
     expect(screen.getByText(/生日不會被存下來/)).toBeInTheDocument();

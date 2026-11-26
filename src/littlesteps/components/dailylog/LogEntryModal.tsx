@@ -589,7 +589,7 @@ export default function LogEntryModal({
 
                   {(diaperType === 'poop' || diaperType === 'both') && (
                     <ChoiceChips
-                      label="性狀"
+                      label="便便的樣子"
                       value={consistency ?? 'normal'}
                       onChange={setConsistency}
                       options={CONSISTENCIES.map((value) => ({

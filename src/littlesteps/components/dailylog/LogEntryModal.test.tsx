@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { DailyLog, FeedingData, SleepData } from '../../../types';
 import LogEntryModal from './LogEntryModal';
@@ -142,6 +142,18 @@ describe('沿用上一筆', () => {
 
     expect(screen.getByRole('radio', { name: '大小便' })).toBeChecked();
     expect(screen.getByRole('radio', { name: '稀' })).toBeChecked();
+  });
+
+  it('大便的那一題用家長的話問：便便的樣子，不是病歷上的「性狀」', () => {
+    renderModal({ logType: 'diaper', lastLog: null });
+
+    // 預設是小便，那一題還不在。
+    expect(screen.queryByRole('radiogroup', { name: '便便的樣子' })).toBeNull();
+    fireEvent.click(screen.getByRole('radio', { name: '大便' }));
+
+    const group = screen.getByRole('radiogroup', { name: '便便的樣子' });
+    expect(within(group).getByRole('radio', { name: '稀' })).toBeInTheDocument();
+    expect(screen.queryByText('性狀')).toBeNull();
   });
 
   it('第一次記錄的孩子回到原本的預設值，不報錯也沒有空狀態', () => {
