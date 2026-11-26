@@ -555,7 +555,9 @@ IP 從台灣的機器上是有回應的，兩邊也都解析到同一個位址�
 
 忘記了也會有人知道。`.github/workflows/disease-radar-freshness.yml` 每週四跑
 一次，只讀已 commit 的 JSON 裡的 `weekEnd`；超過 14 天（`FRESHNESS_DAYS.stale`）
-就開一張 issue，之後每次執行改寫同一張，等新資料進來再把它關掉。它不會向疾管署
+就開一張 issue，之後每次執行改寫同一張，等新資料進來再把它關掉。它不會開第二張：
+被關掉的那張會重新打開，只有以 not planned 關掉時，在已 commit 的 `weekEnd` 改變之前
+都不再出聲。它不會向疾管署
 抓資料，也不會在 pull request 上跑。邏輯在 `scripts/checkDiseaseRadarFreshness.cjs`，
 有一支測試把它的門檻釘在看板自己的門檻上。
 

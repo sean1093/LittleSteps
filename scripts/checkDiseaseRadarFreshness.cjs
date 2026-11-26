@@ -28,8 +28,22 @@ const DATA_PATH = 'public/data/diseaseRadar.json';
 
 const ISSUE_TITLE = 'LittleGuard: disease radar data is stale';
 
-/** Hidden marker that identifies the one issue this script owns. */
-const MARKER = '<!-- disease-radar-freshness -->';
+/**
+ * Hidden marker that identifies the one issue this script owns. The full marker
+ * also records the weekEnd the body was written for (see `markerFor`), so a
+ * maintainer's "not planned" can be held to the data it was said about.
+ */
+const MARKER = '<!-- disease-radar-freshness';
+
+function markerFor(weekEnd) {
+  return `${MARKER} weekEnd=${weekEnd} -->`;
+}
+
+/** The weekEnd recorded in an issue body's marker, or null. */
+function markedWeekEnd(body) {
+  const match = /<!-- disease-radar-freshness weekEnd=(\d{4}-\d{2}-\d{2}) -->/.exec(body);
+  return match ? match[1] : null;
+}
 
 const BOT_LOGIN = 'github-actions[bot]';
 
@@ -56,7 +70,7 @@ function readWeekEnd(repoRoot) {
 function issueBody(weekEnd, today) {
   const days = daysOld(weekEnd, today);
   return [
-    MARKER,
+    markerFor(weekEnd),
     `The committed \`${DATA_PATH}\` ends on **${weekEnd}**, ${days} days before`,
     `${today.toISOString().slice(0, 10)}. The board calls data stale after ${STALE_DAYS} days`,
     'and stops describing it after 35, showing only the numbers.',
@@ -72,29 +86,40 @@ function issueBody(weekEnd, today) {
     '',
     'Commit the file only on exit 1. This issue is updated by',
     '`.github/workflows/disease-radar-freshness.yml` on each run and closed by it',
-    'once the committed data is fresh again.',
+    'once the committed data is fresh again. Closing it as not planned silences it',
+    'until the committed weekEnd changes.',
   ].join('\n');
 }
 
-/** The open issue this script opened earlier, if there is one. */
+/**
+ * The newest issue this script ever opened, open or closed, or null.
+ *
+ * Closed ones count too: listing only open issues meant a maintainer who
+ * closed the issue got a brand-new one, and a new notification, every week.
+ */
 async function findOwnIssue(github, context) {
   const issues = await github.paginate(github.rest.issues.listForRepo, {
     ...context.repo,
-    state: 'open',
+    state: 'all',
     creator: BOT_LOGIN,
     per_page: 100,
   });
-  return (
-    issues.find(
-      (issue) => !issue.pull_request && typeof issue.body === 'string' && issue.body.includes(MARKER),
-    ) ?? null
+  const own = issues.filter(
+    (issue) => !issue.pull_request && typeof issue.body === 'string' && issue.body.includes(MARKER),
   );
+  if (own.length === 0) return null;
+  return own.reduce((newest, issue) => (issue.number > newest.number ? issue : newest));
 }
 
 /**
- * Opens the issue when the data is stale and none is open, rewrites its body
- * when one is (an edit, not a comment, so a stale week is not a weekly
- * notification), and closes it once the data is fresh again.
+ * One issue, ever:
+ * - stale, none exists: open it.
+ * - stale, it is open: rewrite its body (an edit, not a comment, so a stale
+ *   week is not a weekly notification).
+ * - stale, closed as not planned for this same weekEnd: leave it closed. A
+ *   maintainer said no to this data; nothing has changed since.
+ * - stale, closed otherwise or for an older weekEnd: reopen and rewrite it.
+ * - fresh, it is open: close it.
  *
  * Returns what it did, for the job log and the tests.
  */
@@ -102,10 +127,11 @@ async function run({ github, context, core, repoRoot = process.cwd(), today = ne
   const weekEnd = readWeekEnd(repoRoot);
   const days = daysOld(weekEnd, today);
   const existing = await findOwnIssue(github, context);
+  const isOpen = existing !== null && existing.state === 'open';
   core.info(`weekEnd ${weekEnd} is ${days} days old; stale after ${STALE_DAYS}.`);
 
   if (!isStale(weekEnd, today)) {
-    if (!existing) return 'fresh';
+    if (!isOpen) return 'fresh';
     await github.rest.issues.createComment({
       ...context.repo,
       issue_number: existing.number,
@@ -121,12 +147,24 @@ async function run({ github, context, core, repoRoot = process.cwd(), today = ne
   }
 
   const body = issueBody(weekEnd, today);
-  if (existing) {
+  if (existing === null) {
+    await github.rest.issues.create({ ...context.repo, title: ISSUE_TITLE, body });
+    return 'opened';
+  }
+  if (isOpen) {
     await github.rest.issues.update({ ...context.repo, issue_number: existing.number, body });
     return 'updated';
   }
-  await github.rest.issues.create({ ...context.repo, title: ISSUE_TITLE, body });
-  return 'opened';
+  if (existing.state_reason === 'not_planned' && markedWeekEnd(existing.body) === weekEnd) {
+    return 'suppressed';
+  }
+  await github.rest.issues.update({
+    ...context.repo,
+    issue_number: existing.number,
+    state: 'open',
+    body,
+  });
+  return 'reopened';
 }
 
 module.exports = { STALE_DAYS, DATA_PATH, ISSUE_TITLE, MARKER, daysOld, isStale, readWeekEnd, run };
