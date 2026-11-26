@@ -175,15 +175,15 @@ describe('追蹤區的兩個入口', () => {
 
     await goneEventually(VIEWS.home);
     expect(screen.getByRole('button', { name: /我的食物清單/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /試新食材/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^試新食材/ })).toBeInTheDocument();
   });
 
   it('「試新食材」也進到同一個追蹤檢視', async () => {
     const user = renderPage();
-    await user.click(screen.getByRole('button', { name: /試新食材/ }));
+    await user.click(screen.getByRole('button', { name: /^試新食材/ }));
 
     await goneEventually(VIEWS.home);
-    expect(screen.getByRole('button', { name: /試新食材/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^試新食材/ })).toBeInTheDocument();
   });
 
   it('從追蹤區也能返回主頁', async () => {
@@ -234,19 +234,20 @@ describe('記錄今天嘗試', () => {
       id: 'f1',
       foodName: '米糊',
       firstTriedDate: '2026-09-01',
-      trialDates: { 0: '2026-09-01', 1: '2026-09-02', '2026-09-04': true },
+      trialDates: { 0: '2026-09-01', 1: '2026-09-02', '2026-09-02': true },
       hasAllergy: false,
       createdAt: '2026-09-01T00:00:00.000Z',
     },
   };
 
-  it('兩種形狀並存的紀錄算成三天，多記一天只寫今天那一條 leaf', async () => {
+  // 同一天在兩種 key 底下各出現一次，只能算一天：兩天還沒到觀察下限，所以仍在追蹤中。
+  it('兩種形狀並存的紀錄同一天不重複算，多記一天只寫今天那一條 leaf', async () => {
     readState.foodProgress = mixed;
     updateFoodTrial.mockResolvedValue(undefined);
     const user = renderPage();
 
-    await user.click(screen.getByRole('button', { name: /試新食材/ }));
-    expect(await screen.findByText('已觀察 3 天，沒有反應就可以試下一種')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^試新食材/ }));
+    expect(await screen.findByText('進度：2 / 3 天')).toBeInTheDocument();
 
     // 卡片本身也是 role=button（pressable），名字含裡面那顆按鈕的字；精確比對才抓得到按鈕。
     await user.click(screen.getByRole('button', { name: '記錄今天嘗試' }));

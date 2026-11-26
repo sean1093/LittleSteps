@@ -245,7 +245,7 @@ export default function FoodTrialModal({
                     }`}
                   >
                     <span
-                      className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${
+                      className={`w-5 h-5 bg-white rounded-full shadow-soft transition-transform ${
                         hasAllergy ? 'translate-x-6' : 'translate-x-0.5'
                       }`}
                     />

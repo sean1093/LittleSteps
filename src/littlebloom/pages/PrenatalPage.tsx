@@ -21,6 +21,7 @@ import { splitOverdueByProfileStart } from '../../common/utils/profileHistory';
 import { goTo } from '../../common/navigate';
 import { confirmDelete } from '../../common/ui/confirmDelete';
 import { downloadCalendar } from '../../common/utils/icsExport';
+import { logCalendarExport } from '../../lib/firebase';
 import { PRENATAL_CLINIC_LIMIT, PRENATAL_NOTES_LIMIT } from '../../common/recordLimits';
 
 const THEME = SERVICE_THEME.littlebloom;
@@ -189,6 +190,7 @@ export default function PrenatalPage({
   const exportOutstanding = () => {
     if (!currentChild) return;
     downloadCalendar(buildPrenatalIcs(items, currentChild), '產檢時程.ics');
+    logCalendarExport('prenatal');
   };
 
   /**

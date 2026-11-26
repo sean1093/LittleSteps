@@ -20,6 +20,7 @@ import { vaccineMonthForChild } from '../utils/ageDefaults';
 import { isCorrecting } from '../../common/correctedAge';
 import { buildVaccineIcs, outstandingVaccineDoses, FUNDING_LABEL } from '../utils/vaccineCalendar';
 import { downloadCalendar } from '../../common/utils/icsExport';
+import { logCalendarExport } from '../../lib/firebase';
 import { useDialogA11y } from '../../common/ui/useDialogA11y';
 
 type FundingFilter = 'all' | 'national' | 'conditional' | 'self-paid';
@@ -201,6 +202,7 @@ export default function VaccineTrackingPage({
       buildVaccineIcs(currentChild, schedules, vaccineProgress),
       `${currentChild.name}-${label}.ics`,
     );
+    logCalendarExport('vaccine');
   };
 
   const filteredVaccines = useMemo(() => {

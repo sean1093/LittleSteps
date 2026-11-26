@@ -65,6 +65,7 @@ function AppContent() {
     currentChildVaccineProgress,
     childrenLoading,
     toggleMilestone,
+    setMilestone,
     setVaccineDose,
     addChild,
     joinChild,
@@ -476,6 +477,7 @@ function AppContent() {
               currentChild={currentChild}
               progress={currentChildMilestoneProgress}
               onToggleMilestone={toggleMilestone}
+              onSetMilestone={setMilestone}
             />
           </PregnancyGate>
         )}

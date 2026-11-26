@@ -39,6 +39,8 @@ export interface ChildStore {
   currentChildToothProgress: ToothProgress;
   childrenLoading: boolean;
   toggleMilestone: (id: string) => Promise<void>;
+  /** 明講要記成會了或還不會，以及是哪一天；補記以前的里程碑用。 */
+  setMilestone: (id: string, achieved: boolean, achievedDate?: string) => Promise<void>;
   setVaccineDose: (
     vaccineId: string,
     doseNumber: number,
@@ -170,6 +172,26 @@ export function useChildStore(user: User | null): ChildStore {
       const isAchieved = !currentChildMilestoneProgress[id]?.achieved;
       await firebaseChildren.updateMilestoneProgress(currentChild.id, id, isAchieved);
       logMilestoneToggle(isAchieved);
+    } catch (error) {
+      console.error('更新里程碑失敗:', error);
+      toast.show(errorMessage(error, '里程碑更新失敗，請稍後再試'));
+    }
+  };
+
+  /**
+   * 記下里程碑，日期由家長給。
+   *
+   * toggleMilestone 只會「反過來」而且一律蓋上今天：家長補記上個月就會的翻身，
+   * 得到的卻是今天的日期，而這個產品的承諾是「記下會翻身的那一天」。
+   */
+  const setMilestone = async (id: string, achieved: boolean, achievedDate?: string) => {
+    if (!user || !currentChild) return;
+    try {
+      await firebaseChildren.updateMilestoneProgress(currentChild.id, id, achieved, achievedDate);
+      // 只在狀態真的變了才記事件；改日期不是一次新的達成。
+      if (Boolean(currentChildMilestoneProgress[id]?.achieved) !== achieved) {
+        logMilestoneToggle(achieved);
+      }
     } catch (error) {
       console.error('更新里程碑失敗:', error);
       toast.show(errorMessage(error, '里程碑更新失敗，請稍後再試'));
@@ -462,6 +484,7 @@ export function useChildStore(user: User | null): ChildStore {
     currentChildToothProgress,
     childrenLoading,
     toggleMilestone,
+    setMilestone,
     setVaccineDose,
     addChild,
     joinChild,

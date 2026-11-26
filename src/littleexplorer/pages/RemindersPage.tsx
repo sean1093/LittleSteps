@@ -21,6 +21,7 @@ import { pressable } from '../../common/ui/pressable';
 import { careTaskKindLabels } from '../data/careTasks';
 import { tipCategoryLabels, toddlerCareTips } from '../data/monthlyTips';
 import { buildGoogleCalendarUrl, downloadIcs } from '../../common/utils/icsExport';
+import { logCalendarExport } from '../../lib/firebase';
 import { TODDLER_MIN_MONTHS, bandForMonths } from '../utils/ageBands';
 import ExplorerShell from '../components/ExplorerShell';
 import NoChildNotice from '../components/NoChildNotice';
@@ -452,7 +453,10 @@ export default function RemindersPage({
               variants={listItem}
               type="button"
               whileTap={tap}
-              onClick={() => downloadIcs(actionable, currentChild?.name ?? '寶寶')}
+              onClick={() => {
+                downloadIcs(actionable, currentChild?.name ?? '寶寶');
+                logCalendarExport('reminders');
+              }}
               className="btn-secondary w-full text-explorer-bark"
             >
               <Download className="w-5 h-5" />

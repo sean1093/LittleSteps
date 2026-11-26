@@ -16,28 +16,44 @@ interface FourByThreeTrackerProps {
 }
 
 /*
-  指南（complementaryFood.ts 的 allergyTestingMethod）是三個各 3 天的階段——
-  小量試 3 天、增量試 3 天、再觀察 3 天——同一種食物要一天接一天地給。這裡原本
-  卻反過來要求兩次之間隔 3 天，還把「記錄今天嘗試」藏起來三天：照著同一頁印出來
-  的步驟做的家長，明天就按不下去。階段與天數都直接讀資料檔，才不會再各說各話。
+  元件還叫 FourByThree，是因為它原本實作「4x3 試敏法」：一種食材 9 天。指南已經
+  改成 AAP 的說法——每 3 到 5 天試一種新食材（complementaryFood.ts 的
+  allergyTestingMethod）——檔名與元件名沒有跟著改，只為了不讓一次內容修正牽動一串
+  import。
+
+  天數一律讀資料檔的 observeDays，不在這裡自己乘：上一版用「階段數 × 3」算總天數，
+  指南一改步驟，這裡印出來的天數就和同一頁的說明對不上。
+
+  觀察滿下限（3 天）沒有反應就算試完，但不把家長擋在第 3 天：還在連續記的那幾天
+  卡片留著，照樣可以記第 4、第 5 天。舊制下記了 7、8 天的紀錄也走同一條路——天數
+  照實算、每一天都列出來，只是不再說「還差幾天」。
 */
-const STAGE_DAYS = 3;
-const STAGES = allergyTestingMethod.steps;
-const TOTAL_DAYS = STAGES.length * STAGE_DAYS;
+const { min: MIN_DAYS, max: MAX_DAYS } = allergyTestingMethod.observeDays;
+const [FIRST_STEP, LATER_STEP] = allergyTestingMethod.steps;
 
 export default function FourByThreeTracker({
   foodTrials,
   onAddTrialDate,
   onViewFood,
 }: FourByThreeTrackerProps) {
-  const today = toLocalDateKey();
+  const now = new Date();
+  const today = toLocalDateKey(now);
+  const yesterdayDate = new Date(now);
+  yesterdayDate.setDate(now.getDate() - 1);
+  const yesterday = toLocalDateKey(yesterdayDate);
 
   // 嘗試日期在資料庫裡有兩種形狀（見 StoredTrialDates），一律先整理成日期清單。
   const datesOf = new Map(foodTrials.map((food) => [food.id, trialDatesOf(food)]));
   const dates = (food: FoodTrialRecord) => datesOf.get(food.id) ?? [];
 
-  // 追蹤中的食物：這一輪還沒走完的那些。
-  const activeFoods = foodTrials.filter((food) => dates(food).length < TOTAL_DAYS);
+  const observed = (food: FoodTrialRecord) => dates(food).length >= MIN_DAYS;
+  // 昨天或今天還有記，代表這一輪還在進行。
+  const stillGoing = (food: FoodTrialRecord) =>
+    dates(food).includes(today) || dates(food).includes(yesterday);
+
+  // 追蹤中的食物：還沒觀察滿下限的，加上已經滿了但這兩天還在記的。
+  const activeFoods = foodTrials.filter((food) => !observed(food) || stillGoing(food));
+  const doneCount = foodTrials.length - activeFoods.length;
 
   // 今天還沒記的排前面（一天只記一次），其餘維持原本的順序。
   const sortedFoods = [...activeFoods].sort(
@@ -46,12 +62,12 @@ export default function FourByThreeTracker({
 
   return (
     <div className="space-y-4">
-      {/* What the 4×3 rule is */}
+      {/* What the method is */}
       <div className="card bg-secondary-soft">
         <h4 className="mb-1">{allergyTestingMethod.name}</h4>
         <p className="text-sm text-ink-muted leading-relaxed">
-          同一種新食物連續記錄 <strong>{TOTAL_DAYS} 天</strong>：
-          {STAGES.map((stage) => stage.title).join('、')}。這段期間不要再加入其他新食材。
+          同一種新食物觀察 <strong>{MIN_DAYS} 到 {MAX_DAYS} 天</strong>：
+          {allergyTestingMethod.steps.map((step) => step.title).join('、')}。這段期間不要再加入其他新食材。
         </p>
       </div>
 
@@ -76,10 +92,14 @@ export default function FourByThreeTracker({
       >
         {sortedFoods.map((food) => {
           const trialDates = dates(food);
-          const canTry = !trialDates.includes(today);
-          const progressPercent = (trialDates.length / TOTAL_DAYS) * 100;
-          // 前 3 次小量、再 3 次增量、之後都是觀察期。
-          const stage = STAGES[Math.min(Math.floor(trialDates.length / STAGE_DAYS), STAGES.length - 1)];
+          const dayCount = trialDates.length;
+          const isObserved = dayCount >= MIN_DAYS;
+          // 記過反應的食材，指南說的是先暫停、回診問醫師；這裡不能再請家長「記錄今天嘗試」，
+          // 也不能說它可以換下一種了。
+          const paused = food.hasAllergy;
+          const canTry = !paused && !trialDates.includes(today);
+          const progressPercent = Math.min(dayCount / MIN_DAYS, 1) * 100;
+          const step = dayCount === 0 ? FIRST_STEP : LATER_STEP;
 
           return (
             <motion.div
@@ -96,7 +116,9 @@ export default function FourByThreeTracker({
                   )}
                 </div>
 
-                {canTry ? (
+                {paused ? (
+                  <span className="tag shrink-0 bg-butter-light text-butter-dark">有反應記錄</span>
+                ) : canTry ? (
                   <span className="tag shrink-0 bg-mint-dark text-white">可記錄</span>
                 ) : (
                   <span className="tag shrink-0 bg-ink/10 text-ink-muted">今天已記錄</span>
@@ -105,10 +127,20 @@ export default function FourByThreeTracker({
 
               {/* Progress */}
               <div className="mb-2">
-                <div className="flex items-center justify-between text-xs text-ink-muted mb-1">
-                  <span>進度：{trialDates.length} / {TOTAL_DAYS} 天</span>
-                  <span>{stage.title}</span>
-                </div>
+                {paused ? (
+                  <p className="text-sm text-ink-muted mb-1">
+                    已記錄 {dayCount} 天。先暫停這種食材，回診時問醫師
+                  </p>
+                ) : isObserved ? (
+                  <p className="text-sm text-mint-dark font-medium mb-1">
+                    已觀察 {dayCount} 天，沒有反應就可以試下一種
+                  </p>
+                ) : (
+                  <div className="flex items-center justify-between text-xs text-ink-muted mb-1">
+                    <span>進度：{dayCount} / {MIN_DAYS} 天</span>
+                    <span>{step.title}</span>
+                  </div>
+                )}
                 <div className="h-2 bg-ink/10 rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
@@ -144,9 +176,9 @@ export default function FourByThreeTracker({
         })}
       </motion.div>
 
-      {foodTrials.length > activeFoods.length && (
+      {doneCount > 0 && (
         <p className="card bg-warm-white text-sm text-ink-muted">
-          {foodTrials.length - activeFoods.length} 種食物已完成 {TOTAL_DAYS} 天的試敏追蹤
+          {doneCount} 種食物已觀察滿 {MIN_DAYS} 天
         </p>
       )}
     </div>

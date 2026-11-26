@@ -47,22 +47,27 @@ export default function PoopSummaryCard({
   // 7-day sparkline data
   const sparklineData = generateSparklineData(dailyLogs, 7, 'poop_count');
   const total7Days = sparklineData.reduce((sum, v) => sum + v, 0);
-  const isWarning = hoursSinceLastPoop !== null && hoursSinceLastPoop > 48;
+  /*
+    跟 alertEngine 的排便提醒同一條線：72 小時，一級，不用紅色。原本這裡 48
+    小時就整塊轉紅——而吃得好、便便軟的寶寶幾天一次是常見的（來源見
+    alertEngine.detectPoopAlerts）。
+  */
+  const isWarning = hoursSinceLastPoop !== null && hoursSinceLastPoop > 72;
 
   return (
     <DashboardCard title="排便追蹤" onClick={onNavigate} bgColor="bg-butter-light/30">
       {lastPoopTime ? (
         <>
-          <div className={`rounded-xl p-3 ${isWarning ? 'bg-red-50' : 'bg-white'}`}>
+          <div className={`rounded-xl p-3 ${isWarning ? 'bg-butter-light' : 'bg-white'}`}>
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs text-ink-muted mb-1">上次排便</div>
-                <div className={`text-lg font-bold ${isWarning ? 'text-red-600' : 'text-butter-dark'}`}>
+                <div className="text-lg font-bold text-butter-dark">
                   {formatRelativeTime(hoursSinceLastPoop!)}
                 </div>
               </div>
               {isWarning && (
-                <div className="flex items-center gap-1 text-red-600">
+                <div className="flex items-center gap-1 text-butter-dark">
                   <AlertTriangle className="w-5 h-5" />
                   <span className="text-xs font-medium">留意</span>
                 </div>
