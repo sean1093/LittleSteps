@@ -31,6 +31,7 @@ const CareGuidePage = lazy(() => import('./littlesteps/pages/CareGuidePage'));
 const VaccineScheduleToolPage = lazy(() => import('./littlesteps/pages/VaccineScheduleToolPage'));
 const GrowthPercentileToolPage = lazy(() => import('./littlesteps/pages/GrowthPercentileToolPage'));
 const CheckupScheduleToolPage = lazy(() => import('./littlebloom/pages/CheckupScheduleToolPage'));
+const WeeklyGuideToolPage = lazy(() => import('./littlebloom/pages/WeeklyGuideToolPage'));
 const VaccineTrackingPage = lazy(() => import('./littlesteps/pages/VaccineTrackingPage'));
 const ComplementaryFoodPage = lazy(() => import('./littlesteps/pages/ComplementaryFoodPage'));
 const GrowthChartsPage = lazy(() => import('./littlesteps/pages/GrowthChartsPage'));
@@ -580,6 +581,7 @@ function AppContent() {
         )}
         {currentPage === 'littlebloom/wiki' && <LittleBloomWikiPage />}
         {currentPage === 'littlebloom/checkup-schedule' && <CheckupScheduleToolPage />}
+        {currentPage === 'littlebloom/weekly-guide' && <WeeklyGuideToolPage />}
 
         {/* LittleExplorer Routes */}
         {currentPage === 'littleexplorer' && (

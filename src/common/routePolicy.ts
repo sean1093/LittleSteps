@@ -38,6 +38,9 @@ const PUBLIC_PAGES: Partial<Record<Page, true>> = {
   'littlesteps/vaccine-schedule': true,
   'littlesteps/growth-percentile': true,
   'littlebloom/checkup-schedule': true,
+  // 孕期每週指南：填預產期、翻前後週，和三個試算工具同一類。只讀專案內的
+  // pregnancyGuides.ts，不讀也不寫任何孩子的紀錄，預產期不離開這一頁的記憶體。
+  'littlebloom/weekly-guide': true,
   'littleexplorer/wiki': true,
   // 場館名冊是政府公開資料與查證過的整理，不讀任何孩子的資料。
   littleouting: true,

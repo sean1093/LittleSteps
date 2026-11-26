@@ -44,6 +44,7 @@ export const ROUTE_PATH = {
   'littlebloom/prenatal': '/littlebloom/prenatal',
   'littlebloom/wiki': '/littlebloom/wiki',
   'littlebloom/checkup-schedule': '/littlebloom/checkup-schedule',
+  'littlebloom/weekly-guide': '/littlebloom/weekly-guide',
   littleexplorer: '/littleexplorer',
   'littleexplorer/reminders': '/littleexplorer/reminders',
   'littleexplorer/diary': '/littleexplorer/diary',

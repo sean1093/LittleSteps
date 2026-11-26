@@ -78,6 +78,7 @@ const CONTENT: Partial<Record<Page, (page: BrowserPage) => Locator>> = {
   'littlesteps/vaccine-schedule': (page) => page.getByLabel('寶寶生日'),
   'littlesteps/growth-percentile': (page) => page.getByRole('button', { name: '算百分位' }),
   'littlebloom/checkup-schedule': (page) => page.getByLabel('預產期'),
+  'littlebloom/weekly-guide': (page) => page.getByLabel('預產期'),
   // `WikiBrowser`'s search box carries no `aria-label`, so its placeholder is
   // its accessible name.
   'littlesteps/baby-wiki': (page) => page.getByRole('searchbox', { name: '搜尋症狀、關鍵字...' }),
@@ -109,6 +110,7 @@ const READY: Partial<Record<Page, (page: BrowserPage) => Locator>> = {
   'littlesteps/vaccine-schedule': (page) => page.getByLabel('寶寶生日'),
   'littlesteps/growth-percentile': (page) => page.getByRole('button', { name: '算百分位' }),
   'littlebloom/checkup-schedule': (page) => page.getByLabel('預產期'),
+  'littlebloom/weekly-guide': (page) => page.getByLabel('預產期'),
   'littlesteps/baby-wiki': (page) =>
     new WikiBrowserPage(page, 'littlesteps/baby-wiki').articles.first(),
   'littlebloom/wiki': (page) => new WikiBrowserPage(page, 'littlebloom/wiki').articles.first(),

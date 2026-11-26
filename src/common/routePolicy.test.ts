@@ -41,6 +41,8 @@ const PUBLIC: Page[] = [
   'littlesteps/vaccine-schedule',
   'littlesteps/growth-percentile',
   'littlebloom/checkup-schedule',
+  // 孕期每週指南：只讀靜態的週別指南，預產期不存。
+  'littlebloom/weekly-guide',
   'littlebloom/wiki',
   'littleexplorer/wiki',
   'littleouting',

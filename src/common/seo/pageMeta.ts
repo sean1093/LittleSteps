@@ -120,6 +120,11 @@ const PAGE_META: Record<Page, PageMeta> = {
     description:
       '填預產期或最後一次月經，列出每一次公費產檢與篩檢各在第幾週、哪幾天，可以加到行事曆。不用登入。',
   },
+  'littlebloom/weekly-guide': {
+    title: '孕期每週指南｜填預產期看這一週｜LittleSteps',
+    description:
+      '填預產期，看懷孕這一週寶寶與身體的變化、該注意的事與就醫警訊，前後週都能翻。不用登入，日期不會被存下來。',
+  },
   littleexplorer: {
     title: '幼兒期陪伴｜1-3 歲發展檢核｜LittleSteps',
     description: '依年齡分段的幼兒發展檢核、健檢與疫苗提醒、成長日記與幼兒百科。',

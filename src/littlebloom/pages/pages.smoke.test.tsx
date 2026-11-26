@@ -67,6 +67,24 @@ describe('LittleBloomPage', () => {
     expect(screen.queryByText(/懷孕第 1 週/)).not.toBeInTheDocument();
   });
 
+  it('可以翻到下一週、上一週，再回到這一週', async () => {
+    const user = userEvent.setup();
+    render(<LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} onAddPregnancy={noopAdd} />);
+    const titleOf = (week: number) => pregnancyGuides.find((g) => g.week === week)!.title;
+
+    await user.click(screen.getByRole('button', { name: '下一週' }));
+    expect(screen.getByRole('heading', { name: titleOf(EXPECTED_WEEK + 1) })).toBeInTheDocument();
+    // 頂端的週數仍是實際週數，翻的只是指南。
+    expect(screen.getByText(`第 ${EXPECTED_WEEK} 週`)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '上一週' }));
+    await user.click(screen.getByRole('button', { name: '上一週' }));
+    expect(screen.getByRole('heading', { name: titleOf(EXPECTED_WEEK - 1) })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '回到本週' }));
+    expect(screen.getByRole('heading', { name: titleOf(EXPECTED_WEEK) })).toBeInTheDocument();
+  });
+
   it('第 20 週以後顯示就醫警訊', () => {
     render(<LittleBloomPage currentChild={pregnant()} progress={{}} onRecordBirth={noop} onAddPregnancy={noopAdd} />);
     expect(screen.getByText('這些情況請盡快就醫')).toBeInTheDocument();
