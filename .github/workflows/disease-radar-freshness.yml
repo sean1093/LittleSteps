@@ -3,7 +3,9 @@ name: Disease radar freshness
 # Opens one issue when the committed disease radar data is older than the
 # board's stale threshold (FRESHNESS_DAYS.stale, 14 days), rewrites that issue
 # on later runs while it stays stale, and closes it once fresh data is
-# committed.
+# committed. It never opens a second issue: a closed one is reopened, unless a
+# maintainer closed it as not planned and the committed weekEnd has not changed
+# since, in which case it stays closed and silent.
 #
 # It reads only `weekEnd` from public/data/diseaseRadar.json in the checkout.
 # It never contacts Taiwan CDC: od.cdc.gov.tw refuses GitHub-hosted runners,

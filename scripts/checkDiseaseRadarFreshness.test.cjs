@@ -51,7 +51,18 @@ function fakeGithub(openIssues = []) {
 
 const context = { repo: { owner: 'o', repo: 'r' } };
 const core = { info: () => {} };
-const ownIssue = { number: 7, body: `${MARKER}\nold body` };
+const ownIssue = { number: 7, state: 'open', body: `${MARKER} weekEnd=2026-08-29 -->\nold body` };
+
+/** The same issue after a maintainer closed it. */
+const closed = (stateReason, weekEnd = '2026-08-29') => ({
+  number: 7,
+  state: 'closed',
+  state_reason: stateReason,
+  body: `${MARKER} weekEnd=${weekEnd} -->\nold body`,
+});
+
+const STALE_DAY = new Date('2026-11-26T08:00:00Z');
+const writes = (github) => github.calls.filter(([name]) => name !== 'list');
 
 describe('checkDiseaseRadarFreshness run', () => {
   it('does nothing while the data is fresh and no issue is open', async () => {
@@ -77,17 +88,63 @@ describe('checkDiseaseRadarFreshness run', () => {
     expect(creates[0][1].body).toContain('15 days');
   });
 
-  it('only looks at open issues the workflow itself opened', async () => {
+  it('looks at open and closed issues the workflow itself opened', async () => {
     const github = fakeGithub();
-    await run({
-      github, context, core, repoRoot: repoWith('2026-08-29'), today: new Date('2026-11-26T08:00:00Z'),
+    await run({ github, context, core, repoRoot: repoWith('2026-08-29'), today: STALE_DAY });
+    expect(github.calls[0][1]).toMatchObject({ state: 'all', creator: 'github-actions[bot]' });
+  });
+
+  it('records the weekEnd it was written for in the hidden marker', async () => {
+    const github = fakeGithub();
+    await run({ github, context, core, repoRoot: repoWith('2026-08-29'), today: STALE_DAY });
+    const [[, created]] = writes(github);
+    expect(created.body).toContain(`${MARKER} weekEnd=2026-08-29 -->`);
+  });
+
+  it('stays quiet when a maintainer closed it as not planned and the data has not changed', async () => {
+    // Otherwise closing it brings a brand-new issue, and a notification, every week.
+    const github = fakeGithub([closed('not_planned')]);
+    const result = await run({ github, context, core, repoRoot: repoWith('2026-08-29'), today: STALE_DAY });
+    expect(result).toBe('suppressed');
+    expect(writes(github)).toEqual([]);
+  });
+
+  it('reopens the same issue when data closed as not planned has since changed but is stale again', async () => {
+    const github = fakeGithub([closed('not_planned', '2026-08-22')]);
+    const result = await run({ github, context, core, repoRoot: repoWith('2026-08-29'), today: STALE_DAY });
+    expect(result).toBe('reopened');
+    expect(writes(github).map(([name]) => name)).toEqual(['update']);
+    expect(writes(github)[0][1]).toMatchObject({ issue_number: 7, state: 'open' });
+    expect(writes(github)[0][1].body).toContain(`${MARKER} weekEnd=2026-08-29 -->`);
+  });
+
+  it('reopens the same issue, rather than opening another, when it was closed as completed', async () => {
+    const github = fakeGithub([closed('completed')]);
+    const result = await run({ github, context, core, repoRoot: repoWith('2026-08-29'), today: STALE_DAY });
+    expect(result).toBe('reopened');
+    expect(writes(github).map(([name]) => name)).toEqual(['update']);
+    expect(writes(github)[0][1]).toMatchObject({ issue_number: 7, state: 'open' });
+  });
+
+  it('judges by the newest of its issues', async () => {
+    const older = { ...closed('completed'), number: 2 };
+    const github = fakeGithub([older, closed('not_planned')]);
+    const result = await run({ github, context, core, repoRoot: repoWith('2026-08-29'), today: STALE_DAY });
+    expect(result).toBe('suppressed');
+  });
+
+  it('leaves a closed issue alone while the data is fresh', async () => {
+    const github = fakeGithub([closed('completed')]);
+    const result = await run({
+      github, context, core, repoRoot: repoWith('2026-11-21'), today: STALE_DAY,
     });
-    expect(github.calls[0][1]).toMatchObject({ state: 'open', creator: 'github-actions[bot]' });
+    expect(result).toBe('fresh');
+    expect(writes(github)).toEqual([]);
   });
 
   it('rewrites the open issue instead of opening a second one', async () => {
     const someoneElses = { number: 3, body: 'unrelated' };
-    const aPullRequest = { number: 4, body: MARKER, pull_request: {} };
+    const aPullRequest = { number: 9, state: 'open', body: MARKER, pull_request: {} };
     const github = fakeGithub([someoneElses, aPullRequest, ownIssue]);
     const result = await run({
       github, context, core, repoRoot: repoWith('2026-08-29'), today: new Date('2026-11-26T08:00:00Z'),

@@ -648,7 +648,9 @@ attributes to their week (8/23–8/29 那一週) instead of calling it this week
 Forgetting is also noticed. `.github/workflows/disease-radar-freshness.yml`
 runs every Thursday, reads only `weekEnd` from the committed JSON, and once it
 is more than 14 days old (`FRESHNESS_DAYS.stale`) opens one issue, rewrites that
-issue on later runs and closes it when fresh data lands. It never fetches from
+issue on later runs and closes it when fresh data lands. It never opens a
+second one: a closed issue is reopened, except that closing it as not planned
+silences it until the committed `weekEnd` changes. It never fetches from
 Taiwan CDC and never runs on a pull request. The logic is
 `scripts/checkDiseaseRadarFreshness.cjs`, and a test pins its threshold to the
 board's own.
