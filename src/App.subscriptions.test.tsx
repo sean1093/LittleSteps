@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { onValue } from 'firebase/database';
 import App from './App';
@@ -120,7 +120,10 @@ describe('child-record listeners follow the service on screen', () => {
     await heading(/哺乳室地圖/);
 
     // The child itself is loaded, so "nothing attached" is not just "no child".
-    expect(live).toContain(`children/${CHILD_ID}`);
+    // Waited for rather than read at once: since #162 a public page renders
+    // before the signed-in child list arrives, so its heading no longer means
+    // the child's listener is live.
+    await waitFor(() => expect(live).toContain(`children/${CHILD_ID}`), { timeout: 5000 });
     expect(live).not.toContain(LOGS_PATH);
     expect(live).not.toContain(DIARY_PATH);
   }, 20000);
