@@ -13,6 +13,7 @@ import { useToast } from '../common/ui/toast';
 import { goTo } from '../common/navigate';
 import { inAppBrowser, type InAppBrowser } from '../common/inAppBrowser';
 import InAppBrowserSheet from '../common/components/InAppBrowserSheet';
+import { clearJoinCode } from '../common/joinLink';
 
 
 interface AuthContextType {
@@ -110,6 +111,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
+      // 加入代碼與「按過加入」只屬於這一次登入：換一個帳號登入時，不能把上一個
+      // 帳號按過的加入當成這個帳號剛加入成功。
+      clearJoinCode();
       logAuthEvent('logout');
     } catch (error) {
       console.error('登出失敗:', error);
