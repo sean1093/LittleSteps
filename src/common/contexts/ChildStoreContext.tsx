@@ -35,7 +35,9 @@ const ChildStoreContext = createContext<ChildStore | null>(null);
  * 所以這裡只決定「現在該給哪一份」：
  * - 沒登入：一份寫死的空 store，不需要任何資料層的程式碼。
  * - 登入了、bridge 還沒回報：同一份空 store，但 childrenLoading 是 true，
- *   App 會停在載入條，而不是對一位有兩個孩子的家長說「還沒有寶寶」。
+ *   每一個寫入都會被拒絕。需要孩子資料的頁面與入口頁會停在載入條，而不是對
+ *   一位有兩個孩子的家長說「還沒有寶寶」；公開頁照常顯示（#162），所以表頭
+ *   上的帳號視窗在這段時間裡按下去也不會假裝存好或刪掉了什麼。
  * - bridge 回報了：它給的那一份。
  *
  * bridge 是 children 的兄弟而不是外層：包在外面的話，store 到的那一刻整棵
@@ -65,8 +67,8 @@ export function ChildStoreProvider({ children }: { children: ReactNode }) {
       <ChildStoreContext.Provider value={store}>{children}</ChildStoreContext.Provider>
       {user && (
         // bridge 的 chunk 載不進來時不能讓整個 app 換成錯誤畫面：這一層在每一頁
-        // 的外面，公開頁也算。接住之後 store 就停在「載入中」，App 既有的
-        // 「連不上伺服器／重新載入」會在它平常的等待之後接手。
+        // 的外面，公開頁也算。接住之後 store 就停在「載入中」：要等孩子資料的
+        // 頁面由 App 既有的「連不上伺服器／重新載入」接手，公開頁照常可讀。
         <QuietBoundary key={user.uid} scope="child store">
           <Suspense fallback={null}>
             <ChildStoreBridge user={user} onStore={onStore} />
