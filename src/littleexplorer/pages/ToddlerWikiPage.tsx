@@ -84,11 +84,13 @@ export default function ToddlerWikiPage({ currentChild, reminderBadge }: Toddler
   const currentStage = inToddlerRange ? stageForMonths(ageMonths as number) : null;
   // 從某一篇文章的連結進來時不套年齡段：那一篇可能不屬於孩子現在的階段，
   // 先被篩掉的話，連結就落在一份沒有它的清單上。
-  const [stage, setStage] = useState<StageFilter>(() =>
-    articleFromPath(window.location.pathname)?.page === 'littleexplorer/wiki'
-      ? 'all'
-      : (currentStage?.id ?? 'all'),
+  // 家長自己按過的那一段；沒按過就跟著孩子現在的年齡段走。年齡段不能只在掛載時
+  // 讀一次：公開頁在登入家長的孩子名單回來之前就會畫出來（#162），那時還沒有
+  // currentChild，讀一次就會永遠停在「全部」。
+  const [pickedStage, setStage] = useState<StageFilter | null>(() =>
+    articleFromPath(window.location.pathname)?.page === 'littleexplorer/wiki' ? 'all' : null,
   );
+  const stage: StageFilter = pickedStage ?? currentStage?.id ?? 'all';
 
   const articles = useMemo(() => {
     const picked = WIKI_STAGES.find((s) => s.id === stage);
