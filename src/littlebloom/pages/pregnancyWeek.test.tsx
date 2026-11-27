@@ -103,3 +103,24 @@ describe('one week number for the same due date', () => {
     expect(screen.getByText('今天是懷孕 20 週又 3 天，看第 21 週的內容。')).toBeInTheDocument();
   });
 });
+
+describe('a due date more than 40 weeks away', () => {
+  // A mistyped year (2028 for 2027) puts the last period in the future. There
+  // is no week to state then; "0 weeks 0 days, 40 weeks to go" would be wrong
+  // on both counts, so every screen says nothing about weeks.
+  it('prints no weeks-and-days anywhere, and the hub asks for the date to be checked', () => {
+    vi.setSystemTime(new Date(2025, 10, 26, 12));
+    expect(new Set(Object.values(everyScreen()))).toEqual(new Set([null]));
+
+    render(
+      <LittleBloomPage
+        currentChild={pregnant}
+        progress={{}}
+        onRecordBirth={async () => {}}
+        onAddPregnancy={async () => {}}
+      />,
+    );
+    expect(screen.getByText(/這個預產期離現在超過 40 週，請確認日期/)).toBeInTheDocument();
+    expect(screen.queryByText(/週見面/)).toBeNull();
+  });
+});

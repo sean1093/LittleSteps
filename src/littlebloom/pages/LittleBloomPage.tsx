@@ -196,13 +196,23 @@ export default function LittleBloomPage({
       <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-4">
         <motion.section variants={listItem} className="panel text-center">
           <p className={`text-sm ${THEME.muted}`}>{TRIMESTER_LABEL[trimesterOf(displayWeek)]}</p>
-          {position && (
-            <p className={`text-3xl font-bold my-2 ${THEME.ink}`}>{formatGestation(position)}</p>
+          {/* 預產期打錯年份（離現在超過 40 週）時沒有週數可說：說「0 週又 0 天、還有
+              40 週」是錯的，請家長確認日期，和公開的每週指南同一句。 */}
+          {position?.status === 'too-early' ? (
+            <p className={`text-sm my-2 ${THEME.body}`}>
+              這個預產期離現在超過 {PREGNANCY_TOTAL_WEEKS} 週，請確認日期。
+            </p>
+          ) : (
+            <>
+              {position && (
+                <p className={`text-3xl font-bold my-2 ${THEME.ink}`}>{formatGestation(position)}</p>
+              )}
+              <p className={`text-sm ${THEME.muted}`}>
+                {position && `${formatGuideWeek(position)} · `}
+                還有 {position ? weeksUntilDue(position) : PREGNANCY_TOTAL_WEEKS} 週見面
+              </p>
+            </>
           )}
-          <p className={`text-sm ${THEME.muted}`}>
-            {position && `${formatGuideWeek(position)} · `}
-            還有 {position ? weeksUntilDue(position) : PREGNANCY_TOTAL_WEEKS} 週見面
-          </p>
         </motion.section>
 
         {currentGuide ? (
