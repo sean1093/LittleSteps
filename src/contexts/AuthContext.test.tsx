@@ -6,6 +6,7 @@ import { signInWithPopup, signInWithRedirect } from 'firebase/auth';
 import { logAuthEvent } from '../lib/firebase';
 import { openInExternalBrowser } from '../common/inAppBrowser';
 import { AuthProvider, useAuth } from './AuthContext';
+import { joinPressedFor, noteJoinPressed } from '../common/joinLink';
 
 /**
  * The Auth half of account deletion.
@@ -90,6 +91,35 @@ beforeEach(() => {
   setUserAgent(ORIGINAL_USER_AGENT);
   window.history.replaceState(null, '', '/littlesteps/dashboard');
   vi.spyOn(console, 'error').mockImplementation(() => {});
+});
+
+function SignOutButton() {
+  const { signOut } = useAuth();
+  return (
+    <button type="button" onClick={() => signOut()}>
+      sign out
+    </button>
+  );
+}
+
+describe('signOut', () => {
+  it('forgets a join pressed by the account that is leaving', async () => {
+    // Otherwise the next account to sign in, already on that record's list,
+    // would be told 「加入好了」 for a join it never made.
+    noteJoinPressed('child-a');
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <AuthProvider>
+          <SignOutButton />
+        </AuthProvider>
+      </ToastProvider>,
+    );
+    await user.click(screen.getByRole('button', { name: 'sign out' }));
+
+    await waitFor(() => expect(mocks.signOut).toHaveBeenCalled());
+    expect(joinPressedFor('child-a')).toBe(false);
+  });
 });
 
 describe('deleteAccount', () => {
