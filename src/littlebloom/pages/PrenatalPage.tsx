@@ -373,7 +373,7 @@ export default function PrenatalPage({
   return (
     <BloomShell
       title="產檢時程"
-      subtitle={`${position ? `${formatGestation(position)} · ` : ''}預產期 ${formatDate(currentChild?.pregnancyData?.dueDate)}`}
+      subtitle={`${position && position.status !== 'too-early' ? `${formatGestation(position)} · ` : ''}預產期 ${formatDate(currentChild?.pregnancyData?.dueDate)}`}
       backTo="littlebloom"
     >
       <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-4">
