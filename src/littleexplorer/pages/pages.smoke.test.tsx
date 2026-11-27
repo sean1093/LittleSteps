@@ -76,6 +76,16 @@ describe('ExplorerShell 與 tab bar', () => {
 
   // 導覽有兩級：tab bar 通往本服務的首頁（成長分頁即 #/littleexplorer），
   // 頁首的「所有服務」再往上一級回到 app 進入點。兩者不可互相取代。
+  it('孩子名單比頁面晚到時，仍然套上孩子的年齡段（公開頁會先畫，#162）', () => {
+    window.history.replaceState(null, '', '/littleexplorer/wiki');
+    const stages = () => within(screen.getByTestId('scroll-row-explorer-wiki-stages'));
+    const { rerender } = render(<ToddlerWikiPage currentChild={null} />);
+    expect(stages().getByRole('button', { name: '全部', pressed: true })).toBeInTheDocument();
+
+    rerender(<ToddlerWikiPage currentChild={child()} />);
+    expect(stages().getByRole('button', { name: '全部', pressed: false })).toBeInTheDocument();
+  });
+
   it('tab bar 通往本服務首頁', async () => {
     const user = userEvent.setup();
     window.history.replaceState(null, '', '/littleexplorer/wiki');
