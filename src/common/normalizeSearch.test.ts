@@ -31,6 +31,12 @@ describe('normalizeSearch', () => {
     expect(matches('肚子痛', '肚子')).toBe(true);
   });
 
+  it('does not shrink a bare station word to 站, which would match every 站', () => {
+    expect(matches('監理服務站', '火車站')).toBe(false);
+    expect(matches('京站時尚廣場', '車站')).toBe(false);
+    expect(matches('臺北火車站', '車站')).toBe(true);
+  });
+
   it('does not invent matches outside the list', () => {
     expect(matches('臺中市西屯區', '台南')).toBe(false);
     expect(matches('交通部臺灣鐵路管理局桃園站', '新竹火車站')).toBe(false);
