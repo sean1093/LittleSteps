@@ -262,7 +262,7 @@ export function generateSleepAdvice(stats: SleepStats, ageInMonths: number): Sle
       advice.push({
         category: 'good',
         title: '睡眠時長充足',
-        description: `寶寶每天平均睡 ${actualHours.toFixed(1)} 小時，符合 ${ageInMonths} 個月大寶寶的建議範圍（${minHours}-${maxHours} 小時）。`,
+        description: `寶寶每天平均睡 ${actualHours.toFixed(1)} 小時，符合這個年齡的建議範圍（${minHours}-${maxHours} 小時）。`,
         suggestions: ['繼續維持目前的作息安排'],
       });
     } else if (actualHours < minHours) {
