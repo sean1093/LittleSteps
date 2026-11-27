@@ -56,7 +56,12 @@ function variantsOf(term: string): string[] {
       .find((member) => term.includes(member));
     if (found === undefined) continue;
     for (const other of group) {
-      if (other !== found) variants.push(term.split(found).join(other));
+      if (other === found) continue;
+      // A whole term must not become a single character: a bare 「火車站」
+      // swapped to 「站」 matches 監理站 and 京站時尚廣場. The swap is for
+      // 「桃園火車站」, where the place name stays; 肚子痛 → 腹痛 is still fine.
+      if (term === found && other.length < 2) continue;
+      variants.push(term.split(found).join(other));
     }
   }
   return variants;
