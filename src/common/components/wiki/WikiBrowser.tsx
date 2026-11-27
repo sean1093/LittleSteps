@@ -265,7 +265,7 @@ export default function WikiBrowser<
                 key={article.id}
                 id={`wiki-article-${article.id}`}
                 // 讓捲過來的文章停在黏住的頁首下面，而不是被它蓋住。
-                className="scroll-mt-20"
+                className="scroll-mt-[calc(var(--app-bar-h,4rem)+1rem)]"
                 layout
                 variants={listItem}
                 exit="hidden"

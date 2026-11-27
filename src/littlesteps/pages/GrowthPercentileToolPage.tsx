@@ -180,7 +180,7 @@ export default function GrowthPercentileToolPage() {
               id="growth-tool-result"
               ref={resultHeadingRef}
               tabIndex={-1}
-              className="scroll-mt-20 focus:outline-none"
+              className="scroll-mt-[calc(var(--app-bar-h,4rem)+1rem)] focus:outline-none"
             >
               計算結果
             </h2>
